@@ -25,7 +25,8 @@
 //!
 //! # Limitations
 //!
-//! - 3D coordinates (x3/y3/z3) are parsed but not returned (only 2D x2/y2).
+//! - Legacy readers ignore 3D coordinates. `parse_cml_with_3d` returns complete
+//!   finite x3/y3/z3 triplets through an additive, bounded single-molecule profile.
 //! - Aromatic bonds ("A") are stored as alternating single/double bonds (no
 //!   special aromatic bond order in the core model).
 //! - Stereochemistry attributes are ignored.
@@ -34,6 +35,9 @@
 use std::collections::HashMap;
 
 use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount};
+
+mod geometry;
+pub use geometry::{CmlWith3d, parse_cml_with_3d, parse_cml_with_3d_with_limits};
 
 /// Resource limits for the lightweight CML parser.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,91 +123,8 @@ impl std::error::Error for CmlError {}
 // XML attribute scanner (no external dependency)
 // ---------------------------------------------------------------------------
 
-/// Extract all `key="value"` pairs from a single XML tag line.
-#[doc(hidden)]
-///
-/// Handles the most common cases:
-/// - Double-quoted values
-/// - Basic XML entities: `&amp;` `&lt;` `&gt;` `&quot;` `&apos;`
-/// - Ignores self-closing slash and angle brackets
-pub(crate) fn parse_xml_attrs(line: &str) -> HashMap<String, String> {
-    let mut map = HashMap::new();
-    let bytes = line.as_bytes();
-    let len = bytes.len();
-    let mut i = 0usize;
-
-    while i < len {
-        // Skip whitespace and punctuation between attributes.
-        while i < len && (bytes[i].is_ascii_whitespace() || bytes[i] == b'/' || bytes[i] == b'>') {
-            i += 1;
-        }
-        if i >= len {
-            break;
-        }
-
-        // Read attribute key: stop at '=' or whitespace.
-        let key_start = i;
-        while i < len && bytes[i] != b'=' && !bytes[i].is_ascii_whitespace() {
-            i += 1;
-        }
-        let key = line.get(key_start..i).unwrap_or("").trim().to_string();
-        if key.is_empty() {
-            i += 1;
-            continue;
-        }
-
-        // Expect '='
-        while i < len && bytes[i].is_ascii_whitespace() {
-            i += 1;
-        }
-        if i >= len || bytes[i] != b'=' {
-            continue;
-        }
-        i += 1;
-
-        // Expect opening '"' or '\''
-        while i < len && bytes[i].is_ascii_whitespace() {
-            i += 1;
-        }
-        if i >= len {
-            break;
-        }
-        let quote = bytes[i];
-        if quote != b'"' && quote != b'\'' {
-            i += 1;
-            continue;
-        }
-        i += 1;
-
-        // Read until closing quote.
-        let value_start = i;
-        while i < len && bytes[i] != quote {
-            i += 1;
-        }
-        let raw_value = line.get(value_start..i).unwrap_or("");
-        let value = unescape_xml(raw_value);
-        if i < len {
-            i += 1;
-        } // consume closing quote
-
-        if !key.is_empty() {
-            map.insert(key, value);
-        }
-    }
-    map
-}
-
-/// Decode basic XML character entities.
-fn unescape_xml(s: &str) -> String {
-    if !s.contains('&') {
-        return s.to_string();
-    }
-    s.replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&apos;", "'")
-}
+mod attributes;
+pub(crate) use attributes::parse_xml_attrs;
 
 // ---------------------------------------------------------------------------
 // CML bond order decoding
@@ -285,18 +206,38 @@ fn cml_lines<'a>(input: &'a str, limits: &CmlParseLimits) -> Result<Vec<&'a str>
     Ok(lines)
 }
 
+fn cml_value<T: std::str::FromStr>(
+    attrs: &HashMap<String, String>,
+    key: &str,
+) -> Result<Option<T>, CmlError> {
+    attrs
+        .get(key)
+        .map(|value| {
+            value
+                .trim()
+                .parse()
+                .map_err(|_| CmlError::MalformedXml(format!("invalid CML {key}: {value}")))
+        })
+        .transpose()
+}
+
+fn cml_isotope(attrs: &HashMap<String, String>) -> Result<Option<u16>, CmlError> {
+    let legacy = cml_value::<u16>(attrs, "isotope")?;
+    let number = cml_value::<u16>(attrs, "isotopeNumber")?;
+    if matches!((legacy, number), (Some(a), Some(b)) if a != b) {
+        return Err(CmlError::MalformedXml(
+            "conflicting CML isotope and isotopeNumber".into(),
+        ));
+    }
+    Ok(number.or(legacy).filter(|&value| value > 0))
+}
+
 fn parse_cml_atom(attrs: &HashMap<String, String>) -> Result<CmlAtomData, CmlError> {
     let symbol = attrs.get("elementType").map(String::as_str).unwrap_or("C");
     let element =
         Element::from_symbol(symbol).ok_or_else(|| CmlError::UnknownElement(symbol.to_owned()))?;
-    let x2 = attrs
-        .get("x2")
-        .and_then(|value| value.trim().parse::<f64>().ok())
-        .unwrap_or(0.0);
-    let y2 = attrs
-        .get("y2")
-        .and_then(|value| value.trim().parse::<f64>().ok())
-        .unwrap_or(0.0);
+    let x2 = cml_value::<f64>(attrs, "x2")?.unwrap_or(0.0);
+    let y2 = cml_value::<f64>(attrs, "y2")?.unwrap_or(0.0);
     if !x2.is_finite() {
         return Err(CmlError::NonFiniteCoordinate(x2.to_string()));
     }
@@ -305,23 +246,9 @@ fn parse_cml_atom(attrs: &HashMap<String, String>) -> Result<CmlAtomData, CmlErr
     }
     Ok(CmlAtomData {
         element,
-        charge: attrs
-            .get("formalCharge")
-            .and_then(|value| value.trim().parse().ok())
-            .unwrap_or(0),
-        isotope: attrs
-            .get("isotope")
-            .or_else(|| attrs.get("isotopeNumber"))
-            .and_then(|value| value.trim().parse().ok())
-            .filter(|&value| value > 0),
-        hydrogen_count: attrs
-            .get("hydrogenCount")
-            .map(|value| {
-                value.trim().parse().map_err(|_| {
-                    CmlError::MalformedXml(format!("invalid CML hydrogenCount: {value}"))
-                })
-            })
-            .transpose()?,
+        charge: cml_value(attrs, "formalCharge")?.unwrap_or(0),
+        isotope: cml_isotope(attrs)?,
+        hydrogen_count: cml_value(attrs, "hydrogenCount")?,
         x2,
         y2,
         aromatic: false,
@@ -375,8 +302,12 @@ fn collect_cml_data(
                 });
             }
             let attrs = parse_xml_attrs(line);
-            if let Some(id) = attrs.get("id").filter(|id| !id.is_empty()) {
-                positions.insert(id.clone(), atoms.len());
+            if let Some(id) = attrs.get("id").filter(|id| !id.is_empty())
+                && positions.insert(id.clone(), atoms.len()).is_some()
+            {
+                return Err(CmlError::MalformedXml(format!(
+                    "duplicate CML atom id: {id}"
+                )));
             }
             atoms.push(parse_cml_atom(&attrs)?);
         } else if is_element_tag(line, "bond") {
@@ -731,7 +662,7 @@ fn is_element_tag(line: &str, name: &str) -> bool {
 
 /// Serialise a molecule to a CML string.
 ///
-/// `coords` — optional slice of `(x, y)` pairs in atom-insertion order.
+/// `coords` — optional `(x, y)` pairs in atom order; finite values retain binary64 precision.
 /// If `None`, no coordinate attributes are written.
 /// Every atom receives a total `hydrogenCount`, combining non-node H with
 /// explicit H neighbors, so the reader never adds or drops H through inference.
@@ -750,8 +681,8 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
         if let Some(cs) = coords
             && let Some(&(x, y)) = cs.get(i)
         {
-            parts.push(format!("x2=\"{x:.4}\""));
-            parts.push(format!("y2=\"{y:.4}\""));
+            parts.push(format!("x2=\"{x}\""));
+            parts.push(format!("y2=\"{y}\""));
         }
         if atom.charge != 0 {
             parts.push(format!("formalCharge=\"{}\"", atom.charge));

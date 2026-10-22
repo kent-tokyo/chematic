@@ -30,7 +30,6 @@ fn exact_source_and_inspected_projection() {
                 "/atoms/coords/2d",
                 "/atoms/elements/symbol",
                 "/atoms/partialCharges",
-                "/name",
                 "/vendor~1a~0b"
             ]
         );
@@ -40,6 +39,8 @@ fn exact_source_and_inspected_projection() {
                 && record.bond_orders_explicit()
         );
         let inspected = record.to_json();
+        assert_eq!(record.name(), Some("isotope and charge fixture"));
+        assert!(!record.has_conflicting_names());
         assert_eq!(inspected["schema"], "chematic.cjson-record.v1");
         assert_eq!(inspected["source"], source);
     }

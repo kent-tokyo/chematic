@@ -81,7 +81,7 @@ pub fn roundtrip_cjson_record(text: &str) -> Result<String, JsValue> {
         .map_err(|error| JsValue::from_str(&error))
 }
 
-/// Checked MOL2/CJSON conversion using the shared report schema.
+/// Checked MOL2/CJSON/CML conversion using the shared report schema.
 #[wasm_bindgen]
 pub fn convert_with_report_json(
     text: &str,
@@ -130,7 +130,8 @@ pub(crate) fn common_format_name(format: &str) -> Option<String> {
         .as_str()
     {
         "smi" | "smiles" => Some("smiles".to_string()),
-        "mol" | "sdf" => Some("mol".to_string()),
+        "mol" => Some("mol".to_string()),
+        "sdf" => Some("sdf".to_string()),
         "v3000" | "mol_v3000" => Some("mol_v3000".to_string()),
         "mol2" => Some("mol2".to_string()),
         "cml" => Some("cml".to_string()),
@@ -156,9 +157,16 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
         "cml" => chematic_mol::parse_cml(text)
             .map(|(mol, _)| mol)
             .map_err(|e| e.to_string()),
-        "cjson" => chematic_mol::parse_cjson(text)
-            .map(|(mol, _)| mol)
-            .map_err(|e| e.to_string()),
+        "cjson" => chematic_mol::parse_cjson_checked_with_limits(
+            text,
+            &chematic_mol::CjsonParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+        )
+        .map(|(mol, _)| mol)
+        .map_err(|e| e.to_string()),
         "moljson" => chematic_mol::parse_moljson(text).map_err(|e| e.to_string()),
         "cdxml" => chematic_mol::parse_cdxml(text)
             .map(|(mol, _)| mol)
@@ -167,12 +175,91 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
     }
 }
 
+fn write_common_format(
+    mol: &chematic_core::Molecule,
+    coords: &[(f64, f64, f64)],
+    output: &str,
+) -> Result<String, JsValue> {
+    let result = match output {
+        "smiles" => chematic_smiles::canonical_smiles(mol),
+        "mol" => chematic_mol::write_mol(mol, &chematic_mol::MolMetadata::default()),
+        "sdf" => format!(
+            "{}$$$$\n",
+            chematic_mol::write_mol(mol, &chematic_mol::MolMetadata::default())
+        ),
+        "mol_v3000" => {
+            chematic_mol::write_mol_v3000(mol, &chematic_mol::MolMetadata::default(), &[])
+        }
+        "mol2" => chematic_mol::write_mol2(mol, &[]),
+        "cml" => chematic_mol::write_cml(mol, None),
+        "cjson" => chematic_mol::write_cjson(mol, coords),
+        "moljson" => chematic_mol::write_moljson(mol),
+        "cdxml" => chematic_mol::write_cdxml(mol, &[]),
+        _ => {
+            return Err(JsValue::from_str(&format!(
+                "unsupported output format: {output}"
+            )));
+        }
+    };
+    Ok(result)
+}
+
+fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option<String>, JsValue> {
+    if input == "cml" && output == "cjson" {
+        let limits = chematic_mol::CmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        };
+        let (mol, coords) = chematic_mol::parse_cml_with_3d_with_limits(text, &limits)
+            .map_err(|error| JsValue::from_str(&error.to_string()))?;
+        let points = coords
+            .unwrap_or_default()
+            .into_iter()
+            .map(|[x, y, z]| (x, y, z))
+            .collect::<Vec<_>>();
+        return Ok(Some(chematic_mol::write_cjson(&mol, &points)));
+    }
+    if input == "mol2" && output == "cjson" {
+        let projected = chematic_mol::project_mol2_to_cjson_with_limits(
+            text,
+            &chematic_mol::ConversionLimits {
+                mol2: chematic_mol::Mol2ParseLimits {
+                    max_input_bytes: WASM_MAX_INPUT_BYTES,
+                    max_atoms: WASM_MAX_ATOMS,
+                    ..Default::default()
+                },
+                max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+            },
+        )
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+        return Ok(Some(projected));
+    }
+    if input == "cjson" && output == "cjson" {
+        return roundtrip_cjson_record(text).map(Some);
+    }
+    Ok(None)
+}
+
 /// Convert between common topology-bearing molecular formats.
 ///
 /// This is the WASM counterpart of Python's `convert_format`. It supports
 /// SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
-/// MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+/// MOL2-to-MOL2, CJSON-to-CJSON, and V3000-to-V3000 validate and retain exact source.
+/// V3000-to-CJSON also
+/// carries source-order x/y/z values; it does not retain opaque metadata or
+/// verify cross-format stereo.
+/// MOL2-to-CJSON checks
+/// graph/xyz/name/complete declared partial charges on reparse and refuses
+/// incomplete or undeclared charge columns. Other MOL2 metadata and stereo
+/// are not retained or verified; use convert_with_report_json for losses.
+/// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+/// Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
+/// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
+/// require exactly one CTAB and omit SD fields; SDF output is one framed record.
+/// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
+/// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,
@@ -191,33 +278,52 @@ pub fn convert_common_format(
     let output = common_format_name(output_format).ok_or_else(|| {
         JsValue::from_str(&format!("unsupported molecular format: {output_format}"))
     })?;
+    if input == "sdf" && output == "sdf" {
+        return roundtrip_sdf_source(text);
+    }
+    let text = if matches!(input.as_str(), "mol" | "sdf") {
+        super::sdf_source::single_block(text)?
+    } else {
+        text
+    };
+    let input = if matches!(input.as_str(), "mol" | "sdf") {
+        if text
+            .lines()
+            .nth(3)
+            .is_some_and(|line| line.trim_end().ends_with("V3000"))
+        {
+            "mol_v3000".to_owned()
+        } else {
+            "mol".to_owned()
+        }
+    } else {
+        input
+    };
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
     }
-    let mol = parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?;
+    if input == "mol_v3000" && output == "mol_v3000" {
+        return super::roundtrip_mol_v3000_block(text);
+    }
+    if let Some(projected) = project_source_format(text, &input, &output)? {
+        return Ok(projected);
+    }
+    let (mol, coords) = if input == "mol_v3000" && output == "cjson" {
+        let (mol, _, coords) = chematic_mol::parse_mol_v3000_with_coords_3d(text)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        (mol, coords)
+    } else {
+        (
+            parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?,
+            Vec::new(),
+        )
+    };
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "format input exceeds maximum atom count ({WASM_MAX_ATOMS})"
         )));
     }
-    let result = match output.as_str() {
-        "smiles" => chematic_smiles::canonical_smiles(&mol),
-        "mol" => chematic_mol::write_mol(&mol, &chematic_mol::MolMetadata::default()),
-        "mol_v3000" => {
-            chematic_mol::write_mol_v3000(&mol, &chematic_mol::MolMetadata::default(), &[])
-        }
-        "mol2" => chematic_mol::write_mol2(&mol, &[]),
-        "cml" => chematic_mol::write_cml(&mol, None),
-        "cjson" => chematic_mol::write_cjson(&mol, &[]),
-        "moljson" => chematic_mol::write_moljson(&mol),
-        "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
-        _ => {
-            return Err(JsValue::from_str(&format!(
-                "unsupported output format: {output}"
-            )));
-        }
-    };
-    Ok(result)
+    write_common_format(&mol, &coords, &output)
 }
 
 /// Write a molecule to AutoDock PDBQT format.

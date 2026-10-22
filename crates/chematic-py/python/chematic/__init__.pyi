@@ -3308,6 +3308,26 @@ def from_cml_strict(cml_str: str | bytes) -> Mol:
     """Parse structurally valid, non-empty CML; reject malformed XML."""
     ...
 
+def from_cml_with_3d(cml_str: str | bytes) -> tuple[Mol, list[list[float]] | None]:
+    """Read one CML molecule with complete finite Cartesian Angstrom coordinates.
+
+    Returns source atom order; absent 3D coordinates return None. Requires
+    unique nonempty atom IDs and refuses partial triplets/mixed presence.
+    Limits: 16 MiB input, 100000 atoms plus native CML line/element/bond caps.
+    Metadata, namespaces/schema and coordinate stereo are not interpreted.
+    """
+    ...
+
+def from_cjson_checked(cjson_str: str) -> tuple[Mol, list[list[float]]]:
+    """Read the strict CJSON record profile into a graph and Cartesian rows.
+
+    Reject duplicate decoded JSON keys, malformed known arrays, duplicate/self
+    bonds and unsupported bond orders. Absent optional arrays use the existing
+    local defaults. Unknown metadata and stereo semantics are not interpreted.
+    Limits: 16 MiB input and 100000 atoms plus native JSON tree/bond limits.
+    """
+    ...
+
 def from_chemdraw_block(data: bytes, *, format: str = "AUTO", allow_metadata_loss: bool = False) -> dict[str, Any]:
     """Project CDX or UTF-8 CDXML into source-ordered molecules/coordinates.
 
@@ -3348,11 +3368,28 @@ def nucleic_acid_apply_json_command(document_json: str, command_json: str) -> st
     """
     ...
 
+def roundtrip_mol_v3000_source(text: str | bytes) -> str:
+    """Validate one V3000 MOL block and return the exact UTF-8 source.
+
+    Retains coordinate tokens and opaque fields without editing or verification
+    of opaque chemistry/stereo; rejects multiple CTABs and invalid core syntax.
+    """
+    ...
+
 def from_mol_v3000(block: str | bytes) -> Mol:
     """Parse an MDL MOL V3000 block and return a :class:`Mol`.
 
     Raises:
         ValueError: on parse failure.
+    """
+    ...
+
+def from_mol_v3000_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
+    """Return Mol, name and source-order x/y/z in Angstrom, including tiny z.
+
+    Independent of dimension headers/perception tolerance; finite f64 values
+    and signed zero survive. Input is bounded to 16 MiB. Opaque metadata is
+    not returned; existing graph/stereo interpretation is unchanged.
     """
     ...
 
@@ -3382,6 +3419,23 @@ def from_mol_v3000_with_diagnostics(
 
     Raises:
         ValueError: on parse failure.
+    """
+    ...
+
+def roundtrip_sdf_source(text: str | bytes) -> str:
+    """Validate all local-profile records and retain the exact UTF-8 SDF.
+
+    No output on any failed record/limit. Opaque metadata/stereo is retained
+    without interpretation/editing. Default limits: 16 MiB input/record,
+    1 MiB line, 10000 records, 100000 atoms per record and in total.
+    """
+    ...
+
+def single_sdf_mol_block(text: str | bytes) -> str:
+    """Extract one unchanged MOL CTAB; omit SD fields/delimiter.
+
+    Additional records fail. The source-retention bounds apply with one record;
+    this checks a native core projection, not complete chemistry/metadata.
     """
     ...
 
@@ -3457,11 +3511,11 @@ def parse_sdf_with_coords(text: str) -> list[tuple[Mol, str, list[list[float]]]]
     ...
 
 def convert_with_report_json(text: str, input_format: str, output_format: str, policy: str = "strict") -> str:
-    """Checked MOL2/CJSON conversion; refusal is a report with null output."""
+    """Checked MOL2/CJSON/CML conversion; refusal is a report with null output."""
     ...
 
 def convert_with_report(text: str, input_format: str, output_format: str, /, *, policy: str = "strict") -> dict[str, object]:
-    """Return the shared checked MOL2/CJSON conversion report as a dictionary."""
+    """Return the shared checked MOL2/CJSON/CML conversion report as a dictionary."""
     ...
 
 def parse_cjson_record_json(text: str) -> str:
@@ -3495,6 +3549,17 @@ def mol2_reference_rmsds_json(
 
 def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
+    ...
+
+def project_mol2_to_cjson(text: str | bytes) -> str:
+    """Project selected MOL2 fields to CJSON with mapped reparse checks.
+
+    Retains xyz, parsed name, projected graph and complete declared partial
+    charges. Incomplete/undeclared charge columns fail. Other metadata and
+    stereo are not retained or verified; use convert_with_report for losses.
+    NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+    Native conversion limits apply (16 MiB input/output, 10,000 atoms).
+    """
     ...
 
 def roundtrip_mol2_record(text: str) -> str:
@@ -3543,8 +3608,8 @@ def from_mol2(mol2_str: str | bytes) -> Mol:
 def from_pdbqt(pdbqt_str: str) -> Mol:
     """Parse an AutoDock PDBQT string and return a :class:`Mol`.
 
-    Only the molecular graph is extracted; 3D coordinates and partial charges
-    are discarded.
+    Only atom elements are extracted; no bonds are inferred. 3D coordinates
+    and partial charges are discarded; use from_pdbqt_with_data to retain them.
 
     Raises:
         ValueError: on parse failure.
@@ -3554,6 +3619,16 @@ def from_pdbqt(pdbqt_str: str) -> Mol:
         with open("ligand.pdbqt") as f:
             mol = chematic.from_pdbqt(f.read())
         print(mol.mw)
+    """
+    ...
+
+def from_pdbqt_with_data(
+    pdbqt_str: str | bytes,
+) -> tuple[Mol, list[list[float]], list[float]]:
+    """Return (mol, coords in Å, partial charges in e), in source atom order.
+
+    Retains parsed finite binary64 values. No bonds or formal charges are
+    inferred. Source atom identities, AutoDock types and torsion trees are lost.
     """
     ...
 
@@ -5484,7 +5559,14 @@ def convert_format(
     charges: Optional[list[float]] = None,
     name: str = "LIG",
     comment: str = "",
-) -> str: ...
+) -> str:
+    """Convert formats; same-format MOL2/CJSON validate and retain exact source.
+
+    Coordinate, charge, name and comment overrides are refused on those paths.
+    CJSON source retention validates the immutable local record profile;
+    opaque fields are retained without interpreting their chemistry.
+    """
+    ...
 
 def descriptors_df(smiles: Iterable[str]) -> Any:
     """Compute 55+ descriptors for a list of SMILES and return a DataFrame.

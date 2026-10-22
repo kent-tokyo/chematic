@@ -10,6 +10,8 @@ use wasm_bindgen::prelude::*;
 
 mod common_formats;
 pub use common_formats::*;
+mod sdf_source;
+pub use sdf_source::roundtrip_sdf_source;
 
 /// Generate 3D coordinates for the molecule and return a PDB string.
 ///
@@ -429,12 +431,12 @@ pub fn to_mol_v3000_block(mol: &MolHandle) -> String {
     chematic_mol::write_mol_v3000(&mol.inner, &meta, &coords)
 }
 
-/// Parse and serialize a V3000 block while preserving V3000 metadata.
+/// Validate one V3000 MOL block and return its exact source.
 ///
 /// Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
-/// pair, this explicit round-trip API retains `SGROUP` logical lines and
-/// `COLLECTION` stereo groups. SGROUP polymer/query expansion is still out of
-/// scope, but the typed syntax view is available through
+/// pair, this retains 3D coordinate tokens, IDs, source ordering and opaque
+/// fields including SGROUP and COLLECTION. No normalization or opaque chemistry
+/// verification is promised. The typed SGroup view remains available through
 /// [`v3000_sgroups_json`].
 #[wasm_bindgen]
 pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
@@ -447,15 +449,15 @@ pub fn roundtrip_mol_v3000_block(block: &str) -> Result<String, JsValue> {
 /// boundary lets native `cargo test --workspace` exercise the same behavior
 /// without constructing a `JsValue`, which aborts on non-wasm targets.
 pub(crate) fn roundtrip_mol_v3000_block_inner(block: &str) -> Result<String, String> {
-    if block.len() > WASM_MAX_INPUT_BYTES {
-        return Err("V3000 block too large".to_string());
-    }
-    let (mol, metadata, coords) =
-        chematic_mol::parse_mol_v3000_with_coords(block).map_err(|e| e.to_string())?;
-    if mol.atom_count() > WASM_MAX_ATOMS {
-        return Err(format!("molecule too large (max {WASM_MAX_ATOMS} atoms)"));
-    }
-    Ok(chematic_mol::write_mol_v3000(&mol, &metadata, &coords))
+    chematic_mol::roundtrip_mol_v3000_source_with_limits(
+        block,
+        &chematic_mol::V3000SourceLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        },
+    )
+    .map_err(|error| error.to_string())
 }
 
 fn v3000_sgroup_kind_json(kind: &chematic_mol::V3000SGroupKind) -> (String, Option<String>) {
@@ -1384,9 +1386,9 @@ pub fn mol_from_pdb_strict(pdb: &str) -> Result<MolHandle, JsValue> {
 
 /// Parse an AutoDock PDBQT block into a topology handle.
 ///
-/// Coordinates and partial charges are intentionally discarded, matching the
-/// Python `from_pdbqt` binding; use the Rust parser when those arrays are
-/// needed. Invalid records return a JS error instead of a partial molecule.
+/// Coordinates and partial charges are discarded; use `pdbqt_atom_data_json`
+/// when those arrays are needed. No bonds are inferred. Invalid records
+/// return a JS error instead of a partial molecule.
 #[wasm_bindgen]
 pub fn mol_from_pdbqt(pdbqt: &str) -> Result<MolHandle, JsValue> {
     if pdbqt.len() > WASM_MAX_INPUT_BYTES {

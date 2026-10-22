@@ -88,7 +88,7 @@ def main():
         value["partialCharges"]["USER_CHARGES"][0] = n
         value["atoms"]["coords"]["3d"][0] = n
         cases.append((f"cjson-mol2-float-{n}", json.dumps(value), "cjson", "mol2", "allow_loss", False))
-    for mode in ["multiple", "missing-coordinates", "name-newline", "method-whitespace", "absent-dataset", "isotope-loss", "formal-charge-loss"]:
+    for mode in ["multiple", "missing-coordinates", "name-newline", "method-whitespace", "absent-dataset", "isotope-loss", "signed-formal-charge"]:
         value = json.loads(partial)
         if mode == "multiple": value["partialCharges"]["SECOND"] = [0] * 4
         elif mode == "missing-coordinates": del value["atoms"]["coords"]
@@ -102,6 +102,12 @@ def main():
         value = json.loads(partial)
         value["partialCharges"] = bad
         cases.append((f"cjson-mol2-malformed-dataset-{i}", json.dumps(value), "cjson", "mol2", "allow_loss", True))
+    for root, legacy in [("ヘリウム β", None), ("root", "legacy")]:
+        value = {"atoms": {"elements": {"number": [2]}, "coords": {"3d": [0, 0, 0]}}, "name": root}
+        if legacy is not None:
+            value["properties"] = {"name": legacy}
+        for target, policy in [("cjson", "strict"), ("mol2", "allow_loss"), ("smiles", "allow_loss")]:
+            cases.append((f"cjson-name-{root}-{target}", json.dumps(value), "cjson", target, policy, False))
     results = []
     for name, text, source_format, target, policy, expect_error in cases:
         commands = {
