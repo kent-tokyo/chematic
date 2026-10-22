@@ -48,10 +48,17 @@
 //!
 //! Because the heuristic is a pure function of `(group_pdb, res_name,
 //! atom_name)`, and [`write_pqr`] never re-derives the atom name from the
-//! element, read -> write -> read is still an exact fixed point even
-//! though the element itself is inferred rather than stored in the file.
+//! element, the inferred element is stable through read -> write -> read.
+//! The legacy writer rounds coordinates to three decimal places and
+//! charge/radius to four. [`write_pqr_checked`] instead retains finite f64
+//! numeric fields bit for bit and refuses incompatible atom records.
 
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
+
+mod checked;
+pub use checked::{
+    PqrWriteError, PqrWriteLimits, write_pqr_checked, write_pqr_checked_with_limits,
+};
 
 // ---------------------------------------------------------------------------
 // Limits

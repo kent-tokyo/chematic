@@ -4,6 +4,9 @@
 use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
+mod quality_retry;
+use quality_retry::refine_unfinished_quality_minimum;
+
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
 
@@ -454,12 +457,17 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// Quality-oriented ETKDG/MMFF94 profile: optimize both the RDKit-compatible
 /// and exact sixth-order-gradient ensembles when the molecule has a fifth- or
 /// sixth-order torsion coefficient. Otherwise both gradient modes are identical,
-/// so the second ensemble uses the next `num_confs` seeds instead of repeating
-/// the same candidates. Keep the lowest finite-energy candidate across both
-/// ensembles, then fill the remaining slots with converged candidates before
+/// so two additional ensembles use the next `2 * num_confs` seeds instead of
+/// repeating the same candidates. Keep the lowest finite-energy candidate across
+/// the ensembles, then fill the remaining slots with converged candidates before
 /// unfinished ones, ordered by energy. At most `num_confs` conformers are
-/// returned. The profile spends roughly twice the embedding and MMFF work of
-/// the compatibility API.
+/// returned. The lowest finite-energy unfinished candidate gets an additional
+/// MMFF pass of at most twice `max_iters` steps after the first two ensembles,
+/// and again after the third ensemble when gradients match. Only a converged,
+/// non-higher-energy and stereo-safe retry is retained.
+/// The profile spends roughly twice the embedding and MMFF work of the
+/// compatibility API when gradient modes differ, or three times when they do
+/// not, plus up to one or two optional retries respectively.
 pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     mh: &Molecule,
     num_confs: usize,
@@ -486,7 +494,11 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
                 .and_then(|count| o.random_seed.checked_mul(count))
                 .is_none())
     {
-        return Ok(compatibility);
+        return Ok(refine_unfinished_quality_minimum(
+            mh,
+            compatibility,
+            max_iters,
+        ));
     }
     let alternative = embed_prepared_multiple_confs(
         &prepared,
@@ -497,19 +509,52 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     );
     let alternative = match alternative {
         Ok(conformers) => conformers,
-        Err(_) if !gradient_differs => return Ok(compatibility),
+        Err(_) if !gradient_differs => {
+            return Ok(refine_unfinished_quality_minimum(
+                mh,
+                compatibility,
+                max_iters,
+            ));
+        }
         Err(error) => return Err(error.into()),
     };
     let alternative = match optimize_mmff_molecule(mh, alternative, max_iters) {
         Ok(conformers) => conformers,
-        Err(_) if !gradient_differs => return Ok(compatibility),
+        Err(_) if !gradient_differs => {
+            return Ok(refine_unfinished_quality_minimum(
+                mh,
+                compatibility,
+                max_iters,
+            ));
+        }
         Err(error) => return Err(error),
     };
-    Ok(select_quality_candidates(
-        compatibility,
-        alternative,
-        num_confs,
-    ))
+    let selected = refine_unfinished_quality_minimum(
+        mh,
+        select_quality_candidates(compatibility, alternative, num_confs),
+        max_iters,
+    );
+    if gradient_differs
+        || num_confs
+            .checked_mul(3)
+            .and_then(|count| i32::try_from(count).ok())
+            .and_then(|count| o.random_seed.checked_mul(count))
+            .is_none()
+    {
+        return Ok(selected);
+    }
+    let third = match embed_prepared_multiple_confs(&prepared, num_confs, num_confs * 2, o, false) {
+        Ok(coords) => optimize_mmff_molecule(mh, coords, max_iters),
+        Err(_) => return Ok(selected),
+    };
+    match third {
+        Ok(third) => Ok(refine_unfinished_quality_minimum(
+            mh,
+            select_quality_candidates(selected, third, num_confs),
+            max_iters,
+        )),
+        Err(_) => Ok(selected),
+    }
 }
 
 fn select_quality_candidates(
@@ -1167,118 +1212,8 @@ pub fn rdkit_bounds_matrix_with_constraints(
 }
 
 #[cfg(test)]
-mod corrected_ensemble_tests {
-    use super::*;
-
-    #[test]
-    fn quality_profile_uses_new_seeds_when_gradients_match() {
-        let molecule = chematic_chem::add_hydrogens(
-            &chematic_smiles::parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap(),
-        );
-        let options = RdkitEmbedOptions::default();
-        let prepared = prepare_fragments(&molecule, &options).unwrap();
-        assert!(!corrected_torsion_gradient_can_differ(&prepared));
-
-        let first = rdkit_embed_multiple_confs_mmff(&molecule, 4, &options, 200).unwrap();
-        let next_coords = embed_prepared_multiple_confs(&prepared, 4, 4, &options, false).unwrap();
-        let next = optimize_mmff_molecule(&molecule, next_coords, 200).unwrap();
-        assert_eq!(first.len(), 4);
-        assert_eq!(next.len(), 4);
-        assert!(first.iter().zip(&next).any(|(a, b)| a.coords != b.coords));
-
-        let selected =
-            etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 4, &options, 200).unwrap();
-        let best = |ensemble: &[RdkitMmffConformer]| {
-            ensemble
-                .iter()
-                .map(|candidate| candidate.energy)
-                .min_by(f64::total_cmp)
-                .unwrap()
-        };
-        assert_eq!(selected.len(), 4);
-        assert_eq!(best(&selected), best(&first).min(best(&next)));
-        assert!(selected.iter().all(|chosen| {
-            first
-                .iter()
-                .chain(&next)
-                .any(|original| chosen.coords == original.coords)
-        }));
-    }
-
-    #[test]
-    fn quality_pool_retains_best_energy_and_converged_candidates_from_both_batches() {
-        let candidate = |energy, status, marker| RdkitMmffConformer {
-            coords: vec![[marker, 0.0, 0.0]],
-            status,
-            energy,
-        };
-        let compatibility = vec![
-            candidate(-8.0, 0, 1.0),
-            candidate(-7.0, 0, 2.0),
-            candidate(-6.0, 1, 3.0),
-        ];
-        let alternative = vec![
-            candidate(-10.0, 1, 4.0),
-            candidate(-9.0, 1, 5.0),
-            candidate(-5.0, 1, 6.0),
-        ];
-        let selected = select_quality_candidates(compatibility, alternative, 3);
-        assert_eq!(selected.len(), 3);
-        assert_eq!(
-            selected
-                .iter()
-                .map(|candidate| candidate.energy)
-                .collect::<Vec<_>>(),
-            vec![-10.0, -8.0, -7.0]
-        );
-        assert_eq!(
-            selected
-                .iter()
-                .filter(|candidate| candidate.status == 0)
-                .count(),
-            2
-        );
-    }
-
-    #[test]
-    fn corrected_ensemble_preserves_single_seed_and_opt_in_boundary() {
-        let molecule =
-            chematic_chem::add_hydrogens(&chematic_smiles::parse("CS(=O)(=O)NCC").unwrap());
-        let options = RdkitEmbedOptions::default();
-        let single = etkdg_embed_molecule_corrected(&molecule, &options).unwrap();
-        let corrected = etkdg_embed_multiple_confs_corrected(&molecule, 2, &options).unwrap();
-        let compatibility = rdkit_embed_multiple_confs(&molecule, 2, &options).unwrap();
-        assert_eq!(corrected.len(), 2);
-        assert_eq!(compatibility.len(), 2);
-        assert_eq!(corrected[0], single);
-        assert!(
-            corrected[0]
-                .iter()
-                .zip(&compatibility[0])
-                .any(|(a, b)| a.iter().zip(b).any(|(x, y)| (x - y).abs() > 1e-8))
-        );
-        let optimized =
-            etkdg_embed_multiple_confs_mmff_corrected(&molecule, 2, &options, 200).unwrap();
-        assert_eq!(optimized.len(), 2);
-        assert!(
-            optimized
-                .iter()
-                .all(|candidate| candidate.energy.is_finite())
-        );
-        let selected =
-            etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 2, &options, 200).unwrap();
-        let compatibility = rdkit_embed_multiple_confs_mmff(&molecule, 2, &options, 200).unwrap();
-        let best = |ensemble: &[RdkitMmffConformer]| {
-            ensemble
-                .iter()
-                .map(|candidate| candidate.energy)
-                .fold(f64::INFINITY, f64::min)
-        };
-        assert_eq!(selected.len(), 2);
-        assert!(best(&selected) <= best(&compatibility));
-        assert!(best(&selected) <= best(&optimized));
-    }
-}
+#[path = "molecule/corrected_ensemble_tests.rs"]
+mod corrected_ensemble_tests;
 
 #[cfg(test)]
 mod input_diagnostic_boundary_tests {

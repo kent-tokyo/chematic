@@ -1,0 +1,520 @@
+{
+  "profile": "source_rdkit_2026_09_1_labelled_rgroup_symmetry",
+  "rdkit_version": "2026.09.1",
+  "rdkit_rgroup_module_sha256": "8197250ecddf824eeba41611fd677837fde2d70af197d77ff55dfc6b21a4bd14",
+  "python_version": "3.13.6",
+  "source_binary_sha256": "60596a1e83aa6d31f333155e5a82bb24401c73d46d8373855043571c89c08b21",
+  "source_file_sha256": {
+    "crates/chematic-chem/src/rgroup.rs": "e22ac4b439c96a8d775529ca4c608fe6c8e84799212e298bc7e1904c1627bc1d",
+    "crates/chematic-chem/src/rgroup_tests.rs": "9579ffe820b98b2676d9e8141a573513a15798dc2f06aeb97e3a02ebd66bf4c3",
+    "crates/chematic-chem/examples/rgroup_gate_probe.rs": "749b59b94364fe5691ffe043328770d251c7dc809edd721c7d10e149398d1cb3",
+    "scripts/validation/rdkit_rgroup_source_gate.py": "493642c60ce9469475086a00809394356d1e71a5b0031ffe969bac8a38596926"
+  },
+  "agreement": {
+    "exact": 11,
+    "total": 11
+  },
+  "cases": [
+    {
+      "core": "c1ccccc1",
+      "molecules": [
+        "c1ccccc1",
+        "Cc1ccccc1",
+        "Clc1ccccc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "C[*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]C"
+        },
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1ccccc1",
+      "molecules": [
+        "Cc1ccccc1",
+        "Cc1ccc(Cl)cc1",
+        "Cc1cc(Cl)ccc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1cc([*:1])c([*:2])cc1[*:3]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        },
+        {
+          "Core": "c1cc([*:1])c([*:2])cc1[*:3]",
+          "R1": "Cl[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        },
+        {
+          "Core": "c1cc([*:1])c([*:2])cc1[*:3]",
+          "R1": "[H][*:1]",
+          "R2": "Cl[*:2]",
+          "R3": "C[*:3]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "c1cc([*:3])cc([*:2])c1[*:1]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        },
+        {
+          "Core": "c1cc([*:3])cc([*:2])c1[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        },
+        {
+          "Core": "c1cc([*:3])cc([*:2])c1[*:1]",
+          "R1": "[*:1][H]",
+          "R2": "Cl[*:2]",
+          "R3": "[*:3]C"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1ccccc1",
+      "molecules": [
+        "Cc1c(Cl)cccc1",
+        "Cc1ccc(Cl)cc1",
+        "Cc1cc(Cl)ccc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]",
+          "R4": "Cl[*:4]"
+        },
+        {
+          "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "[H][*:3]",
+          "R4": "Cl[*:4]"
+        },
+        {
+          "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+          "R1": "[H][*:1]",
+          "R2": "C[*:2]",
+          "R3": "[H][*:3]",
+          "R4": "Cl[*:4]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C",
+          "R4": "Cl[*:4]"
+        },
+        {
+          "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]",
+          "R3": "[*:3][H]",
+          "R4": "Cl[*:4]"
+        },
+        {
+          "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2]C",
+          "R3": "[*:3][H]",
+          "R4": "Cl[*:4]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1ccccc1",
+      "molecules": [
+        "Cc1ccccc1",
+        "CCc1ccccc1",
+        "Oc1ccccc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "C[*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "CC[*:1]"
+        },
+        {
+          "Core": "c1ccc([*:1])cc1",
+          "R1": "O[*:1]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]C"
+        },
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]CC"
+        },
+        {
+          "Core": "c1cc([*:1])ccc1",
+          "R1": "[*:1]O"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1ccncc1",
+      "molecules": [
+        "c1ccncc1",
+        "Cc1ccncc1",
+        "Clc1ccncc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1cc([*:1])ccn1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "c1cc([*:1])ccn1",
+          "R1": "C[*:1]"
+        },
+        {
+          "Core": "c1cc([*:1])ccn1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "[*:1]c1ccncc1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "Core": "[*:1]c1ccncc1",
+          "R1": "[*:1]C"
+        },
+        {
+          "Core": "[*:1]c1ccncc1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1ccncc1",
+      "molecules": [
+        "Cc1ccncc1",
+        "Cc1ccc(Cl)nc1",
+        "Cc1cc(Cl)ncc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        },
+        {
+          "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+          "R1": "Cl[*:1]",
+          "R2": "C[*:2]",
+          "R3": "[H][*:3]"
+        },
+        {
+          "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+          "R1": "Cl[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        },
+        {
+          "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+          "R1": "Cl[*:1]",
+          "R2": "[*:2]C",
+          "R3": "[*:3][H]"
+        },
+        {
+          "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+          "R1": "Cl[*:1]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "C1CCCCC1",
+      "molecules": [
+        "C1CCCCC1",
+        "CC1CCCCC1",
+        "ClC1CCCCC1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "C1CCC([*:1])CC1",
+          "R1": "[H][*:1]"
+        },
+        {
+          "Core": "C1CCC([*:1])CC1",
+          "R1": "C[*:1]"
+        },
+        {
+          "Core": "C1CCC([*:1])CC1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "C1([*:1])CCCCC1",
+          "R1": "[*:1][H]"
+        },
+        {
+          "Core": "C1([*:1])CCCCC1",
+          "R1": "[*:1]C"
+        },
+        {
+          "Core": "C1([*:1])CCCCC1",
+          "R1": "Cl[*:1]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "C1CCCCC1",
+      "molecules": [
+        "CC1CCCCC1",
+        "CC1CCC(Cl)CC1",
+        "CC1CC(Cl)CCC1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "C1CC([*:3])CC([*:2])C1[*:1]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        },
+        {
+          "Core": "C1CC([*:3])CC([*:2])C1[*:1]",
+          "R1": "Cl[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "C[*:3]"
+        },
+        {
+          "Core": "C1CC([*:3])CC([*:2])C1[*:1]",
+          "R1": "[H][*:1]",
+          "R2": "Cl[*:2]",
+          "R3": "C[*:3]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "[*:1]C1C([*:2])CC(CC1)[*:3]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        },
+        {
+          "Core": "[*:1]C1C([*:2])CC(CC1)[*:3]",
+          "R1": "Cl[*:1]",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]C"
+        },
+        {
+          "Core": "[*:1]C1C([*:2])CC(CC1)[*:3]",
+          "R1": "[*:1][H]",
+          "R2": "Cl[*:2]",
+          "R3": "[*:3]C"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "c1cc([*:1])ccc1[*:2]",
+      "molecules": [
+        "Cc1ccccc1",
+        "Cc1ccc(CC)cc1",
+        "Cc1cc(CC)ccc1"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "c1cc([*:2])c([*:3])cc1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "[H][*:3]"
+        },
+        {
+          "Core": "c1cc([*:2])c([*:3])cc1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "CC[*:2]",
+          "R3": "[H][*:3]"
+        },
+        {
+          "Core": "c1cc([*:2])c([*:3])cc1[*:1]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]",
+          "R3": "CC[*:3]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "c1cc([*:1])cc([*:3])c1[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]",
+          "R3": "[*:3][H]"
+        },
+        {
+          "Core": "c1cc([*:1])cc([*:3])c1[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2]CC",
+          "R3": "[*:3][H]"
+        },
+        {
+          "Core": "c1cc([*:1])cc([*:3])c1[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]",
+          "R3": "[*:3]CC"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "C([*:1])([*:2])O",
+      "molecules": [
+        "CO",
+        "CCO",
+        "CC(O)N"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "C[*:1]",
+          "R2": "N[*:2]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1]C",
+          "R2": "N[*:2]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    },
+    {
+      "core": "C([*:1])([*:2])([*:3])O",
+      "molecules": [
+        "CO",
+        "CCO",
+        "CC(O)N"
+      ],
+      "rdkit_rows": [
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[H][*:1]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "C[*:1]",
+          "R2": "[H][*:2]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "C[*:1]",
+          "R2": "N[*:2]"
+        }
+      ],
+      "unmatched": [],
+      "source_rows": [
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1][H]",
+          "R2": "[*:2][H]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1]C",
+          "R2": "[*:2][H]"
+        },
+        {
+          "Core": "OC([*:1])[*:2]",
+          "R1": "[*:1]C",
+          "R2": "N[*:2]"
+        }
+      ],
+      "exact_graph_and_labels": true
+    }
+  ],
+  "limits": [
+    "Eleven exposed small batches, three molecules per batch.",
+    "RDKit graph and label agreement is a compatibility measure, not general R-group accuracy.",
+    "The CheMatic arm is a source-built Rust example, not a published Python wheel."
+  ]
+}

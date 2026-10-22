@@ -1,4 +1,5 @@
 """Typed native comparator choices and cross-element pruning regressions."""
+import json
 import pytest
 import chematic as ch
 
@@ -53,6 +54,23 @@ def test_heavy_comparator_excludes_explicit_hydrogen():
     assert ch.find_mcs([mols[0], mols[0]], atom_compare=ch.McsAtomCompare.ANY_HEAVY_ATOM) is None
     result = ch.find_mcs(mols, atom_compare=ch.McsAtomCompare.ANY)
     assert result.atom_count == 2
+
+
+@pytest.mark.parametrize("left,right,atoms,bonds", [
+    ("[2H]O[2H]", "[H]OC", 2, 1),
+    ("[H][H]", "[H][H]", 2, 1),
+    ("[H][H]", "NN", 0, 0),
+    ("*C", "NC", 1, 0),
+])
+def test_rdkit_heavy_comparator(left, right, atoms, bonds):
+    for strings in ([left, right], [right, left]):
+        result, timed_out = ch.find_mcs_checked(
+            [ch.from_smiles(s) for s in strings],
+            atom_compare=ch.McsAtomCompare.RDKIT_ANY_HEAVY_ATOM,
+        )
+        assert timed_out is False
+        assert (result.atom_count if result else 0) == atoms
+        assert (len(json.loads(result.to_moljson())["bonds"]) if result else 0) == bonds
 
 
 @pytest.mark.parametrize("argument", ["atom_compare", "bond_compare"])

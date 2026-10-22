@@ -93,7 +93,7 @@ pub(super) fn reionize(mol: &Molecule) -> Molecule {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chematic_smiles::{canonical_smiles, parse};
+    use chematic_smiles::{canonical_smiles, parse, rdkit_canonical_smiles};
 
     fn output(input: &str) -> String {
         canonical_smiles(&reionize(&parse(input).unwrap()))
@@ -155,6 +155,12 @@ mod tests {
         let source = parse("O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O").unwrap();
         let result = reionize(&source);
         assert!(canonical_smiles(&result).contains("[C@-]"));
+        let written = rdkit_canonical_smiles(&result).unwrap();
+        assert_eq!(written, "CC(=O)N[C@-](Cc1ccccc1)C(=O)NNC(=O)OCCCl");
+        assert_eq!(
+            rdkit_canonical_smiles(&parse(&written).unwrap()).unwrap(),
+            "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl"
+        );
         assert!(result.atoms().any(|(_, atom)| {
             atom.element.atomic_number() == 6
                 && atom.charge == -1
