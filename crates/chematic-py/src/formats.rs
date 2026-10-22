@@ -9,6 +9,9 @@ use std::sync::Arc;
 mod helpers;
 pub(crate) use helpers::*;
 
+mod gaussian;
+use gaussian::*;
+
 mod cml;
 use cml::*;
 
@@ -1411,6 +1414,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         kekulize_mol2_record,
         from_pdbqt,
         from_gjf,
+        parse_gjf_geometry,
         parse_gaussian_log,
         write_gjf,
         parse_cif,

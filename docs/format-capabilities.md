@@ -654,8 +654,16 @@ disambiguate by crate, not by name alone:
 - **Rust**: `chematic_mol::{parse_gjf, parse_gjf_with_limits, write_gjf, parse_gaussian_log, parse_gaussian_log_with_limits, GaussianLogResult, GaussianParseLimits, GaussianError}`.
 - **Parse limits**: `GaussianParseLimits` bounds input bytes, physical line
   length/count, section count, and atom count for both GJF and log parsing.
-- **Coordinate units**: Ångström.
+- **Geometry API**: Rust `GjfGeometry`, `parse_gjf_geometry` and
+  `parse_gjf_geometry_with_limits`; Python `parse_gjf_geometry` returns a dict
+  with `mol`, `coords`, `freeze_codes`, `charge` and `multiplicity`.
+- **Coordinate units**: GJF returns input numeric units without interpreting
+  route-unit keywords; log standard-orientation coordinates are Ångström.
+- **Integrity**: optional integer freeze codes do not shift coordinates;
+  malformed/unsupported atom rows, fragment spin pairs and multiple Link1 jobs
+  are refused. This is a Cartesian projection, not complete job preservation.
 - **Connectivity**: no bond table is inferred.
+- **Details and comparison**: [GJF Cartesian geometry integrity](gjf-cartesian-integrity.md).
 
 ### ChemDoodle JSON
 

@@ -149,8 +149,9 @@ pub use fhiaims::{
     FhiaimsParseLimits, parse_fhiaims, parse_fhiaims_with_limits, write_fhiaims,
 };
 pub use gaussian::{
-    GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
-    parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+    GaussianError, GaussianLogResult, GaussianParseLimits, GjfGeometry, parse_gaussian_log,
+    parse_gaussian_log_with_limits, parse_gjf, parse_gjf_geometry, parse_gjf_geometry_with_limits,
+    parse_gjf_with_limits, write_gjf,
 };
 pub use gzmat::{
     GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,
