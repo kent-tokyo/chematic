@@ -1,0 +1,312 @@
+{
+  "profile": "source_automatic_rgroup_columns",
+  "versions": {
+    "chematic": "1.2.0",
+    "rdkit": "2026.09.1"
+  },
+  "extension_sha256": "f2058acb43ae17f8cfe011216ae6c73ccde5e4e20ceecd91d69a394e70b7850a",
+  "source_sha256": {
+    "crates/chematic-chem/src/rgroup.rs": "046f0550057e3e4c0611c1cd5c65f8bbffad4956bf80da1f0861bcaa83e043c2"
+  },
+  "agreement": {
+    "matched": 16,
+    "total": 16
+  },
+  "cases": [
+    {
+      "set": "benzene_positions",
+      "core": "c1ccccc1",
+      "molecule": "c1ccccc1",
+      "rdkit_row": {
+        "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]",
+        "R3": "[H][*:3]",
+        "R4": "[H][*:4]"
+      },
+      "chematic_row": {
+        "mol_idx": 0,
+        "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]",
+        "R3": "[*:3][H]",
+        "R4": "[*:4][H]"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "benzene_positions",
+      "core": "c1ccccc1",
+      "molecule": "Cc1ccccc1",
+      "rdkit_row": {
+        "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]",
+        "R3": "[H][*:3]",
+        "R4": "C[*:4]"
+      },
+      "chematic_row": {
+        "mol_idx": 1,
+        "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]",
+        "R3": "[*:3][H]",
+        "R4": "[*:4]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "benzene_positions",
+      "core": "c1ccccc1",
+      "molecule": "Cc1ccccc1C",
+      "rdkit_row": {
+        "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]",
+        "R3": "C[*:3]",
+        "R4": "C[*:4]"
+      },
+      "chematic_row": {
+        "mol_idx": 2,
+        "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]",
+        "R3": "[*:3]C",
+        "R4": "[*:4]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "benzene_positions",
+      "core": "c1ccccc1",
+      "molecule": "Cc1cccc(C)c1",
+      "rdkit_row": {
+        "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+        "R1": "[H][*:1]",
+        "R2": "C[*:2]",
+        "R3": "[H][*:3]",
+        "R4": "C[*:4]"
+      },
+      "chematic_row": {
+        "mol_idx": 3,
+        "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2]C",
+        "R3": "[*:3][H]",
+        "R4": "[*:4]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "benzene_positions",
+      "core": "c1ccccc1",
+      "molecule": "Cc1ccc(C)cc1",
+      "rdkit_row": {
+        "Core": "c1cc([*:4])c([*:3])c([*:2])c1[*:1]",
+        "R1": "C[*:1]",
+        "R2": "[H][*:2]",
+        "R3": "[H][*:3]",
+        "R4": "C[*:4]"
+      },
+      "chematic_row": {
+        "mol_idx": 4,
+        "Core": "[*:2]c1c([*:1])ccc([*:4])c1[*:3]",
+        "R1": "[*:1]C",
+        "R2": "[*:2][H]",
+        "R3": "[*:3][H]",
+        "R4": "[*:4]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "shared_column",
+      "core": "CC",
+      "molecule": "CC",
+      "rdkit_row": {
+        "Core": "CC[*:1]",
+        "R1": "[H][*:1]"
+      },
+      "chematic_row": {
+        "mol_idx": 0,
+        "Core": "[*:1]CC",
+        "R1": "[*:1][H]"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "shared_column",
+      "core": "CC",
+      "molecule": "CCC",
+      "rdkit_row": {
+        "Core": "CC[*:1]",
+        "R1": "C[*:1]"
+      },
+      "chematic_row": {
+        "mol_idx": 1,
+        "Core": "[*:1]CC",
+        "R1": "[*:1]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "shared_column",
+      "core": "CC",
+      "molecule": "CC(C)C",
+      "rdkit_row": {
+        "Core": "CC[*:1]",
+        "R1": "C[*:1].C[*:1]"
+      },
+      "chematic_row": {
+        "mol_idx": 2,
+        "Core": "[*:1]CC",
+        "R1": "C[*:1].[*:1]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "shared_column",
+      "core": "CC",
+      "molecule": "CC(O)C",
+      "rdkit_row": {
+        "Core": "CC[*:1]",
+        "R1": "C[*:1].O[*:1]"
+      },
+      "chematic_row": {
+        "mol_idx": 3,
+        "Core": "[*:1]CC",
+        "R1": "C[*:1].[*:1]O"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "heteroatom_sites",
+      "core": "CO",
+      "molecule": "CO",
+      "rdkit_row": {
+        "Core": "C(O[*:1])[*:2]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]"
+      },
+      "chematic_row": {
+        "mol_idx": 0,
+        "Core": "[*:2]CO[*:1]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "heteroatom_sites",
+      "core": "CO",
+      "molecule": "CCO",
+      "rdkit_row": {
+        "Core": "C(O[*:1])[*:2]",
+        "R1": "[H][*:1]",
+        "R2": "C[*:2]"
+      },
+      "chematic_row": {
+        "mol_idx": 1,
+        "Core": "[*:2]CO[*:1]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "heteroatom_sites",
+      "core": "CO",
+      "molecule": "COC",
+      "rdkit_row": {
+        "Core": "C(O[*:1])[*:2]",
+        "R1": "C[*:1]",
+        "R2": "[H][*:2]"
+      },
+      "chematic_row": {
+        "mol_idx": 2,
+        "Core": "[*:2]CO[*:1]",
+        "R1": "[*:1]C",
+        "R2": "[*:2][H]"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "heteroatom_sites",
+      "core": "CO",
+      "molecule": "CC(O)C",
+      "rdkit_row": {
+        "Core": "C(O[*:1])[*:2]",
+        "R1": "[H][*:1]",
+        "R2": "C[*:2].C[*:2]"
+      },
+      "chematic_row": {
+        "mol_idx": 3,
+        "Core": "[*:2]CO[*:1]",
+        "R1": "[*:1][H]",
+        "R2": "C[*:2].[*:2]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "asymmetric_ring",
+      "core": "c1ccncc1",
+      "molecule": "c1ccncc1",
+      "rdkit_row": {
+        "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]",
+        "R3": "[H][*:3]"
+      },
+      "chematic_row": {
+        "mol_idx": 0,
+        "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]",
+        "R3": "[*:3][H]"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "asymmetric_ring",
+      "core": "c1ccncc1",
+      "molecule": "Cc1ccncc1",
+      "rdkit_row": {
+        "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+        "R1": "[H][*:1]",
+        "R2": "[H][*:2]",
+        "R3": "C[*:3]"
+      },
+      "chematic_row": {
+        "mol_idx": 1,
+        "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+        "R1": "[*:1][H]",
+        "R2": "[*:2][H]",
+        "R3": "[*:3]C"
+      },
+      "graph_and_labels_match": true
+    },
+    {
+      "set": "asymmetric_ring",
+      "core": "c1ccncc1",
+      "molecule": "Cc1ccc(C)nc1",
+      "rdkit_row": {
+        "Core": "c1nc([*:1])cc([*:3])c1[*:2]",
+        "R1": "C[*:1]",
+        "R2": "C[*:2]",
+        "R3": "[H][*:3]"
+      },
+      "chematic_row": {
+        "mol_idx": 2,
+        "Core": "n1cc([*:2])c(cc1[*:1])[*:3]",
+        "R1": "[*:1]C",
+        "R2": "[*:2]C",
+        "R3": "[*:3][H]"
+      },
+      "graph_and_labels_match": true
+    }
+  ],
+  "limits": [
+    "Four selected small-molecule batches, not a representative R-group corpus",
+    "Graph and R-label comparison after canonicalizing with RDKit, not raw SMILES text",
+    "One SMARTS core per batch and default RDKit RGroupDecompose parameters"
+  ]
+}
