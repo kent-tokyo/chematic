@@ -222,3 +222,56 @@ fn cjson_to_mol2_preserves_declared_partial_charges_and_refuses_ambiguous_sets()
     let report: serde_json::Value = serde_json::from_slice(&refused.stdout).unwrap();
     assert!(report["output"].is_null());
 }
+
+#[test]
+fn ionic_cjson_to_mol2_retains_formal_and_partial_charges_separately() {
+    // Original synthetic NaCl representation under the project license.
+    let source = r#"{"atoms":{"elements":{"number":[11,17]},"formalCharges":[1,-1],"coords":{"3d":[0,0,0,3,0,0]}},"partialCharges":{"USER_CHARGES":[0.8,-0.8]}}"#;
+    let output = run_formats(source, "cjson", "mol2", &["--policy", "allow_loss"]);
+    assert!(output.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    assert_eq!(report["candidate_graph_verified"], true);
+    let molecule =
+        chematic_mol::parse_mol2_source_record(report["output"].as_str().unwrap()).unwrap();
+    assert_eq!(
+        molecule.molecule().atom(chematic_core::AtomIdx(0)).charge,
+        1
+    );
+    assert_eq!(
+        molecule.molecule().atom(chematic_core::AtomIdx(1)).charge,
+        -1
+    );
+    assert_eq!(molecule.atoms()[1].partial_charge, Some(-0.8));
+    assert_eq!(
+        run_formats(source, "cjson", "mol2", &[]).status.code(),
+        Some(2)
+    );
+}
+
+#[test]
+fn standard_root_name_is_preserved_and_conflicting_alias_refuses() {
+    // Original synthetic helium title under the project license.
+    let mut value = serde_json::json!({"atoms":{"elements":{"number":[2]},
+        "coords":{"3d":[0,0,0]}},"name":"ヘリウム β"});
+    let output = run_formats(
+        &value.to_string(),
+        "cjson",
+        "mol2",
+        &["--policy", "allow_loss"],
+    );
+    assert!(output.status.success());
+    let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+    let mol2 = chematic_mol::parse_mol2_source_record(report["output"].as_str().unwrap()).unwrap();
+    assert_eq!(mol2.name(), Some("ヘリウム β"));
+    value["properties"] = serde_json::json!({"name":"different"});
+    let refused = run_formats(
+        &value.to_string(),
+        "cjson",
+        "mol2",
+        &["--policy", "allow_loss"],
+    );
+    assert_eq!(refused.status.code(), Some(2));
+    let report: serde_json::Value = serde_json::from_slice(&refused.stdout).unwrap();
+    assert_eq!(report["status"], "refused");
+    assert!(report["output"].is_null());
+}
