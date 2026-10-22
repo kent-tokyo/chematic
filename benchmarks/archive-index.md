@@ -7,6 +7,10 @@ package, comparator, corpus, host, runtime and operation.
 
 ## Start here
 
+- [Symmetric R-group column alignment](2026-10-22-rdkit-rgroup-symmetric-columns.md):
+  source-built 11-batch graph and label comparison with RDKit 2026.09.1;
+  the exposed first-row symmetry tie is corrected.
+
 - [Pooled ETKDG quality return set](2026-10-22-etkdg-quality-pooled.md):
   12-molecule source development comparison with 149 to 187 converged
   returned conformers, all-candidate stereo and energy checks, and the

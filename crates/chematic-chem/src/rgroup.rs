@@ -370,8 +370,15 @@ fn decompose_labeled_prepared(
             };
         }
 
-        candidates
-            .sort_by(|a, b| compare_labeled_candidates(a, b, &column_counts, &column_fingerprints));
+        candidates.sort_by(|a, b| {
+            compare_labeled_candidates(
+                a,
+                b,
+                &column_counts,
+                &column_fingerprints,
+                labels.is_empty(),
+            )
+        });
         if let Some(candidate) = candidates.into_iter().next() {
             for (&label, smiles) in &candidate.result.r_groups {
                 *column_counts
@@ -575,6 +582,7 @@ fn compare_labeled_candidates(
     b: &LabeledCandidate,
     column_counts: &BTreeMap<u16, HashMap<String, usize>>,
     column_fingerprints: &BTreeMap<u16, Vec<chematic_fp::BitVec2048>>,
+    automatic_only: bool,
 ) -> std::cmp::Ordering {
     let alignment_score = |candidate: &LabeledCandidate| {
         candidate
@@ -629,6 +637,23 @@ fn compare_labeled_candidates(
         .then_with(|| {
             if a.bridged_attachment_sites && b.bridged_attachment_sites {
                 a.attachment_elements.cmp(&b.attachment_elements)
+            } else {
+                std::cmp::Ordering::Equal
+            }
+        })
+        // Before any automatic column is established, align the heavier
+        // root to the earlier site on a symmetric core. Subsequent rows
+        // then use the established fragment and similarity scores.
+        .then_with(|| {
+            if automatic_only
+                && column_counts.is_empty()
+                && !a.single_attachment_site
+                && !b.single_attachment_site
+            {
+                b.attachment_elements
+                    .iter()
+                    .map(|(_, element)| element)
+                    .cmp(a.attachment_elements.iter().map(|(_, element)| element))
             } else {
                 std::cmp::Ordering::Equal
             }
