@@ -2,6 +2,48 @@ use super::*;
 use chematic_smiles::parse;
 
 #[test]
+fn chiral_mcs_uses_mapped_neighbor_parity_not_smiles_tag_spelling() {
+    let config = McsConfig {
+        match_chiral_tag: true,
+        ..Default::default()
+    };
+    for (left, right, expected) in [
+        ("F[C@H](Cl)Br", "Cl[C@@H](F)Br", [4, 3]),
+        ("F[C@H](Cl)Br", "Cl[C@H](F)Br", [3, 2]),
+        ("F[C@H](Cl)Br", "Br[C@@H](Cl)F", [4, 3]),
+        ("F[C@](Cl)(Br)I", "Cl[C@@](F)(Br)I", [5, 4]),
+        ("F[C@](Cl)(Br)I", "Cl[C@](F)(Br)I", [4, 3]),
+        ("N[C@@H](C)C(=O)O", "N[C@H](C)C(=O)O", [5, 4]),
+        ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O", [6, 5]),
+    ] {
+        let left = parse(left).unwrap();
+        let right = parse(right).unwrap();
+        for refs in [[&left, &right], [&right, &left]] {
+            let outcome = find_mcs_with_config_checked(&refs, &config);
+            assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+            let query = outcome.into_query();
+            assert_eq!([query.atom_count(), query.bonds.len()], expected);
+        }
+    }
+}
+
+#[test]
+fn chiral_mcs_checks_each_molecule_in_a_multi_input_mapping() {
+    let first = parse("F[C@H](Cl)Br").unwrap();
+    let same_ordered_differently = parse("Cl[C@@H](F)Br").unwrap();
+    let same_again = parse("Br[C@@H](Cl)F").unwrap();
+    let config = McsConfig {
+        match_chiral_tag: true,
+        ..Default::default()
+    };
+    let outcome =
+        find_mcs_with_config_checked(&[&first, &same_ordered_differently, &same_again], &config);
+    assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+    let query = outcome.into_query();
+    assert_eq!([query.atom_count(), query.bonds.len()], [4, 3]);
+}
+
+#[test]
 fn comparator_cross_element_chains_keep_the_full_common_topology() {
     for (a, b, size) in [("CCC", "NNN", 3), ("CCCO", "NCCN", 4), ("COC", "NNN", 3)] {
         let a = parse(a).unwrap();
