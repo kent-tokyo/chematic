@@ -1,0 +1,5 @@
+    Checking chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+    Checking chematic-py v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py)
+    Checking chematic-wasm v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm)
+    Checking chematic-cli v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli)
+    Finished `dev` profile [unoptimized] target(s) in 4.23s

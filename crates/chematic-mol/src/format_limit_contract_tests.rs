@@ -1014,7 +1014,8 @@ fn sdf_string_readers_handle_terminal_delimiters_fields_and_each_record_budget()
     let mol = chematic_smiles::parse("CO").unwrap();
     let block = crate::write_mol(&mol, &Default::default());
     for suffix in ["$$$$", "$$$$\r", "$$$$\n", ""] {
-        let text = format!("$$$$\n{block}> <first>\none\n> <second>\ntwo\nthree\n{suffix}");
+        // An empty line separates data items; a header-shaped value line does not.
+        let text = format!("$$$$\n{block}> <first>\none\n\n> <second>\ntwo\nthree\n{suffix}");
         assert_eq!(SdfReader::new(&text).count(), 1);
         let record = SdfRecordReader::new(&text).next().unwrap().unwrap();
         assert_eq!(record.mol.atom_count(), 2);

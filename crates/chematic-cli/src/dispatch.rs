@@ -4,6 +4,17 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::GjfDocument {
+            input,
+            output,
+            inspect,
+            max_input_bytes,
+            max_jobs,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = conversion_format::gjf_document(&text, inspect, max_jobs)?;
+            write_output(output.as_ref(), &result)
+        }
         command @ (Command::ConvertWithReport { .. } | Command::Convert { .. }) => {
             run_conversion(command)
         }

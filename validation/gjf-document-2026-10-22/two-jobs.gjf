@@ -1,0 +1,17 @@
+%chk=first.chk
+# HF/STO-3G Units=AU
+
+Hydrogen doublet
+
+0 2
+H1 -1 -0.0000000000000000 1.2345678901234567 5e-324
+
+--Link1--
+%oldchk=first.chk
+%chk=second.chk
+# HF/STO-3G Units=Ang
+
+Helium singlet
+
+0 1
+He 0 4 5 6 ! explicit Cartesian

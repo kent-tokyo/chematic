@@ -2386,7 +2386,7 @@ M  V30 END CTAB\nM  END\n";
     let rewritten =
         crate::mol_io::roundtrip_mol_v3000_block_inner(block).expect("V3000 round trip");
     assert!(rewritten.contains("M  V30 1 SUP 0 ATOMS=(2 1 2)"));
-    assert!(rewritten.find("BEGIN SGROUP") < rewritten.find("BEGIN COLLECTION"));
+    assert_eq!(rewritten, block);
 }
 
 #[test]
@@ -3667,6 +3667,7 @@ fn test_cjson_roundtrip_contract() {
     let contract = &document["cjson_contract"];
     let cjson = convert_common_format(contract["input"].as_str().unwrap(), "cjson", "cjson")
         .expect("CJSON conversion");
+    assert_eq!(cjson, contract["input"].as_str().unwrap());
     let mol = mol_from_cjson(&cjson).expect("round-tripped CJSON");
     assert_eq!(mol.atom_count(), contract["expected"]["atom_count"]);
     assert_eq!(mol.bond_count(), contract["expected"]["bond_count"]);

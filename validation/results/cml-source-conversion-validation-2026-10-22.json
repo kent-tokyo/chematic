@@ -1,0 +1,306 @@
+{
+  "schema": "chematic.cml-source-conversion-validation.v1",
+  "date": "2026-10-22",
+  "source_base": "d288f6027d71f21130dd119f7cc7df8d58ab8daf",
+  "scope": "Original development inputs and source-built CLI/Python/WASM. Exact XML source retention with opaque semantics, not full interpreted chemistry, edits, cross-format preservation, independent holdout or a release.",
+  "sources": {
+    "Cargo.lock": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "557a3446b3002a2c61eebfd9c462f601d07cf3bc3895d915f87e1fb1fa6dfe88",
+      "size_bytes": 63572
+    },
+    "crates/chematic-mol/Cargo.toml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/Cargo.toml",
+      "sha256": "80184884e3d69d51934e097159ec71da58beb0f0629040fcabe0dfd30c67658c",
+      "size_bytes": 2393
+    },
+    "crates/chematic-mol/src/conversion.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/conversion.rs",
+      "sha256": "57a148ce6c1df602582a70fa1b3a1d99e1a9bd166341410a063f93feec2fdf25",
+      "size_bytes": 32447
+    },
+    "crates/chematic-mol/src/conversion/cml_source.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/conversion/cml_source.rs",
+      "sha256": "a4faf9ce1cbe42ced91c5623305eebc5fb58b4172d177f4941286433f10d81dc",
+      "size_bytes": 5936
+    },
+    "crates/chematic-mol/tests/cml_source_conversion.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/tests/cml_source_conversion.rs",
+      "sha256": "34eb5b85f35cca07db8bc38e1427992a5cd199477e41c4e9ea872b5bcfddb714",
+      "size_bytes": 6352
+    },
+    "crates/chematic-cli/src/main.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/src/main.rs",
+      "sha256": "a73b86d1e6a839d32b9e79e43f4958eb64704140860d9b3db57157dd24cac2a6",
+      "size_bytes": 42734
+    },
+    "crates/chematic-cli/tests/conversion_report.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cli/tests/conversion_report.rs",
+      "sha256": "c583ab30e76c2fd326ca4ccec59f356589731c84546354a040cb0e5f6463cae8",
+      "size_bytes": 8501
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "ecdd240ae241f9e56912b5833b606726c44c8c52bcade4c95a761ba5091b4aad",
+      "size_bytes": 25773
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "e8ad84542cddcade62798f3321ea9c53a06b582e7a4fedbdbeaed68284d7b57a",
+      "size_bytes": 211473
+    },
+    "crates/chematic-py/src/formats/interchange.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/interchange.rs",
+      "sha256": "ab16d732dc1f36ac76158a62027de3dd5aebcce95d1106a1ef09d3aadf72bf6c",
+      "size_bytes": 2223
+    },
+    "crates/chematic-py/tests/test_cml_source_conversion.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_cml_source_conversion.py",
+      "sha256": "aeab16fe64eecea7d472197517b24a3ab23c1f4c7f25232b81306282ecf5903b",
+      "size_bytes": 1968
+    },
+    "crates/chematic-wasm/src/mol_io/common_formats.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/mol_io/common_formats.rs",
+      "sha256": "7ea664ad563183aed19754ef67c183973707be4d62fde0ac9d0a21cab3e9c61c",
+      "size_bytes": 11213
+    },
+    "crates/chematic-wasm/tests/cml_source_conversion.test.mjs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/tests/cml_source_conversion.test.mjs",
+      "sha256": "5afc152daa0628cf3f34406acb31f169a7be1a4d2927ed6ea4df3c4b457543b2",
+      "size_bytes": 1858
+    },
+    "scripts/validation/check_cml_source_conversion.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_cml_source_conversion.py",
+      "sha256": "d28749a70c3768fd8b603df857edb97f2f85101e4e874061cedac61bbdfc7a2d",
+      "size_bytes": 9983
+    },
+    "scripts/tests/test_cml_source_conversion.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/tests/test_cml_source_conversion.py",
+      "sha256": "199cb011ae74b101d94b7ecd54df507c26d5d8d808d89bab9b203733d374d8ec",
+      "size_bytes": 2639
+    },
+    ".github/workflows/ci.yml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.github/workflows/ci.yml",
+      "sha256": "408775638076bbf8efccae5a32847edb47a2c89697cc40b42764d62fc98f95a1",
+      "size_bytes": 51503
+    },
+    "validation/cml_source_preservation/cases.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/cml_source_preservation/cases.json",
+      "sha256": "f780dad84cd5a27ab79fc7322a2ce83980d66db1c77184ff7eab874796d08739",
+      "size_bytes": 5353
+    },
+    "docs/format-capabilities.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+      "sha256": "211afa842c58744bc3418752a613cc90b4c7ac833327430837b6f58bd457b6ba",
+      "size_bytes": 54409
+    },
+    "docs/benchmarks/2026-10-22-cml-source-conversion.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/benchmarks/2026-10-22-cml-source-conversion.md",
+      "sha256": "1ca9b2bade149ca27747244bb773cb96607637dd1dce5831e51a33003445c342",
+      "size_bytes": 7371
+    }
+  },
+  "reports": {
+    "paired": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-paired-2026-10-22.json",
+      "sha256": "53e1a3098b694abf9b16c2a2548450fcafd12c904f8817ab61b7aeb8b5d86795",
+      "size_bytes": 200212
+    },
+    "observer-v1": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-observer-v1-2026-10-22.json",
+      "sha256": "8d9c8838b35c116fdf110c575640f990705cd2ff266fb9b60f839f32c044bf73",
+      "size_bytes": 200094
+    }
+  },
+  "current_observer_revision": 2,
+  "observer_correction": "Revision 1 incorrectly penalized added metadataList on empty-source-payload controls. Revision 2 scores ordered original source subtrees only; corpus and numeric tolerance unchanged. Original raw rows and runner source retained; headline counts use revision 2.",
+  "observer_v1_source": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/observer-v1.py.gz",
+    "sha256": "d1f7975920c997b8523481141652b0dd6b16bfdcbe2983e7da2d65d0991bf37d",
+    "size_bytes": 3574
+  },
+  "counts": {
+    "cli/strict": {
+      "selected_fields_retained": 6
+    },
+    "cli/allow_loss": {
+      "selected_fields_retained": 6
+    },
+    "cli/preserve_source": {
+      "selected_fields_retained": 6
+    },
+    "python/strict": {
+      "selected_fields_retained": 6
+    },
+    "python/allow_loss": {
+      "selected_fields_retained": 6
+    },
+    "python/preserve_source": {
+      "selected_fields_retained": 6
+    },
+    "wasm/strict": {
+      "selected_fields_retained": 6
+    },
+    "wasm/allow_loss": {
+      "selected_fields_retained": 6
+    },
+    "wasm/preserve_source": {
+      "selected_fields_retained": 6
+    },
+    "openbabel/default": {
+      "selected_fields_retained": 3,
+      "selected_field_loss": 3
+    },
+    "openbabel/properties_metadata": {
+      "selected_fields_retained": 3,
+      "selected_field_loss": 3
+    }
+  },
+  "validation": {
+    "rust": {
+      "passed": 1543,
+      "failed": 0,
+      "ignored": 0,
+      "summaries": 82,
+      "scope": "MOL and CLI unit/integration/doc tests"
+    },
+    "python": {
+      "passed": 139,
+      "failed": 0,
+      "new_cases": 25,
+      "scope": "source-built CPython 3.13 extension; native InChI not enabled"
+    },
+    "wasm": {
+      "new_retention_cases": 18,
+      "new_errors": 7,
+      "existing_conversion_report_contracts": "passed",
+      "profile": "source-built wasm32 debug, nodejs wasm-bindgen target"
+    },
+    "binding_parity": {
+      "identical_reports": 18,
+      "process_outcomes": 66
+    },
+    "scripts": {
+      "passed": 39,
+      "failed": 0
+    },
+    "checks": [
+      "all-target MOL/CLI clippy -D warnings",
+      "cargo fmt --all -- --check",
+      "git diff --check",
+      "script layout",
+      "refactor budget",
+      "product naming",
+      "source stubs",
+      "parent API docs",
+      "mkdocs build --strict"
+    ]
+  },
+  "host": {
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.13.6",
+    "rustc": "rustc 1.97.0 (2d8144b78 2026-07-07)\nbinary: rustc\ncommit-hash: 2d8144b7880597b6e6d3dfd63a9a9efae3f533d3\ncommit-date: 2026-07-07\nhost: aarch64-apple-darwin\nrelease: 1.97.0\nLLVM version: 22.1.6\n",
+    "node": "v24.5.0"
+  },
+  "candidate_artifacts": {
+    "cli": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/chematic",
+      "sha256": "d2e6d7c179085d00ad23c5b4e17cabfb30fed7f6e8f0c824bd1150ac02645178",
+      "size_bytes": 24381656
+    },
+    "python_extension": {
+      "path": "/private/tmp/chematic-cml-refs-target-20261022/debug/libchematic.dylib",
+      "sha256": "87757353556794af8eaf01251f9fda0de8b5d67c7f0580b5675d026c583f2513",
+      "size_bytes": 44606976
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-cml-source-wasm-20261022/chematic_wasm.js",
+      "sha256": "d9bc76581ad5813188baffff4efcd998e63949faa96b3d416c0d33a5681decbc",
+      "size_bytes": 366805
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-cml-source-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "06d2767eab51b0a975de71782a96d0ecf5679b93cc486b8758a83a1ea7032bf8",
+      "size_bytes": 45082890
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/cmlformat.so": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/cmlformat.so",
+      "sha256": "158c92d196dff88aee868a060d00bb1536d00aa27968d04c6747fc41e68b416a",
+      "size_bytes": 194832
+    }
+  },
+  "logs": {
+    "build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/build.log.gz",
+      "sha256": "dc4d995c22ce5f5f7b2f7abf5457b94eafb65289b611035daaac78fe7f0e247f",
+      "size_bytes": 275
+    },
+    "rust-focused": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/rust-focused.log.gz",
+      "sha256": "22cac0615424e15124d6afcbc347a400af863137e544b745f76f3736b7140afc",
+      "size_bytes": 466
+    },
+    "rust-final": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/rust-final.log.gz",
+      "sha256": "e6cd254eef9fd6709de48c657044915c5c6e250f8cb559ee54b812f5d5b352a1",
+      "size_bytes": 28423
+    },
+    "cli-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/cli-build.log.gz",
+      "sha256": "29b0e837c8288507cb45649b28f2de31feb7941226bd9a0a4184f86ebcbba2d7",
+      "size_bytes": 161
+    },
+    "python-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/python-build.log.gz",
+      "sha256": "5def1119e396351cf85e8a5813862d0df894605f8382b3bd8b6d1a95c8a2b00a",
+      "size_bytes": 160
+    },
+    "python-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/python-tests.log.gz",
+      "sha256": "6b9481f171e9572d53b8702b88170adb3e4adcbe6f6abef853b30aedd27154ce",
+      "size_bytes": 337
+    },
+    "wasm-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/wasm-build.log.gz",
+      "sha256": "1cb4ec7dea03b1808c15d83d58ce4d315303c3216fb0dfa12ecd6eab0e74b1e5",
+      "size_bytes": 222
+    },
+    "wasm-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/wasm-tests.log.gz",
+      "sha256": "886e64149b6c31a1e144c154aa5f7d5d7f0bb96e9a4d8eae31436128ea57a203",
+      "size_bytes": 190
+    },
+    "paired": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/paired.log.gz",
+      "sha256": "2bdf47f5669b1e746a059cb3ee20e51ce6cc25f194da1eb1ffecb517e0be0aee",
+      "size_bytes": 191
+    },
+    "script-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/script-tests.log.gz",
+      "sha256": "25986c6f8d5dbf021a95834c4cf04a12cf4050070056094459b49ea31b504ec7",
+      "size_bytes": 52
+    },
+    "clippy": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/clippy.log.gz",
+      "sha256": "b83103d8ff1f46df51f8a917a2e1df6fa643a87d1303b7bb6956a78fb32dd152",
+      "size_bytes": 327
+    },
+    "docs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/cml-source-conversion-2026-10-22/docs.log.gz",
+      "sha256": "5b96270af6aab774bda3b9a7141a61359da780df8d8c7d5d981f9c5abb8e1028",
+      "size_bytes": 1219
+    }
+  }
+}

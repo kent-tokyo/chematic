@@ -7,7 +7,7 @@ import pytest
 
 
 CH2 = (Path(__file__).resolve().parents[3] /
-       "validation/openbabel_issues/cml/explicit-ch2.cml").read_text()
+       "validation/openbabel_issues/cml/explicit-ch2.cml").read_text(encoding="utf-8")
 
 
 def with_count(value):
