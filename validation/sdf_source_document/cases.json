@@ -1,0 +1,102 @@
+{
+  "schema": "chematic.sdf-source-document-packet.v1",
+  "license": "MIT",
+  "provenance": "Original synthetic development fixtures, not a holdout or upstream issue reproduction.",
+  "oracle": "Declared ordered record count, source titles and total atom count. Exact UTF-8 source is the retention oracle; no toolkit output is an oracle. Contains duplicate SD fields and literal M END/dollar substrings. No graph-isomorphism, interpreted SD-field/stereo/query equivalence claim.",
+  "units": "Source coordinate tokens in Angstrom are retained without numerical rewriting.",
+  "variants": [
+    "lf",
+    "crlf",
+    "no-final-newline"
+  ],
+  "cases": [
+    {
+      "id": "two_v2000",
+      "input": "first\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <ID>\nsource-1\n\n>  <ID>\nsource-2\n\n>  <LITERAL>\nM  END\nprefix $$$$ suffix\n\n$$$$\nsecond\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <FLAG>\nkeep me\n\n$$$$\n",
+      "sha256": "f3d9fb7ae85eedd1cb7fb5904be1c986bf760eebd79a0081c55ebc4557944b33",
+      "records": 2,
+      "titles": [
+        "first",
+        "second"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "mixed_versions",
+      "input": "first\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <ID>\nsource-1\n\n>  <ID>\nsource-2\n\n>  <LITERAL>\nM  END\nprefix $$$$ suffix\n\n$$$$\nthird\n  chematic          3D\noriginal high precision\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 7 O 0.123456789012345 -0.0 0.000012345678901 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncoordinate tokens remain source text\n\n$$$$\n",
+      "sha256": "177e1bbe28d3431cc8324f6e00c2d211e99f4d1ca237d0786b8d36a8158669b9",
+      "records": 2,
+      "titles": [
+        "first",
+        "third"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "single_v3000",
+      "input": "third\n  chematic          3D\noriginal high precision\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 7 O 0.123456789012345 -0.0 0.000012345678901 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncoordinate tokens remain source text\n\n$$$$\n",
+      "sha256": "4ff7deb5d30d81dbe8601e6922a84c027434f771b4ac129bffabefc05554492e",
+      "records": 1,
+      "titles": [
+        "third"
+      ],
+      "total_atoms": 1
+    },
+    {
+      "id": "duplicate_titles",
+      "input": "same\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n$$$$\nsame\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n$$$$\n",
+      "sha256": "d43dd7e129dc0a72c775be9f13bd73bcdb6c630efae07116bd5189ee454bef4e",
+      "records": 2,
+      "titles": [
+        "same",
+        "same"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "unterminated_last",
+      "input": "first\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <ID>\nsource-1\n\n>  <ID>\nsource-2\n\n>  <LITERAL>\nM  END\nprefix $$$$ suffix\n\n$$$$\nsecond\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <FLAG>\nkeep me\n\n",
+      "sha256": "6467edd4bb4857e0527a45f7eb036b350eac585839ee32805bdef782b191e005",
+      "records": 2,
+      "titles": [
+        "first",
+        "second"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "blank_title",
+      "input": "\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n$$$$\nsecond\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <FLAG>\nkeep me\n\n$$$$\n",
+      "sha256": "1dcc0e9a4eb5193d0cc4f0482305543d53aa51b547550a3ea87b84ae7105e04e",
+      "records": 2,
+      "titles": [
+        "",
+        "second"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "header_terminator_text",
+      "input": "M  END\n  chematic          3D\nliteral $$$$ in comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 N   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n$$$$\nthird\n  chematic          3D\noriginal high precision\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 7 O 0.123456789012345 -0.0 0.000012345678901 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncoordinate tokens remain source text\n\n$$$$\n",
+      "sha256": "85f2dcebdb341cd06f794fe168d08a87372fb7a33119ab464d9805153f77cd84",
+      "records": 2,
+      "titles": [
+        "M  END",
+        "third"
+      ],
+      "total_atoms": 2
+    },
+    {
+      "id": "three_records",
+      "input": "first\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 C   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <ID>\nsource-1\n\n>  <ID>\nsource-2\n\n>  <LITERAL>\nM  END\nprefix $$$$ suffix\n\n$$$$\nsecond\n  chematic          3D\nsource comment\n  1  0  0  0  0  0  0  0  0  0999 V2000\n    0.1234   -0.0000    2.1250 O   0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n>  <FLAG>\nkeep me\n\n$$$$\nthird\n  chematic          3D\noriginal high precision\n  0  0  0     0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 7 O 0.123456789012345 -0.0 0.000012345678901 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n>  <NOTE>\ncoordinate tokens remain source text\n\n$$$$\n",
+      "sha256": "e89c0239e9afb08001e78eb68367ebcace404561d0e40977dfaa3e37dc54805a",
+      "records": 3,
+      "titles": [
+        "first",
+        "second",
+        "third"
+      ],
+      "total_atoms": 3
+    }
+  ]
+}

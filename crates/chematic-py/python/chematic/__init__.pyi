@@ -3405,6 +3405,23 @@ def from_mol_v3000_with_diagnostics(
     """
     ...
 
+def roundtrip_sdf_source(text: str | bytes) -> str:
+    """Validate all local-profile records and retain the exact UTF-8 SDF.
+
+    No output on any failed record/limit. Opaque metadata/stereo is retained
+    without interpretation/editing. Default limits: 16 MiB input/record,
+    1 MiB line, 10000 records, 100000 atoms per record and in total.
+    """
+    ...
+
+def single_sdf_mol_block(text: str | bytes) -> str:
+    """Extract one unchanged MOL CTAB; omit SD fields/delimiter.
+
+    Additional records fail. The source-retention bounds apply with one record;
+    this checks a native core projection, not complete chemistry/metadata.
+    """
+    ...
+
 def from_mol_block(block: str | bytes) -> Mol:
     """Parse a MOL/SDF block and return a :class:`Mol`.
 

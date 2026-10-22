@@ -10,6 +10,8 @@ use wasm_bindgen::prelude::*;
 
 mod common_formats;
 pub use common_formats::*;
+mod sdf_source;
+pub use sdf_source::roundtrip_sdf_source;
 
 /// Generate 3D coordinates for the molecule and return a PDB string.
 ///

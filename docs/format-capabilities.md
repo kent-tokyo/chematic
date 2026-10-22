@@ -47,6 +47,15 @@ charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
 
+SDF → SDF is a complete-document source-retention route in Python/WASM, distinct
+from MOL. It validates every local-profile record and retains all original UTF-8
+bytes, including record order, SD fields and line endings. Other MOL/SDF bridge
+inputs require exactly one record; multiple records now fail instead of silently
+selecting the first. Their SD fields are omitted before graph conversion, with
+V2000/V3000 dispatch based on physical header lines. Non-SDF → SDF emits one
+framed record. Use SDF iterators for batch graph conversion. Default bounds and
+compatibility changes are in the [SDF document contract](benchmarks/2026-10-22-sdf-source-document.md).
+
 CML → CJSON in Python/WASM additionally carries complete finite source
 `x3/y3/z3` coordinates in Angstrom. Missing 3D stays absent; partial triplets,
 mixed presence, duplicate atom attributes/IDs and multiple molecules refuse.
