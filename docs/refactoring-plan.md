@@ -90,7 +90,7 @@ not an acceptable completion condition.
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Ready for review |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Ready for review |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Ready for review |
-| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
+| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Ready for review |
 | R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
 
 The R18 candidate reduces the checked function allowances from 76 to 74. The
@@ -132,6 +132,13 @@ selection and response bounding. The three MCP boundary functions now fit the
 normal limits, reducing the ratchet to 8 file and 60 function allowances. All
 140 MCP unit, schema-conformance and Streamable HTTP tests pass, including the
 real loopback-bind tests, together with warnings-as-errors clippy.
+
+The stacked R24 candidate separates the refactor-budget command from its
+lexical Rust scanner. The command now owns baseline generation, ratchet policy
+and reporting, while the reusable scanner owns masking, function discovery and
+production-source selection. The existing six scanner and ratchet tests pass
+unchanged, and both normal checking and baseline printing use the same scanner.
+This phase preserves the 8-file/60-function ratchet for the final R25 closeout.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
