@@ -1383,6 +1383,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_block_with_diagnostics,
         parse_sdf_with_coords,
         from_cml,
+        from_cml_with_3d,
         from_cml_strict,
         from_mrv_block,
         from_mrv_block_with_coords,

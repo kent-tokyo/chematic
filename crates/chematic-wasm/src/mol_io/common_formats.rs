@@ -185,6 +185,8 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
 /// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
 /// CJSON-to-CJSON also validates and retains the exact source. Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
+/// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
+/// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,
@@ -205,6 +207,21 @@ pub fn convert_common_format(
     })?;
     if input == "mol2" && output == "mol2" {
         return roundtrip_mol2_record(text);
+    }
+    if input == "cml" && output == "cjson" {
+        let limits = chematic_mol::CmlParseLimits {
+            max_input_bytes: WASM_MAX_INPUT_BYTES,
+            max_atoms: WASM_MAX_ATOMS,
+            ..Default::default()
+        };
+        let (mol, coords) = chematic_mol::parse_cml_with_3d_with_limits(text, &limits)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let points = coords
+            .unwrap_or_default()
+            .into_iter()
+            .map(|[x, y, z]| (x, y, z))
+            .collect::<Vec<_>>();
+        return Ok(chematic_mol::write_cjson(&mol, &points));
     }
     if input == "mol2" && output == "cjson" {
         return chematic_mol::project_mol2_to_cjson_with_limits(

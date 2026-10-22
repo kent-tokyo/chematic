@@ -47,6 +47,14 @@ charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
 
+CML → CJSON in Python/WASM additionally carries complete finite source
+`x3/y3/z3` coordinates in Angstrom. Missing 3D stays absent; partial triplets,
+mixed presence, duplicate atom attributes/IDs and multiple molecules refuse.
+Rust `parse_cml_with_3d[_with_limits]` and Python `from_cml_with_3d` expose this
+single-molecule profile directly. Legacy graph/2D readers keep their behavior;
+2D layout, source IDs and other CML metadata are still omitted from common
+CJSON output. See the [profile and measured comparison](benchmarks/2026-10-22-cml-3d-coordinates.md).
+
 CJSON input to the CLI/Python/WASM common bridges uses the existing strict
 record profile before graph conversion. Present known arrays must have exact
 sizes/types; duplicate decoded keys, self/duplicate bonds and unsupported
