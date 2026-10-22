@@ -461,9 +461,9 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// the same candidates. Keep the lowest finite-energy candidate across both
 /// ensembles, then fill the remaining slots with converged candidates before
 /// unfinished ones, ordered by energy. At most `num_confs` conformers are
-/// returned. If the lowest finite-energy candidate did not converge, it gets
-/// one additional MMFF pass of at most twice `max_iters` steps, even when
-/// another candidate has already converged.
+/// returned. The lowest finite-energy unfinished candidate gets one additional
+/// MMFF pass of at most twice `max_iters` steps, even when the overall lowest
+/// candidate has already converged.
 /// Only a converged, non-higher-energy and stereo-safe retry is retained.
 /// The profile spends roughly twice the embedding and MMFF work of the
 /// compatibility API, plus that optional retry.

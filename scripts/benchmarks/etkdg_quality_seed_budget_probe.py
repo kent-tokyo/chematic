@@ -237,6 +237,11 @@ def main() -> None:
         "rdkit_version": rdBase.rdkitVersion,
         "candidate_budget": (
             "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per "
+            "candidate; up to 400 extra iterations for the lowest finite-energy "
+            "unfinished returned candidate even if the overall minimum converged; "
+            "RDKit: 40 seeds, MMFF94 up to 200 iterations per candidate"
+            if args.profile.endswith("_v5") else
+            "CheMatic quality: 20 + 20 distinct seeds, MMFF94 up to 200 iterations per "
             "candidate; if the lowest-energy candidate did not converge, up to 400 "
             "extra iterations for that candidate; RDKit: 40 seeds, MMFF94 up to "
             "200 iterations per candidate"
