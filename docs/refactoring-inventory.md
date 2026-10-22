@@ -9,7 +9,7 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The stacked R19 candidate contains 13 file allowances and 74 function
+The stacked R20 candidate contains 12 file allowances and 72 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
@@ -18,7 +18,8 @@ The retained large files fall into four reviewed groups:
 - ordered chemistry rules and perception engines: `alerts.rs`, `cip.rs`,
   Avalon `fingerprint.rs`, reaction `query.rs`, and the
   SMARTS parser, matcher, and MCS engine;
-- geometry and crystallography algorithms: `layout.rs` and `poscar.rs`;
+- geometry and crystallography algorithms: `poscar.rs` plus the bounded
+  ring, chain and clash stages below the public layout facade;
 - compatibility ports whose branch and accumulation order is observable:
   RDKit depiction, PDB, and reaction-SMARTS modules;
 - native compatibility infrastructure: InChI deduplication.

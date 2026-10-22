@@ -86,7 +86,7 @@ not an acceptable completion condition.
 | R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | In progress |
 | R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Ready for review |
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Ready for review |
-| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Planned |
+| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Ready for review |
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Planned |
@@ -104,6 +104,13 @@ unit tests behind dedicated module boundaries. `standardize.rs` falls from
 baseline to 13 files and 74 functions. The 1,033 Rust unit tests plus the
 standardization idempotency, metal-disconnection, stereo-preservation and
 shared-contract suites preserve stage order, warnings and typed outcomes.
+
+The stacked R20 candidate assigns ring placement, acyclic growth and clash
+relief to separate modules, leaving the public layout facade at 397 lines.
+Two one-stage placement functions are brought below the function limits, so the
+ratchet reaches 12 file and 72 function allowances. The complete depiction
+crate (107 unit tests, 3 public stress tests and doctests) preserves the
+coordinate, crossing, SVG, PNG and EPS contracts.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

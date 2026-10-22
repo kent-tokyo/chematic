@@ -13,7 +13,6 @@
     "crates/chematic-chem/src/alerts.rs": 2579,
     "crates/chematic-chem/src/cip.rs": 2766,
     "crates/chematic-crystal/src/poscar.rs": 1644,
-    "crates/chematic-depict/src/layout.rs": 3740,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-rxn/src/query.rs": 1969,
@@ -77,31 +76,23 @@
       "decisions": 25,
       "lines": 211
     },
-    "crates/chematic-depict/src/layout.rs::defects_after_move#1": {
+    "crates/chematic-depict/src/layout/clashes.rs::defects_after_move#1": {
       "decisions": 46,
       "lines": 141
     },
-    "crates/chematic-depict/src/layout.rs::dfs_zigzag#1": {
+    "crates/chematic-depict/src/layout/chains.rs::dfs_zigzag#1": {
       "decisions": 23,
       "lines": 206
     },
-    "crates/chematic-depict/src/layout.rs::place_ring_anchored#1": {
-      "decisions": 17,
-      "lines": 130
-    },
-    "crates/chematic-depict/src/layout.rs::place_ring_system#1": {
-      "decisions": 11,
-      "lines": 121
-    },
-    "crates/chematic-depict/src/layout.rs::porphyrin_core#1": {
+    "crates/chematic-depict/src/layout/rings.rs::porphyrin_core#1": {
       "decisions": 37,
       "lines": 149
     },
-    "crates/chematic-depict/src/layout.rs::relieve_clashes_pass#1": {
+    "crates/chematic-depict/src/layout/clashes.rs::relieve_clashes_pass#1": {
       "decisions": 64,
       "lines": 344
     },
-    "crates/chematic-depict/src/layout.rs::untangle_bridged_system#1": {
+    "crates/chematic-depict/src/layout/rings.rs::untangle_bridged_system#1": {
       "decisions": 58,
       "lines": 277
     },
