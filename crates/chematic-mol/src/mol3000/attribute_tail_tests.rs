@@ -185,7 +185,7 @@ fn reference_read(input: &str) -> Result<MolReadReport, MolParseError> {
             parser.consume(line, &tokens)?;
         }
     }
-    finish_v3000_report(parser, metadata, line2)
+    finish_v3000_report(parser, metadata, line2).map(|(report, _)| report)
 }
 
 fn compare_read(input: &str) -> bool {

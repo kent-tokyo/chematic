@@ -6,7 +6,7 @@ from pathlib import Path
 import chematic
 import pytest
 
-CASES = json.loads((Path(__file__).parents[3] / "validation/openbabel_issues/mol2-kekule/cases.json").read_text())["cases"]
+CASES = json.loads((Path(__file__).parents[3] / "validation/openbabel_issues/mol2-kekule/cases.json").read_text(encoding="utf-8"))["cases"]
 
 
 def assert_token_only(before, after):

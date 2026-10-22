@@ -7,7 +7,7 @@ import chematic
 import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
-CASES = json.loads((ROOT / "validation/rdkit_issues/python-serialized-input/cases.json").read_text())["cases"]
+CASES = json.loads((ROOT / "validation/rdkit_issues/python-serialized-input/cases.json").read_text(encoding="utf-8"))["cases"]
 
 
 def snapshot(value):

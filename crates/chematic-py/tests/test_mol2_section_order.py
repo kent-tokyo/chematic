@@ -6,7 +6,7 @@ import pytest
 
 ROOT = Path(__file__).resolve().parents[3]
 FOLDER = ROOT / 'validation/openbabel_issues/mol2-section-order'
-CASES = json.loads((FOLDER / 'cases.json').read_text())['cases']
+CASES = json.loads((FOLDER / 'cases.json').read_text(encoding="utf-8"))['cases']
 
 @pytest.mark.parametrize('case', [c for c in CASES if 'smiles' in c], ids=lambda c: c['id'])
 def test_atom_bond_then_charge_metadata_and_roundtrip(case):
@@ -28,7 +28,7 @@ def test_atom_bond_then_charge_metadata_and_roundtrip(case):
 
 @pytest.mark.parametrize('crlf', [False, True])
 def test_source_preserving_apis_keep_original_section_order(crlf):
-    source = (FOLDER / 'charged-source.mol2').read_text()
+    source = (FOLDER / 'charged-source.mol2').read_text(encoding="utf-8")
     if crlf:
         source = source.replace('\n','\r\n')
     assert source.index('@<TRIPOS>UNITY_ATOM_ATTR') < source.index('@<TRIPOS>BOND')
@@ -37,4 +37,4 @@ def test_source_preserving_apis_keep_original_section_order(crlf):
 
 
 def test_neutral_output_bytes_remain_the_baseline():
-    assert chematic.from_smiles('CO').to_mol2() == (FOLDER / 'neutral-expected.mol2').read_text()
+    assert chematic.from_smiles('CO').to_mol2() == (FOLDER / 'neutral-expected.mol2').read_text(encoding="utf-8")

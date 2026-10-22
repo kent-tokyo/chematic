@@ -1,0 +1,41 @@
+   Compiling unicode-ident v1.0.24
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling wasm-bindgen-shared v0.2.129
+   Compiling syn v3.0.5
+   Compiling rustversion v1.0.23
+   Compiling bumpalo v3.20.3
+   Compiling wasm-bindgen v0.2.129
+   Compiling wasm-bindgen-macro-support v0.2.129
+   Compiling serde_core v1.0.229
+   Compiling crossbeam-utils v0.8.23
+   Compiling crossbeam-epoch v0.9.21
+   Compiling zmij v1.0.23
+   Compiling wasm-bindgen-macro v0.2.129
+   Compiling js-sys v0.3.106
+   Compiling serde_json v1.0.154
+   Compiling crossbeam-deque v0.8.8
+   Compiling serde v1.0.229
+   Compiling serde_derive v1.0.229
+   Compiling rayon-core v1.13.0
+   Compiling chematic-smiles v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
+   Compiling web-time v1.1.0
+   Compiling chematic-smarts v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smarts)
+   Compiling crc32fast v1.5.1
+   Compiling rayon v1.12.0
+   Compiling chematic-rxn v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-rxn)
+   Compiling libm v0.2.16
+   Compiling chematic-fp v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-fp)
+   Compiling flate2 v1.1.10
+   Compiling png v0.18.1
+   Compiling chematic-chem v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem)
+   Compiling tiny-skia v0.12.0
+   Compiling chematic-ff v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-ff)
+   Compiling chematic-inchi v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-inchi)
+   Compiling chematic-3d v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+   Compiling chematic-depict v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-depict)
+   Compiling chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+   Compiling web-sys v0.3.106
+   Compiling chematic-crystal v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-crystal)
+   Compiling chematic-wasm v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm)
+    Finished `dev` profile [unoptimized] target(s) in 23.76s

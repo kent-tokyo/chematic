@@ -24,6 +24,13 @@ use crate::mol2000::{
 /// Prefix that marks every V3000 continuation line.
 const V30_PREFIX: &str = "M  V30 ";
 
+mod coordinates;
+pub use coordinates::parse_mol_v3000_with_coords_3d;
+mod source;
+pub use source::{
+    V3000SourceLimits, roundtrip_mol_v3000_source, roundtrip_mol_v3000_source_with_limits,
+};
+
 /// Return a `V3000ParseError` for the given 1-based line number and message.
 #[inline]
 fn v3k_err(line: usize, msg: impl Into<String>) -> MolParseError {
@@ -1000,7 +1007,7 @@ fn finish_v3000_report(
     parser: V3000Parser,
     mut metadata: MolMetadata,
     line2: &str,
-) -> Result<MolReadReport, MolParseError> {
+) -> Result<(MolReadReport, Vec<f64>), MolParseError> {
     validate_v3000_terminal(&parser)?;
     let mut mol = parser.builder.build();
     crate::mol2000::flag_aromatic_bond_atoms(&mut mol);
@@ -1030,7 +1037,7 @@ fn finish_v3000_report(
     );
     let (conformer, geometry_rank, stereo3d_diagnostics, square_planar_diagnostics) =
         v3000_geometry(&mut mol, &parser.coords, &parser.raw_z, dimension);
-    Ok(MolReadReport {
+    let report = MolReadReport {
         mol,
         metadata,
         coords: parser.coords,
@@ -1041,7 +1048,8 @@ fn finish_v3000_report(
         geometry_rank,
         stereo3d_diagnostics,
         square_planar_diagnostics,
-    })
+    };
+    Ok((report, parser.raw_z))
 }
 
 // ---------------------------------------------------------------------------
@@ -1058,13 +1066,19 @@ fn finish_v3000_report(
 /// rejected wedge/hash center as a structured `StereoDiagnostic`.
 ///
 /// `coords[i]` is the `(x, y)` position for atom `i` extracted from the V30 atom block.
-/// Z-coordinates are not captured (V3000 stores 3D; we retain only the 2D projection).
+/// This field is the 2D projection; the optional conformer is selected for
+/// perception. Use [`parse_mol_v3000_with_coords_3d`] to retain every source z
+/// value independently of dimension headers and perception tolerances.
 /// This is the one parsing core for V3000 MOL text --
 /// [`parse_mol_v3000_with_coords`]/[`parse_mol_v3000`] are thin wrappers that
 /// discard `stereo_diagnostics`. Only bond-line `CFG` (wedge direction) is
 /// decoded; atom-line `CFG` (parity) is out of scope, matching RDKit's own
 /// primary `MolFromMolBlock` path (bond-CFG/wedge-based).
 pub fn read_mol_v3000_with_diagnostics(input: &str) -> Result<MolReadReport, MolParseError> {
+    read_v3000_with_source_z(input).map(|(report, _)| report)
+}
+
+fn read_v3000_with_source_z(input: &str) -> Result<(MolReadReport, Vec<f64>), MolParseError> {
     let lines = validate_v3000_physical_lines(input)?;
     let (metadata, line2) = v3000_metadata(&lines)?;
     let logical_lines = collect_v30_lines(&lines);

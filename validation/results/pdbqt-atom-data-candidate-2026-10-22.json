@@ -1,0 +1,790 @@
+{
+  "schema": "chematic.pdbqt-atom-data-validation.v1",
+  "baseline": false,
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/pdbqt_atom_data/cases.json",
+    "sha256": "00fbfb3a5f676a61528c777b8f3a1f99f410f81c4d9ed533eaf8269dd2624c76",
+    "size_bytes": 6630
+  },
+  "package": {
+    "path": "/private/tmp/chematic-pdbqt-data-python-20261022/chematic/__init__.py",
+    "sha256": "dc8a62f9d5e58dafa1ce89b2fc4a97c97a690bb7f8a4f16f4ee94db9be1a9157",
+    "size_bytes": 26376
+  },
+  "extension": {
+    "path": "/private/tmp/chematic-pdbqt-data-python-20261022/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "58cafd44fabf324b54bbfbc1f21465d3c7a049e6bd64a0cbdcd68f9326428f2b",
+    "size_bytes": 44606928
+  },
+  "cases": [
+    {
+      "id": "mixed_types",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          7,
+          8,
+          16,
+          1,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            -0.0
+          ],
+          [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          [
+            -0.001,
+            4.321,
+            8.765
+          ],
+          [
+            20,
+            -30,
+            40
+          ],
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            -9,
+            2,
+            5
+          ]
+        ],
+        "partial_charges": [
+          -0.123,
+          0.456,
+          -0.789,
+          0.0,
+          0.111,
+          -1.0
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          6,
+          7,
+          8,
+          16,
+          1,
+          17
+        ],
+        "coords": [
+          [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          [
+            -0.001,
+            4.321,
+            8.765
+          ],
+          [
+            20.0,
+            -30.0,
+            40.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            -9.0,
+            2.0,
+            5.0
+          ]
+        ],
+        "partial_charges": [
+          -0.123,
+          0.456,
+          -0.789,
+          0.0,
+          0.111,
+          -1.0
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000   0.000  -0.000  1.00  0.00    -0.123 C \nATOM      2  N   LIG A   1       1.250  -2.500   3.750  1.00  0.00     0.456 NA\nATOM      3  O   LIG A   1      -0.001   4.321   8.765  1.00  0.00    -0.789 OA\nATOM      4  S   LIG A   1      20.000 -30.000  40.000  1.00  0.00     0.000 SA\nATOM      5  H   LIG A   1       1.000   1.000   1.000  1.00  0.00     0.111 H \nATOM      6 Cl   LIG A   1      -9.000   2.000   5.000  1.00  0.00    -1.000 Cl\nEND\n",
+        "coords": [
+          [
+            0.0,
+            0.0,
+            -0.0
+          ],
+          [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          [
+            -0.001,
+            4.321,
+            8.765
+          ],
+          [
+            20.0,
+            -30.0,
+            40.0
+          ],
+          [
+            1.0,
+            1.0,
+            1.0
+          ],
+          [
+            -9.0,
+            2.0,
+            5.0
+          ]
+        ],
+        "partial_charges": [
+          -0.123,
+          0.456,
+          -0.789,
+          0.0,
+          0.111,
+          -1.0
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        -0.123,
+        0.456,
+        -0.789,
+        0.0,
+        0.111,
+        -1.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "6\n6 0 0 -0 -0.123\n7 1.25 -2.5 3.75 0.45600000000000002\n8 -0.001 4.3209999999999997 8.7650000000000006 -0.78900000000000003\n16 20 -30 40 0\n1 1 1 1 0.111\n17 -9 2 5 -1\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            7,
+            8,
+            16,
+            1,
+            17
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              -0.0
+            ],
+            [
+              1.25,
+              -2.5,
+              3.75
+            ],
+            [
+              -0.001,
+              4.321,
+              8.765
+            ],
+            [
+              20.0,
+              -30.0,
+              40.0
+            ],
+            [
+              1.0,
+              1.0,
+              1.0
+            ],
+            [
+              -9.0,
+              2.0,
+              5.0
+            ]
+          ],
+          "partial_charges": [
+            -0.123,
+            0.456,
+            -0.789,
+            0.0,
+            0.111,
+            -1.0
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "wide_charge",
+      "profile": "whitespace-separated widened-charge extension",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          6
+        ],
+        "coords": [
+          [
+            12.345,
+            -9.876,
+            0.125
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "partial_charges": [
+          0.123456789012345,
+          -1e-14
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          30,
+          6
+        ],
+        "coords": [
+          [
+            12.345,
+            -9.876,
+            0.125
+          ],
+          [
+            1.0,
+            2.0,
+            3.0
+          ]
+        ],
+        "partial_charges": [
+          0.123456789012345,
+          -1e-14
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Zn   LIG A   1      12.345  -9.876   0.125  1.00  0.00     0.123 Zn\nATOM      2  C   LIG A   1       1.000   2.000   3.000  1.00  0.00    -0.000 C \nEND\n",
+        "coords": [
+          [
+            12.345,
+            -9.876,
+            0.125
+          ],
+          [
+            1.0,
+            2.0,
+            3.0
+          ]
+        ],
+        "partial_charges": [
+          0.123,
+          -0.0
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        0.123,
+        -0.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 3,
+        "stdout": "",
+        "stderr": "==============================\n*** Open Babel Error  in parseAtomRecord\n  WARNING: Problems reading a PDBQT file\n  Problems reading a HETATM or ATOM record.\n  According to the PDBQT specification,\n  columns 78-79 should contain the element symbol of an atom.\n  but OpenBabel found '56' (atom 1)\n==============================\n*** Open Babel Error  in ReadMolecule\n  WARNING: Problems reading a PDBQT file\n  Problems reading a ATOM/HETATM record.\n\nATOM      7  Q   LIG Z   7      12.345  -9.876   0.125  1.00  0.00    +0.123456789012345 Zn\n\n==============================\n*** Open Babel Error  in parseAtomRecord\n  WARNING: Problems reading a PDBQT file\n  Problems reading a HETATM or ATOM record.\n  According to the PDBQT specification,\n  columns 78-79 should contain the element symbol of an atom.\n  but OpenBabel found '00' (atom 1)\n==============================\n*** Open Babel Error  in ReadMolecule\n  WARNING: Problems reading a PDBQT file\n  Problems reading a ATOM/HETATM record.\n\nHETATM   10  Q   LIG Z   7       1.000   2.000   3.000  1.00  0.00    -0.00000000000001 C\n\n"
+      },
+      "openbabel_data_exact": false
+    },
+    {
+      "id": "charge_not_formal",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          2.0,
+          -1.0
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          30,
+          17
+        ],
+        "coords": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            8.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "partial_charges": [
+          2.0,
+          -1.0
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Zn   LIG A   1       0.000   0.000   0.000  1.00  0.00     2.000 Zn\nATOM      2 Cl   LIG A   1       8.000   0.000   0.000  1.00  0.00    -1.000 Cl\nEND\n",
+        "coords": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            8.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "partial_charges": [
+          2.0,
+          -1.0
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        2.0,
+        -1.0
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n30 0 0 0 2\n17 8 0 0 -1\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            30,
+            17
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              8.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "partial_charges": [
+            2.0,
+            -1.0
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "explicit_hydrogens",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          1,
+          1,
+          8
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          -0.125,
+          0.125,
+          0.25,
+          -0.25
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          6,
+          1,
+          1,
+          8
+        ],
+        "coords": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            2.0,
+            0.0,
+            0.0
+          ],
+          [
+            3.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "partial_charges": [
+          -0.125,
+          0.125,
+          0.25,
+          -0.25
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000   0.000   0.000  1.00  0.00    -0.125 C \nATOM      2  H   LIG A   1       1.000   0.000   0.000  1.00  0.00     0.125 H \nATOM      3  H   LIG A   1       2.000   0.000   0.000  1.00  0.00     0.250 H \nATOM      4  O   LIG A   1       3.000   0.000   0.000  1.00  0.00    -0.250 OA\nEND\n",
+        "coords": [
+          [
+            0.0,
+            0.0,
+            0.0
+          ],
+          [
+            1.0,
+            0.0,
+            0.0
+          ],
+          [
+            2.0,
+            0.0,
+            0.0
+          ],
+          [
+            3.0,
+            0.0,
+            0.0
+          ]
+        ],
+        "partial_charges": [
+          -0.125,
+          0.125,
+          0.25,
+          -0.25
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        -0.125,
+        0.125,
+        0.25,
+        -0.25
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "4\n6 0 0 0 -0.125\n1 1 0 0 0.125\n1 2 0 0 0.25\n8 3 0 0 -0.25\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            1,
+            1,
+            8
+          ],
+          "coords": [
+            [
+              0.0,
+              0.0,
+              0.0
+            ],
+            [
+              1.0,
+              0.0,
+              0.0
+            ],
+            [
+              2.0,
+              0.0,
+              0.0
+            ],
+            [
+              3.0,
+              0.0,
+              0.0
+            ]
+          ],
+          "partial_charges": [
+            -0.125,
+            0.125,
+            0.25,
+            -0.25
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "coordinate_edges",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          35
+        ],
+        "coords": [
+          [
+            9999.999,
+            -999.999,
+            -0.001
+          ],
+          [
+            -0.125,
+            0.25,
+            2.5
+          ]
+        ],
+        "partial_charges": [
+          99.999,
+          -9.999
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          6,
+          35
+        ],
+        "coords": [
+          [
+            9999.999,
+            -999.999,
+            -0.001
+          ],
+          [
+            -0.125,
+            0.25,
+            2.5
+          ]
+        ],
+        "partial_charges": [
+          99.999,
+          -9.999
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1    9999.999-999.999  -0.001  1.00  0.00    99.999 C \nATOM      2 Br   LIG A   1      -0.125   0.250   2.500  1.00  0.00    -9.999 Br\nEND\n",
+        "coords": [
+          [
+            9999.999,
+            -999.999,
+            -0.001
+          ],
+          [
+            -0.125,
+            0.25,
+            2.5
+          ]
+        ],
+        "partial_charges": [
+          99.999,
+          -9.999
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        99.999,
+        -9.999
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n6 9999.9989999999998 -999.99900000000002 -0.001 99.998999999999995\n35 -0.125 0.25 2.5 -9.9990000000000006\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            6,
+            35
+          ],
+          "coords": [
+            [
+              9999.999,
+              -999.999,
+              -0.001
+            ],
+            [
+              -0.125,
+              0.25,
+              2.5
+            ]
+          ],
+          "partial_charges": [
+            99.999,
+            -9.999
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    },
+    {
+      "id": "crlf_no_final_newline",
+      "profile": "fixed-column PDBQT atom records",
+      "expected": {
+        "atomic_numbers": [
+          7,
+          9
+        ],
+        "coords": [
+          [
+            1.111,
+            2.222,
+            3.333
+          ],
+          [
+            -4.444,
+            5.555,
+            -6.666
+          ]
+        ],
+        "partial_charges": [
+          -0.4,
+          0.4
+        ]
+      },
+      "python_data": {
+        "atomic_numbers": [
+          7,
+          9
+        ],
+        "coords": [
+          [
+            1.111,
+            2.222,
+            3.333
+          ],
+          [
+            -4.444,
+            5.555,
+            -6.666
+          ]
+        ],
+        "partial_charges": [
+          -0.4,
+          0.4
+        ]
+      },
+      "python_data_exact": true,
+      "bridge": {
+        "output": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  N   LIG A   1       1.111   2.222   3.333  1.00  0.00    -0.400 NA\nATOM      2  F   LIG A   1      -4.444   5.555  -6.666  1.00  0.00     0.400 F \nEND\n",
+        "coords": [
+          [
+            1.111,
+            2.222,
+            3.333
+          ],
+          [
+            -4.444,
+            5.555,
+            -6.666
+          ]
+        ],
+        "partial_charges": [
+          -0.4,
+          0.4
+        ]
+      },
+      "bridge_preserved": true,
+      "bridge_with_coords_charges": [
+        -0.4,
+        0.4
+      ],
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "2\n7 1.111 2.222 3.3330000000000002 -0.40000000000000002\n9 -4.444 5.5549999999999997 -6.6660000000000004 0.40000000000000002\n",
+        "stderr": "",
+        "data": {
+          "atomic_numbers": [
+            7,
+            9
+          ],
+          "coords": [
+            [
+              1.111,
+              2.222,
+              3.333
+            ],
+            [
+              -4.444,
+              5.555,
+              -6.666
+            ]
+          ],
+          "partial_charges": [
+            -0.4,
+            0.4
+          ]
+        }
+      },
+      "openbabel_data_exact": true
+    }
+  ],
+  "openbabel_probe": {
+    "path": "/private/tmp/chematic-pdbqt-data-openbabel-probe-20261022",
+    "sha256": "c5afaab84e7d6a400a45f934b9432bc54bd35763d84c5a81f34d3a5c2b09eb63",
+    "size_bytes": 50336
+  },
+  "summary": {
+    "cases": 6,
+    "python_data_exact": 6,
+    "bridge_preserved": 6
+  }
+}

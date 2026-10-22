@@ -1,0 +1,263 @@
+{
+  "schema": "chematic.pdbqt-atom-data-validation-index.v1",
+  "date": "2026-10-22",
+  "source_base": "a83ed2653037a7b17033e03ee22501a1ddda8bb9",
+  "scope": "Six original development fixtures: five fixed-column inputs and one whitespace-separated widened-charge extension. Exact indexed elements and binary64 numeric arrays only; Python rewritten PDBQT charges checked within 0.000500000001 e. No source identity, original AutoDock typing, torsion, bonding, implicit H, aromaticity, isotope, stereo, docking, timing, holdout or release claim.",
+  "baseline_attestation": {
+    "commit": "af4c926eddc7986c32911b0de46405f6f13e756e",
+    "path": "validation/results/sdf-data-item-framing-validation-2026-10-22.json",
+    "note": "Reused attested main a83ed265 binary; binary SHA-256 matches archived record and package __init__.py bytes match origin/main in this run."
+  },
+  "toolchain": {
+    "rust": "rustc 1.97.0 (2d8144b78 2026-07-07)",
+    "node": "v24.5.0",
+    "python": "Python 3.13.6",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+    "wasm_bindgen": "0.2.129, target nodejs"
+  },
+  "checks": {
+    "python": "223 passed",
+    "rust_pdbqt_unit": "8 passed",
+    "rust_pdbqt_checked_and_pqr": "18 passed",
+    "script": "36 passed, 4 subtests passed",
+    "wasm": "real Node/WASM numeric-data and checked-output suites passed",
+    "clippy": "chematic-py and chematic-wasm all targets, -D warnings passed",
+    "docs": "mkdocs strict passed",
+    "static": "fmt, refactor budget, Python stubs, parent API docs, product names, workflow pins, script layout passed, static binding inventory passed (318 WASM / 224 registered Python functions)"
+  },
+  "sources": {
+    ".github/workflows/ci.yml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.github/workflows/ci.yml",
+      "sha256": "cf3d7891267598519048b79bbb01c156cd9e346f734f848c94ff2736b5a18f7d",
+      "size_bytes": 51680
+    },
+    "crates/chematic-py/python/chematic/__init__.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.py",
+      "sha256": "dc8a62f9d5e58dafa1ce89b2fc4a97c97a690bb7f8a4f16f4ee94db9be1a9157",
+      "size_bytes": 26376
+    },
+    "crates/chematic-py/python/chematic/__init__.pyi": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "20e6c5f95acabf50ec7fdafc8ab25ccf12c185a930816ac6758960cc5a6c0bb3",
+      "size_bytes": 211879
+    },
+    "crates/chematic-py/src/formats.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "31bfcc7cdaa857bdd379dbdf6de3f5f5033164d5be4057e9494772e192d41177",
+      "size_bytes": 52659
+    },
+    "crates/chematic-py/src/formats/pdbqt.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/pdbqt.rs",
+      "sha256": "1add9b6be88e642e8801853f66646130a39913419d3bb8d38dc73259c286d218",
+      "size_bytes": 2183
+    },
+    "crates/chematic-py/tests/test_pdbqt_atom_data.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/tests/test_pdbqt_atom_data.py",
+      "sha256": "492316fec67dfdf9c8c9fa451fe771568c43af348fc81ce58744ba3be0e5f9d9",
+      "size_bytes": 4037
+    },
+    "crates/chematic-wasm/src/lib.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/lib.rs",
+      "sha256": "ec6b719a0d476230e244ba4d7d8be6a8a022b99d023fe8dbf262f2ae91333c1b",
+      "size_bytes": 32427
+    },
+    "crates/chematic-wasm/src/mol_io.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/mol_io.rs",
+      "sha256": "b678fd602d30674917ab96abe8bb36e0073ef94f1f9b1f13d56a461a0cd5e7e2",
+      "size_bytes": 54901
+    },
+    "crates/chematic-wasm/src/pdbqt_data.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/pdbqt_data.rs",
+      "sha256": "ae9134c4d84db4f82ff3c0afeb879b223a2f0b14424176a2f6a72343db1529b7",
+      "size_bytes": 1426
+    },
+    "crates/chematic-wasm/tests/pdbqt_atom_data.test.mjs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/tests/pdbqt_atom_data.test.mjs",
+      "sha256": "5d1f6a511c4c3efac3b9129b4066603cf628038fb26178017d8482b548ab6d4c",
+      "size_bytes": 1683
+    },
+    "scripts/validation/check_pdbqt_atom_data.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_pdbqt_atom_data.py",
+      "sha256": "158e114e027ed4007051a1c070e058dae746cd48e439222442637fb2fe3d91e9",
+      "size_bytes": 5310
+    },
+    "scripts/tests/test_pdbqt_atom_data.py": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/tests/test_pdbqt_atom_data.py",
+      "sha256": "33affbc58ab468e82ef512b31b1989e757e813e72e2999d2d09f05028f9b4ab4",
+      "size_bytes": 1571
+    },
+    "validation/pdbqt_atom_data/cases.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/pdbqt_atom_data/cases.json",
+      "sha256": "00fbfb3a5f676a61528c777b8f3a1f99f410f81c4d9ed533eaf8269dd2624c76",
+      "size_bytes": 6630
+    },
+    "docs/pdbqt-atom-data.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/pdbqt-atom-data.md",
+      "sha256": "f3736a0d1899db1407ea0d77226af60d23af9f34a1c4f34d3837c5d2df13ef8f",
+      "size_bytes": 5955
+    },
+    "docs/format-capabilities.md": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/docs/format-capabilities.md",
+      "sha256": "59fa991e0f7235692e6f599b33719aa83cc624ec12d5527f957356ea4e347c14",
+      "size_bytes": 53925
+    },
+    "mkdocs.yml": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/mkdocs.yml",
+      "sha256": "6b490d773e6896c5ace8283a08f6bdc1718a4b15a1a2d8381684c012c5408309",
+      "size_bytes": 8287
+    },
+    "crates/chematic-mol/src/pdbqt.rs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/pdbqt.rs",
+      "sha256": "f5363bb1c80770bd0f7c4e63adabd33e19becddbdfa27635300a831e1c19ae97",
+      "size_bytes": 18119
+    },
+    "validation/results/binding_surface_inventory-current.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/binding_surface_inventory-current.json",
+      "sha256": "3d7a0cc33d9acaef1e8a2adc3d6cc59bef7bc83304dd5b24045a4483d04c2a12",
+      "size_bytes": 562
+    }
+  },
+  "artifacts": {
+    "baseline_python": {
+      "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "5e1bc2dbe4f0dda290afaa8cf51419e42cd4c36700bc8bd4c555078bf74a57f5",
+      "size_bytes": 44590384
+    },
+    "baseline_package": {
+      "path": "/private/tmp/chematic-sdf-fields-baseline-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "candidate_python": {
+      "path": "/private/tmp/chematic-pdbqt-data-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "58cafd44fabf324b54bbfbc1f21465d3c7a049e6bd64a0cbdcd68f9326428f2b",
+      "size_bytes": 44606928
+    },
+    "candidate_package": {
+      "path": "/private/tmp/chematic-pdbqt-data-python-20261022/chematic/__init__.py",
+      "sha256": "dc8a62f9d5e58dafa1ce89b2fc4a97c97a690bb7f8a4f16f4ee94db9be1a9157",
+      "size_bytes": 26376
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-pdbqt-data-wasm-20261022/chematic_wasm.js",
+      "sha256": "faa450b660007c8088bd58e99f702f221106f4723cc04fb69253e867ad6e80bb",
+      "size_bytes": 367987
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-pdbqt-data-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "3270c08010459ca48816c548561d6a6be5524bb1487c2e30e02277b6cab3eb77",
+      "size_bytes": 44875883
+    },
+    "openbabel_probe": {
+      "path": "/private/tmp/chematic-pdbqt-data-openbabel-probe-20261022",
+      "sha256": "c5afaab84e7d6a400a45f934b9432bc54bd35763d84c5a81f34d3a5c2b09eb63",
+      "size_bytes": 50336
+    }
+  },
+  "openbabel_files": {
+    "/opt/homebrew/bin/obabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.dylib": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/libopenbabel.8.0.0.dylib",
+      "sha256": "9c0e023919fca6656f686b3903c10d438c0003a1d07e721a850cff9ff495c93a",
+      "size_bytes": 2794816
+    },
+    "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/pdbqtformat.so": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/lib/openbabel/3.2.1/pdbqtformat.so",
+      "sha256": "2636849873c80026fe7748705eb2d0b66261190902c71765fd5e149f3223076c",
+      "size_bytes": 133872
+    },
+    "validation/openbabel_issues/pdbqt-checked/openbabel_read_probe.cpp": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/openbabel_issues/pdbqt-checked/openbabel_read_probe.cpp",
+      "sha256": "bb6c87a5d2c92cae59a72cdbcb87fb6b883a70714e0d41f12b9255ac89d902a8",
+      "size_bytes": 1033
+    }
+  },
+  "outcomes": {
+    "pdbqt-atom-data-baseline-2026-10-22.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-baseline-2026-10-22.json",
+      "sha256": "bfb1886f2716826bc373c3830b263c6a5ca72732d958f044a2fab68923cdff1d",
+      "size_bytes": 11931
+    },
+    "pdbqt-atom-data-candidate-2026-10-22.json": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-candidate-2026-10-22.json",
+      "sha256": "e7a89d6ce2d2ef5b67b9d2c004618b794e9b44d2504a5c3d973e2589efb90a3f",
+      "size_bytes": 17738
+    }
+  },
+  "logs": {
+    "python-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/python-build.log.gz",
+      "sha256": "7e487049fde9ece438e7f496d19f66746abc010a1230d12de0ef4e410e21119c",
+      "size_bytes": 161
+    },
+    "wasm-build": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/wasm-build.log.gz",
+      "sha256": "c56cdc7ba4f119eed4efdf26ebe1c0dac29ce7b56d0e4e1b0b21bfc61cdabbf6",
+      "size_bytes": 161
+    },
+    "python-tests-final": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/python-tests-final.log.gz",
+      "sha256": "64adf3037f518fb66a17c4e7ccc9a752f4efa6450f088ee4f2a6f86496c0efdc",
+      "size_bytes": 342
+    },
+    "wasm-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/wasm-tests.log.gz",
+      "sha256": "c6dff38077c3d51ecb6090f17f9b59fda93a8b702467cdd5597ecf72676e9fd0",
+      "size_bytes": 111
+    },
+    "rust-tests": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/rust-tests.log.gz",
+      "sha256": "d6e56cbfcbe50823f254a49c5915435e33edd050411e8d2f08008a4d74d172ef",
+      "size_bytes": 512
+    },
+    "rust-checked-tests-final": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/rust-checked-tests-final.log.gz",
+      "sha256": "a285d40cb37f34b2d4fefe2069ace83fd4b3932e92717b14220210ccdcf64401",
+      "size_bytes": 832
+    },
+    "clippy": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/clippy.log.gz",
+      "sha256": "935c6b8b3aa136049ba5507d5e60eda600f77e3dfd9c4a2dc108b15180f706e9",
+      "size_bytes": 449
+    },
+    "script-tests-final": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/script-tests-final.log.gz",
+      "sha256": "eea3c9e17572bc1021e58684c4e324b94b278eaa4e789934bde28332f908a12d",
+      "size_bytes": 66
+    },
+    "stubs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/stubs.log.gz",
+      "sha256": "534ac335bd997502ee31460e7b21c3ff0472d0a0402eeb52348d80dae8fbf48b",
+      "size_bytes": 67
+    },
+    "parent-docs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/parent-docs.log.gz",
+      "sha256": "469a11d048bd701dadd25baf9cb70419c33bc07ca43e7f9397e062969b203eba",
+      "size_bytes": 83
+    },
+    "product-names": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/product-names.log.gz",
+      "sha256": "b4f379b8903ddc162104c439c4692ffaaf6573906a0c906df0126c7d013c5c75",
+      "size_bytes": 76
+    },
+    "docs": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/docs.log.gz",
+      "sha256": "f599779006485e40bd92ac4faa0ab7701cdcef87a8d9c1d13a3cff59b7b631ce",
+      "size_bytes": 1204
+    },
+    "binding-surface": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/binding-surface.log.gz",
+      "sha256": "3f786f66630193aac8d6397f993123f616910fb9f4707ff2e78e7578dc0c072b",
+      "size_bytes": 3514
+    },
+    "file-io": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/pdbqt-atom-data-2026-10-22/file-io.log.gz",
+      "sha256": "62e8579acacc7bddad8eecf9f1ed7df820a106f32ad67d909d55f12a7e4a61b8",
+      "size_bytes": 102
+    }
+  }
+}

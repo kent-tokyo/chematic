@@ -1,0 +1,322 @@
+{
+  "scope": "source-built development-fixture binding parity",
+  "passed": 79,
+  "results": [
+    {
+      "case": "lf-mol2-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-mol2-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-mol2-preserve_source",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-smiles-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-smiles-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-cjson-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "lf-cjson-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-mol2-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-mol2-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-mol2-preserve_source",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-smiles-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-smiles-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-cjson-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "crlf-cjson-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "zero-bond-mismatch",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-bond-nc",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-bond-du",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-bond-un",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-coordinate--1.4175225513503917",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-coordinate--0.0",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-coordinate-5e-324",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-coordinate-1.7976931348623157e308",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-N.4",
+      "result": "identical_report"
+    },
+    {
+      "case": "invalid",
+      "result": "shared_error"
+    },
+    {
+      "case": "bad-charge",
+      "result": "shared_error"
+    },
+    {
+      "case": "unsupported-source",
+      "result": "shared_error"
+    },
+    {
+      "case": "unsupported-target",
+      "result": "shared_error"
+    },
+    {
+      "case": "unsupported-policy",
+      "result": "shared_error"
+    },
+    {
+      "case": "cross-source-retention",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-source-retention",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-partial-charge--0.0",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-partial-charge--1.4175225513503917",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-partial-charge-5e-324",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-partial-charge-1.7976931348623157e308",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-partial-charge-missing",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-partial-charge-undeclared",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-lf-cjson-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-lf-cjson-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-lf-cjson-preserve_source",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-lf-smiles-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-lf-smiles-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-crlf-cjson-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-crlf-cjson-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-crlf-cjson-preserve_source",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-crlf-smiles-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-crlf-smiles-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-minimal",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-branch",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-aromatic",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-input-charge-length",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-isotope-type",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-unknown-order",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-duplicate-edge",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-self-edge",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-dangling-edge",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-duplicate-opaque-key",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-unsupported-version",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-unsupported-route",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-input-cross-preserve",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-mol2-lf-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-lf-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-crlf-strict",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-crlf-allow_loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-float--0.0",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-float--1.4175225513503917",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-float-5e-324",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-float-1.7976931348623157e+308",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-multiple",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-missing-coordinates",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-name-newline",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-method-whitespace",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-absent-dataset",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-isotope-loss",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-signed-formal-charge",
+      "result": "identical_report"
+    },
+    {
+      "case": "cjson-mol2-malformed-dataset-0",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-mol2-malformed-dataset-1",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-mol2-malformed-dataset-2",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-mol2-malformed-dataset-3",
+      "result": "shared_error"
+    },
+    {
+      "case": "cjson-mol2-malformed-dataset-4",
+      "result": "shared_error"
+    }
+  ]
+}

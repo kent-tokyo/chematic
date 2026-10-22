@@ -5,7 +5,7 @@ import chematic
 
 
 ROOT = Path(__file__).resolve().parents[3]
-FIXTURE = json.loads((ROOT / "validation/nucleic_acid_document_contract.json").read_text())
+FIXTURE = json.loads((ROOT / "validation/nucleic_acid_document_contract.json").read_text(encoding="utf-8"))
 
 
 def _at_path(value, path):
@@ -68,7 +68,7 @@ def test_nucleic_acid_binding_enforces_collection_limits():
     assert envelope["error"]["path"] == "/strands"
 
 
-SEQUENCES = json.loads((ROOT / "validation/nucleic_acid_edit_sequences.json").read_text())
+SEQUENCES = json.loads((ROOT / "validation/nucleic_acid_edit_sequences.json").read_text(encoding="utf-8"))
 
 
 def _ownership(document):
