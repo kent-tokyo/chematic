@@ -9,7 +9,7 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The stacked R22 candidate contains 8 file allowances and 63 function
+The R22 candidate contains 8 file allowances and 63 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
