@@ -11,6 +11,8 @@ use std::collections::HashMap;
 
 mod cjson_mol2;
 mod cml_source;
+mod mol2_cjson_projection;
+pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -304,21 +306,17 @@ pub fn convert_with_report_with_limits(
             "Source atom substructure ownership and names are not emitted.",
         );
     }
-    if record
-        .atoms()
-        .iter()
-        .any(|atom| atom.partial_charge.is_some())
-        && !emit_partial
-    {
+    if let Some(observation) = mol2_cjson_projection::unemitted_charge_observation(
+        &record,
+        &target,
+        emit_partial,
+        partial_method.is_some(),
+    ) {
         note(
-            "partial_charges",
-            PreservationStatus::Dropped,
-            "write",
-            if target == "cjson" {
-                "Partial charges require a non-NO_CHARGES method label and one value for every atom; missing values are not filled and undeclared charge columns are not labeled as a computed dataset."
-            } else {
-                "Source charge-column values are not formal charges; the candidate writer does not emit them as partial charges."
-            },
+            observation.field,
+            observation.status,
+            observation.stage,
+            observation.reason,
         );
     }
     if target != "cjson" && !record.coordinates().is_empty() {

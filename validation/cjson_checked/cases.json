@@ -1,0 +1,576 @@
+{
+  "schema": "chematic.cjson-checked-packet.v1",
+  "license": "MIT",
+  "provenance": "Original synthetic exposed development fixtures, not holdouts or upstream issue reproductions.",
+  "oracle": "Declared indexed graph arrays: atomic numbers, formal charges, isotopes and bond endpoint/order tokens. Unknown metadata and stereo are not semantic oracles. Compatibility controls explicitly cover optional defaults, local isotope/aromatic extensions and integral floating storage. Refusals are not preservation wins.",
+  "variants": [
+    "lf",
+    "crlf",
+    "compact"
+  ],
+  "valid": [
+    {
+      "id": "carbonyl",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "f5ef7598bd6d6ec93b8884d388e7eaafe5ea5a044e57ff7d4cbf08afa80e3245",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "nitrile",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        7\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      3\n    ]\n  }\n}\n",
+      "sha256": "82e8857b5d918e23a7a4e0291173e9419cb67207744f302fee8f7f0abc9c7bf0",
+      "expected": {
+        "numbers": [
+          6,
+          7
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          3
+        ]
+      }
+    },
+    {
+      "id": "ethanol",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125,\n        2.5,\n        -0.5,\n        2.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        1,\n        2\n      ]\n    },\n    \"order\": [\n      1,\n      1\n    ]\n  }\n}\n",
+      "sha256": "b23a8b436cd9623eef1194a0fc9e0dc43ac1ac51f0014fbe3b924d87563abd46",
+      "expected": {
+        "numbers": [
+          6,
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1,
+          1,
+          2
+        ],
+        "orders": [
+          1,
+          1
+        ]
+      }
+    },
+    {
+      "id": "ammonium",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125\n      ]\n    },\n    \"formalCharges\": [\n      1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  }\n}\n",
+      "sha256": "53371279b41fc882098dae7839b54ca9f6d91550dd6259e2c047dbd2618057a2",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          0
+        ],
+        "indices": [],
+        "orders": []
+      }
+    },
+    {
+      "id": "disconnected_ions",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        11,\n        17\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  }\n}\n",
+      "sha256": "fba6ef6fa99b1c39f6fe3bb1d24231ff4e3104b5f7f2b927e3b48d50c074bd08",
+      "expected": {
+        "numbers": [
+          11,
+          17
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [],
+        "orders": []
+      }
+    },
+    {
+      "id": "source_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        8,\n        6,\n        7\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125,\n        2.5,\n        -0.5,\n        2.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        1,\n        0,\n        2,\n        1\n      ]\n    },\n    \"order\": [\n      2,\n      1\n    ]\n  }\n}\n",
+      "sha256": "5af29259009088c6ffb34d018e92bb351c5825f07e53ddb03f98f89252f2b820",
+      "expected": {
+        "numbers": [
+          8,
+          6,
+          7
+        ],
+        "charges": [
+          0,
+          0,
+          1
+        ],
+        "isotopes": [
+          0,
+          0,
+          0
+        ],
+        "indices": [
+          1,
+          0,
+          2,
+          1
+        ],
+        "orders": [
+          2,
+          1
+        ]
+      }
+    }
+  ],
+  "compatibility": [
+    {
+      "id": "absent_charge_isotope",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "4f22d476d7099e3e27a526107bcd76ebc620b34ce760a42b8af6e58ab05ec9e1",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "absent_bond_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    }\n  }\n}\n",
+      "sha256": "d93befb1c98ebc56951cdc8c0a18c9945356e8c9fceffbdb0ab2e57687f06b61",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          1
+        ]
+      }
+    },
+    {
+      "id": "absent_bonds",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  }\n}\n",
+      "sha256": "edaebe339a872c228cbabe91b9ebf0d2bc4d729a74364d159aedf681a181e3d0",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [],
+        "orders": []
+      }
+    },
+    {
+      "id": "absent_version",
+      "input": "{\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "60e4b53a5ed26bd73b7296961f56d0aafee4f3f5fc60a9b7413744659d142d80",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "absent_geometry",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "d822f2d1287da4679f7805b888654ee0c2b8be02d88895a9c731e187d8a424e8",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "isotope_extension",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": [\n      13,\n      18\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "47eeb0a88f5cc43894992e6e5aac521ef23b3de19223c62877aea2becea3be3d",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2
+        ]
+      }
+    },
+    {
+      "id": "integral_float_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2.0\n    ]\n  }\n}\n",
+      "sha256": "a76a788dd532b903536803670478a36ac54a2f42f29806c0954c25503901dd00",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          2.0
+        ]
+      }
+    },
+    {
+      "id": "aromatic_1_5",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1.5\n    ]\n  }\n}\n",
+      "sha256": "c29734c4ede3d84bbcc5b7c2296a956fa14913cf38e9f0394b5cc3324500f82f",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          1.5
+        ]
+      }
+    },
+    {
+      "id": "aromatic_4_alias",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      4\n    ]\n  }\n}\n",
+      "sha256": "82ecb01804c4618c5329422af6c64ab38a37b6c764b0f4eb7d39f4fad1347c20",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "indices": [
+          0,
+          1
+        ],
+        "orders": [
+          1.5
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "short_charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "67232a0dbda7970c6152f76a7750aeae94fb10d02bcea07d7aef963c291b70cd"
+    },
+    {
+      "id": "long_charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "32017d1b9416f923fcebfb76b4574792f21e4ba4d707fcf626fce3a6e0e3c5b4"
+    },
+    {
+      "id": "null_charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": null\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "aef8241bf89c356ab47ebb9a00f66bb80d4181c5cd0ef196a947ba656e7dfe46"
+    },
+    {
+      "id": "scalar_charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": 1\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "2e8a2378afe54b7a9545dfef33d1993fc989063cbb1d572cf72f660aeaa7dc1c"
+    },
+    {
+      "id": "fractional_charge",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0.5\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "8df217dd52c4a1e458c21a6ff0a6d138e31adb0003e56d5a0aa2d71b4213a3ba"
+    },
+    {
+      "id": "out_of_range_charge",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      128\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "26c9b58da3822be6a835d8e0ec8826c36f2f705a94ef142e6be00024ffd6128e"
+    },
+    {
+      "id": "short_isotopes",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": [\n      13\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "93a212b8e0b345f61113fded6c05ec7205ddb94d0da5e97c12cdf8cae4c8d800"
+    },
+    {
+      "id": "long_isotopes",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": [\n      0,\n      0,\n      2\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "e6193ded9e4506a4ae667e6a52dfbdef259336974673a1544b61f5002b903fd4"
+    },
+    {
+      "id": "null_isotopes",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": null\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "8e9f6437f9cf5403d1bb904fb35067e0feaee1d2bc92ccb02df2aebf28d6d8b0"
+    },
+    {
+      "id": "negative_isotope",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": [\n      0,\n      -1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "8e06b4647b9bb34b84d6debb0462b51db08a46de559d2b281f23a2507e3cc487"
+    },
+    {
+      "id": "out_of_range_isotope",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ],\n    \"isotopes\": [\n      0,\n      65536\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "f00a88705b3ec3e587b096f6957d60070147e7b899c118d53c935a83ba9500e1"
+    },
+    {
+      "id": "null_coords",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": null,\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "0703dbdbc6b61f2e35e64e2a3a74abbdd8abc79bacbd858613134e4569627dc4"
+    },
+    {
+      "id": "null_3d",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": null\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "a9a49447c4a7b3115174a356339df477018eef25c528c6882345356e42187e66"
+    },
+    {
+      "id": "short_3d",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        1,\n        2,\n        3\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "d525d0d1bd381790fe6d409685df8610c554ea3037b570b26355ca485cd81800"
+    },
+    {
+      "id": "string_3d",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        0,\n        1,\n        2,\n        \"bad\"\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "091ac82ca8510baf2eef67e9f34faab3c19696538daf630e6b161bb9126871cb"
+    },
+    {
+      "id": "short_orders",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": []\n  }\n}\n",
+      "sha256": "4cfa2c7b93424f27c61164e97ffe069351a9aa4b70e76034e9db05618edd95e4"
+    },
+    {
+      "id": "long_orders",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2,\n      1\n    ]\n  }\n}\n",
+      "sha256": "7860e9a177bea2c8c3dbfeb1e09100712e951202200167e299a7573da0bff878"
+    },
+    {
+      "id": "null_orders",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": null\n  }\n}\n",
+      "sha256": "12dc41f6dda6c2de94ddda2ff37733aa86c47e8a219d480784343496ef52cd67"
+    },
+    {
+      "id": "unknown_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      7\n    ]\n  }\n}\n",
+      "sha256": "8905707f3d1c14dcef263f86b835889bb03261981e4dfb3484dad39a8cd7b495"
+    },
+    {
+      "id": "fractional_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2.2\n    ]\n  }\n}\n",
+      "sha256": "eae69b9870abbcfa2b8917b373517cc3d5e950e9dba4acaa36fc992a2fa7ac73"
+    },
+    {
+      "id": "near_aromatic",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1.5000000001\n    ]\n  }\n}\n",
+      "sha256": "aa797f505aa767180e2eaf186091641ccbbcc438644cd9335944df8bfcd19a4e"
+    },
+    {
+      "id": "bool_order",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      true\n    ]\n  }\n}\n",
+      "sha256": "6b1d5901fa7beb9b3be72e3fc0a984f56dd768baacea0a2e2d85e573f17849f8"
+    },
+    {
+      "id": "odd_indices",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "626e4b8f060650d3d1074a0d03c003bb3ca2a5babe3459cb7f8b903c5f9a91d6"
+    },
+    {
+      "id": "self_bond",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        0\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "17e931f16559adf84ed930562ae7488100ebdb1d5b3f1d8bfedfad37b79e8448"
+    },
+    {
+      "id": "duplicate_reverse_bond",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        1,\n        0\n      ]\n    },\n    \"order\": [\n      1,\n      1\n    ]\n  }\n}\n",
+      "sha256": "7a8028578b9b7d2c1fce5646b35907e269a24e7fe4432fe32d6e74af7aec8f39"
+    },
+    {
+      "id": "dangling_bond",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        3\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "40c9f67d9af7ec1594a7830f4481d52db89c40a35085885670d4be4a63f96f0e"
+    },
+    {
+      "id": "negative_bond_index",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        -1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "ed5e707eec86bc4dad0286ff5523c80935a18b6c6c043f048fb6a41793cd7ff4"
+    },
+    {
+      "id": "float_bond_index",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1.0\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "0301e82fe8cf4c11573facf3bcb6968e30b5abaca0a6cd022ef7680720950321"
+    },
+    {
+      "id": "unknown_element",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        119\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "674c163dffaf344844c115662eb11a0a7339e6cbb95f38b3f415da4ffe9c095b"
+    },
+    {
+      "id": "float_element",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8.0\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "58df4d41a42f33cfd4ff4aeab4e087a8697d06312cc7689dbc3040f49169b578"
+    },
+    {
+      "id": "wrong_version",
+      "input": "{\n  \"chemicalJson\": 2,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  }\n}\n",
+      "sha256": "7ffc5f13549cb04c20a5c96d16f541ff8d5a3ce2c13436403ed98097fdf5d0fc"
+    },
+    {
+      "id": "short_partial_charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  },\n  \"partialCharges\": {\n    \"Mulliken\": [\n      0.1\n    ]\n  }\n}\n",
+      "sha256": "104abdd3d104d3b2eac069a1b421431d12be53f991e13eac161403df837e06bf"
+    },
+    {
+      "id": "invalid_name",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        -0.5,\n        0.125,\n        1.25,\n        -0.5,\n        1.125\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  },\n  \"properties\": {\n    \"name\": 12\n  }\n}\n",
+      "sha256": "ca3742b5c23b11b9a61927968b221ae87e0a40f59c22471a86e0913fac3947d2"
+    },
+    {
+      "id": "duplicate_decoded_key",
+      "input": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,-0.5,0.125,1.25,-0.5,1.125]},\"formalCharges\":[0,0],\"formalCh\\u0061rges\":[1,0]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[2]}}",
+      "sha256": "9d3eb38e8c366b890430a431e0e217d0ded28a62de053eb5fbb0e34b7d0b2506"
+    },
+    {
+      "id": "duplicate_opaque_key",
+      "input": "{\"chemicalJson\":1,\"atoms\":{\"elements\":{\"number\":[6,8]},\"coords\":{\"3d\":[0.0,-0.5,0.125,1.25,-0.5,1.125]},\"formalCharges\":[0,0]},\"bonds\":{\"connections\":{\"index\":[0,1]},\"order\":[2]},\"vendor\":{\"x\":1,\"x\":2}}",
+      "sha256": "724e000aa07d7f2d353f4d955253d8730a92d81d56a950b46da859edf3338383"
+    }
+  ]
+}
