@@ -91,7 +91,7 @@ not an acceptable completion condition.
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Ready for review |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Ready for review |
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Ready for review |
-| R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
+| R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Ready for review |
 
 The R18 candidate reduces the checked function allowances from 76 to 74. The
 existing MOL2/CJSON contract suites show no change to their report schema,
@@ -139,6 +139,16 @@ and reporting, while the reusable scanner owns masking, function discovery and
 production-source selection. The existing six scanner and ratchet tests pass
 unchanged, and both normal checking and baseline printing use the same scanner.
 This phase preserves the 8-file/60-function ratchet for the final R25 closeout.
+
+The stacked R25 candidate separates ten final orchestration functions across
+reaction documents and stoichiometry, scaffold selection, CIP expansion,
+periodic neighbor indexing, POSCAR writing, depiction preflight/PNG rendering,
+and canonical orbit comparison. POSCAR write planning now lives in a bounded
+private module instead of growing the retained parser file. The ratchet reaches
+the declared closeout target of 8 file and 50 function allowances. Complete
+tests for all six affected crates, their integration tests and doctests pass;
+warnings-as-errors clippy, the budget scanner and release-document checks are
+the final acceptance gates.
 
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor

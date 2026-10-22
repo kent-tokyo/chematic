@@ -15,6 +15,7 @@ use crate::site::FractionalCoord;
 use crate::structure::PeriodicStructure;
 
 type ImageEntry = (usize, [i32; 3], [f64; 3]);
+type CellListPoints = (Vec<[f64; 3]>, Vec<[f64; 3]>);
 
 /// Safety cap on the number of candidate periodic images examined per site
 /// pair. The search-box width is identical for every pair in a structure
@@ -109,6 +110,96 @@ fn periodic_cell_list(
     cutoff: f64,
     recip_norms: [f64; 3],
 ) -> Option<Vec<PeriodicNeighbor>> {
+    PeriodicCellIndex::new(structure, cutoff, recip_norms).map(|index| index.neighbors())
+}
+
+struct PeriodicCellIndex<'a> {
+    structure: &'a PeriodicStructure,
+    cutoff: f64,
+    cell_size: f64,
+    fractional: Vec<[f64; 3]>,
+    cartesian: Vec<[f64; 3]>,
+    bins: HashMap<[i64; 3], Vec<ImageEntry>>,
+}
+
+impl<'a> PeriodicCellIndex<'a> {
+    fn new(structure: &'a PeriodicStructure, cutoff: f64, recip_norms: [f64; 3]) -> Option<Self> {
+        let cell_size = cell_list_cell_size(structure, cutoff)?;
+        let (fractional, cartesian) = cell_list_points(structure)?;
+        let shift_ranges = cell_list_shift_ranges(&fractional, cutoff, recip_norms)?;
+        let bins = build_image_bins(structure, &fractional, shift_ranges, cell_size);
+        Some(Self {
+            structure,
+            cutoff,
+            cell_size,
+            fractional,
+            cartesian,
+            bins,
+        })
+    }
+
+    fn neighbors(&self) -> Vec<PeriodicNeighbor> {
+        let mut results = Vec::new();
+        for (center_index, center) in self.cartesian.iter().enumerate() {
+            let key = cartesian_bin(*center, self.cell_size);
+            // Two-cell padding covers a floating-point bin-boundary crossing
+            // after the intentionally conservative cell-size margin, including
+            // negative Cartesian coordinates in skewed cells.
+            for dx in -2..=2 {
+                for dy in -2..=2 {
+                    for dz in -2..=2 {
+                        let Some(entries) = self.bins.get(&[key[0] + dx, key[1] + dy, key[2] + dz])
+                        else {
+                            continue;
+                        };
+                        for &entry in entries {
+                            self.append_neighbor(center_index, entry, &mut results);
+                        }
+                    }
+                }
+            }
+        }
+        results.sort_by_key(neighbor_sort_key);
+        results
+    }
+
+    fn append_neighbor(
+        &self,
+        center_index: usize,
+        (neighbor_index, image, _image_point): ImageEntry,
+        results: &mut Vec<PeriodicNeighbor>,
+    ) {
+        if center_index == neighbor_index && image == [0, 0, 0] {
+            return;
+        }
+        // Recompute in fractional delta + image form to match the reference
+        // path's arithmetic at the exact cutoff boundary.
+        let displacement = self
+            .structure
+            .lattice()
+            .frac_to_cart(FractionalCoord::new([
+                self.fractional[neighbor_index][0] - self.fractional[center_index][0]
+                    + f64::from(image[0]),
+                self.fractional[neighbor_index][1] - self.fractional[center_index][1]
+                    + f64::from(image[1]),
+                self.fractional[neighbor_index][2] - self.fractional[center_index][2]
+                    + f64::from(image[2]),
+            ]))
+            .0;
+        let distance = norm3(displacement);
+        if distance <= self.cutoff {
+            results.push(PeriodicNeighbor {
+                center_index,
+                neighbor_index,
+                image,
+                displacement,
+                distance,
+            });
+        }
+    }
+}
+
+fn cell_list_cell_size(structure: &PeriodicStructure, cutoff: f64) -> Option<f64> {
     let matrix = structure.lattice().matrix();
     // Cartesian bins remain valid for triclinic cells: any accepted pair has
     // Euclidean displacement at most `cutoff`, so each Cartesian component is
@@ -121,7 +212,6 @@ fn periodic_cell_list(
     {
         return None;
     }
-
     // Leave a tiny margin in the bin edge so a pair exactly on the cutoff
     // cannot be separated by an ulp-sized division discrepancy into bins two
     // apart. The final distance check still uses the caller's exact cutoff.
@@ -129,7 +219,10 @@ fn periodic_cell_list(
     if !cell_size.is_finite() {
         return None;
     }
+    Some(cell_size)
+}
 
+fn cell_list_points(structure: &PeriodicStructure) -> Option<CellListPoints> {
     let sites = structure.sites();
     let fractional: Vec<[f64; 3]> = sites.iter().map(|site| site.fractional.0).collect();
     let cartesian: Vec<[f64; 3]> = fractional
@@ -147,7 +240,14 @@ fn periodic_cell_list(
     {
         return None;
     }
+    Some((fractional, cartesian))
+}
 
+fn cell_list_shift_ranges(
+    fractional: &[[f64; 3]],
+    cutoff: f64,
+    recip_norms: [f64; 3],
+) -> Option<[(i64, i64); 3]> {
     // Build one replicated image index for the whole stored cell.  The
     // search-box guard above bounds the number of shifts per pair; this
     // additional total-image guard prevents a large structure from turning
@@ -175,13 +275,21 @@ fn periodic_cell_list(
     let shift_count = shift_ranges.iter().try_fold(1u64, |acc, (lo, hi)| {
         acc.checked_mul((*hi - *lo + 1) as u64)
     })?;
-    let total_images = shift_count.checked_mul(sites.len() as u64)?;
+    let total_images = shift_count.checked_mul(fractional.len() as u64)?;
     if total_images > MAX_NEIGHBOR_IMAGE_CANDIDATES {
         return None;
     }
+    Some(shift_ranges)
+}
 
+fn build_image_bins(
+    structure: &PeriodicStructure,
+    fractional: &[[f64; 3]],
+    shift_ranges: [(i64, i64); 3],
+    cell_size: f64,
+) -> HashMap<[i64; 3], Vec<ImageEntry>> {
     let mut bins: HashMap<[i64; 3], Vec<ImageEntry>> = HashMap::new();
-    for (index, _) in cartesian.iter().enumerate() {
+    for (index, _) in fractional.iter().enumerate() {
         for sx in shift_ranges[0].0..=shift_ranges[0].1 {
             for sy in shift_ranges[1].0..=shift_ranges[1].1 {
                 for sz in shift_ranges[2].0..=shift_ranges[2].1 {
@@ -194,11 +302,7 @@ fn periodic_cell_list(
                             fractional[index][2] + sz as f64,
                         ]))
                         .0;
-                    let key = [
-                        (image_point[0] / cell_size).floor() as i64,
-                        (image_point[1] / cell_size).floor() as i64,
-                        (image_point[2] / cell_size).floor() as i64,
-                    ];
+                    let key = cartesian_bin(image_point, cell_size);
                     bins.entry(key)
                         .or_default()
                         .push((index, image, image_point));
@@ -206,69 +310,25 @@ fn periodic_cell_list(
             }
         }
     }
+    bins
+}
 
-    let mut results = Vec::new();
-    for (center_index, center) in cartesian.iter().enumerate() {
-        let key = [
-            (center[0] / cell_size).floor() as i64,
-            (center[1] / cell_size).floor() as i64,
-            (center[2] / cell_size).floor() as i64,
-        ];
-        // Two-cell padding covers a floating-point bin-boundary crossing
-        // after the intentionally conservative cell-size margin, including
-        // negative Cartesian coordinates in skewed cells.
-        for dx in -2..=2 {
-            for dy in -2..=2 {
-                for dz in -2..=2 {
-                    let Some(entries) = bins.get(&[key[0] + dx, key[1] + dy, key[2] + dz]) else {
-                        continue;
-                    };
-                    for &(neighbor_index, image, _image_point) in entries {
-                        if center_index == neighbor_index && image == [0, 0, 0] {
-                            continue;
-                        }
-                        // Recompute the accepted displacement in fractional
-                        // delta + image form. Besides matching the reference
-                        // search's arithmetic, this avoids accepting a point
-                        // exactly at the cutoff solely because subtracting two
-                        // separately transformed Cartesian coordinates rounded
-                        // to the favorable side.
-                        let displacement = structure
-                            .lattice()
-                            .frac_to_cart(FractionalCoord::new([
-                                fractional[neighbor_index][0] - fractional[center_index][0]
-                                    + f64::from(image[0]),
-                                fractional[neighbor_index][1] - fractional[center_index][1]
-                                    + f64::from(image[1]),
-                                fractional[neighbor_index][2] - fractional[center_index][2]
-                                    + f64::from(image[2]),
-                            ]))
-                            .0;
-                        let distance = norm3(displacement);
-                        if distance <= cutoff {
-                            results.push(PeriodicNeighbor {
-                                center_index,
-                                neighbor_index,
-                                image,
-                                displacement,
-                                distance,
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    results.sort_by_key(|nb| {
-        (
-            nb.center_index,
-            nb.neighbor_index,
-            nb.image[0],
-            nb.image[1],
-            nb.image[2],
-        )
-    });
-    Some(results)
+fn cartesian_bin(point: [f64; 3], cell_size: f64) -> [i64; 3] {
+    [
+        (point[0] / cell_size).floor() as i64,
+        (point[1] / cell_size).floor() as i64,
+        (point[2] / cell_size).floor() as i64,
+    ]
+}
+
+fn neighbor_sort_key(nb: &PeriodicNeighbor) -> (usize, usize, i32, i32, i32) {
+    (
+        nb.center_index,
+        nb.neighbor_index,
+        nb.image[0],
+        nb.image[1],
+        nb.image[2],
+    )
 }
 
 fn neighbors_within_bounded_search(

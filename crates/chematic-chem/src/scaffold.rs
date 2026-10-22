@@ -244,151 +244,12 @@ fn schuffenhauer_remove_ring(
     mol: &Molecule,
     rings: &chematic_perception::RingSet,
 ) -> Option<Molecule> {
-    let n_rings = rings.ring_count();
-    if n_rings == 0 {
+    if rings.ring_count() == 0 {
         return None;
     }
-
-    // Find "removable" rings: removing all atoms in the ring (that don't belong
-    // to other rings) still leaves a connected scaffold or is the last ring.
     let all_rings: Vec<Vec<AtomIdx>> = rings.rings().to_vec();
-
-    // For each ring, count how many of its atoms appear in exactly 1 ring.
-    // Those atoms can be safely deleted when we remove the ring.
-    let mut candidates: Vec<usize> = (0..n_rings)
-        .filter(|&ri| {
-            // A ring is outermost if it shares at most one ring member with
-            // any other ring (i.e. it has atoms exclusive to it).
-            let exclusive: usize = all_rings[ri]
-                .iter()
-                .filter(|&&atom| {
-                    all_rings
-                        .iter()
-                        .enumerate()
-                        .filter(|(j, _)| *j != ri)
-                        .all(|(_, other)| !other.contains(&atom))
-                })
-                .count();
-            exclusive > 0
-        })
-        .collect();
-
-    if candidates.is_empty() {
-        // Fallback: all rings are fused. Pick the one with the most shared atoms.
-        candidates = (0..n_rings).collect();
-    }
-
-    // Rule 2: prefer all-carbon rings (no heteroatoms).
-    let carbon_only: Vec<usize> = candidates
-        .iter()
-        .copied()
-        .filter(|&ri| {
-            all_rings[ri]
-                .iter()
-                .all(|&a| mol.atom(a).element.atomic_number() == 6)
-        })
-        .collect();
-    if !carbon_only.is_empty() {
-        candidates = carbon_only;
-    }
-
-    // Rule 3: prefer smallest ring.
-    let min_size = candidates
-        .iter()
-        .map(|&ri| all_rings[ri].len())
-        .min()
-        .unwrap();
-    candidates.retain(|&ri| all_rings[ri].len() == min_size);
-
-    // Rule 4: prefer rings with fewer nitrogen atoms.
-    let count_heteroatoms = |ri: usize| {
-        all_rings[ri]
-            .iter()
-            .filter(|&&a| mol.atom(a).element.atomic_number() == 7)
-            .count()
-    };
-    let min_nitrogen = candidates
-        .iter()
-        .map(|&ri| count_heteroatoms(ri))
-        .min()
-        .unwrap();
-    candidates.retain(|&ri| count_heteroatoms(ri) == min_nitrogen);
-
-    // Rule 5: prefer rings with fewer heavy-atom substituents (linker attachments).
-    let count_substituents = |ri: usize| {
-        all_rings[ri]
-            .iter()
-            .filter(|&&atom| {
-                mol.neighbors(atom).any(|(nb, _)| {
-                    // A substituent is a neighbor not in this ring and not hydrogen
-                    !all_rings[ri].contains(&nb) && mol.atom(nb).element.atomic_number() != 1
-                })
-            })
-            .count()
-    };
-    let min_subs = candidates
-        .iter()
-        .map(|&ri| count_substituents(ri))
-        .min()
-        .unwrap();
-    candidates.retain(|&ri| count_substituents(ri) == min_subs);
-
-    // Rule 6: prefer 5-membered rings over larger rings (5-ring priority).
-    let prefer_5ring: Vec<usize> = candidates
-        .iter()
-        .copied()
-        .filter(|&ri| all_rings[ri].len() == 5)
-        .collect();
-    if !prefer_5ring.is_empty() {
-        candidates = prefer_5ring;
-    }
-
-    // Rule 7: prefer rings with fewer linker bonds (fewest inter-ring connections).
-    let count_linker_bonds = |ri: usize| {
-        all_rings[ri]
-            .iter()
-            .filter(|&&atom| {
-                all_rings
-                    .iter()
-                    .enumerate()
-                    .any(|(j, other)| j != ri && other.contains(&atom))
-            })
-            .count()
-    };
-    let min_linker = candidates
-        .iter()
-        .map(|&ri| count_linker_bonds(ri))
-        .min()
-        .unwrap();
-    candidates.retain(|&ri| count_linker_bonds(ri) == min_linker);
-
-    // Rule 8: tie-break by smallest atom index in the ring.
-    //
-    // This sorts by raw AtomIdx, which depends on SMILES parse order, not a
-    // canonical rank -- same non-canonical-tie-break shape as the
-    // is_fused_ring bug fixed in chematic-perception's ring_family.rs.
-    // Flagged, not fixed: a direct discriminator (comparing scaffold()
-    // atom counts across disagreeing worst-of-10 traversals, full 5000-mol
-    // corpus) found 0/40 topology-selection mismatches -- every measured
-    // scaffold instability was a canonical-SMILES writer issue, not this
-    // tie-break choosing a different ring. Worth auditing on its own before
-    // changing it; don't assume this is broken just because it's
-    // non-canonical.
-    candidates.sort_by_key(|&ri| all_rings[ri].iter().map(|a| a.0).min().unwrap_or(0));
-    let chosen_ring = candidates[0];
-
-    // Build the set of atoms to DELETE: atoms exclusive to the chosen ring.
-    let to_delete: HashSet<AtomIdx> = all_rings[chosen_ring]
-        .iter()
-        .copied()
-        .filter(|&atom| {
-            all_rings
-                .iter()
-                .enumerate()
-                .filter(|(j, _)| *j != chosen_ring)
-                .all(|(_, other)| !other.contains(&atom))
-        })
-        .collect();
+    let chosen_ring = choose_schuffenhauer_ring(mol, &all_rings);
+    let to_delete = exclusive_ring_atoms(&all_rings, chosen_ring);
 
     if to_delete.is_empty() {
         return None; // fused ring with no exclusive atoms — can't remove
@@ -405,6 +266,79 @@ fn schuffenhauer_remove_ring(
     }
 
     Some(build_subgraph(mol, &keep))
+}
+
+fn choose_schuffenhauer_ring(mol: &Molecule, rings: &[Vec<AtomIdx>]) -> usize {
+    let mut candidates: Vec<usize> = (0..rings.len())
+        .filter(|&index| !exclusive_ring_atoms(rings, index).is_empty())
+        .collect();
+    if candidates.is_empty() {
+        candidates = (0..rings.len()).collect();
+    }
+    retain_preferred(&mut candidates, |index| {
+        usize::from(
+            !rings[index]
+                .iter()
+                .all(|&atom| mol.atom(atom).element.atomic_number() == 6),
+        )
+    });
+    retain_preferred(&mut candidates, |index| rings[index].len());
+    retain_preferred(&mut candidates, |index| {
+        rings[index]
+            .iter()
+            .filter(|&&atom| mol.atom(atom).element.atomic_number() == 7)
+            .count()
+    });
+    retain_preferred(&mut candidates, |index| {
+        rings[index]
+            .iter()
+            .filter(|&&atom| {
+                mol.neighbors(atom).any(|(neighbor, _)| {
+                    !rings[index].contains(&neighbor)
+                        && mol.atom(neighbor).element.atomic_number() != 1
+                })
+            })
+            .count()
+    });
+    if candidates.iter().any(|&index| rings[index].len() == 5) {
+        candidates.retain(|&index| rings[index].len() == 5);
+    }
+    retain_preferred(&mut candidates, |index| {
+        rings[index]
+            .iter()
+            .filter(|&&atom| {
+                rings
+                    .iter()
+                    .enumerate()
+                    .any(|(other, ring)| other != index && ring.contains(&atom))
+            })
+            .count()
+    });
+    candidates.sort_by_key(|&index| rings[index].iter().map(|atom| atom.0).min().unwrap_or(0));
+    candidates[0]
+}
+
+fn retain_preferred(candidates: &mut Vec<usize>, score: impl Fn(usize) -> usize) {
+    let minimum = candidates
+        .iter()
+        .map(|&candidate| score(candidate))
+        .min()
+        .expect("ring candidates are non-empty");
+    candidates.retain(|&candidate| score(candidate) == minimum);
+}
+
+fn exclusive_ring_atoms(rings: &[Vec<AtomIdx>], selected: usize) -> HashSet<AtomIdx> {
+    rings[selected]
+        .iter()
+        .copied()
+        .filter(|atom| {
+            rings
+                .iter()
+                .enumerate()
+                .filter(|(index, _)| *index != selected)
+                .all(|(_, ring)| !ring.contains(atom))
+        })
+        .collect()
 }
 
 /// Compute the scaffold network from a molecule library with occurrence counts.

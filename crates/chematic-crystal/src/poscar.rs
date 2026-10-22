@@ -114,6 +114,9 @@ use crate::lattice::{Lattice, cross3, dot3};
 use crate::site::{CartesianCoord, FractionalCoord, Occupancy, PeriodicSite, SiteSpecies};
 use crate::structure::PeriodicStructure;
 
+mod write_plan;
+use write_plan::poscar_write_plan;
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
@@ -711,87 +714,8 @@ fn split_into_chunks<'a>(lines: &[&'a str], start_line: usize) -> Vec<Vec<(usize
 /// present (its data is opaque verbatim text -- see module docs -- so it
 /// cannot be safely permuted).
 pub fn write_poscar(doc: &PoscarDocument) -> Result<String, PoscarError> {
+    let plan = poscar_write_plan(doc)?;
     let sites = doc.structure.sites();
-    let n = sites.len();
-
-    let mut elements = Vec::with_capacity(n);
-    for (idx, site) in sites.iter().enumerate() {
-        if site.species.len() != 1 {
-            return Err(PoscarError::Unwritable {
-                detail: format!(
-                    "site {idx} has {} species; POSCAR has no disorder/partial-occupancy representation (every site must be exactly one species)",
-                    site.species.len()
-                ),
-            });
-        }
-        let sp = &site.species[0];
-        if (sp.occupancy.value() - 1.0).abs() > Occupancy::SUM_TOLERANCE {
-            return Err(PoscarError::Unwritable {
-                detail: format!(
-                    "site {idx} has occupancy {} (POSCAR requires full occupancy 1.0)",
-                    sp.occupancy.value()
-                ),
-            });
-        }
-        elements.push(sp.element);
-    }
-
-    // Stable group order = first-appearance order of each species among
-    // the sites (not alphabetical) -- required by the format itself
-    // (atoms of one species must be contiguous).
-    let mut group_order: Vec<Element> = Vec::new();
-    for &e in &elements {
-        if !group_order.contains(&e) {
-            group_order.push(e);
-        }
-    }
-    let group_index = |e: Element| {
-        group_order
-            .iter()
-            .position(|&g| g == e)
-            .expect("built from elements above")
-    };
-
-    let mut perm: Vec<usize> = (0..n).collect();
-    perm.sort_by_key(|&idx| group_index(elements[idx])); // stable: preserves relative order within a group
-
-    let is_identity = perm.iter().enumerate().all(|(i, &p)| i == p);
-    if !is_identity && doc.predictor_corrector.is_some() {
-        return Err(PoscarError::Unwritable {
-            detail: "sites need reordering into contiguous species groups, but predictor_corrector holds opaque verbatim MD-restart data that cannot be safely permuted -- reorder sites (or clear predictor_corrector) before writing".to_string(),
-        });
-    }
-
-    let mut counts = vec![0usize; group_order.len()];
-    for &e in &elements {
-        counts[group_index(e)] += 1;
-    }
-
-    if let Some(vel) = &doc.velocities
-        && vel.len() != n
-    {
-        return Err(PoscarError::Unwritable {
-            detail: format!(
-                "velocities has {} entries but structure has {n} site(s)",
-                vel.len()
-            ),
-        });
-    }
-    if let Some(sel) = &doc.selective_dynamics
-        && sel.len() != n
-    {
-        return Err(PoscarError::Unwritable {
-            detail: format!(
-                "selective_dynamics has {} entries but structure has {n} site(s)",
-                sel.len()
-            ),
-        });
-    }
-    if doc.predictor_corrector.is_some() && doc.velocities.is_none() {
-        return Err(PoscarError::Unwritable {
-            detail: "predictor_corrector is present but velocities is None -- VASP's CONTCAR layout always has ion velocities before predictor-corrector data".to_string(),
-        });
-    }
 
     let mut out = String::new();
     out.push_str(&doc.comment);
@@ -801,7 +725,8 @@ pub fn write_poscar(doc: &PoscarDocument) -> Result<String, PoscarError> {
         out.push_str(&format!("{} {} {}\n", row[0], row[1], row[2]));
     }
     out.push_str(
-        &group_order
+        &plan
+            .group_order
             .iter()
             .map(|e| e.symbol())
             .collect::<Vec<_>>()
@@ -809,7 +734,8 @@ pub fn write_poscar(doc: &PoscarDocument) -> Result<String, PoscarError> {
     );
     out.push('\n');
     out.push_str(
-        &counts
+        &plan
+            .counts
             .iter()
             .map(usize::to_string)
             .collect::<Vec<_>>()
@@ -821,7 +747,7 @@ pub fn write_poscar(doc: &PoscarDocument) -> Result<String, PoscarError> {
     }
     out.push_str("Direct\n");
 
-    for &orig_idx in &perm {
+    for &orig_idx in &plan.permutation {
         let f = sites[orig_idx].fractional.0;
         out.push_str(&format!("{} {} {}", f[0], f[1], f[2]));
         if let Some(sel) = &doc.selective_dynamics {
@@ -834,7 +760,7 @@ pub fn write_poscar(doc: &PoscarDocument) -> Result<String, PoscarError> {
 
     if let Some(vel) = &doc.velocities {
         out.push('\n');
-        for &orig_idx in &perm {
+        for &orig_idx in &plan.permutation {
             let v = vel[orig_idx];
             out.push_str(&format!("{} {} {}\n", v[0], v[1], v[2]));
         }

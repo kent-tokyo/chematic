@@ -87,6 +87,16 @@ pub struct CipDigraph<'m> {
     fractional_nodes_emitted: u64,
 }
 
+struct ExpansionContext {
+    atom_idx: AtomIdx,
+    parent_atom: Option<AtomIdx>,
+    depth: u32,
+    child_depth: u32,
+    incoming_bond_order: Option<BondOrder>,
+    parent_is_root: bool,
+    ancestors: HashSet<AtomIdx>,
+}
+
 impl<'m> CipDigraph<'m> {
     /// Create a digraph rooted at `root_atom`. Materializes only the root node --
     /// children are computed on first access via [`Self::expand_children`] or the
@@ -232,20 +242,48 @@ impl<'m> CipDigraph<'m> {
         if let Some(cached) = &self.children_cache[node_id.0 as usize] {
             return Ok(cached.clone());
         }
-
-        let node = &self.nodes[node_id.0 as usize];
-        let atom_idx = match node.kind {
-            CipNodeKind::Atom { atom_idx } => atom_idx,
+        let Some(context) = self.expansion_context(node_id) else {
             // Duplicate/implicit-H nodes are leaves by design (see module docs) --
             // they represent a terminated branch, not a real atom to expand further.
-            _ => {
-                self.children_cache[node_id.0 as usize] = Some(Vec::new());
-                return Ok(Vec::new());
-            }
+            self.children_cache[node_id.0 as usize] = Some(Vec::new());
+            return Ok(Vec::new());
         };
-        let depth = node.depth;
-        let child_depth = depth + 1;
+        self.consume_expansion_budget()?;
+        let mut children = Vec::new();
+        self.append_arrival_duplicates(node_id, &context, &mut children)?;
+        self.append_neighbor_children(node_id, &context, &mut children)?;
+        self.append_implicit_hydrogens(node_id, &context, &mut children)?;
+        self.children_cache[node_id.0 as usize] = Some(children.clone());
+        Ok(children)
+    }
 
+    fn expansion_context(&self, node_id: NodeId) -> Option<ExpansionContext> {
+        let node = &self.nodes[node_id.0 as usize];
+        let CipNodeKind::Atom { atom_idx } = node.kind else {
+            return None;
+        };
+        let parent_atom = node
+            .parent
+            .and_then(|parent| match self.nodes[parent.0 as usize].kind {
+                CipNodeKind::Atom { atom_idx } => Some(atom_idx),
+                _ => None,
+            });
+        Some(ExpansionContext {
+            atom_idx,
+            parent_atom,
+            depth: node.depth,
+            child_depth: node.depth + 1,
+            incoming_bond_order: node
+                .incoming_edge
+                .map(|edge| self.edges[edge.0 as usize].bond_order),
+            parent_is_root: node
+                .parent
+                .is_some_and(|parent| self.nodes[parent.0 as usize].depth == 0),
+            ancestors: self.ancestor_atoms(node_id),
+        })
+    }
+
+    fn consume_expansion_budget(&mut self) -> Result<(), CipError> {
         self.expansion_count += 1;
         if self.expansion_count > self.budget.max_expansions {
             return Err(CipError::BudgetExceeded {
@@ -255,20 +293,15 @@ impl<'m> CipDigraph<'m> {
                 ),
             });
         }
+        Ok(())
+    }
 
-        let parent_atom = node
-            .parent
-            .and_then(|p| match self.nodes[p.0 as usize].kind {
-                CipNodeKind::Atom { atom_idx } => Some(atom_idx),
-                _ => None,
-            });
-        let incoming_bond_order = node
-            .incoming_edge
-            .map(|e| self.edges[e.0 as usize].bond_order);
-        let ancestors = self.ancestor_atoms(node_id);
-
-        let mut children = Vec::new();
-
+    fn append_arrival_duplicates(
+        &mut self,
+        node_id: NodeId,
+        context: &ExpansionContext,
+        children: &mut Vec<NodeId>,
+    ) -> Result<(), CipError> {
         // Arrival-side duplication: a multiple bond duplicates its partner into BOTH
         // atoms' own substituent lists, not just the one doing the iterating below
         // ("departure side"). This node's own list needs k-1 duplicates of its parent
@@ -284,30 +317,37 @@ impl<'m> CipDigraph<'m> {
         // (`Digraph::expand`, Hanson et al. 2018) does not expand bond orders
         // there, so a P=O oxygen ranks like an O- and P=O / [P+][O-] give one
         // label.
-        let parent_is_root = node
-            .parent
-            .is_some_and(|p| self.nodes[p.0 as usize].depth == 0);
-        if let (Some(parent), Some(bond_order), false) =
-            (parent_atom, incoming_bond_order, parent_is_root)
-        {
+        if let (Some(parent), Some(bond_order), false) = (
+            context.parent_atom,
+            context.incoming_bond_order,
+            context.parent_is_root,
+        ) {
             let multiplicity = bond_order.order_int();
             for _ in 0..multiplicity.saturating_sub(1) {
                 let dup = self.push_node(
                     CipNodeKind::MultipleBondDuplicate {
-                        source_atom: atom_idx,
+                        source_atom: context.atom_idx,
                         duplicated_atom: parent,
                         bond_order: multiplicity,
                     },
                     Some(node_id),
-                    child_depth,
+                    context.child_depth,
                     bond_order,
                 )?;
                 children.push(dup);
             }
         }
+        Ok(())
+    }
 
-        for (nb, bond_idx) in self.mol.neighbors(atom_idx) {
-            if Some(nb) == parent_atom {
+    fn append_neighbor_children(
+        &mut self,
+        node_id: NodeId,
+        context: &ExpansionContext,
+        children: &mut Vec<NodeId>,
+    ) -> Result<(), CipError> {
+        for (nb, bond_idx) in self.mol.neighbors(context.atom_idx) {
+            if Some(nb) == context.parent_atom {
                 // The bond we arrived through: not re-descended, not a ring closure --
                 // just the single tree edge that already exists as `node`'s own
                 // `incoming_edge`.
@@ -321,7 +361,7 @@ impl<'m> CipDigraph<'m> {
             // via a multiple bond, regardless of whether `nb` turns out to be a fresh
             // atom or a ring closure (both can co-occur, e.g. a
             // ring-closing double bond in a bridged bicyclic alkene).
-            let departure_duplicates = if depth == 0 {
+            let departure_duplicates = if context.depth == 0 {
                 0
             } else {
                 multiplicity.saturating_sub(1)
@@ -329,25 +369,25 @@ impl<'m> CipDigraph<'m> {
             for _ in 0..departure_duplicates {
                 let dup = self.push_node(
                     CipNodeKind::MultipleBondDuplicate {
-                        source_atom: atom_idx,
+                        source_atom: context.atom_idx,
                         duplicated_atom: nb,
                         bond_order: multiplicity,
                     },
                     Some(node_id),
-                    child_depth,
+                    context.child_depth,
                     bond_order,
                 )?;
                 children.push(dup);
             }
 
-            if ancestors.contains(&nb) {
+            if context.ancestors.contains(&nb) {
                 let dup = self.push_node(
                     CipNodeKind::RingDuplicate {
-                        source_atom: atom_idx,
+                        source_atom: context.atom_idx,
                         closure_atom: nb,
                     },
                     Some(node_id),
-                    child_depth,
+                    context.child_depth,
                     bond_order,
                 )?;
                 children.push(dup);
@@ -355,26 +395,32 @@ impl<'m> CipDigraph<'m> {
                 let real = self.push_node(
                     CipNodeKind::Atom { atom_idx: nb },
                     Some(node_id),
-                    child_depth,
+                    context.child_depth,
                     bond_order,
                 )?;
                 children.push(real);
             }
         }
+        Ok(())
+    }
 
-        let h_count = implicit_hcount(self.mol, atom_idx);
+    fn append_implicit_hydrogens(
+        &mut self,
+        node_id: NodeId,
+        context: &ExpansionContext,
+        children: &mut Vec<NodeId>,
+    ) -> Result<(), CipError> {
+        let h_count = implicit_hcount(self.mol, context.atom_idx);
         for _ in 0..h_count {
             let h = self.push_node(
                 CipNodeKind::ImplicitHydrogen,
                 Some(node_id),
-                child_depth,
+                context.child_depth,
                 BondOrder::Single,
             )?;
             children.push(h);
         }
-
-        self.children_cache[node_id.0 as usize] = Some(children.clone());
-        Ok(children)
+        Ok(())
     }
 
     /// The set of atoms on the root-to-`node` path, including `node`'s own atom (if
