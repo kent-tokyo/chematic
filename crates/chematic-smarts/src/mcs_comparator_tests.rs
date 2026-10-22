@@ -211,3 +211,25 @@ fn comparator_search_budget_still_reports_resource_limit() {
         McsOutcome::ResourceLimited(_)
     ));
 }
+
+#[test]
+fn complete_rings_only_keeps_smaller_valid_chain_after_larger_partial_ring() {
+    let six_ring_and_chain = parse("C1CCCCC1.CCCC").unwrap();
+    let five_ring_and_chain = parse("C1CCCC1.CCCC").unwrap();
+    let config = McsConfig {
+        complete_rings_only: true,
+        ..Default::default()
+    };
+    for refs in [
+        [&six_ring_and_chain, &five_ring_and_chain],
+        [&five_ring_and_chain, &six_ring_and_chain],
+    ] {
+        let outcome = find_mcs_with_config_checked(&refs, &config);
+        assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+        let query = outcome.into_query();
+        assert_eq!(query.atom_count(), 4);
+        assert_eq!(query.bonds.len(), 3);
+        assert!(!crate::find_matches(&query, refs[0]).is_empty());
+        assert!(!crate::find_matches(&query, refs[1]).is_empty());
+    }
+}
