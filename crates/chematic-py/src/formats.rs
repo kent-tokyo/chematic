@@ -48,6 +48,8 @@ use chemdraw::*;
 mod mol2_ensemble;
 use mol2_ensemble::*;
 mod materials;
+mod orca_cartesian;
+use orca_cartesian::parse_orca_cartesian;
 mod pqr_checked;
 use pqr_checked::write_pqr_checked;
 mod mmcif_pdb;
@@ -1463,6 +1465,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_pdbqt_checked,
         infer_element,
         parse_orca_input,
+        parse_orca_cartesian,
         write_orca_input,
         parse_orca_output,
         parse_qcschema_molecule,

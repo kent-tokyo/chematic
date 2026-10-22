@@ -133,7 +133,8 @@ biological-assembly model.
 | Gaussian Cube Bohr/Ångström tag | Rust core | `GridUnits::{Bohr, Angstrom}` — read and preserved as-is, never silently converted, in Rust, Python, and WASM alike. |
 | OpenDX Ångström assumption | Rust core | No in-file unit tag exists; every parsed grid is tagged `Angstrom` by convention in `chematic_mol::opendx`. This is a core-crate assumption, not a binding-layer one — Python and WASM inherit it unchanged. |
 | QCSchema geometry Bohr → Ångström | **Binding layer**, not core | `chematic_mol::QcMolecule.geometry` stays in Bohr (a0), matching the QCSchema spec. Python and WASM bindings convert to Ångström for convenience when exposing coordinates — this conversion does **not** happen in `chematic-mol` itself. |
-| mmCIF/PQR/ORCA coordinate units | Rust core | Always Ångström as documented per-format; no binding-layer conversion involved since there is nothing to convert. |
+| mmCIF/PQR/ORCA output coordinate units | Rust core | Ångström as documented per format; no binding-layer conversion. |
+| ORCA input coordinate units | Rust core | Raw input numeric values. The checked Cartesian view returns explicit Angstrom/Bohr units without rescaling; legacy WASM coordinate-only output refuses Bohr. See [ORCA Cartesian integrity](orca-cartesian-integrity.md). |
 
 ---
 

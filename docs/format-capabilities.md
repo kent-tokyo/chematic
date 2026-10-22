@@ -632,15 +632,26 @@ disambiguate by crate, not by name alone:
 ### ORCA input
 
 - **Rust**: `chematic_mol::{parse_orca_input, parse_orca_input_with_limits, write_orca_input, OrcaInput, OrcaInputError, OrcaInputParseLimits, OrcaBlock, OrcaCoords, OrcaAtom}`.
-- **Python**: `parse_orca_input`, `write_orca_input`.
-- **WASM**: `mol_from_orca_input`, `orca_input_coords_json`, `orca_input_to_json`, `write_orca_input_json`.
-- **Coordinate units**: Ångström.
+- **Python**: `parse_orca_input`, `parse_orca_cartesian`, `write_orca_input`.
+- **WASM**: `mol_from_orca_input`, `orca_input_coords_json`, `orca_cartesian_geometry_json`, `orca_input_to_json`, `write_orca_input_json`.
+- **Coordinate units**: original numeric input units. Rust
+  `parse_orca_cartesian[_with_limits]`, Python `parse_orca_cartesian` and WASM
+  `orca_cartesian_geometry_json` return an explicit Angstrom/Bohr tag without
+  rescaling. Missing units default to Angstrom. The legacy WASM coordinate-only
+  view now refuses Bohr inputs rather than returning untagged numbers.
 - **Connectivity**: no bond perception anywhere in this module.
-- **Round-trip**: lossless preservation of unknown `%block ... end` blocks, including nested sub-blocks.
-- **Lossy operations**: none named.
+- **Round-trip**: unknown `%block ... end` content, including nested sub-blocks,
+  is retained opaquely with parser/writer normalization. Original source bytes,
+  comment placement and keyword layout are not preserved. The existing writer
+  rounds Cartesian coordinates to six decimal places.
+- **Refusals**: multiple coordinate specifications, empty xyz blocks and zero
+  multiplicity. The Cartesian view also refuses conflicting/unsupported
+  unit-like keywords, `%coords`, internal and external geometries.
 - **Parse limits**: `OrcaInputParseLimits` bounds input bytes, physical line
   length/count, keywords, blocks, block bytes, and coordinate atoms. The
-  existing `parse_orca_input` parser uses finite defaults.
+  existing `parse_orca_input` parser uses finite defaults and checks the atom
+  cap before parsing another atom.
+- **Details and measurements**: [ORCA Cartesian integrity](orca-cartesian-integrity.md).
 
 ### ORCA output
 

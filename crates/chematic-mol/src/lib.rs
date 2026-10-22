@@ -224,10 +224,12 @@ pub use opendx::{
     write_opendx_lossy,
 };
 pub use orca::{
-    GeometryFrame, OrcaAtom, OrcaBlock, OrcaCoords, OrcaInput, OrcaInputError,
-    OrcaInputParseLimits, OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits,
-    OrcaTermination, parse_orca_input, parse_orca_input_with_limits, parse_orca_output,
-    parse_orca_output_with_limits, write_orca_input,
+    GeometryFrame, OrcaAtom, OrcaBlock, OrcaCartesianError, OrcaCartesianGeometry,
+    OrcaCoordinateUnits, OrcaCoords, OrcaInput, OrcaInputError, OrcaInputParseLimits,
+    OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits, OrcaTermination,
+    parse_orca_cartesian, parse_orca_cartesian_with_limits, parse_orca_input,
+    parse_orca_input_with_limits, parse_orca_output, parse_orca_output_with_limits,
+    write_orca_input,
 };
 pub use pdb_selection::{
     PdbSelectedAtom, PdbSelectionError, PdbSelectionLimits, PdbSelectionLoss, PdbSelectionReport,
