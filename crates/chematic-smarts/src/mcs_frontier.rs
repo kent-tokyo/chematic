@@ -3,7 +3,6 @@
 use std::collections::HashSet;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
-use chematic_perception::RingSet;
 
 use super::{
     CartesianProduct, McsConfig, McsState, PartialMapping, atoms_compatible, bonds_compatible, grow,
@@ -27,15 +26,7 @@ pub(super) fn extend_frontier_atom(
     let mut seen_tuples = HashSet::new();
 
     for (parent_q, parent_bond_order) in mapped_parents {
-        let candidates_per_mol = build_candidates(
-            state.mols,
-            mapping,
-            n0,
-            parent_q,
-            parent_bond_order,
-            state.config,
-            &state.ring_sets,
-        );
+        let candidates_per_mol = build_candidates(state, mapping, n0, parent_q, parent_bond_order);
         explore_candidate_tuples(state, mapping, n0, &candidates_per_mol, &mut seen_tuples);
         if state.timed_out || state.resource_limited {
             return;
@@ -74,14 +65,15 @@ fn explore_candidate_tuples(
 /// For each molecule after the first, collect atoms that can extend the mapping
 /// through the selected mapped parent.
 fn build_candidates(
-    mols: &[&Molecule],
+    state: &McsState<'_>,
     mapping: &PartialMapping,
     n0: AtomIdx,
     parent_q: usize,
     parent_bond_order: BondOrder,
-    config: &McsConfig,
-    ring_sets: &[RingSet],
 ) -> Vec<Vec<AtomIdx>> {
+    let mols = state.mols;
+    let config = state.config;
+    let ring_sets = &state.ring_sets;
     let atom0 = mols[0].atom(n0);
     let n0_in_ring = !ring_sets.is_empty() && ring_sets[0].contains_atom(n0);
     let mut result = Vec::with_capacity(mols.len() - 1);
@@ -96,6 +88,7 @@ fn build_candidates(
                         atom0,
                         atom_i,
                         &config.atom_compare,
+                        state.rdkit_heavy,
                         config.match_chiral_tag,
                         config.match_charge,
                         config.match_isotope,

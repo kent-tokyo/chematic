@@ -14,9 +14,9 @@
 //!    per-axis sign combinations only 4 are proper rotations (det = +1); all
 //!    4 are tried as independent seeds, since picking the wrong one can
 //!    converge to a mirrored, degenerate correspondence.
-//! 3. For each seed: greedily pair each mol1 atom (farthest-from-centroid
-//!    first, to anchor asymmetric ends) with its nearest compatible-type,
-//!    not-yet-used mol2 atom within a distance cutoff, then alternate
+//! 3. For each seed: globally pair compatible atoms within a distance cutoff
+//!    for up to 64 atoms per molecule, maximizing matched atoms and then
+//!    Gaussian overlap. Larger molecules retain the bounded greedy path. Alternate
 //!    "refit rotation for the current pairing" (reusing `align_coords`) and
 //!    "re-pair against the newly rotated coordinates" until the overlap
 //!    score stops improving.
@@ -54,6 +54,21 @@ const DIST_CUTOFF: f64 = 4.0; // Å — candidate pairs beyond this are rejected
 const MAX_REFINE_ITERS: usize = 20;
 const SCORE_SIGMA: f64 = 1.0; // Å, Gaussian overlap score width
 const CONVERGENCE_EPS: f64 = 1e-4;
+const GLOBAL_ASSIGNMENT_MAX_ATOMS: usize = 64;
+
+fn coordinate_order(a: &[f64; 3], b: &[f64; 3]) -> std::cmp::Ordering {
+    a.iter()
+        .zip(b)
+        .map(|(x, y)| x.total_cmp(y))
+        .find(|order| !order.is_eq())
+        .unwrap_or(std::cmp::Ordering::Equal)
+}
+
+fn canonical_coordinate_order(coords: &[[f64; 3]]) -> Vec<usize> {
+    let mut order: Vec<usize> = (0..coords.len()).collect();
+    order.sort_by(|&a, &b| coordinate_order(&coords[a], &coords[b]));
+    order
+}
 
 // ---------------------------------------------------------------------------
 // Small linear-algebra helpers (local to this module — not a general
@@ -63,7 +78,8 @@ const CONVERGENCE_EPS: f64 = 1e-4;
 fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
     let n = coords.len().max(1) as f64;
     let mut c = [0.0; 3];
-    for p in coords {
+    for index in canonical_coordinate_order(coords) {
+        let p = &coords[index];
         for k in 0..3 {
             c[k] += p[k];
         }
@@ -80,7 +96,8 @@ fn centroid(coords: &[[f64; 3]]) -> [f64; 3] {
 /// physically accurate mass-weighted inertia tensor.
 fn covariance_tensor(coords: &[[f64; 3]], center: [f64; 3]) -> [[f64; 3]; 3] {
     let mut t = [[0.0; 3]; 3];
-    for p in coords {
+    for index in canonical_coordinate_order(coords) {
+        let p = &coords[index];
         let x = p[0] - center[0];
         let y = p[1] - center[1];
         let z = p[2] - center[2];
@@ -180,17 +197,15 @@ fn overlap_score(pairs: &[(usize, usize)], coords1: &[[f64; 3]], coords2: &[[f64
 /// and its doc comment in `usr.rs::extreme_idx`, which found this the hard
 /// way empirically).
 ///
-/// This does NOT make `greedy_correspondence` fully order-independent,
+/// This does NOT make the large-molecule fallback fully order-independent,
 /// only its tie-breaking: the algorithm is inherently greedy
 /// (first-processed mol1 atom claims its nearest mol2 atom, removing it
 /// from the pool for every atom processed after), so even with canonical
 /// tie-breaks, two mol1 atoms that are NOT tied but are both plausible
 /// matches for the same mol2 atom can still get different pairings
 /// depending on which one the (now-deterministic, but still a specific
-/// choice) processing order visits first. That is a property of the greedy
-/// matching strategy itself, not a bug -- a genuinely order-independent
-/// correspondence would need a global assignment algorithm (e.g. Hungarian
-/// matching), out of scope for this round.
+/// choice) processing order visits first. Small and medium molecules use the
+/// global assignment below to avoid this order dependence.
 fn greedy_correspondence(
     coords1: &[[f64; 3]],
     types1: &[MMFF94Type],
@@ -240,6 +255,123 @@ fn greedy_correspondence(
     pairs
 }
 
+/// Rectangular minimum-cost assignment. There are at least as many columns as
+/// rows; one zero-cost dummy column per row permits unmatched atoms. Rows and
+/// real columns arrive in coordinate order so exact assignment ties do not
+/// depend on the molecule's atom insertion order.
+fn assign_rows(costs: &[Vec<f64>]) -> Vec<usize> {
+    let rows = costs.len();
+    let columns = costs[0].len();
+    let mut row_potential = vec![0.0; rows + 1];
+    let mut col_potential = vec![0.0; columns + 1];
+    let mut matched_row = vec![0usize; columns + 1];
+    let mut predecessor = vec![0usize; columns + 1];
+
+    for row in 1..=rows {
+        matched_row[0] = row;
+        let mut current_col = 0;
+        let mut minimum = vec![f64::INFINITY; columns + 1];
+        let mut visited = vec![false; columns + 1];
+        loop {
+            visited[current_col] = true;
+            let current_row = matched_row[current_col];
+            let mut delta = f64::INFINITY;
+            let mut next_col = 0;
+            for col in 1..=columns {
+                if visited[col] {
+                    continue;
+                }
+                let reduced = costs[current_row - 1][col - 1]
+                    - row_potential[current_row]
+                    - col_potential[col];
+                if reduced < minimum[col] {
+                    minimum[col] = reduced;
+                    predecessor[col] = current_col;
+                }
+                if minimum[col] < delta {
+                    delta = minimum[col];
+                    next_col = col;
+                }
+            }
+            for col in 0..=columns {
+                if visited[col] {
+                    row_potential[matched_row[col]] += delta;
+                    col_potential[col] -= delta;
+                } else {
+                    minimum[col] -= delta;
+                }
+            }
+            current_col = next_col;
+            if matched_row[current_col] == 0 {
+                break;
+            }
+        }
+        loop {
+            let previous = predecessor[current_col];
+            matched_row[current_col] = matched_row[previous];
+            current_col = previous;
+            if current_col == 0 {
+                break;
+            }
+        }
+    }
+
+    let mut assignment = vec![usize::MAX; rows];
+    for col in 1..=columns {
+        if matched_row[col] != 0 {
+            assignment[matched_row[col] - 1] = col - 1;
+        }
+    }
+    assignment
+}
+
+fn global_correspondence(
+    coords1: &[[f64; 3]],
+    types1: &[MMFF94Type],
+    coords2: &[[f64; 3]],
+    types2: &[MMFF94Type],
+) -> Vec<(usize, usize)> {
+    if coords1.is_empty() || coords2.is_empty() {
+        return Vec::new();
+    }
+    // Bound cubic assignment work for large molecules. Their former greedy
+    // behavior remains available until a sparse matching path is provided.
+    if coords1.len().max(coords2.len()) > GLOBAL_ASSIGNMENT_MAX_ATOMS {
+        return greedy_correspondence(coords1, types1, coords2, types2);
+    }
+    let left = canonical_coordinate_order(coords1);
+    let right = canonical_coordinate_order(coords2);
+    let real_columns = right.len();
+    let match_bonus = (left.len().min(real_columns) + 1) as f64;
+    let mut costs = vec![vec![0.0; real_columns + left.len()]; left.len()];
+    for (row, &i) in left.iter().enumerate() {
+        for (col, &j) in right.iter().enumerate() {
+            let distance_squared: f64 = (0..3)
+                .map(|axis| (coords1[i][axis] - coords2[j][axis]).powi(2))
+                .sum();
+            costs[row][col] =
+                if types1[i] == types2[j] && distance_squared <= DIST_CUTOFF * DIST_CUTOFF {
+                    // One additional match outweighs every possible change
+                    // in the remaining Gaussian overlap terms.
+                    -match_bonus - (-distance_squared / (2.0 * SCORE_SIGMA * SCORE_SIGMA)).dexp()
+                } else {
+                    1_000_000.0
+                };
+        }
+    }
+    assign_rows(&costs)
+        .into_iter()
+        .enumerate()
+        .filter_map(|(row, col)| {
+            if col < real_columns && costs[row][col] < 0.0 {
+                Some((left[row], right[col]))
+            } else {
+                None
+            }
+        })
+        .collect()
+}
+
 /// Alternate re-fitting the rotation for the current pairing (reusing
 /// [`align_coords`]) and re-pairing against the newly rotated coordinates,
 /// tracking the best-scoring pairing seen (not just the last — the
@@ -257,7 +389,7 @@ fn refine(
     let mut prev_score = f64::NEG_INFINITY;
 
     for _ in 0..MAX_REFINE_ITERS {
-        let pairs = greedy_correspondence(coords1, types1, &current2, types2);
+        let pairs = global_correspondence(coords1, types1, &current2, types2);
         if pairs.is_empty() {
             break;
         }
@@ -389,6 +521,61 @@ mod tests {
     use super::*;
     use chematic_smiles::parse;
     use std::collections::HashSet;
+
+    #[test]
+    fn global_assignment_beats_greedy_competition() {
+        let atom_type = MMFF94Type::C_sp3;
+        let left = [[0.0, 0.0, 0.0], [0.1, 0.0, 0.0]];
+        let right = [[0.05, 0.0, 0.0], [-0.5, 0.0, 0.0]];
+        let types = [atom_type; 2];
+        let greedy = greedy_correspondence(&left, &types, &right, &types);
+        let global = global_correspondence(&left, &types, &right, &types);
+        assert_eq!(global, vec![(0, 1), (1, 0)]);
+        assert!(overlap_score(&global, &left, &right) > overlap_score(&greedy, &left, &right));
+    }
+
+    #[test]
+    fn global_assignment_uses_dummy_for_incompatible_atoms() {
+        let left = [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0]];
+        let right = [[0.1, 0.0, 0.0], [100.0, 0.0, 0.0]];
+        let types = [MMFF94Type::C_sp3; 2];
+        assert_eq!(
+            global_correspondence(&left, &types, &right, &types),
+            vec![(0, 0)]
+        );
+    }
+
+    #[test]
+    fn global_assignment_seed_overlap_does_not_retreat_on_symmetry_corpus() {
+        for &smiles in ORDER_DEPENDENCE_CORPUS {
+            let probe = self_align_baseline_vs_reversed(smiles);
+            let types1 = chematic_ff::assign_mmff94_types(&probe.mol1).unwrap();
+            let types2 = chematic_ff::assign_mmff94_types(&probe.mol2).unwrap();
+            let c1 = centroid(&probe.coords1);
+            let c2 = centroid(&probe.coords2);
+            let (_, axes1) = jacobi3(covariance_tensor(&probe.coords1, c1));
+            let (_, axes2) = jacobi3(covariance_tensor(&probe.coords2, c2));
+            let axes1 = normalize_proper(axes1);
+            let axes2 = normalize_proper(axes2);
+            for signs in SEED_SIGNS {
+                let mut signed = axes2;
+                for row in &mut signed {
+                    for (column, sign) in signs.iter().enumerate() {
+                        row[column] *= sign;
+                    }
+                }
+                let seeded =
+                    apply_rotation_translation(&probe.coords2, c2, matmul3(axes1, signed), c1);
+                let greedy = greedy_correspondence(&probe.coords1, &types1, &seeded, &types2);
+                let global = global_correspondence(&probe.coords1, &types1, &seeded, &types2);
+                assert!(
+                    overlap_score(&global, &probe.coords1, &seeded) + 1e-9
+                        >= overlap_score(&greedy, &probe.coords1, &seeded),
+                    "{smiles}: global assignment reduced seed overlap"
+                );
+            }
+        }
+    }
 
     #[test]
     fn greedy_correspondence_tie_break_is_content_based() {
@@ -809,13 +996,7 @@ mod tests {
 
     #[test]
     fn correspondence_search_alignment_score_is_order_independent() {
-        // Check 2a (the property that actually matters for O3A's real use
-        // case -- shape/pharmacophore similarity scoring): even when
-        // `.pairs`' specific atom-to-atom identity depends on mol2's atom
-        // order (see the #[ignore]d test below), the resulting ALIGNMENT
-        // SCORE does not, for every molecule in this corpus. This is what
-        // makes the confirmed pairs-identity divergence a harmless
-        // automorphism-equivalent tie rather than a scoring bug.
+        // Reordering mol2's atoms must preserve the fitted overlap score.
         for &smi in ORDER_DEPENDENCE_CORPUS {
             let p = self_align_baseline_vs_reversed(smi);
             let base_score = o3a_align(&p.mol1, &p.coords1, &p.mol2, &p.coords2)
@@ -832,27 +1013,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "confirmed real, reachable, and deliberately not fixed this \
-                round: correspondence_search/o3a_align's `.pairs` (the \
-                specific per-atom identity mapping, as opposed to the \
-                alignment score) depends on mol2's atom insertion order for \
-                symmetric molecules -- reversing mol2's atom order changes \
-                which physical atom each mol1 atom is paired with for \
-                p-xylene, di-tert-butylbenzene, and succinimide in this \
-                corpus (3/10). This is the greedy-algorithm order-sensitivity \
-                greedy_correspondence's doc comment describes as a known, \
-                unaddressed property (separate from the 9d521f7 tie-break \
-                fix, which does not touch this) -- now empirically confirmed \
-                reachable rather than just theoretical. Confirmed harmless \
-                for the practical use case (see \
-                correspondence_search_alignment_score_is_order_independent: \
-                the alignment SCORE is identical in every diverging case \
-                here, consistent with the divergence being an \
-                automorphism-equivalent tie), but `.pairs` itself is a \
-                public field and IS order-dependent for any caller that \
-                inspects specific atom identities rather than just the \
-                score. A real fix needs a global assignment algorithm \
-                (e.g. Hungarian matching), out of scope for this round."]
     fn correspondence_search_pairs_identity_is_order_independent() {
         for &smi in ORDER_DEPENDENCE_CORPUS {
             let p = self_align_baseline_vs_reversed(smi);
@@ -861,6 +1021,80 @@ mod tests {
                 "{smi}: correspondence_search's pairing (by atom identity) \
                  changed when mol2's atom order was reversed"
             );
+            let n = p.mol2.atom_count();
+            let permutations = [
+                (1..n).chain(0..1).collect::<Vec<_>>(),
+                (0..n).step_by(2).chain((1..n).step_by(2)).collect(),
+            ];
+            for permutation in permutations {
+                let (mol2, coords2) = permute_mol_and_coords(&p.mol2, &p.coords2, &permutation);
+                let pairs = correspondence_search(&p.mol1, &p.coords1, &mol2, &coords2).unwrap();
+                let mut original_pairs = pairs
+                    .into_iter()
+                    .map(|(i, j)| (i, permutation[j]))
+                    .collect::<Vec<_>>();
+                original_pairs.sort_unstable();
+                assert_eq!(p.baseline_pairs, original_pairs, "{smi}: {permutation:?}");
+            }
         }
+    }
+
+    #[test]
+    fn rdkit_embedded_pxylene_correspondence_survives_renumbering() {
+        // Heavy-atom coordinates from RDKit 2026.09.1 ETKDGv3, seed 42.
+        // RDKit GetO3A itself returns different atom maps for this molecule
+        // after probe atom reversal; this checks the same fixed input geometry.
+        let molecule = parse("Cc1ccc(C)cc1").unwrap();
+        let reference = vec![
+            [
+                2.87688384965826,
+                -0.002092989212400923,
+                -0.08653065571627763,
+            ],
+            [
+                1.375506197969415,
+                0.031376908900133456,
+                -0.04181616373635037,
+            ],
+            [0.6837946804515053, 1.2162483338831502, 0.11090569228195972],
+            [-0.6968589029854234, 1.1964285865863726, 0.14633051634528366],
+            [
+                -1.3672286381292256,
+                -0.007579808880645602,
+                0.028604200033073776,
+            ],
+            [
+                -2.8659967768237866,
+                0.004430820785118485,
+                0.07084524663778523,
+            ],
+            [
+                -0.6983511002657733,
+                -1.2008939331499826,
+                -0.12445273185002001,
+            ],
+            [
+                0.6864109596823279,
+                -1.1682896941005392,
+                -0.15854404629064228,
+            ],
+        ];
+        let probe = reference
+            .iter()
+            .map(|&[x, y, z]| [y + 1.0, -x + 2.0, z + 3.0])
+            .collect::<Vec<_>>();
+        let mut baseline = correspondence_search(&molecule, &reference, &molecule, &probe).unwrap();
+        baseline.sort_unstable();
+        let permutation = (0..molecule.atom_count()).rev().collect::<Vec<_>>();
+        let (reversed_molecule, reversed_probe) =
+            permute_mol_and_coords(&molecule, &probe, &permutation);
+        let mut reversed =
+            correspondence_search(&molecule, &reference, &reversed_molecule, &reversed_probe)
+                .unwrap()
+                .into_iter()
+                .map(|(i, j)| (i, permutation[j]))
+                .collect::<Vec<_>>();
+        reversed.sort_unstable();
+        assert_eq!(baseline, reversed);
     }
 }

@@ -348,6 +348,105 @@ fn automatically_labelled_site_fills_hydrogen_in_established_column() {
 }
 
 #[test]
+fn automatic_labels_compact_after_batch_columns_are_known() {
+    let mols = [
+        mol("c1ccccc1"),
+        mol("Cc1ccccc1"),
+        mol("Cc1ccccc1C"),
+        mol("Cc1cccc(C)c1"),
+        mol("Cc1ccc(C)cc1"),
+    ];
+    let refs: Vec<&Molecule> = mols.iter().collect();
+    let rows = rgroup_decompose_labeled("c1ccccc1", &refs).unwrap();
+    let core = canonical_smiles(&mol("c1cc([*:4])c([*:3])c([*:2])c1[*:1]"));
+    for row in rows.iter().flatten() {
+        assert_eq!(canonical_smiles(&mol(&row.core_smiles)), core);
+        assert_eq!(
+            row.r_groups.keys().copied().collect::<Vec<_>>(),
+            [1, 2, 3, 4]
+        );
+    }
+    for (row, substituted) in rows
+        .iter()
+        .skip(1)
+        .zip([[4].as_slice(), &[4, 3], &[4, 2], &[4, 1]])
+    {
+        let row = row.as_ref().unwrap();
+        for label in 1..=4 {
+            let group = canonical_smiles(&mol(&row.r_groups[&label]));
+            let expected = if substituted.contains(&label) {
+                canonical_smiles(&mol(&format!("C[*:{label}]")))
+            } else {
+                canonical_smiles(&mol(&format!("[H][*:{label}]")))
+            };
+            assert_eq!(group, expected);
+        }
+    }
+}
+
+#[test]
+fn automatic_columns_align_mixed_methyl_chloro_positions_like_rdkit() {
+    let mols = [
+        mol("Cc1c(Cl)cccc1"),
+        mol("Cc1ccc(Cl)cc1"),
+        mol("Cc1cc(Cl)ccc1"),
+    ];
+    let refs: Vec<&Molecule> = mols.iter().collect();
+    let rows = rgroup_decompose_labeled("c1ccccc1", &refs).unwrap();
+    let expected_core = canonical_smiles(&mol("c1cc([*:4])c([*:3])c([*:2])c1[*:1]"));
+    let expected = [
+        [
+            (1, "[H][*:1]"),
+            (2, "[H][*:2]"),
+            (3, "C[*:3]"),
+            (4, "Cl[*:4]"),
+        ],
+        [
+            (1, "C[*:1]"),
+            (2, "[H][*:2]"),
+            (3, "[H][*:3]"),
+            (4, "Cl[*:4]"),
+        ],
+        [
+            (1, "[H][*:1]"),
+            (2, "C[*:2]"),
+            (3, "[H][*:3]"),
+            (4, "Cl[*:4]"),
+        ],
+    ];
+    for (row, expected_groups) in rows.iter().zip(expected) {
+        let row = row.as_ref().unwrap();
+        assert_eq!(canonical_smiles(&mol(&row.core_smiles)), expected_core);
+        for (label, group) in expected_groups {
+            assert_eq!(
+                canonical_smiles(&mol(&row.r_groups[&label])),
+                canonical_smiles(&mol(group)),
+                "R{label}"
+            );
+        }
+    }
+}
+
+#[test]
+fn automatic_column_collects_multiple_substituents_at_one_site() {
+    let mols = [mol("CC"), mol("CCC"), mol("CC(C)C"), mol("CC(O)C")];
+    let refs: Vec<&Molecule> = mols.iter().collect();
+    let rows = rgroup_decompose_labeled("CC", &refs).unwrap();
+    let expected = ["[H][*:1]", "C[*:1]", "C[*:1].C[*:1]", "C[*:1].O[*:1]"];
+    for (row, expected) in rows.iter().zip(expected) {
+        let row = row.as_ref().unwrap();
+        assert_eq!(
+            canonical_smiles(&mol(&row.core_smiles)),
+            canonical_smiles(&mol("CC[*:1]"))
+        );
+        assert_eq!(
+            canonical_smiles(&mol(&row.r_groups[&1])),
+            canonical_smiles(&mol(expected))
+        );
+    }
+}
+
+#[test]
 fn terminal_mapped_wildcard_accepts_hydrogen_only_for_established_columns() {
     for (core, unsubstituted, substituted, label) in [
         ("c1ccccc1[*:1]", "c1ccccc1", "Cc1ccccc1", 1),
