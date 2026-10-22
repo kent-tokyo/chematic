@@ -140,20 +140,34 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
         } else {
             (bond.atom2.0 as usize, bond.atom1.0 as usize)
         };
-        let ligand_atom = &atoms[ligand];
         let metal_z = atoms[metal].element.atomic_number();
-        let ligand_z = ligand_atom.element.atomic_number();
+        let ligand_z = atoms[ligand].element.atomic_number();
+        let sanitized_aromatic = aromaticity
+            .as_ref()
+            .is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)));
         if !default_metal_disconnector_match(metal_z, ligand_z)
-            || (ligand_z == 6
-                && (ligand_atom.aromatic
-                    || aromaticity
-                        .as_ref()
-                        .is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)))))
+            || (ligand_z == 6 && sanitized_aromatic)
         {
             continue;
         }
         removed.insert(bond_idx);
         transfer_metal_ligand_charge(mol, &mut atoms, metal, ligand, bond.order);
+        if ligand_z == 6
+            && mol.atom(AtomIdx(ligand as u32)).aromatic
+            && !sanitized_aromatic
+            && atoms[ligand].charge == 0
+            && atoms[ligand].hydrogen_count == Some(0)
+            && mol.degree(AtomIdx(ligand as u32)) == 3
+            && mol.neighbors(AtomIdx(ligand as u32)).all(|(_, adjacent)| {
+                adjacent == bond_idx || mol.bond(adjacent).order == BondOrder::Aromatic
+            })
+        {
+            // Sanitization can kekulize an input aromatic carbon before
+            // disconnection (for example an overvalent sulfur ring). Once
+            // its metal bond is gone, the three-valent carbon takes the
+            // implicit H written by RDKit Cleanup.
+            atoms[ligand].hydrogen_count = None;
+        }
     }
     if removed.is_empty() {
         return clone_molecule(mol);
@@ -482,6 +496,25 @@ mod tests {
             let product = cleanup(&parse(input).unwrap());
             assert_eq!(
                 rdkit_cleanup_canonical_smiles(&product).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_disconnects_platinum_from_kekule_carbon() {
+        for (input, expected) in [
+            (
+                "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
+                "CC1=CC=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+            ),
+            ("c1cc([Pt])ccc1", "[Pt][c]1ccccc1"),
+        ] {
+            let before = parse(input).unwrap();
+            let after = cleanup(&before);
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&after).as_deref(),
                 Ok(expected),
                 "{input}"
             );
