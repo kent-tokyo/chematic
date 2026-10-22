@@ -541,6 +541,13 @@ class Mol:
     ) -> list[float]:
         """RDKit ``GetAllConformerBestRMS`` in ``(1,0), (2,0), (2,1), ...`` order."""
         ...
+    def cluster_conformers_by_rms_symmetric(
+        self,
+        conformers: list[list[list[float]]],
+        rmsd_threshold: float = 0.5,
+    ) -> list[int]:
+        """Greedy symmetry-aware RMSD clusters; returns leader input indices."""
+        ...
     def rdkit_all_conformer_best_rms_to_reference(
         self,
         reference: Mol,
