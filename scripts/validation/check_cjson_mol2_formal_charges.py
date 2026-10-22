@@ -26,6 +26,65 @@ process.stdout.write(JSON.stringify(cases.map(c=>({id:c.id,
  report:JSON.parse(w.convert_with_report_json(c.input,'cjson','mol2','allow_loss'))}))));
 """
 
+ELEMENTS = [
+    "", "H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne", "Na", "Mg",
+    "Al", "Si", "P", "S", "Cl", "Ar", "K", "Ca", "Sc", "Ti", "V", "Cr", "Mn",
+    "Fe", "Co", "Ni", "Cu", "Zn", "Ga", "Ge", "As", "Se", "Br", "Kr", "Rb", "Sr",
+    "Y", "Zr", "Nb", "Mo", "Tc", "Ru", "Rh", "Pd", "Ag", "Cd", "In", "Sn", "Sb",
+    "Te", "I", "Xe", "Cs", "Ba", "La", "Ce", "Pr", "Nd", "Pm", "Sm", "Eu", "Gd",
+    "Tb", "Dy", "Ho", "Er", "Tm", "Yb", "Lu", "Hf", "Ta", "W", "Re", "Os", "Ir",
+    "Pt", "Au", "Hg", "Tl", "Pb", "Bi", "Po", "At", "Rn", "Fr", "Ra", "Ac", "Th",
+    "Pa", "U", "Np", "Pu", "Am", "Cm", "Bk", "Cf", "Es", "Fm", "Md", "No", "Lr",
+    "Rf", "Db", "Sg", "Bh", "Hs", "Mt", "Ds", "Rg", "Cn", "Nh", "Fl", "Mc", "Lv",
+    "Ts", "Og",
+]
+ATOMIC_NUMBER = {symbol: number for number, symbol in enumerate(ELEMENTS) if symbol}
+
+
+def _mol2_section(lines, name):
+    marker = f"@<TRIPOS>{name}"
+    try:
+        start = lines.index(marker) + 1
+    except ValueError:
+        return []
+    end = next((i for i in range(start, len(lines)) if lines[i].startswith("@<TRIPOS>")), len(lines))
+    return [line for line in lines[start:end] if line.strip()]
+
+
+def mol2_snapshot(text):
+    """Read the explicit graph fields emitted by the bounded CJSON adapter."""
+    lines = text.replace("\r\n", "\n").splitlines()
+    atoms = [line.split() for line in _mol2_section(lines, "ATOM")]
+    require(all(len(row) >= 6 for row in atoms), "invalid MOL2 atom row")
+    ids = [int(row[0]) for row in atoms]
+    require(len(ids) == len(set(ids)), "duplicate MOL2 atom id")
+    positions = {source_id: index for index, source_id in enumerate(ids)}
+    symbols = [row[5].split(".", 1)[0] for row in atoms]
+    require(all(symbol in ATOMIC_NUMBER for symbol in symbols), "unknown MOL2 atom type")
+    charges = [1 if row[5] == "N.4" else 0 for row in atoms]
+    unity = _mol2_section(lines, "UNITY_ATOM_ATTR")
+    cursor = 0
+    while cursor < len(unity):
+        header = unity[cursor].split()
+        require(len(header) == 2 and int(header[1]) >= 0, "invalid UNITY header")
+        source_id, count = int(header[0]), int(header[1])
+        require(source_id in positions and cursor + count < len(unity), "invalid UNITY atom id")
+        for offset in range(1, count + 1):
+            key, value = unity[cursor + offset].split(maxsplit=1)
+            if key == "charge":
+                charges[positions[source_id]] = int(value)
+        cursor += count + 1
+    bonds = []
+    for row in (line.split() for line in _mol2_section(lines, "BOND")):
+        require(len(row) >= 4, "invalid MOL2 bond row")
+        bonds.extend([positions[int(row[1])], positions[int(row[2])]])
+    return {
+        "elements": [ATOMIC_NUMBER[symbol] for symbol in symbols],
+        "formal_charges": charges,
+        "coordinates": [float(value) for row in atoms for value in row[2:5]],
+        "bonds": bonds,
+    }
+
 
 def read_probe(text):
     lines=text.splitlines()

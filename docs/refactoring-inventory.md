@@ -8,7 +8,7 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The checked baseline now contains 14 file allowances and 76 function
+The R18 candidate contains 14 file allowances and 74 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 

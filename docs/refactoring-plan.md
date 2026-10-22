@@ -75,6 +75,29 @@ not change production chemistry or the R16 debt-ratchet baseline; see the
 [script inventory](script-inventory-2026-10-20.md) for paths and retention
 reasons.
 
+## Active third pass
+
+R17-R25 finishes the remaining structural debt without broadening chemistry
+scope. Every phase must reduce or preserve the ratchet; raising an allowance is
+not an acceptable completion condition.
+
+| Phase | Scope | Exit condition | Status |
+|---|---|---|---|
+| R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | In progress |
+| R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Ready for review |
+| R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Planned |
+| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Planned |
+| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Planned |
+| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Planned |
+| R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Planned |
+| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
+| R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
+
+The R18 candidate reduces the checked function allowances from 76 to 74. The
+existing MOL2/CJSON contract suites show no change to their report schema,
+observation ordering, typed errors or expected candidate bytes; those fixtures
+remain the acceptance evidence until hosted CI completes.
+
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
 and tautomer helpers, split canonical/ring/aromaticity algorithms, staged
