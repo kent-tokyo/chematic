@@ -5,7 +5,7 @@ use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
 mod quality_retry;
-use quality_retry::rescue_quality_without_convergence;
+use quality_retry::refine_unfinished_quality_minimum;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
@@ -461,8 +461,9 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// the same candidates. Keep the lowest finite-energy candidate across both
 /// ensembles, then fill the remaining slots with converged candidates before
 /// unfinished ones, ordered by energy. At most `num_confs` conformers are
-/// returned. If none of the candidates converged, the lowest finite-energy
-/// candidate gets one additional MMFF pass of at most twice `max_iters` steps.
+/// returned. If the lowest finite-energy candidate did not converge, it gets
+/// one additional MMFF pass of at most twice `max_iters` steps, even when
+/// another candidate has already converged.
 /// Only a converged, non-higher-energy and stereo-safe retry is retained.
 /// The profile spends roughly twice the embedding and MMFF work of the
 /// compatibility API, plus that optional retry.
@@ -492,7 +493,7 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
                 .and_then(|count| o.random_seed.checked_mul(count))
                 .is_none())
     {
-        return Ok(rescue_quality_without_convergence(
+        return Ok(refine_unfinished_quality_minimum(
             mh,
             compatibility,
             max_iters,
@@ -508,7 +509,7 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     let alternative = match alternative {
         Ok(conformers) => conformers,
         Err(_) if !gradient_differs => {
-            return Ok(rescue_quality_without_convergence(
+            return Ok(refine_unfinished_quality_minimum(
                 mh,
                 compatibility,
                 max_iters,
@@ -519,7 +520,7 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     let alternative = match optimize_mmff_molecule(mh, alternative, max_iters) {
         Ok(conformers) => conformers,
         Err(_) if !gradient_differs => {
-            return Ok(rescue_quality_without_convergence(
+            return Ok(refine_unfinished_quality_minimum(
                 mh,
                 compatibility,
                 max_iters,
@@ -527,7 +528,7 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
         }
         Err(error) => return Err(error),
     };
-    Ok(rescue_quality_without_convergence(
+    Ok(refine_unfinished_quality_minimum(
         mh,
         select_quality_candidates(compatibility, alternative, num_confs),
         max_iters,
@@ -1259,6 +1260,32 @@ mod corrected_ensemble_tests {
         let stereo = verify_stereo(&molecule, &coordinates);
         assert_eq!(stereo.n_violations(), 0);
         assert_eq!(stereo.n_unevaluable(), 0);
+    }
+
+    #[test]
+    fn quality_profile_retries_unfinished_minimum_even_with_other_converged_candidates() {
+        let molecule = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse("O=C(C1CCCCN1)N1CCN(Cc2cccnc2)CC1").unwrap(),
+        );
+        let options = RdkitEmbedOptions::default();
+        let initial = rdkit_embed_multiple_confs_mmff(&molecule, 40, &options, 200).unwrap();
+        let best = initial
+            .iter()
+            .min_by(|left, right| left.energy.total_cmp(&right.energy))
+            .unwrap();
+        let previous_converged_energy = initial
+            .iter()
+            .filter(|candidate| candidate.status == 0)
+            .map(|candidate| candidate.energy)
+            .min_by(f64::total_cmp)
+            .unwrap();
+        assert_ne!(best.status, 0);
+        assert!(best.energy < previous_converged_energy);
+
+        let selected =
+            etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200).unwrap();
+        assert_eq!(selected[0].status, 0);
+        assert!(selected[0].energy < previous_converged_energy - 0.1);
     }
 
     #[test]

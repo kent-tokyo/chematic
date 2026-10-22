@@ -1,4 +1,4 @@
-//! Bounded MMFF94 retry for a quality ensemble with no converged conformer.
+//! Bounded MMFF94 retry for an unfinished lowest-energy quality candidate.
 
 use chematic_core::{Coords3D, Molecule, Point3};
 
@@ -6,13 +6,13 @@ use crate::stereo_constraints::verify_stereo;
 
 use super::{RdkitMmffConformer, optimize_mmff_conformer};
 
-pub(super) fn rescue_quality_without_convergence(
+pub(super) fn refine_unfinished_quality_minimum(
     mh: &Molecule,
     mut candidates: Vec<RdkitMmffConformer>,
     max_iters: u32,
 ) -> Vec<RdkitMmffConformer> {
     let retry_iters = max_iters.saturating_mul(2);
-    if retry_iters == 0 || candidates.iter().any(|candidate| candidate.status == 0) {
+    if retry_iters == 0 {
         return candidates;
     }
     let Some((best_index, best)) = candidates
@@ -23,6 +23,9 @@ pub(super) fn rescue_quality_without_convergence(
     else {
         return candidates;
     };
+    if best.status == 0 {
+        return candidates;
+    }
     let Ok(field) = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &best.coords, 100.0, true)
     else {
         return candidates;
