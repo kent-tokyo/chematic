@@ -61,7 +61,9 @@ fn source_xyz_and_indexed_graph_survive_cjson_projection() {
             for (i, pair) in value["bonds"]["connections"]["index"]
                 .as_array()
                 .unwrap()
-                .chunks_exact(2)
+                .as_chunks::<2>()
+                .0
+                .iter()
                 .enumerate()
             {
                 bonds.push(serde_json::json!([
