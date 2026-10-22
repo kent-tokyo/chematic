@@ -1,0 +1,133 @@
+{
+  "id": "sdf-data-item-framing-v1",
+  "provenance": "Original two-atom methanol structure and authored data fields, 2026-10-22. CTABs serialized with source-built chematic at a83ed265; no upstream fixture/attachment or sealed input copied.",
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original synthetic structures and text",
+  "minimization": "Two distinct atoms and one bond exercise graph continuity; short independent field values isolate optional header information, literal header-shaped value lines and significant whitespace.",
+  "oracle": {
+    "name": "Authored unique-field strings and independent blank-separated data-item observer",
+    "version": "Python 3.13.6; MDL CTfile Formats October 2003 chapter 6 pages 39-40",
+    "specification": "https://www.daylight.com/meetings/mug05/Kappler/ctfile.pdf",
+    "comparator": "Open Babel 3.2.1 -isdf -osdf, default options"
+  },
+  "expected": {
+    "graph": "two neutral C/O atoms with one single bond",
+    "properties": "per-case exact strings, including leading/trailing spaces and tabs; no tolerance",
+    "scope": "Field-name/value projection only. Header registry metadata, field order, genuine repeated-key retention, complete CTAB chemistry and missing-separator recovery are not scored."
+  },
+  "sha256": "cf9c5c696df6629af3683e1e9be96ba26d087e90cd3fb7e1a251801e6694dca0",
+  "ctabs": {
+    "v2000": "\n  chematic\n\n  2  1  0  0  0  0  0  0  0  0999 V2000\n    0.0000   -0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.5000   -0.0000    0.0000 O   0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n",
+    "v3000": "\n  chematic\n\n  0  0  0  0  0  0  0  0  0  0999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 2 1 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0.0000 0.0000 0.0000 0\nM  V30 2 O 0.0000 0.0000 0.0000 0\nM  V30 END ATOM\nM  V30 BEGIN BOND\nM  V30 1 1 1 2\nM  V30 END BOND\nM  V30 END CTAB\nM  END\n"
+  },
+  "cases": [
+    {
+      "id": "plain",
+      "data": "> <NOTE>\ncontrol\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "control",
+        "CHECK": "end"
+      },
+      "sha256": "4fd9bd5323e2df344dee966a19b8f025d71590cea148f5c7ad1c080e0ce7f5ef"
+    },
+    {
+      "id": "internal-registry",
+      "data": "> 17 <NOTE>\noriginal\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      },
+      "sha256": "2f3d218f5f249e6e16f1673004eaf8767fbebcd07ad3f27041baa106e68ce691"
+    },
+    {
+      "id": "external-registry",
+      "data": "> (SRC-27) <NOTE>\noriginal\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      },
+      "sha256": "9f934d59e7553d8123fe3accfccee32d4cd000d60280544e6a496c789335e9e3"
+    },
+    {
+      "id": "combined-header",
+      "data": "> 17 (SRC-27) <NOTE> DT12\noriginal\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      },
+      "sha256": "be2159e6ce4aa0d662c7e71d74054217bcbd0848697f4063cb160796bdaa50d5"
+    },
+    {
+      "id": "prefix-and-suffix",
+      "data": "> (SRC-27) <NOTE> origin=original\noriginal\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "original",
+        "CHECK": "end"
+      },
+      "sha256": "fcd5961d5df23de4e497bad23fd015e622a4caddbfab503cbc2b47787a4282a4"
+    },
+    {
+      "id": "literal-first",
+      "data": "> <NOTE>\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "> <LITERAL>\nlast",
+        "CHECK": "end"
+      },
+      "sha256": "f4e0f7cbd7c9f2bdf1f927a601dbe363e726415a2b5390786f5262b3c2869608"
+    },
+    {
+      "id": "literal-middle",
+      "data": "> <NOTE>\nfirst\n> <LITERAL>\nlast\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "first\n> <LITERAL>\nlast",
+        "CHECK": "end"
+      },
+      "sha256": "0cb9c196a0e87f4ed3cb2d96de0591a40d4a22abb433d2a4613fe028fcb5cbf0"
+    },
+    {
+      "id": "literal-registry",
+      "data": "> <NOTE>\nfirst\n> 19 <LITERAL>\nlast\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "first\n> 19 <LITERAL>\nlast",
+        "CHECK": "end"
+      },
+      "sha256": "f0ed45ae3a38da8e372a832e5fb0dd7d59500b6a12f95380ca320b6d0ef88d24"
+    },
+    {
+      "id": "literal-self",
+      "data": "> <NOTE>\nfirst\n> <NOTE>\nlast\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "first\n> <NOTE>\nlast",
+        "CHECK": "end"
+      },
+      "sha256": "018f0ca96477810355244fa1ed494908037d2dbff706528367c2320cdf8f592c"
+    },
+    {
+      "id": "padded-text",
+      "data": "> <NOTE>\n  leading and trailing  \n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "  leading and trailing  ",
+        "CHECK": "end"
+      },
+      "sha256": "6f8eecf3897cedfbfad3c4b9b8dfb113b8eeb87e3d0af5ce38bb6520ec06ebf5"
+    },
+    {
+      "id": "padded-multiline",
+      "data": "> <NOTE>\nfirst\n  second line  \n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "first\n  second line  ",
+        "CHECK": "end"
+      },
+      "sha256": "38f8f8a9542d068c30d47662f71a3561632d2ca5e4515d9af4b6bf345eec2977"
+    },
+    {
+      "id": "tabs",
+      "data": "> <NOTE>\n\tvalue\t\n\n> <CHECK>\nend\n\n",
+      "expected_properties": {
+        "NOTE": "\tvalue\t",
+        "CHECK": "end"
+      },
+      "sha256": "8eb12006c9b5785bc49b828d922b96f2f3e5b95b0e29fbd2b677146ce72f94c8"
+    }
+  ]
+}

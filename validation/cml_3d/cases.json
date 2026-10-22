@@ -1,0 +1,265 @@
+{
+  "schema": "chematic.cml-3d-development.v1",
+  "license": "MIT",
+  "provenance": "Original synthetic exposed development inputs, not holdouts or upstream issue reproductions.",
+  "oracle": "Declared source-order elements, bond endpoints/orders and parsed finite IEEE-754 Cartesian coordinates in Angstrom; compare coordinate bits including signed zero. No graph-isomorphism, stereo or opaque metadata validation.",
+  "variants": [
+    "lf",
+    "crlf",
+    "compact"
+  ],
+  "valid": [
+    {
+      "id": "source_order_precision",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"oxygen\" elementType=\"O\" x3=\"0.123456789012345\" y3=\"-2.125\" z3=\"0.000012345678901\"/>\n<atom id=\"carbon\" elementType=\"C\" isotopeNumber=\"13\" x3=\"1.4175225513503917\" y3=\"0.5\" z3=\"-0.0\"/>\n<atom id=\"nitrogen\" elementType=\"N\" formalCharge=\"1\" x3=\"3.25\" y3=\"-0.25\" z3=\"-9.875\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"carbon oxygen\" order=\"2\"/>\n<bond atomRefs2=\"carbon nitrogen\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "sha256": "2486d74caf3ccf67b917b798328a0ab3eede33196433642fb08145cfcd4004b7",
+      "coords": [
+        [
+          0.123456789012345,
+          -2.125,
+          1.2345678901e-05
+        ],
+        [
+          1.4175225513503917,
+          0.5,
+          -0.0
+        ],
+        [
+          3.25,
+          -0.25,
+          -9.875
+        ]
+      ],
+      "numbers": [
+        8,
+        6,
+        7
+      ],
+      "bond_indices": [
+        1,
+        0,
+        1,
+        2
+      ],
+      "bond_orders": [
+        2,
+        1
+      ]
+    },
+    {
+      "id": "both_2d_and_3d",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x2=\"700\" y2=\"800\" x3=\"1.25\" y3=\"-2.5\" z3=\"3.75\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "6a29028d4d37ed474f412126390b441412abc10829f6c42f5a82b013feadd52e",
+      "coords": [
+        [
+          1.25,
+          -2.5,
+          3.75
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "planar_3d",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1.25\" y3=\"-2.5\" z3=\"0\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "aee4fa724f5446c0844cc5b9f01757b04c15670fdd31e463a7d977f30db125ed",
+      "coords": [
+        [
+          1.25,
+          -2.5,
+          0.0
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "all_zero_3d",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"0\" y3=\"0\" z3=\"0\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "340883b4c057dfea49291f8e0f6db1aa7837b116524605bac2d5db4dd679d380",
+      "coords": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "signed_zero_subnormal",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"-0.0\" y3=\"5e-324\" z3=\"2.2250738585072014e-308\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "3c258911c1d64771315139066f0e682ddd53a78767df5f18a6379d95d113b8e7",
+      "coords": [
+        [
+          -0.0,
+          5e-324,
+          2.2250738585072014e-308
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "negative_exponents",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3='-1.25e+12' y3='4.2e-15' z3='-0.000003'/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "0c99e4ddd4d4732f4b2342676c11565a7b8e20a1b21057db38013daebcb7836f",
+      "coords": [
+        [
+          -1250000000000.0,
+          4.2e-15,
+          -3e-06
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "wrapper_comments",
+      "input": "<cml>\n<!-- <atom id=\"fake\" x3=\"9\"/> -->\n<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n</cml>\n",
+      "sha256": "191b8f2b1cc86437f5533a5645a7e8cad6499c90adb5dc3b83fb9ad2c438b68a",
+      "coords": [
+        [
+          1.0,
+          2.0,
+          3.0
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "attribute_whitespace",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3 = \" 1.125 \" y3= \" -2.25 \" z3 =\" 3.5 \"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "ce4f6d10b6edb6007c5f6e1f8cd22ff59f6e4a9c8d5e618868bf0b16229b1950",
+      "coords": [
+        [
+          1.125,
+          -2.25,
+          3.5
+        ]
+      ],
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    }
+  ],
+  "absent": [
+    {
+      "id": "no_geometry",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" />\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "0d8df104fba98e57f2344c825053f63e4fc806daeb5377be3f086957611db212",
+      "coords": null,
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    },
+    {
+      "id": "only_2d",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x2=\"1.5\" y2=\"2.5\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "05c8d97633d83e144b4bd01f8c6d7fec2538f2b1677e865f0fb927203f2a2bd9",
+      "coords": null,
+      "numbers": [
+        8
+      ],
+      "bond_indices": [],
+      "bond_orders": []
+    }
+  ],
+  "invalid": [
+    {
+      "id": "partial_triplet",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "f9b6795dd7ef63e39e486e2729e4d1057269571786a9bd6bf84a0a74c67afaa8"
+    },
+    {
+      "id": "mixed_presence",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n<atom id=\"a2\" elementType=\"C\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "5a772f9ce740a1ed35df81eed13fa67995b325904ede77e17720beaaba007394"
+    },
+    {
+      "id": "nan",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"NaN\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "0c1a82fca51b2942f50e94b78dbecde94278d5b69eeb598b9d71c1fa5d39e665"
+    },
+    {
+      "id": "infinity",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"inf\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "d928a07c43d8f2aeb3fcf99d4d1b867d117b63a724f274e1e12970d092606178"
+    },
+    {
+      "id": "overflow",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1e999\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "9a9575fee198d0e356ee733eca08f6288f01b226c54fc5aaa91ac176954b2817"
+    },
+    {
+      "id": "bad_number",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"bad\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "83d2e0c964ca20885b39c0088cfa16f87762a3097ad4255e04bfb621bb35b29a"
+    },
+    {
+      "id": "duplicate_coordinate",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" x3=\"9\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "2949e839cc86ba88750cde5f0a8496559c6356100059e7d61da85fe21a844d99"
+    },
+    {
+      "id": "duplicate_id",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n<atom id=\"a1\" elementType=\"C\" x3=\"4\" y3=\"5\" z3=\"6\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "8fb467e40db2e8ffdd9f8664d31a59a0c8c1f3b3b80ecf443743aee4190838ba"
+    },
+    {
+      "id": "missing_id",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "bea7647461aee01f76f098c0565646da2c3924749ed6509546e1da8ea9aec170"
+    },
+    {
+      "id": "multiple_molecules",
+      "input": "<cml>\n<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"4\" y3=\"5\" z3=\"6\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n</cml>\n",
+      "sha256": "d09ad98f757424461bccbd5cf7ac083ee1630b7bc9685783285e26295dcd6011"
+    },
+    {
+      "id": "unclosed_xml",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n",
+      "sha256": "d9f8b5a32f8179f8904ada4a1e38d62378771aaa96cc04c5b24ac781ff3c941e"
+    },
+    {
+      "id": "dangling_bond",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" x3=\"1\" y3=\"2\" z3=\"3\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 missing\" order=\"1\"/>\n</bondArray>\n</molecule>\n",
+      "sha256": "29fe85f3b7a0f0ceb0f1efb26d9e9708ebc8660f1971ae42ada451bbf9b23541"
+    },
+    {
+      "id": "packed_cartesian",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" xyz3=\"1 2 3\" />\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "e1a17f82d7589fbf0141a32ffc5bf68ff6054cd56b0ac3fe0380399754b29648"
+    },
+    {
+      "id": "fractional",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" id=\"m1\">\n<atomArray>\n<atom id=\"a1\" elementType=\"O\" xFract=\"0.1\" yFract=\"0.2\" zFract=\"0.3\" />\n</atomArray>\n<bondArray>\n\n</bondArray>\n</molecule>\n",
+      "sha256": "ab2849fa6f43a74817b21e56997769682eb419caf87d94b0d1cccbc6556729de"
+    }
+  ]
+}

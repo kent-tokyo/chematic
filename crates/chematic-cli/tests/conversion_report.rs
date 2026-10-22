@@ -107,6 +107,39 @@ fn source_retention_outputs_a_report_envelope() {
 }
 
 #[test]
+fn cml_source_retention_matches_rust_and_invalid_later_xml_leaves_output_untouched() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/cml_source_preservation/cases.json"
+    ))
+    .unwrap();
+    for case in packet["cases"].as_array().unwrap() {
+        let text = case["source"].as_str().unwrap();
+        let output = run_formats(text, "cml", "cml", &["--policy", "preserve_source"]);
+        assert!(output.status.success(), "{:?}", output.stderr);
+        let report: serde_json::Value = serde_json::from_slice(&output.stdout).unwrap();
+        let expected = chematic_mol::convert_with_report(
+            text,
+            "cml",
+            "cml",
+            chematic_mol::ConversionPolicy::PreserveSource,
+        )
+        .unwrap();
+        assert_eq!(report, serde_json::to_value(expected).unwrap());
+        assert_eq!(report["output"], text);
+    }
+    let path =
+        std::env::temp_dir().join(format!("chematic-cml-invalid-{}.json", std::process::id()));
+    std::fs::write(&path, "sentinel").unwrap();
+    let input = format!("{}<broken>", packet["cases"][0]["source"].as_str().unwrap());
+    let output = run_formats(&input, "cml", "cml", &["--output", path.to_str().unwrap()]);
+    let remaining = std::fs::read_to_string(&path).unwrap();
+    std::fs::remove_file(path).unwrap();
+    assert!(!output.status.success());
+    assert!(output.stdout.is_empty());
+    assert_eq!(remaining, "sentinel");
+}
+
+#[test]
 fn cjson_report_preserves_geometry_and_partial_charges() {
     let output = run_to(SOURCE, "cjson", &["--policy", "allow_loss"]);
     assert!(output.status.success());

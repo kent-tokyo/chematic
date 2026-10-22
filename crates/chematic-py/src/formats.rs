@@ -73,6 +73,13 @@ use xyz::*;
 
 type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
+mod v3000_coordinates;
+use v3000_coordinates::*;
+mod v3000_source;
+use v3000_source::*;
+mod sdf_source;
+use sdf_source::*;
+
 // ---------------------------------------------------------------------------
 // Helper: convert MoleculeReport to Python dict
 // ---------------------------------------------------------------------------
@@ -1358,10 +1365,12 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_mol_block_with_diagnostics,
         parse_sdf_with_coords,
         from_cml,
+        from_cml_with_3d,
         from_cml_strict,
         from_mrv_block,
         from_mrv_block_with_coords,
         from_cjson,
+        from_cjson_checked,
         from_moljson,
         from_cdxml,
         from_chemdraw_block,
@@ -1372,7 +1381,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         semantic_expand_json,
         semantic_expand_json_with_limits,
         from_mol_v3000,
+        roundtrip_mol_v3000_source,
         from_mol_v3000_with_coords,
+        from_mol_v3000_with_coords_3d,
         from_mol_v3000_with_diagnostics,
         from_mol2,
         from_hin,
@@ -1385,6 +1396,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         mol2_reference_rmsds_json,
         convert_with_report_json,
         roundtrip_mol2_record,
+        roundtrip_sdf_source,
+        single_sdf_mol_block,
+        project_mol2_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
         from_pdbqt_with_data,

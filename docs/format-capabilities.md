@@ -35,6 +35,12 @@ MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
 for PDB/XYZ/PDBQT in browser workflows.
 
+V3000 → CJSON is a coordinate-carrying exception in both common bridges:
+source-order x/y/z values survive independently of dimension headers and stereo
+perception tolerances. Python also supplies these values to PDB/XYZ/PDBQT
+writers unless `coords` is explicitly provided; those writers retain their
+precision and metadata limits. See the [projection comparison](benchmarks/2026-10-22-v3000-coordinate-projection.md).
+
 This is intentionally a bounded interoperability layer, not a claim of broad
 Open Babel replacement. The format-specific APIs remain available when
 coordinates, metadata, multiple records, or domain-specific options must be
@@ -46,6 +52,45 @@ one validated record is returned exactly, including coordinates, partial
 charges, typing, comments, and opaque sections. Python rejects coordinate,
 charge, name, or comment overrides on this path. Cross-format conversion
 continues to use the bounded graph/coordinate bridge described above.
+
+SDF → SDF is a complete-document source-retention route in Python/WASM, distinct
+from MOL. It validates every local-profile record and retains all original UTF-8
+bytes, including record order, SD fields and line endings. Other MOL/SDF bridge
+inputs require exactly one record; multiple records now fail instead of silently
+selecting the first. Their SD fields are omitted before graph conversion, with
+V2000/V3000 dispatch based on physical header lines. Non-SDF → SDF emits one
+framed record. Use SDF iterators for batch graph conversion. Default bounds and
+compatibility changes are in the [SDF document contract](benchmarks/2026-10-22-sdf-source-document.md).
+
+CML → CJSON in Python/WASM additionally carries complete finite source
+`x3/y3/z3` coordinates in Angstrom. Missing 3D stays absent; partial triplets,
+mixed presence, duplicate atom attributes/IDs and multiple molecules refuse.
+Rust `parse_cml_with_3d[_with_limits]` and Python `from_cml_with_3d` expose this
+single-molecule profile directly. Legacy graph/2D readers keep their behavior;
+2D layout, source IDs and other CML metadata are still omitted from common
+CJSON output. See the [profile and measured comparison](benchmarks/2026-10-22-cml-3d-coordinates.md).
+
+CJSON input to the CLI/Python/WASM common bridges uses the existing strict
+record profile before graph conversion. Present known arrays must have exact
+sizes/types; duplicate decoded keys, self/duplicate bonds and unsupported
+order tokens refuse without candidate output. Rust
+`parse_cjson_checked[_with_limits]` and Python `from_cjson_checked` expose the
+same owned graph/coordinate projection. Absent optional fields keep their
+documented defaults. Output keeps each format's existing graph/coordinate/
+metadata limits; source retention and loss reports use the record/checked
+conversion APIs. The [CJSON validation comparison](benchmarks/2026-10-22-cjson-checked-input.md)
+describes compatibility changes, limits and the measured scope.
+
+MOL2 → CJSON in Python/WASM uses the shared selected-field projection:
+mapped graph, source xyz, parsed molecule name and complete declared partial
+charges are checked on reparse. Incomplete datasets and numeric columns without
+an assigned method fail, except `NO_CHARGES` zero placeholders, which are omitted
+as unassigned. Python rejects
+overrides on this route. Default Rust/Python limits are 16 MiB input/output and
+10,000 atoms; WASM retains its 1,000,000-byte input cap. Other MOL2 metadata and
+stereo remain outside preservation. Use `convert_with_report` for the full
+loss report and explicit `allow_loss` behavior. See the
+[common-route contract and comparison](benchmarks/2026-10-22-mol2-cjson-common.md).
 
 ---
 
@@ -179,7 +224,7 @@ Rust `convert_with_report` / `convert_with_report_with_limits`, Python
 `convert_with_report` (dict) / `convert_with_report_json` (JSON string), WASM
 `convert_with_report_json`, and CLI `convert-with-report` share
 `chematic.conversion-report.v1`. Supported routes are MOL2 → MOL2/SMILES/CJSON
-and CJSON → CJSON/SMILES/MOL2 (`smi` aliases plain SMILES). Existing conversion
+and CJSON → CJSON/SMILES/MOL2, plus CML → CML (`smi` aliases plain SMILES). Existing conversion
 APIs keep their graph/metadata contracts.
 
 ```python
@@ -201,10 +246,26 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
 - `allow_loss` returns parseable candidate output with detected losses and
   uncertainty. A graph mismatch is `unverified`; it cannot claim preservation.
   A candidate that fails to parse is refused even under this policy.
-- `preserve_source` requires MOL2 → MOL2 or CJSON → CJSON. All three policies
+- `preserve_source` requires MOL2 → MOL2, CJSON → CJSON or CML → CML. All three policies
   retain exact source bytes on these routes after bounded structural validation. The scope
   is `exact_source_bytes`; `source_semantics: opaque_retained` explicitly
   excludes interpreted/editable chemical semantics. It is not a graph gate.
+- **CML source profile**: one `molecule` root in the
+  `http://www.xml-cml.org/schema` namespace, UTF-8 text, optional XML 1.0
+  declaration (`UTF-8` or ASCII encoding), no DTD or nested CML molecules.
+  The full source survives, including 2D/3D coordinate spellings, atom IDs,
+  properties, comments, namespaces and unknown extensions. Empty molecules
+  and opaque/uninterpretable chemistry are retained; this validates XML
+  framing, not the CML schema, atom/bond references, numeric chemistry or
+  stereo. `candidate_graph_verified` stays false and mappings stay empty.
+  Collections and CML cross-format projections are unsupported by this route.
+  Existing graph-only conversion APIs keep their previous behavior.
+- CML uses roxmltree 0.20.0 with DTD disabled and a 200,000-node parse budget;
+  element depth is checked against 64 after parsing. The shared
+  `ConversionLimits.mol2` input bytes, line bytes/count and atom/bond element
+  limits also apply. Array members and opaque chemistry are not counted as
+  graph atoms. The source and escaped JSON envelope each have an output-size
+  check; CLI/Python defaults are 16 MiB and WASM uses its existing lower caps.
 - Observations identify a source field group, status, stage and reason in
   source record zero. Coordinate/partial-charge/type/name/substructure/bond
   metadata losses and opaque sections are reported before graph projection.
@@ -235,6 +296,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   missing. Empty/`NO_CHARGES` method declarations do not produce a dataset.
   The parsed molecule name emits as `properties.name` and is checked on
   reparse. The source method label is retained without verifying its chemistry.
+  A declared method without source values is now explicitly `unverified` for
+  `partial_charges`. Omitted raw zero columns under `NO_CHARGES` are reported
+  as `unassigned_zero_columns: dropped`, without inventing a charge dataset.
   Atom names/types/IDs and unsupported metadata remain losses.
 - Invalid input, unsupported routes/policies and limits are errors (Python
   `ValueError`, WASM throw, CLI nonzero without a report). CLI `--output` is
@@ -319,6 +383,15 @@ filled. Multiple datasets, unrepresentable method tokens and names with
 boundary whitespace, control characters, empty text or section markers refuse
 even under `allow_loss`. Exact CJSON retention remains available for valid
 records refused by this adapter.
+
+Nonzero CJSON formal charges emit as `UNITY_ATOM_ATTR` charge attributes before
+the BOND section, separately from ATOM partial-charge columns. The existing
+`N.4` spelling for +1 nitrogen is retained. `formal_charges: preserved` requires
+verified graph correspondence after reparsing; isotope loss still prevents
+that claim and exposes no atom mapping. The full report remains lossy and
+`strict` refuses cross-format output. See the
+[indexed charge validation](benchmarks/2026-10-22-cjson-mol2-formal-charges.md)
+for external-reader checks and section-order compatibility limits.
 
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and
@@ -461,8 +534,26 @@ source-preserving APIs retain the original order.
 
 ### MOL/SDF
 
+- **SD data items**: record readers extract names from `<FieldName>` after the
+  leading `>`, including headers with preceding registry information and
+  trailing annotations. A value continues until an empty physical line or the
+  record end; lines such as `> <other>` inside it remain literal text. Leading
+  and trailing spaces/tabs are retained and logical multiline values use `\n`.
+  This replaces the previous missing-blank-line recovery that guessed a new
+  field whenever a value line resembled a header. The dictionary projection
+  still keeps the last value for a genuinely repeated key; header metadata,
+  property order and field-number-only `DTn` headers are outside this named-field
+  contract. The shared parser is used by native string/file/fast record readers,
+  Python forward suppliers and WASM record JSON outputs.
+
 - **Rust read**: `parse_mol`, `parse_mol_with_coords`, `read_mol_with_diagnostics`, `parse_mol_v3000*`, `SdfReader`, `SdfFileReader`, `SdfRecordReader`, `SdfDataset`.
 - **Rust write**: `write_mol`, `write_mol_with_conformer[_checked]`, `write_sdf*`, `write_mol_v3000*`.
+- **Immutable V3000 source**: Rust/Python `roundtrip_mol_v3000_source`
+  validates a bounded single CTAB and returns the exact UTF-8 input. WASM
+  `roundtrip_mol_v3000_block` and same-format Python/WASM common conversion
+  use this path. Original x/y/z tokens, IDs, line endings and opaque metadata
+  survive without normalization or editing. Python rejects overrides on that
+  common-conversion path. See [validation and compatibility limits](benchmarks/2026-10-22-v3000-source-roundtrip.md).
 - **Python**: `from_mol_block`, `from_mol_block_with_coords`, `from_mol_block_with_diagnostics`, `parse_sdf_with_coords`, `from_mol_v3000[_with_coords|_with_diagnostics]`, `iter_sdf`, `iter_sdf_batched`, and `SdfDataset`.
 - **WASM**: `mol_from_v3000_block`, `mol_from_sdf_block`, `to_mol_block`, `to_mol_v3000_block`, `roundtrip_mol_v3000_block` (preserves opaque SGROUP metadata and COLLECTION groups), `sdf_to_smiles_json`, `sdf_to_records_json`, `sdf_from_records_json`, `mol_block_stereo_diagnostics_json`, `mol_v3000_stereo_diagnostics_json`, `mol_block_coords_json`.
 - **Streaming**: `SdfFileReader<R: BufRead>` is a true I/O-streaming `Iterator`
@@ -476,6 +567,13 @@ source-preserving APIs retain the original order.
   memory). Python exposes file-backed `iter_sdf` and bounded
   `iter_sdf_batched`; WASM bindings still materialize SDF input.
 - **Coordinate units**: Ångström, per the Ctab standard.
+- **V3000 source coordinates**: Rust `parse_mol_v3000_with_coords_3d` and
+  Python `from_mol_v3000_with_coords_3d` return all source x/y/z values as finite
+  f64s, including signed zero and tiny z, with a 16 MiB input cap and the
+  existing native graph/count limits. The existing `*_with_coords` APIs keep
+  their 2D shape. A perception conformer may be absent for nearly flat input;
+  it is not the coordinate-retention source. This does not establish
+  cross-format stereo, opaque-metadata or source-byte preservation.
 - **Connectivity**: native Ctab bond table.
 - **Round-trip**: semantic, not byte-identical — `write_mol` regenerates a
   Ctab from the `Molecule`'s own perceived bonds/coordinates, not a copy of
