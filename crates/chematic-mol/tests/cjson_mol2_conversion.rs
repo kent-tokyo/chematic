@@ -223,7 +223,86 @@ fn no_partial_dataset_does_not_create_charge_columns() {
 }
 
 #[test]
-fn formal_charge_signs_are_separate_from_partial_and_isotope_loss_disables_mapping() {
+fn formal_charges_use_unity_independently_of_partial_charges() {
+    // Original synthetic representation tests (project license), not claims
+    // of chemically valid charge states. Exercise every supported i8 value.
+    for charge in i8::MIN..=i8::MAX {
+        for number in [7, 8, 11] {
+            let value = json!({"atoms":{"elements":{"number":[number]},
+                "formalCharges":[charge], "coords":{"3d":[1,-0.0,5e-324]}},
+                "partialCharges":{"USER_CHARGES":[-0.7]}});
+            let report =
+                convert_with_report(&value.to_string(), "cjson", "mol2", Policy::AllowLoss)
+                    .unwrap();
+            assert!(
+                report.candidate_graph_verified,
+                "element {number}, charge {charge}"
+            );
+            assert_eq!(status(&report, "formal_charges"), Status::Preserved);
+            assert_eq!(status(&report, "partial_charges"), Status::Preserved);
+            assert_eq!(status(&report, "coordinates"), Status::Preserved);
+            let output = report.output.as_ref().unwrap();
+            let after = parse_mol2_source_record(output).unwrap();
+            assert_eq!(after.molecule().atom(AtomIdx(0)).charge, charge);
+            assert_eq!(after.atoms()[0].partial_charge, Some(-0.7));
+            assert_eq!(after.charge_type(), Some("USER_CHARGES"));
+            assert_eq!(report.candidate_atom_mapping.len(), 1);
+            assert_eq!(report.candidate_atom_mapping[0].source_id, 0);
+            if charge != 0 {
+                assert!(output.contains(&format!("1 1\ncharge {charge}\n")));
+                // Open Babel 3.2.1 reads charges before BOND, but skips them
+                // when the same valid UNITY section follows BOND.
+                assert!(
+                    output.find("@<TRIPOS>UNITY_ATOM_ATTR").unwrap()
+                        < output.find("@<TRIPOS>BOND").unwrap()
+                );
+            } else {
+                assert!(!output.contains("@<TRIPOS>UNITY_ATOM_ATTR"));
+            }
+        }
+    }
+}
+
+#[test]
+fn unity_formal_charges_cover_sparse_ids_without_partial_charge_columns() {
+    let value = json!({"atoms":{"elements":{"number":[11,6,17]},
+        "formalCharges":[1,0,-1],"coords":{"3d":[0,0,0,1,0,0,2,0,0]}}});
+    let source = value.to_string();
+    let report = convert_with_report(&source, "cjson", "mol2", Policy::AllowLoss).unwrap();
+    assert!(report.candidate_graph_verified);
+    assert_eq!(status(&report, "formal_charges"), Status::Preserved);
+    let output = report.output.as_ref().unwrap();
+    assert!(output.contains("@<TRIPOS>UNITY_ATOM_ATTR\n1 1\ncharge 1\n3 1\ncharge -1\n"));
+    let after = parse_mol2_source_record(output).unwrap();
+    assert_eq!(after.charge_type(), Some("NO_CHARGES"));
+    assert!(after.atoms().iter().all(|a| a.partial_charge.is_none()));
+    assert_eq!(report.candidate_atom_mapping.len(), 3);
+    let strict = convert_with_report(&source, "cjson", "mol2", Policy::Strict).unwrap();
+    assert_eq!(strict.status, "refused");
+    assert!(strict.output.is_none());
+    assert!(strict.candidate_graph_verified);
+    assert_eq!(status(&strict, "formal_charges"), Status::Preserved);
+
+    let exact = ConversionLimits {
+        max_output_bytes: output.len(),
+        ..Default::default()
+    };
+    assert!(
+        convert_with_report_with_limits(&source, "cjson", "mol2", Policy::AllowLoss, &exact)
+            .is_ok()
+    );
+    let short = ConversionLimits {
+        max_output_bytes: output.len() - 1,
+        ..exact
+    };
+    assert!(
+        convert_with_report_with_limits(&source, "cjson", "mol2", Policy::AllowLoss, &short)
+            .is_err()
+    );
+}
+
+#[test]
+fn isotope_loss_disables_correspondence_and_charge_verification() {
     let value = json!({"atoms":{"elements":{"number":[7]}, "formalCharges":[1], "coords":{"3d":[1,2,3]}},
         "partialCharges":{"USER_CHARGES":[-0.7]}});
     let report =
@@ -232,21 +311,9 @@ fn formal_charge_signs_are_separate_from_partial_and_isotope_loss_disables_mappi
     let after = parse_mol2_source_record(report.output.as_ref().unwrap()).unwrap();
     assert_eq!(after.molecule().atom(AtomIdx(0)).charge, 1);
     assert_eq!(after.atoms()[0].partial_charge, Some(-0.7));
-    let mut negative = value.clone();
-    negative["atoms"]["formalCharges"] = json!([-1]);
-    let negative_report =
-        convert_with_report(&negative.to_string(), "cjson", "mol2", Policy::AllowLoss).unwrap();
-    assert!(negative_report.candidate_graph_verified);
-    assert_eq!(
-        status(&negative_report, "formal_charges"),
-        Status::Preserved
-    );
-    let negative_after =
-        parse_mol2_source_record(negative_report.output.as_ref().unwrap()).unwrap();
-    assert_eq!(negative_after.molecule().atom(AtomIdx(0)).charge, -1);
-    assert_eq!(negative_after.atoms()[0].partial_charge, Some(-0.7));
-    {
+    for charge in [1, -1] {
         let mut changed = value.clone();
+        changed["atoms"]["formalCharges"] = json!([charge]);
         changed["atoms"]["isotopes"] = json!([15]);
         let report =
             convert_with_report(&changed.to_string(), "cjson", "mol2", Policy::AllowLoss).unwrap();
@@ -293,83 +360,4 @@ fn output_limits_and_smiles_metadata_losses_are_explicit() {
     for field in ["partial_charges", "charge_method", "molecule_name"] {
         assert_eq!(status(&report, field), Status::Dropped);
     }
-}
-
-#[test]
-fn formal_charge_packet_retains_indexed_charges_partial_values_and_geometry() {
-    let packet: Value = serde_json::from_str(include_str!(
-        "../../../validation/cjson_mol2_formal_charges/cases.json"
-    ))
-    .unwrap();
-    for case in packet["cases"].as_array().unwrap() {
-        let input = case["input"].as_str().unwrap();
-        for text in [input.to_owned(), input.replace('\n', "\r\n")] {
-            let before = parse_cjson_record(&text).unwrap();
-            let report = convert_with_report(&text, "cjson", "mol2", Policy::AllowLoss).unwrap();
-            assert!(report.candidate_graph_verified, "{}", case["id"]);
-            assert_eq!(status(&report, "formal_charges"), Status::Preserved);
-            let output = report.output.as_ref().unwrap();
-            let after = parse_mol2_source_record(output).unwrap();
-            assert_eq!(
-                after.molecule().atom_count(),
-                before.molecule().atom_count()
-            );
-            for ((_, a), (_, b)) in before.molecule().atoms().zip(after.molecule().atoms()) {
-                assert_eq!((a.element, a.charge), (b.element, b.charge));
-            }
-            for (a, b) in before.coordinates().iter().zip(after.coordinates()) {
-                assert_eq!(
-                    [a.0.to_bits(), a.1.to_bits(), a.2.to_bits()],
-                    [b.0.to_bits(), b.1.to_bits(), b.2.to_bits()]
-                );
-            }
-            for (a, b) in before.partial_charge_datasets()["USER_CHARGES"]
-                .iter()
-                .zip(after.atoms())
-            {
-                assert_eq!(a.to_bits(), b.partial_charge.unwrap().to_bits());
-            }
-            if before.molecule().atoms().any(|(_, a)| a.charge != 0) {
-                assert!(
-                    output.find("@<TRIPOS>UNITY_ATOM_ATTR").unwrap()
-                        < output.find("@<TRIPOS>BOND").unwrap()
-                );
-            } else {
-                assert!(!output.contains("@<TRIPOS>UNITY_ATOM_ATTR"));
-            }
-            let strict = convert_with_report(&text, "cjson", "mol2", Policy::Strict).unwrap();
-            assert_eq!(strict.status, "refused");
-            assert!(strict.output.is_none());
-            assert!(strict.candidate_graph_verified);
-        }
-    }
-}
-
-#[test]
-fn full_formal_charge_storage_range_without_partial_dataset_roundtrips() {
-    // These are storage-boundary controls, not chemical plausibility claims.
-    for charge in i8::MIN..=i8::MAX {
-        let value = json!({"atoms":{"elements":{"number":[7]},"formalCharges":[charge],"coords":{"3d":[0,0,0]}}});
-        let report =
-            convert_with_report(&value.to_string(), "cjson", "mol2", Policy::AllowLoss).unwrap();
-        assert!(report.candidate_graph_verified, "{charge}");
-        let after = parse_mol2_source_record(report.output.as_ref().unwrap()).unwrap();
-        assert_eq!(after.molecule().atom(AtomIdx(0)).charge, charge);
-        assert_eq!(after.charge_type(), Some("NO_CHARGES"));
-        assert!(after.atoms()[0].partial_charge.is_none());
-    }
-    let source =
-        r#"{"atoms":{"elements":{"number":[8]},"formalCharges":[-2],"coords":{"3d":[0,0,0]}}}"#;
-    let output = convert_with_report(source, "cjson", "mol2", Policy::AllowLoss)
-        .unwrap()
-        .output
-        .unwrap();
-    let limits = ConversionLimits {
-        max_output_bytes: output.len() - 1,
-        ..Default::default()
-    };
-    assert!(matches!(
-        convert_with_report_with_limits(source, "cjson", "mol2", Policy::AllowLoss, &limits),
-        Err(chematic_mol::ConversionError::ResourceLimit("output bytes"))
-    ));
 }

@@ -23,6 +23,13 @@ example `.mol2`, `smi`, and `com`). PDB/XYZ/PDBQT output requires 3D
 coordinates; graph-only conversions do not claim to preserve format-specific
 metadata. Unsupported formats fail before conversion with a `ValueError`.
 
+Same-format MOL2 and CJSON conversion validates and returns the exact source
+instead of reconstructing a molecule. Python rejects coordinate, charge, name
+and comment overrides on these paths. CJSON uses the immutable local record
+profile: duplicate keys and unsupported typed fields fail; unknown fields are
+retained without interpreting their chemistry. See the
+[CJSON source conversion validation](benchmarks/2026-10-22-cjson-source-conversion.md).
+
 The WASM bridge intentionally exposes the topology-only subset (SMILES, MOL,
 MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML) so that JavaScript
 and Python share a predictable core contract. Use the existing coordinate APIs
@@ -198,8 +205,9 @@ chematic convert-with-report --input-format mol2 --output-format smiles \
   carry source IDs and zero-based source/candidate indices only if this check
   passes. These mappings refer to the candidate even when strict policy
   refuses to emit it. `verification_scope` defines the checked fields.
-- MOL2 formal-charge interpretation beyond `N.4` and source implicit-hydrogen
-  assignment remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
+- MOL2 explicit UNITY charges and the `N.4` fallback are projected. General
+  formal-charge inference from types and source implicit-hydrogen assignment
+  remain unverified. Noncoplanar 3D tetrahedral stereo is perceived
   in graph reads, but checked conversion does not verify stereo; other
   coordinate/extension stereo remains unverified. SMILES hydrogen
   counts are explicitly inferred under the graph valence model; CJSON does
@@ -245,7 +253,8 @@ immutable: opaque references are retained without editing or interpretation.
 
 The strict local profile accepts absent `chemicalJson` or integer version 1,
 atomic numbers, optional formal charges/isotopes/3D coordinates, bond
-indices/orders, `properties.name` and root `partialCharges` datasets. Present arrays must have matching lengths and correct types.
+indices/orders, standard root `name` (or legacy `properties.name`) and root
+`partialCharges` datasets. Present arrays must have matching lengths and correct types.
 Duplicate decoded JSON keys, self/duplicate bonds, dangling indices and
 unsupported orders are rejected. Supported order values are exactly 1, 1.5,
 2, 3 and 4; 4 is an explicit local alias for aromatic bond 1.5. Atom aromaticity
@@ -255,10 +264,20 @@ its permissive behavior; strict validation is additive.
 Root `partialCharges` must be an object of complete finite numeric arrays, one
 value per atom; `properties` must be an object and its optional `name` a string.
 These fields are validated even during same-format retention. The inspection
-API exposes `name` and `partial_charge_datasets`; Rust has corresponding getters.
+API exposes `name`, `name_conflict` and `partial_charge_datasets`; Rust has
+corresponding getters, including `CjsonRecord::has_conflicting_names`.
 Method keys remain source declarations, with no charge calculation or model
 validation. `atoms.partialCharges` remains opaque and is not conflated with the
 root dataset representation.
+
+Root `name` must also be a string. A single name or two identical declarations
+resolve verbatim; conflicting root/legacy names set `name_conflict: true` and
+resolve to `name: null`. Both declarations still survive exact source retention,
+while CJSON → MOL2 refuses even under `allow_loss`. Empty names, boundary
+whitespace and line/section injection remain outside that adapter's title
+profile. MOL2 → CJSON emits the standard root field and a matching legacy alias;
+both are checked on reparse. See the
+[name-preservation development record](benchmarks/2026-10-21-cjson-name-preservation.md).
 
 Unknown fields, including other properties and stereo extensions, are listed
 as sorted JSON Pointer paths in `opaque_fields`. Whole opaque subtrees are
@@ -283,7 +302,7 @@ lossy = chematic.convert_with_report(source, "cjson", "smiles", policy="allow_lo
 Checked CJSON → MOL2 accepts explicit 3D coordinates and at most one declared
 partial-charge dataset. It writes shortest round-trip decimal coordinates and
 charges, reparses the candidate and checks exact f64 bits (including signed
-zero/subnormals) through verified graph correspondence. `properties.name` and
+zero/subnormals) through verified graph correspondence. The resolved name and
 the charge-method label are checked separately on reparse. Missing datasets
 emit `NO_CHARGES` with no partial-charge columns; missing coordinates are never
 filled. Multiple datasets, unrepresentable method tokens and names with
@@ -302,11 +321,14 @@ for external-reader checks and section-order compatibility limits.
 
 MOL2 atom IDs/names, element-only types and `SMALL` header are generated;
 charged atom rows use placeholder substructure `1 LIG`. Hybridization and
-force-field types are not inferred from chemistry. The sole nonzero formal
-charge representation is +1 nitrogen via `N.4`. Other nonzero formal charges
-and all specified isotopes are reported dropped; they disable projected graph
-verification and candidate mappings. Partial charges are never substituted for
-formal charges. Aromatic bond tokens retain the local projection, without
+force-field types are not inferred from chemistry. Nonzero formal charges are
+written as explicit `UNITY_ATOM_ATTR` charge attributes before BOND, so Open
+Babel 3.2.1 can also read them. Nitrogen +1 retains its `N.4` type. The
+`formal_charges` observation requires exact reparsed charges through verified
+graph correspondence; partial-charge columns and method labels remain separate.
+All specified isotopes are reported dropped and disable projected graph
+verification, candidate mappings and per-atom charge/coordinate verification.
+Aromatic bond tokens retain the local projection, without
 perceiving atom aromaticity. Opaque fields and stereo remain lost/unverified.
 Strict policy refuses this cross-format route even when the candidate verifies.
 
@@ -350,8 +372,9 @@ source-preserving APIs retain the original order.
   Duplicate IDs/edges, self bonds, dangling references, mismatched counts,
   nonfinite numbers, and multiple records/duplicate core sections reject.
 - **Immutable source-profile charges**: partial charges are validated separately from formal charge.
-  The graph recognizes `N.4` as +1; it does not round partial charges or
-  implement general formal-charge inference/UNITY semantics. Optional charge
+  The graph recognizes explicit integer UNITY `charge` attributes, with `N.4`
+  as a +1 fallback. It does not round partial charges or infer general formal
+  charges from atom types. Unknown UNITY attributes remain opaque. Optional charge
   columns remain optional in the record API, with the source charge-method
   header retained. `NO_CHARGES` means numerical columns are not a claim of
   assigned partial charges.
@@ -553,9 +576,16 @@ source-preserving APIs retain the original order.
 - **Element**: PQR has no element column in the format; `Element` is
   inferred from the atom name via `infer_element`, a documented heuristic
   matching classic PDB-parser convention for blank element columns.
-- **Round-trip**: not characterized beyond the element-inference note above.
-- **Lossy operations**: none named beyond element inference (which is a
-  read-side reconstruction, not a write-side loss).
+- **Checked atom output**: Rust `write_pqr_checked[_with_limits]`, Python
+  `write_pqr_checked` and WASM `write_pqr_json_checked` retain supplied
+  coordinates, partial charges and radii bit for bit with ordered identity
+  fields. Incompatible inferred elements, nonfinite values, negative radii,
+  invalid tokens and limits are refused. Python/WASM require explicit numeric
+  fields and reject unknown fields. This is atom output, not source retention.
+- **Lossy legacy output**: `write_pqr` / `write_pqr_json` retain their existing
+  coordinate rounding (3 decimal places) and charge/radius rounding (4).
+  Non-atom source records and formatting are not represented by atom writers.
+- **Details and measurements**: [PQR atom-field integrity](pqr-numeric-integrity.md).
 - **Parse limits**: `PqrParseLimits { max_input_bytes, max_atoms, max_line_len }`.
 
 ### XYZ / Extended XYZ

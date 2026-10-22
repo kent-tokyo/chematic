@@ -363,6 +363,7 @@ pub fn convert_with_report_with_limits(
             serde_json::from_str(&crate::write_cjson(record.molecule(), record.coordinates()))
                 .expect("CJSON writer emits valid JSON");
         if let Some(name) = record.name() {
+            json["name"] = serde_json::json!(name);
             json["properties"] = serde_json::json!({"name": name});
         }
         if emit_partial {
@@ -453,15 +454,12 @@ pub fn convert_with_report_with_limits(
         let metadata: serde_json::Value =
             serde_json::from_str(&candidate).expect("CJSON candidate already parsed");
         if let Some(name) = record.name() {
-            let equal = metadata
-                .pointer("/properties/name")
-                .and_then(serde_json::Value::as_str)
-                == Some(name);
+            let equal = cjson_names_match(&metadata, name);
             report.observations.push(ConversionObservation {
                 field: "molecule_name",
                 status: if equal { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
                 stage: "candidate_verification",
-                reason: "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
+                reason: "Reparsed standard root name and legacy properties.name both equal the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
             });
         }
         if emit_partial {
@@ -623,11 +621,11 @@ fn record_cjson_smiles_losses(record: &crate::CjsonRecord, report: &mut Conversi
             "Fields listed by the CJSON record inspection API are retained in the source record only and omitted from SMILES; their semantics are not interpreted.",
         ),
         (
-            record.name().is_some(),
+            record.has_name_declarations(),
             "molecule_name",
             PreservationStatus::Dropped,
             "write",
-            "Plain SMILES omits source properties.name.",
+            "Plain SMILES omits source root name and legacy properties.name, including conflicting declarations.",
         ),
         (
             record.coordinates_present(),
@@ -800,6 +798,10 @@ fn convert_cjson(
     }
     record_cjson_smiles_losses(&record, &mut report);
     finalize_cjson_smiles(&record, report, policy, limits)
+}
+
+fn cjson_names_match(metadata: &serde_json::Value, name: &str) -> bool {
+    metadata["name"] == name && metadata["properties"]["name"] == name
 }
 
 /// Check through emitted atom correspondence, including branches, rings and

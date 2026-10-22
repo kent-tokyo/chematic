@@ -45,6 +45,8 @@ enum AtomCompareJson {
     Elements,
     #[serde(rename = "any_heavy_atom")]
     AnyHeavyAtom,
+    #[serde(rename = "rdkit_any_heavy_atom")]
+    RdkitAnyHeavyAtom,
     #[serde(rename = "any")]
     Any,
 }
@@ -54,6 +56,7 @@ impl From<AtomCompareJson> for chematic_smarts::AtomCompare {
         match v {
             AtomCompareJson::Elements => chematic_smarts::AtomCompare::Elements,
             AtomCompareJson::AnyHeavyAtom => chematic_smarts::AtomCompare::AnyHeavyAtom,
+            AtomCompareJson::RdkitAnyHeavyAtom => chematic_smarts::AtomCompare::AnyHeavyAtom,
             AtomCompareJson::Any => chematic_smarts::AtomCompare::Any,
         }
     }

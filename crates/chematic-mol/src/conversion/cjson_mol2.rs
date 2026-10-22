@@ -33,15 +33,18 @@ fn checked(report: &mut ConversionReport, field: &'static str, equal: bool, reas
     );
 }
 
-fn write_formal_charges(mol: &chematic_core::Molecule, out: &mut String) {
-    if !mol.atoms().any(|(_, atom)| atom.charge != 0) {
-        return;
-    }
-    // Keep UNITY before BOND, matching the default MOL2 writer's reader
-    // compatibility profile. Partial charges remain in the ATOM rows only.
-    out.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
-    for (idx, atom) in mol.atoms().filter(|(_, atom)| atom.charge != 0) {
-        writeln!(out, "{} 1\ncharge {}", idx.0 + 1, atom.charge).unwrap();
+fn write_formal_charges(record: &CjsonRecord, candidate: &mut String) {
+    // UNITY carries formal charge independently of the optional ATOM partial
+    // charge. Open Babel 3.2.1 skips trailing UNITY, so call this before BOND.
+    if record.molecule().atoms().any(|(_, atom)| atom.charge != 0) {
+        candidate.push_str("@<TRIPOS>UNITY_ATOM_ATTR\n");
+        for (idx, atom) in record
+            .molecule()
+            .atoms()
+            .filter(|(_, atom)| atom.charge != 0)
+        {
+            writeln!(candidate, "{} 1\ncharge {}", idx.0 + 1, atom.charge).unwrap();
+        }
     }
 }
 
@@ -145,12 +148,13 @@ pub(super) fn convert(
             || method.chars().any(|c| c.is_whitespace() || c.is_control())
             || method.to_ascii_uppercase().contains("@<TRIPOS>")
     });
-    let invalid_name = record.name().is_some_and(|name| {
-        name.is_empty()
-            || name != name.trim()
-            || name.chars().any(char::is_control)
-            || name.to_ascii_uppercase().contains("@<TRIPOS>")
-    });
+    let invalid_name = record.has_conflicting_names()
+        || record.name().is_some_and(|name| {
+            name.is_empty()
+                || name != name.trim()
+                || name.chars().any(char::is_control)
+                || name.to_ascii_uppercase().contains("@<TRIPOS>")
+        });
     let mut refuse = false;
     if sets.len() > 1 || invalid_method {
         note(
@@ -168,7 +172,7 @@ pub(super) fn convert(
             "molecule_name",
             PreservationStatus::Unverified,
             "write",
-            "Source name is empty, has boundary whitespace/control characters or a section marker; this adapter refuses rather than trim or inject MOL2 syntax.",
+            "Root name and legacy properties.name conflict, or the source name is empty, has boundary whitespace/control characters or a section marker. No title is selected or rewritten; this adapter refuses. Exact source retention remains available.",
         );
         refuse = true;
     }
@@ -192,7 +196,7 @@ pub(super) fn convert(
             "molecule_name",
             PreservationStatus::Inferred,
             "write",
-            "Absent properties.name uses the placeholder molecule name chematic.",
+            "Absent root name and legacy properties.name use the placeholder molecule name chematic.",
         );
     }
     let name = record.name().unwrap_or("chematic");
@@ -225,7 +229,7 @@ pub(super) fn convert(
         }
         candidate.push('\n');
     }
-    write_formal_charges(record.molecule(), &mut candidate);
+    write_formal_charges(record, &mut candidate);
     candidate.push_str("@<TRIPOS>BOND\n");
     for (idx, bond) in record.molecule().bonds() {
         let order = match bond.order {
@@ -268,13 +272,14 @@ pub(super) fn convert(
         verified.is_some(),
         "Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.",
     );
+    let after = parsed.as_ref();
     checked(
         &mut report,
         "formal_charges",
+        // verify_graph includes exact formal-charge equality at every mapped atom.
         verified.is_some(),
-        "Projected per-atom formal charges agree through verified graph correspondence. Nonzero values use UNITY_ATOM_ATTR before BOND, independently of ATOM partial-charge columns; missing source charges remain separately reported defaults.",
+        "Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.",
     );
-    let after = parsed.as_ref();
     checked(
         &mut report,
         "coordinates",
@@ -298,7 +303,7 @@ pub(super) fn convert(
             &mut report,
             "molecule_name",
             after.is_some_and(|after| after.name() == Some(name)),
-            "Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.",
+            "Reparsed MOL2 molecule name equals the unambiguous source root name or legacy properties.name verbatim; no trimming or placeholder substitution.",
         );
     }
     if let Some((method, values)) = partial {

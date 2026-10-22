@@ -16,9 +16,18 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Checked CJSON conversion now preserves standard root molecule names as well
+  as the legacy `properties.name` alias. Conflicting names remain in exact
+  source records but refuse MOL2 conversion instead of selecting a title.
+  MOL2 → CJSON emits and verifies both matching name fields.
+
+- Checked CJSON → MOL2 now retains signed formal charges in explicit UNITY
+  attributes, independently of partial charges. Candidate charge verification
+  requires exact graph correspondence. UNITY precedes BOND for Open Babel
+  3.2.1 readback; isotope/stereo limitations and strict refusal remain explicit.
 - Accurate CIP assignment now reports `oracle_unstable` when replacing a
-  wildcard with carbon reverses a distant tetrahedral R/S label, rather than
-  returning a confident label for an unspecified atom.
+  wildcard with carbon or fluorine reverses a distant tetrahedral R/S label,
+  rather than returning a confident label for an unspecified atom.
 - Fingerprint similarity search now applies inclusive Tanimoto thresholds
   exactly; a candidate just below the requested threshold is excluded.
 - Cleanup no longer adds a spurious positive charge to a metal when a
