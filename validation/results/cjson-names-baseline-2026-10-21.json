@@ -1,0 +1,641 @@
+{
+  "schema": "chematic.cjson-name-development.v1",
+  "scope": "Original development cases for names and one explicit helium graph; not independent holdout, chemistry perception, full-format preservation or toolkit superiority. Refusal is separate from successful conversion.",
+  "provenance": "Original synthetic inputs, 2026-10-21; recipe packet() in this script; no third-party or sealed corpus input.",
+  "license": "MIT OR Apache-2.0",
+  "redistribution": "allowed: original inputs",
+  "minimization": "One helium atom isolates title handling from typing/perception; source coordinates are supplied in angstrom, exact integers with no tolerance.",
+  "oracle": {
+    "name": "independent bounded packet inspection",
+    "version": 1,
+    "script": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/check_cjson_names.py",
+      "sha256": "fdcc3dd78883e89a0f796f5aa17e8b70515766209f04a67960671c475468f3c8",
+      "size_bytes": 7725
+    },
+    "expected": "Names compared verbatim; no title assigned when both declarations conflict; no MOL2 candidate required for names outside the declared title profile."
+  },
+  "engines": {
+    "chematic": {
+      "path": "/private/tmp/chematic-io-target-20261021/debug/chematic",
+      "sha256": "14b6ff46786ab8dc554343365cc6289bc25ec59b28c198e7cee0dd846ece2c7d",
+      "size_bytes": 24084232
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "cases": [
+    {
+      "id": "root-ascii",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"helium standard\"}",
+      "expected": {
+        "name": "helium standard",
+        "refuse": false
+      },
+      "sha256": "4917a10c29da633af8c2ce3945681f2f4c9a723eb58776fd28b85c76a8b8656b"
+    },
+    {
+      "id": "root-unicode",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"ヘリウム β\"}",
+      "expected": {
+        "name": "ヘリウム β",
+        "refuse": false
+      },
+      "sha256": "019644d04ca61cd3c12b13b9960530b09c09f6e24a110b136cdaa9ef5e565e64"
+    },
+    {
+      "id": "legacy",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"properties\":{\"name\":\"helium legacy\"}}",
+      "expected": {
+        "name": "helium legacy",
+        "refuse": false
+      },
+      "sha256": "496311be5d7cefd81ea859edde5bf42d150ac5ef5e64ce590833b390600b0264"
+    },
+    {
+      "id": "both-equal",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"same title\",\"properties\":{\"name\":\"same title\"}}",
+      "expected": {
+        "name": "same title",
+        "refuse": false
+      },
+      "sha256": "ef7e0c54eaf40152bc9d741583828c3471729262101640dab2eb71297a7e687f"
+    },
+    {
+      "id": "absent",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1}",
+      "expected": {
+        "name": null,
+        "refuse": false
+      },
+      "sha256": "d1752fb952bfbc4099046e0796266f8cac7c8d946a30b96aee05db9ef92f306f"
+    },
+    {
+      "id": "conflict",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"root title\",\"properties\":{\"name\":\"legacy title\"}}",
+      "expected": {
+        "name": "root title",
+        "refuse": true
+      },
+      "sha256": "5bc97803149005d2acb9b05221c2acb5717e9fe58f7c6b63e8becdf7033b7c1f"
+    },
+    {
+      "id": "empty",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"\"}",
+      "expected": {
+        "name": "",
+        "refuse": true
+      },
+      "sha256": "80faba9b443898af9f9a8f5a40e66b35e7eee527ec8fc3b3cfd91ea13a8c58dd"
+    },
+    {
+      "id": "line-break",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\"head\\n@<TRIPOS>ATOM\"}",
+      "expected": {
+        "name": "head\n@<TRIPOS>ATOM",
+        "refuse": true
+      },
+      "sha256": "ef8d3585f55c818682ad9e26a5fa6895e912bd255d04c3a1034c86e4716552c4"
+    },
+    {
+      "id": "boundary-space",
+      "input_format": "cjson",
+      "output_format": "mol2",
+      "source": "{\"atoms\":{\"coords\":{\"3d\":[0,0,0]},\"elements\":{\"number\":[2]},\"formalCharges\":[0]},\"bonds\":{\"connections\":{\"index\":[]},\"order\":[]},\"chemicalJson\":1,\"name\":\" title \"}",
+      "expected": {
+        "name": " title ",
+        "refuse": true
+      },
+      "sha256": "d83d4c632881a25156dc7e3ceb07b7ce0d818f1061417fe02c8744f4a97edcc9"
+    },
+    {
+      "id": "reverse-ascii",
+      "input_format": "mol2",
+      "output_format": "cjson",
+      "source": "@<TRIPOS>MOLECULE\nhelium standard\n1 0 0 0 0\nSMALL\nNO_CHARGES\n@<TRIPOS>ATOM\n1 He1 0 0 0 He\n@<TRIPOS>BOND\n",
+      "expected": {
+        "name": "helium standard",
+        "refuse": false
+      },
+      "sha256": "5a5df41d240ef3ca3d7c3fb6a9537a87842f0d847ae28446dc04499954f74b33"
+    },
+    {
+      "id": "reverse-unicode",
+      "input_format": "mol2",
+      "output_format": "cjson",
+      "source": "@<TRIPOS>MOLECULE\nヘリウム β\n1 0 0 0 0\nSMALL\nNO_CHARGES\n@<TRIPOS>ATOM\n1 He1 0 0 0 He\n@<TRIPOS>BOND\n",
+      "expected": {
+        "name": "ヘリウム β",
+        "refuse": false
+      },
+      "sha256": "af4e7ada9767af25189b692deae923bd95dbcf721de93883bc024bbeb5f5107f"
+    }
+  ],
+  "rows": [
+    {
+      "case": "root-ascii",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "root-ascii",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "root-unicode",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "root-unicode",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "legacy",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nhelium legacy\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"},{\"field\":\"molecule_name\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "helium legacy"
+    },
+    {
+      "case": "legacy",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "both-equal",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nsame title\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"},{\"field\":\"molecule_name\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "same title"
+    },
+    {
+      "case": "both-equal",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_field_loss",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "absent",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "absent",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "conflict",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nlegacy title\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"},{\"field\":\"molecule_name\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed MOL2 molecule name equals source properties.name verbatim; no trimming or placeholder substitution.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "legacy title"
+    },
+    {
+      "case": "conflict",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "empty",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "empty",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "line-break",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "line-break",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "boundary-space",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "cjson",
+        "--output-format",
+        "mol2",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"cjson\",\"output_format\":\"mol2\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_formal_charges_isotopes_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"@<TRIPOS>MOLECULE\\nchematic\\n1 0 0 0 0\\nSMALL\\nNO_CHARGES\\n\\n@<TRIPOS>ATOM\\n1 He1 0 0 0 He\\n@<TRIPOS>BOND\\n\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"CJSON layout, version declaration and array representation are not emitted in MOL2.\"},{\"field\":\"opaque_fields\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Unknown CJSON fields are omitted from MOL2; opaque references and chemistry are not interpreted.\"},{\"field\":\"mol2_metadata\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"MOL2 uses generated sequential IDs, element-based atom names/types and SMALL molecule type; charged columns use placeholder substructure 1 LIG. Hybridization and force-field typing are not perceived.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and opaque extension stereochemistry are not interpreted or verified.\"},{\"field\":\"isotope_defaults\",\"status\":\"inferred\",\"stage\":\"projection\",\"reason\":\"Absent CJSON isotopes default to unspecified isotope in the local graph projection.\"},{\"field\":\"molecule_name\",\"status\":\"inferred\",\"stage\":\"write\",\"reason\":\"Absent properties.name uses the placeholder molecule name chematic.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate MOL2 reparsed; verification requires mapped counts, elements, aromatic flags, formal charges, isotopes and bond orders. Failed graph verification exposes no correspondence; source IDs are CJSON zero-based array indices.\"},{\"field\":\"formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Explicit UNITY charge attributes (zero when absent) must reparse exactly through verified atom correspondence. Partial-charge values and method labels do not determine formal charge.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed coordinates must agree bit for bit through verified atom correspondence, including signed zero and subnormals; original decimal spelling is outside this check.\"}],\"candidate_atom_mapping\":[{\"source_id\":0,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "chematic"
+    },
+    {
+      "case": "boundary-space",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icjson",
+        "-omol2"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "@<TRIPOS>MOLECULE\n*****\n 1 0 0 0 0\nSMALL\nGASTEIGER\n\n@<TRIPOS>ATOM\n      1 HE          0.0000    0.0000    0.0000 He      1  UNL1        0.0000\n@<TRIPOS>BOND\n",
+      "stderr": "1 molecule converted\n",
+      "terminal": "output_on_ambiguous_or_unrepresentable_source",
+      "fields": {
+        "name": false,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "*****"
+    },
+    {
+      "case": "reverse-ascii",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"mol2\",\"output_format\":\"cjson\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_projected_charges_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"{\\\"atoms\\\":{\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0]},\\\"elements\\\":{\\\"number\\\":[2]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[]},\\\"order\\\":[]},\\\"chemicalJson\\\":1,\\\"properties\\\":{\\\"name\\\":\\\"helium standard\\\"}}\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns.\"},{\"field\":\"molecule_metadata\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately.\"},{\"field\":\"atom_identity\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Source atom IDs and names are omitted; candidate correspondence is reported separately.\"},{\"field\":\"atom_types\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted.\"},{\"field\":\"formal_charge_interpretation\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Explicit UNITY charge attributes are projected by source atom ID, with N.4 implying +1 only when no explicit charge exists. Other atom-type and extension rules are not interpreted. Preserving the projected charge is not verification of source chemistry.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and extension stereochemistry are not interpreted or verified.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check.\"},{\"field\":\"molecule_name\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.\"},{\"field\":\"projected_formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"CJSON formal charges are checked as part of mapped graph verification. MOL2 projection uses explicit UNITY charge attributes, then N.4 as a fallback; partial-charge preservation is checked separately. Source valence and other charge rules are not verified.\"}],\"candidate_atom_mapping\":[{\"source_id\":1,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "helium standard"
+    },
+    {
+      "case": "reverse-ascii",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        2\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"NO_CHARGES\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"helium standard\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "helium standard"
+    },
+    {
+      "case": "reverse-unicode",
+      "engine": "chematic",
+      "command": [
+        "/private/tmp/chematic-io-target-20261021/debug/chematic",
+        "convert-with-report",
+        "--input-format",
+        "mol2",
+        "--output-format",
+        "cjson",
+        "--policy",
+        "allow_loss"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\"schema\":\"chematic.conversion-report.v1\",\"input_format\":\"mol2\",\"output_format\":\"cjson\",\"policy\":\"allow_loss\",\"status\":\"completed_with_loss\",\"source_record_index\":0,\"verification_scope\":\"candidate_elements_aromaticity_projected_charges_bond_orders_coordinates_emitted_metadata\",\"candidate_graph_verified\":true,\"output\":\"{\\\"atoms\\\":{\\\"coords\\\":{\\\"3d\\\":[0.0,0.0,0.0]},\\\"elements\\\":{\\\"number\\\":[2]}},\\\"bonds\\\":{\\\"connections\\\":{\\\"index\\\":[]},\\\"order\\\":[]},\\\"chemicalJson\\\":1,\\\"properties\\\":{\\\"name\\\":\\\"ヘリウム β\\\"}}\",\"observations\":[{\"field\":\"source_text\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns.\"},{\"field\":\"molecule_metadata\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately.\"},{\"field\":\"atom_identity\",\"status\":\"dropped\",\"stage\":\"write\",\"reason\":\"Source atom IDs and names are omitted; candidate correspondence is reported separately.\"},{\"field\":\"atom_types\",\"status\":\"dropped\",\"stage\":\"projection\",\"reason\":\"Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted.\"},{\"field\":\"formal_charge_interpretation\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Explicit UNITY charge attributes are projected by source atom ID, with N.4 implying +1 only when no explicit charge exists. Other atom-type and extension rules are not interpreted. Preserving the projected charge is not verification of source chemistry.\"},{\"field\":\"stereochemistry\",\"status\":\"unverified\",\"stage\":\"projection\",\"reason\":\"Coordinate-derived and extension stereochemistry are not interpreted or verified.\"},{\"field\":\"projected_graph\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check.\"},{\"field\":\"coordinates\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check.\"},{\"field\":\"molecule_name\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.\"},{\"field\":\"projected_formal_charges\",\"status\":\"preserved\",\"stage\":\"candidate_verification\",\"reason\":\"CJSON formal charges are checked as part of mapped graph verification. MOL2 projection uses explicit UNITY charge attributes, then N.4 as a fallback; partial-charge preservation is checked separately. Source valence and other charge rules are not verified.\"}],\"candidate_atom_mapping\":[{\"source_id\":1,\"source_index\":0,\"candidate_index\":0}],\"candidate_bond_mapping\":[]}\n",
+      "stderr": "",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "ヘリウム β"
+    },
+    {
+      "case": "reverse-unicode",
+      "engine": "openbabel",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-imol2",
+        "-ocjson"
+      ],
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        2\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"NO_CHARGES\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"ヘリウム β\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+      "stderr": "1 molecule converted\n",
+      "terminal": "packet_fields_preserved",
+      "fields": {
+        "name": true,
+        "explicit_graph_and_coordinates": true
+      },
+      "observed_name": "ヘリウム β"
+    }
+  ],
+  "counts": {
+    "chematic": {
+      "packet_field_loss": 2,
+      "packet_fields_preserved": 5,
+      "output_on_ambiguous_or_unrepresentable_source": 4
+    },
+    "openbabel": {
+      "packet_field_loss": 4,
+      "packet_fields_preserved": 3,
+      "output_on_ambiguous_or_unrepresentable_source": 4
+    }
+  }
+}
