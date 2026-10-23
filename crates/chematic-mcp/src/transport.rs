@@ -73,82 +73,24 @@ impl Connection {
         }
     }
 
-    /// Process one raw JSON-RPC line. Returns `Some(response)` when a reply
-    /// must be written back; `None` for notifications and blank lines.
-    pub fn handle_line(&mut self, line: &str) -> Option<Value> {
-        let trimmed = line.trim();
-        if trimmed.is_empty() {
-            return None;
-        }
-
-        if let Err(msg) = protocol::prescan_raw_request(trimmed) {
-            return Some(protocol::error_response(
-                &Value::Null,
-                protocol::INVALID_REQUEST,
-                msg,
-                None,
-            ));
-        }
-
-        let parsed: Value = match serde_json::from_str(trimmed) {
-            Ok(v) => v,
-            Err(e) => {
-                return Some(protocol::error_response(
-                    &Value::Null,
-                    protocol::PARSE_ERROR,
-                    e.to_string(),
-                    None,
-                ));
-            }
-        };
-
-        if let Err(msg) = protocol::validate_value_limits(&parsed) {
-            return Some(protocol::error_response(
-                &Value::Null,
-                protocol::INVALID_REQUEST,
-                msg,
-                None,
-            ));
-        }
-
-        // No `id` => a notification. Consumed, no response, no era pin.
-        let id = parsed.get("id")?.clone();
-
-        let method = match parsed.get("method").and_then(|v| v.as_str()) {
-            Some(m) => m.to_string(),
-            None => {
-                return Some(protocol::error_response(
-                    &id,
-                    protocol::INVALID_REQUEST,
-                    "Invalid request: missing method",
-                    None,
-                ));
-            }
-        };
-
-        let params = parsed.get("params").cloned().unwrap_or_else(|| json!({}));
-
-        let dialect = match protocol::classify_dialect(&method, &params) {
-            Ok(d) => d,
-            Err(msg) => {
-                return Some(protocol::error_response(
-                    &id,
-                    protocol::INVALID_PARAMS,
-                    msg,
-                    None,
-                ));
-            }
-        };
+    fn request_context(
+        &mut self,
+        id: &Value,
+        method: &str,
+        params: &Value,
+    ) -> Result<RequestContext, Value> {
+        let dialect = protocol::classify_dialect(method, params).map_err(|message| {
+            protocol::error_response(id, protocol::INVALID_PARAMS, message, None)
+        })?;
         let era = match dialect {
             protocol::RequestDialect::Legacy => ProtocolEra::Legacy,
             protocol::RequestDialect::Modern => ProtocolEra::Modern20260728,
         };
-
         match self.pinned_era {
             None => self.pinned_era = Some(era),
             Some(pinned) if pinned != era => {
-                return Some(protocol::error_response(
-                    &id,
+                return Err(protocol::error_response(
+                    id,
                     protocol::INVALID_REQUEST,
                     format!(
                         "protocol era mismatch: this connection is pinned to {pinned:?} \
@@ -162,48 +104,91 @@ impl Connection {
             }
             Some(_) => {}
         }
-
         let client_meta = if era == ProtocolEra::Modern20260728 {
-            match protocol::parse_client_meta(&params) {
-                Ok(m) => m,
-                Err(msg) => {
-                    return Some(protocol::error_response(
-                        &id,
-                        protocol::INVALID_PARAMS,
-                        msg,
-                        None,
-                    ));
-                }
-            }
+            protocol::parse_client_meta(params).map_err(|message| {
+                protocol::error_response(id, protocol::INVALID_PARAMS, message, None)
+            })?
         } else {
             None
         };
+        Ok(RequestContext { era, client_meta })
+    }
 
-        let ctx = RequestContext { era, client_meta };
+    /// Process one raw JSON-RPC line. Returns `Some(response)` when a reply
+    /// must be written back; `None` for notifications and blank lines.
+    pub fn handle_line(&mut self, line: &str) -> Option<Value> {
+        let trimmed = line.trim();
+        if trimmed.is_empty() {
+            return None;
+        }
+
+        let parsed = match parse_frame(trimmed) {
+            Ok(value) => value,
+            Err(response) => return Some(response),
+        };
+
+        // No `id` => a notification. Consumed, no response, no era pin.
+        let id = parsed.get("id")?.clone();
+
+        let method = match parsed.get("method").and_then(Value::as_str) {
+            Some(method) => method,
+            None => {
+                return Some(protocol::error_response(
+                    &id,
+                    protocol::INVALID_REQUEST,
+                    "Invalid request: missing method",
+                    None,
+                ));
+            }
+        };
+
+        let params = parsed.get("params").cloned().unwrap_or_else(|| json!({}));
+
+        let ctx = match self.request_context(&id, method, &params) {
+            Ok(context) => context,
+            Err(response) => return Some(response),
+        };
         let request = JsonRpcRequest {
             id: &id,
-            method: &method,
+            method,
             params: &params,
         };
         let response = self.server.handle_request(request, &ctx);
-        match serde_json::to_vec(&response) {
-            Ok(bytes) if bytes.len() <= protocol::MAX_RESPONSE_BYTES => Some(response),
-            Ok(_) => Some(protocol::error_response(
-                &id,
-                protocol::INTERNAL_ERROR,
-                format!(
-                    "response exceeds maximum size of {} bytes",
-                    protocol::MAX_RESPONSE_BYTES
-                ),
-                None,
-            )),
-            Err(_) => Some(protocol::error_response(
-                &id,
-                protocol::INTERNAL_ERROR,
-                "response serialization failed",
-                None,
-            )),
-        }
+        Some(bound_response(&id, response))
+    }
+}
+
+fn parse_frame(line: &str) -> Result<Value, Value> {
+    protocol::prescan_raw_request(line).map_err(|message| {
+        protocol::error_response(&Value::Null, protocol::INVALID_REQUEST, message, None)
+    })?;
+    let parsed: Value = serde_json::from_str(line).map_err(|error| {
+        protocol::error_response(&Value::Null, protocol::PARSE_ERROR, error.to_string(), None)
+    })?;
+    protocol::validate_value_limits(&parsed).map_err(|message| {
+        protocol::error_response(&Value::Null, protocol::INVALID_REQUEST, message, None)
+    })?;
+    Ok(parsed)
+}
+
+fn bound_response(id: &Value, response: Value) -> Value {
+    match serde_json::to_vec(&response) {
+        Ok(bytes) if bytes.len() <= protocol::MAX_RESPONSE_BYTES => response,
+        Ok(_) => protocol::error_response(
+            id,
+            protocol::INTERNAL_ERROR,
+            format!(
+                "response exceeds maximum size of {} bytes",
+                protocol::MAX_RESPONSE_BYTES
+            ),
+            None,
+        ),
+        Err(_) => protocol::error_response(
+            id,
+            protocol::INTERNAL_ERROR,
+            "response serialization failed",
+            None,
+        ),
     }
 }
 
