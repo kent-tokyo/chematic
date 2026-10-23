@@ -19,7 +19,7 @@ const browserName = process.argv[2] ?? "chromium";
 const browsers = { chromium, firefox, webkit };
 assert.ok(browsers[browserName], `unknown browser: ${browserName}`);
 
-const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
+const root = resolve(fileURLToPath(new URL("../..", import.meta.url)));
 const packageDir = resolve(root, "demo", "pkg");
 const csp = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; connect-src 'self'; worker-src 'self'; style-src 'none'; img-src 'none'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'";
 
