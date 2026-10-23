@@ -26,7 +26,7 @@ import time
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / "validation/cosmolkit_comparison"))
+sys.path.insert(0, str(ROOT / "scripts" / "benchmarks"))
 from bench_corpus import paired_median_ratio_ci, table  # noqa: E402
 
 OPS = (

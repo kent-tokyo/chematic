@@ -122,8 +122,7 @@ def measure_mode(
 
 
 def imports(root):
-    sys.path.insert(0, str(root / "scripts"))
-    sys.path.insert(0, str(root / "validation/cosmolkit_comparison"))
+    sys.path.insert(0, str(root / "scripts" / "benchmarks"))
     from bench_corpus import table, paired_median_ratio_ci
     from bench_python_speed_frontier import normal, agreement
 

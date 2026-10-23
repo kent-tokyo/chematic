@@ -1,6 +1,9 @@
+import sys
 import unittest
+from pathlib import Path
 
-from validation.cosmolkit_comparison.bench_corpus import (
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
+from bench_corpus import (
     _cosmolkit_fingerprint_method,
     operation_succeeded,
     paired_median_ratio_ci,
