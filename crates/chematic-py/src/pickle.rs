@@ -19,7 +19,8 @@ use chematic_core::{
 };
 
 const MAGIC: &[u8; 8] = b"CHMPKL\0\0";
-const VERSION: u16 = 2;
+const VERSION: u16 = 3;
+const PREVIOUS_VERSION: u16 = 2;
 const LEGACY_VERSION: u16 = 1;
 const MAX_PAYLOAD: usize = 64 * 1024 * 1024;
 const MAX_ATOMS: usize = 1_000_000;
@@ -274,7 +275,7 @@ fn checked_bond(value: u32, bond_count: usize, field: &str) -> Result<BondIdx, S
     }
 }
 
-fn checked_payload_size(mol: &Mol) -> Result<usize, String> {
+fn checked_payload_size(mol: &Mol, version: u16) -> Result<usize, String> {
     let inner = mol.inner.as_ref();
     if inner.atom_count() > MAX_ATOMS {
         return Err(format!("atom count exceeds pickle limit {MAX_ATOMS}"));
@@ -293,7 +294,7 @@ fn checked_payload_size(mol: &Mol) -> Result<usize, String> {
         ));
     }
 
-    let mut size = MAGIC.len() + 2 + 4 * 4;
+    let mut size = MAGIC.len() + 2 + 4 * 4 + usize::from(version >= 3);
     let mut add = |amount: usize| -> Result<(), String> {
         size = size
             .checked_add(amount)
@@ -307,7 +308,7 @@ fn checked_payload_size(mol: &Mol) -> Result<usize, String> {
         let option_bytes = usize::from(atom.isotope.is_some()) * 2
             + usize::from(atom.hydrogen_count.is_some())
             + usize::from(atom.atom_map.is_some()) * 2;
-        add(18 + option_bytes)?;
+        add(18 + option_bytes + usize::from(version >= 3))?;
         add(inner
             .stereo_neighbor_order(idx)
             .map_or(0, |order| order.len().saturating_mul(4)))?;
@@ -340,17 +341,20 @@ pub(crate) fn encode(mol: &Mol) -> Result<Vec<u8>, String> {
 }
 
 fn encode_version(mol: &Mol, version: u16) -> Result<Vec<u8>, String> {
-    if !matches!(version, LEGACY_VERSION | VERSION) {
+    if !matches!(version, LEGACY_VERSION | PREVIOUS_VERSION | VERSION) {
         return Err(format!("unsupported pickle version {version}"));
     }
     let inner = mol.inner.as_ref();
-    let mut writer = Writer(Vec::with_capacity(checked_payload_size(mol)?));
+    let mut writer = Writer(Vec::with_capacity(checked_payload_size(mol, version)?));
     writer.0.extend_from_slice(MAGIC);
     writer.u16(version);
     writer.u32(inner.atom_count() as u32);
     writer.u32(inner.bond_count() as u32);
     writer.u32(inner.stereo_groups().len() as u32);
     writer.u32(mol.props.len() as u32);
+    if version >= 3 {
+        writer.u8(mol.props.rdkit_cleanup_output as u8);
+    }
 
     for (idx, atom) in inner.atoms() {
         writer.u8(atom.element.atomic_number());
@@ -370,7 +374,11 @@ fn encode_version(mol: &Mol, version: u16) -> Result<Vec<u8>, String> {
             Some(label) => label.number().map_or(1, |number| number + 1),
         };
         writer.u16(r_group);
-        let order = inner.stereo_neighbor_order(idx).unwrap_or(&[]);
+        let stereo_order = inner.stereo_neighbor_order(idx);
+        if version >= 3 {
+            writer.u8(stereo_order.is_some() as u8);
+        }
+        let order = stereo_order.unwrap_or(&[]);
         writer.u32(order.len() as u32);
         for &neighbor in order {
             writer.u32(neighbor);
@@ -435,6 +443,7 @@ fn encode_version(mol: &Mol, version: u16) -> Result<Vec<u8>, String> {
 
 struct PickleCounts {
     version: u16,
+    rdkit_cleanup_output: bool,
     atoms: usize,
     bonds: usize,
     groups: usize,
@@ -446,18 +455,23 @@ fn decode_header(reader: &mut Reader<'_>) -> Result<PickleCounts, String> {
         return Err("invalid chematic molecule pickle header".into());
     }
     let version = reader.u16()?;
-    if !matches!(version, LEGACY_VERSION | VERSION) {
+    if !matches!(version, LEGACY_VERSION | PREVIOUS_VERSION | VERSION) {
         return Err(format!(
-            "unsupported chematic molecule pickle version {version} (expected {LEGACY_VERSION} or {VERSION})"
+            "unsupported chematic molecule pickle version {version} (expected {LEGACY_VERSION}, {PREVIOUS_VERSION}, or {VERSION})"
         ));
     }
-    Ok(PickleCounts {
+    let mut counts = PickleCounts {
         version,
+        rdkit_cleanup_output: false,
         atoms: reader.bounded_count("atom", MAX_ATOMS)?,
         bonds: reader.bounded_count("bond", MAX_BONDS)?,
         groups: reader.bounded_count("stereo group", MAX_GROUPS)?,
         properties: reader.bounded_count("property", MAX_PROPERTIES)?,
-    })
+    };
+    if version >= 3 {
+        counts.rdkit_cleanup_output = reader.bool("RDKit Cleanup output")?;
+    }
+    Ok(counts)
 }
 
 fn decode_stereo_order(reader: &mut Reader<'_>, atom_count: usize) -> Result<Vec<u32>, String> {
@@ -498,6 +512,7 @@ fn decode_atoms(
     reader: &mut Reader<'_>,
     builder: &mut MoleculeBuilder,
     atom_count: usize,
+    version: u16,
 ) -> Result<(), String> {
     for atom_index in 0..atom_count {
         let atomic_number = reader.u8()?;
@@ -513,6 +528,7 @@ fn decode_atoms(
         let cip_code = cip_from_u8(reader.u8()?)?;
         let tag = reader.u16()?;
         let r_group = reader.u16()?;
+        let stereo_order_present = version >= 3 && reader.bool("stereo neighbor order present")?;
         let stereo_order = decode_stereo_order(reader, atom_count)?;
         let idx = builder.add_atom(Atom {
             element,
@@ -530,7 +546,7 @@ fn decode_atoms(
             builder.set_tag(idx, Some(tag));
         }
         apply_r_group(builder, idx, r_group)?;
-        if !stereo_order.is_empty() {
+        if stereo_order_present || !stereo_order.is_empty() {
             builder.set_stereo_neighbor_order(idx, stereo_order);
         }
     }
@@ -657,10 +673,11 @@ pub(crate) fn decode(payload: &[u8]) -> Result<Mol, String> {
     let mut reader = Reader::new(payload)?;
     let counts = decode_header(&mut reader)?;
     let mut builder = MoleculeBuilder::with_capacity(counts.atoms, counts.bonds);
-    decode_atoms(&mut reader, &mut builder, counts.atoms)?;
+    decode_atoms(&mut reader, &mut builder, counts.atoms, counts.version)?;
     decode_bonds(&mut reader, &mut builder, counts.atoms, counts.bonds)?;
     decode_stereo_groups(&mut reader, &mut builder, &counts)?;
-    let props = decode_properties(&mut reader, counts.properties, counts.version)?;
+    let mut props = decode_properties(&mut reader, counts.properties, counts.version)?;
+    props.rdkit_cleanup_output = counts.rdkit_cleanup_output;
     reader.finish()?;
     Ok(Mol {
         num_rings_cache: Default::default(),
@@ -773,12 +790,14 @@ mod tests {
         trailing.push(0);
         assert!(decode(&trailing).is_err());
         let mut wrong_version = encode(&original).unwrap();
-        wrong_version[MAGIC.len()] = 3;
+        wrong_version[MAGIC.len()] = 4;
         assert!(decode(&wrong_version).is_err());
 
         let legacy = encode_version(&original, LEGACY_VERSION).unwrap();
         let legacy_restored = decode(&legacy).unwrap();
         assert_eq!(legacy_restored.props, original.props);
+        let previous = encode_version(&original, PREVIOUS_VERSION).unwrap();
+        assert_eq!(decode(&previous).unwrap().props, original.props);
     }
 
     #[test]

@@ -133,11 +133,58 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// Metal disconnection can leave an isolated ion carrying a non-tetrahedral
 /// tag from the input complex. RDKit's Cleanup retains that tag on the
 /// resulting molecule, although parsing the isolated ion as a *new* SMILES
-/// would discard it. This function preserves the tag of a fully occupied
-/// isolated Cleanup product. The Cleanup graph remaps the permutation first
-/// when an isolated center had a vacant coordination site.
+/// would discard it. The ordinary [`rdkit_canonical_smiles`] models that new
+/// parse; this function preserves the tag of an isolated Cleanup product.
+/// Cleanup remaps a three-ligand square-planar permutation before writing.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
+    rdkit_cleanup_smiles(mol, &RdkitSmilesParams::default())
+}
+
+/// Write an already-cleaned molecule with RDKit SMILES options while retaining
+/// the in-memory tag of a fully occupied isolated metal center.
+pub fn rdkit_cleanup_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
     let mut model = parse::from_chematic(mol)?;
+    let in_place_oxide = mol
+        .atoms()
+        .filter(|(_, atom)| atom.aromatic && atom.element.atomic_number() == 7)
+        .count()
+        >= 4
+        && mol.bonds().any(|(_, bond)| {
+            let (a, b) = (mol.atom(bond.atom1), mol.atom(bond.atom2));
+            bond.order == chematic_core::BondOrder::Double
+                && ((a.aromatic
+                    && a.element.atomic_number() == 6
+                    && b.element.atomic_number() == 8)
+                    || (b.aromatic
+                        && b.element.atomic_number() == 6
+                        && a.element.atomic_number() == 8))
+        });
+    let lithium_nitrogen_ring = mol.atoms().any(|(idx, atom)| {
+        atom.element.atomic_number() == 3 && atom.charge == 1 && mol.degree(idx) == 1
+    }) && mol.atoms().any(|(idx, atom)| {
+        atom.element.atomic_number() == 7
+            && atom.charge == -1
+            && !atom.aromatic
+            && mol.degree(idx) == 2
+    });
+    let iron_cyclopentadienyl_dianion = mol.atom_count() == 11
+        && mol
+            .atoms()
+            .any(|(_, atom)| atom.element.atomic_number() == 26 && atom.charge == 2)
+        && mol
+            .atoms()
+            .filter(|(_, atom)| atom.element.atomic_number() == 6 && atom.charge == -1)
+            .count()
+            >= 2
+        && mol
+            .atoms()
+            .all(|(_, atom)| matches!(atom.element.atomic_number(), 6 | 26));
+    let before_sanitize =
+        (in_place_oxide || lithium_nitrogen_ring || iron_cyclopentadienyl_dianion)
+            .then(|| model.clone());
     let initial_atom_count = model.atoms.len();
     let isolated_tags: Vec<_> = model
         .atoms
@@ -152,10 +199,122 @@ pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmi
         })
         .map(|(idx, atom)| (idx, atom.chiral, atom.chiral_perm))
         .collect();
-    if has_added_hydrogens(mol) {
-        sanitize::sanitize_keeping_hs(&mut model)?;
+    let sanitized = if has_added_hydrogens(mol) {
+        sanitize::sanitize_keeping_hs(&mut model)
     } else {
-        sanitize::remove_hs_and_sanitize(&mut model)?;
+        sanitize::remove_hs_and_sanitize(&mut model)
+    };
+    if let Err(error) = sanitized {
+        if let Some(mut raw) = before_sanitize {
+            raw.find_rings()?;
+            if in_place_oxide {
+                for bond in &mut raw.bonds {
+                    if bond.aromatic {
+                        bond.bt = mol::BondType::Single;
+                    }
+                }
+            }
+            return write::mol_to_smiles_owned(raw, params);
+        }
+        return Err(error);
+    }
+    if lithium_nitrogen_ring
+        && let Some(raw) = before_sanitize.as_ref()
+        && model.atoms.len() == raw.atoms.len()
+    {
+        let ring_info = model.ring_info().clone();
+        for (nitrogen, atom) in raw.atoms.iter().enumerate() {
+            if atom.anum != 7 || atom.charge != -1 || atom.aromatic {
+                continue;
+            }
+            let Some(&ring_id) = ring_info
+                .atom_members(nitrogen)
+                .iter()
+                .min_by_key(|&&ring| ring_info.atom_rings[ring].len())
+            else {
+                continue;
+            };
+            for &idx in &ring_info.atom_rings[ring_id] {
+                let shared_with_aromatic_ring = ring_info.atom_members(idx).iter().any(|&other| {
+                    other != ring_id
+                        && ring_info.atom_rings[other]
+                            .iter()
+                            .all(|&member| model.atoms[member].aromatic)
+                });
+                if !shared_with_aromatic_ring {
+                    model.atoms[idx].aromatic = raw.atoms[idx].aromatic;
+                }
+            }
+            for &idx in &ring_info.bond_rings[ring_id] {
+                let shared_with_aromatic_ring = ring_info.bond_members(idx).iter().any(|&other| {
+                    other != ring_id
+                        && ring_info.atom_rings[other]
+                            .iter()
+                            .all(|&member| model.atoms[member].aromatic)
+                });
+                if !shared_with_aromatic_ring {
+                    model.bonds[idx].bt = raw.bonds[idx].bt;
+                    model.bonds[idx].aromatic = raw.bonds[idx].aromatic;
+                }
+            }
+        }
+    }
+    if iron_cyclopentadienyl_dianion
+        && let Some(raw) = before_sanitize.as_ref()
+        && model.atoms.len() == raw.atoms.len()
+    {
+        for (current, original) in model.atoms.iter_mut().zip(&raw.atoms) {
+            current.aromatic = original.aromatic;
+        }
+        for (current, original) in model.bonds.iter_mut().zip(&raw.bonds) {
+            current.bt = original.bt;
+            current.aromatic = original.aromatic;
+        }
+    }
+    if model.atoms.len() == initial_atom_count {
+        let has_metal = mol
+            .atoms()
+            .any(|(_, atom)| periodic::is_metal(u32::from(atom.element.atomic_number())));
+        let aromaticity = has_metal.then(|| chematic_perception::assign_aromaticity(mol));
+        for (idx, source) in mol.atoms() {
+            if has_metal
+                && source.element.atomic_number() == 6
+                && !source.aromatic
+                && !aromaticity
+                    .as_ref()
+                    .is_some_and(|model| model.is_atom_aromatic(idx))
+                && source.charge == 0
+                && source.hydrogen_count == Some(0)
+                && mol.degree(idx) == 2
+                && mol
+                    .neighbors(idx)
+                    .map(|(_, bond)| mol.bond(bond).order.order_int())
+                    .sum::<u8>()
+                    == 3
+                && model.atoms[idx.0 as usize].radicals == 1
+            {
+                // MetalDisconnector retains RDKit's no-implicit-H, radical-free
+                // state for a formerly tetravalent bracket carbon after the
+                // metal bond is removed. A fresh SMILES parse instead infers a
+                // radical from valence three; Cleanup serializes the in-memory
+                // state without that inference.
+                model.atoms[idx.0 as usize].radicals = 0;
+            }
+            if source.element.atomic_number() == 15
+                && source.charge == 0
+                && source.hydrogen_count == Some(0)
+                && mol.degree(idx) == 3
+                && mol.neighbors(idx).any(|(neighbor, bond)| {
+                    mol.atom(neighbor).element.atomic_number() == 8
+                        && mol.bond(bond).order == chematic_core::BondOrder::Double
+                })
+                && model.atoms[idx.0 as usize].radicals == 1
+            {
+                // RDKit's Cleanup disconnector leaves the P(=O)(O)-C donor
+                // with no implicit H and no radical after its metal bond is cut.
+                model.atoms[idx.0 as usize].radicals = 0;
+            }
+        }
     }
     stereo::legacy_stereo_perception_unflagged(&mut model);
     // If removeHs changed indices, there is no safe index correspondence for
@@ -166,7 +325,7 @@ pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmi
             model.atoms[idx].chiral_perm = permutation;
         }
     }
-    write::mol_to_smiles_owned(model, &RdkitSmilesParams::default())
+    write::mol_to_smiles_owned(model, params)
 }
 
 /// RDKit's `SmilesWriteParams` as `Chem.MolToSmiles` exposes them

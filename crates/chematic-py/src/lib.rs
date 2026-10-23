@@ -128,6 +128,9 @@ enum PropertyType {
 struct PropertyStore {
     values: HashMap<String, String>,
     types: HashMap<String, PropertyType>,
+    // Cleanup can retain an isolated metal's in-memory non-tetrahedral tag.
+    // This is binding-only output provenance, never a user molecule property.
+    rdkit_cleanup_output: bool,
 }
 
 impl PropertyStore {
@@ -155,6 +158,7 @@ impl From<HashMap<String, String>> for PropertyStore {
         Self {
             values,
             types: HashMap::new(),
+            rdkit_cleanup_output: false,
         }
     }
 }

@@ -51,6 +51,22 @@ fn test_benzene_toluene() {
 }
 
 #[test]
+fn benzene_toluene_stops_after_proving_the_absolute_optimum() {
+    let benzene = parse("c1ccccc1").unwrap();
+    let toluene = parse("Cc1ccccc1").unwrap();
+    let config = McsConfig {
+        // Mapping the smaller graph fits this deliberately tight budget. A
+        // search that keeps enumerating all symmetric seeds exhausts it.
+        max_search_nodes: Some(16),
+        ..McsConfig::default()
+    };
+    let outcome = find_mcs_with_config_checked(&[&benzene, &toluene], &config);
+    assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+    let query = outcome.into_query();
+    assert_eq!([query.atom_count(), query.bonds.len()], [6, 6]);
+}
+
+#[test]
 fn test_no_common_atoms() {
     // Only N atoms vs only O atoms → no MCS
     let a = parse("N").unwrap(); // ammonia

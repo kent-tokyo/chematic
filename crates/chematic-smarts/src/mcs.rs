@@ -244,6 +244,8 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
     };
 
     let n0 = mols[0].atom_count();
+    let absolute_atom_upper_bound = mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0);
+    let absolute_bond_upper_bound = mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0);
 
     let mut state = McsState {
         mols,
@@ -254,12 +256,15 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         timed_out: false,
         resource_limited: false,
         search_nodes: 0,
+        absolute_atom_upper_bound,
+        absolute_bond_upper_bound,
+        proven_optimal: false,
         ring_sets,
         excluded: vec![false; n0],
     };
 
     'outer: for a0 in 0..n0 {
-        if state.timed_out || state.resource_limited {
+        if state.timed_out || state.resource_limited || state.proven_optimal {
             break;
         }
         if let Some(d) = state.deadline
@@ -280,7 +285,7 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
 
         // Iterate the Cartesian product of candidate lists.
         for seed in CartesianProduct::new(&seed_candidates) {
-            if state.timed_out || state.resource_limited {
+            if state.timed_out || state.resource_limited || state.proven_optimal {
                 break 'outer;
             }
             if let Some(d) = state.deadline
@@ -435,6 +440,14 @@ struct McsState<'a> {
     timed_out: bool,
     resource_limited: bool,
     search_nodes: usize,
+    /// Absolute graph-theoretic upper bounds: a common subgraph cannot have
+    /// more atoms or bonds than the smallest input on the corresponding axis.
+    absolute_atom_upper_bound: usize,
+    absolute_bond_upper_bound: usize,
+    /// Set once a valid mapping reaches both absolute bounds. At that point
+    /// no later branch can improve either optimization objective, so symmetric
+    /// seed permutations can be skipped without weakening completeness.
+    proven_optimal: bool,
     ring_sets: Vec<RingSet>,
     /// `excluded[a.0]` = `true` if mol[0] atom `a` has been decided OUT of
     /// the current search-tree branch (see the include/exclude split in
@@ -494,6 +507,9 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
             || mapping_has_complete_rings(state.mols, mapping, &state.ring_sets, state.config))
     {
         state.best = mapping.clone();
+        state.proven_optimal = state.best.size == state.absolute_atom_upper_bound
+            && (!state.config.maximize_bonds
+                || state.best.bond_count == state.absolute_bond_upper_bound);
     }
     true
 }
@@ -518,6 +534,9 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         return;
     }
     if state.timed_out || state.resource_limited {
+        return;
+    }
+    if state.proven_optimal {
         return;
     }
 
