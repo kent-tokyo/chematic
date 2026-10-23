@@ -10,7 +10,7 @@ const path = require('node:path');
 const { createRequire } = require('node:module');
 const { pathToFileURL } = require('node:url');
 const zlib = require('node:zlib');
-const { atomSets } = require('./compare_rdkitjs_release_chemistry.cjs');
+const { atomSets } = require('../benchmarks/compare_rdkitjs_release_chemistry.cjs');
 const requireFromHere = createRequire(__filename);
 
 function sha256(data) {

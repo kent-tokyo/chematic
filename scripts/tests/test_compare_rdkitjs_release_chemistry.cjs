@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { atomSets, options } = require('../compare_rdkitjs_release_chemistry.cjs');
+const { atomSets, options } = require('../benchmarks/compare_rdkitjs_release_chemistry.cjs');
 
 test('normalizes empty MinimalLib result and order-independent atom sets', () => {
   assert.deepEqual(atomSets('{}'), []);
