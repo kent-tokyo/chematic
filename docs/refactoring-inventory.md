@@ -9,8 +9,8 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The R24 candidate contains 8 file allowances and 60 function allowances; CI
-rejects new entries, growth beyond a recorded limit, and stale
+The stacked R25 candidate contains 8 file allowances and 50 function
+allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
 The retained large files fall into four reviewed groups:
@@ -29,7 +29,7 @@ correctness or performance gates. Further work should remove one bounded stage
 at a time with its domain corpus, rather than split tables or reorder chemistry
 mechanically.
 
-R9-R24 established explicit boundaries for CLI dispatch, standardization,
+R9-R25 established explicit boundaries for CLI dispatch, standardization,
 SMARTS parsing and matching, reaction queries and stereo, checked CJSON/MOL2
 conversion, depiction stages, EPS emission, RDKit ring compatibility, and
 evidence-gate I/O. MCP request framing, protocol-era selection, response
@@ -39,6 +39,11 @@ cleanup, PDB bond rules and valence/stereo handling now have bounded owners.
 R24 also separates refactor-budget scanning from ratchet policy and reporting,
 so CI, local checks and refreshed baselines cannot drift onto different source
 discovery rules.
+R25 closes ten additional orchestration allowances in reaction validation and
+stoichiometry, scaffold selection, CIP expansion, periodic-neighbor indexing,
+POSCAR writing, depiction checks/rendering and canonical orbit comparison.
+The retained POSCAR parser remains an explicit file allowance, while its write
+planning is now isolated in a small private module.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 

@@ -73,11 +73,12 @@ pub fn render_png_opts(mol: &Molecule, layout: &Layout, _opts: &RenderOptions) -
     let offset_x = -bounds.0 + 1.0;
     let offset_y = -bounds.1 + 1.0;
 
-    // Draw bonds (simplified: use pixmap as-is, small dots for atoms)
-    let mut paint_bond = Paint::default();
-    paint_bond.set_color(Color::BLACK);
+    draw_atoms(&mut pixmap, mol, layout, offset_x, offset_y);
+    draw_bonds(&mut pixmap, mol, layout, offset_x, offset_y);
+    pixmap.encode_png().unwrap_or_else(|_| empty_png())
+}
 
-    // Draw atoms as markers with CPK colors and element labels
+fn draw_atoms(pixmap: &mut Pixmap, mol: &Molecule, layout: &Layout, offset_x: f64, offset_y: f64) {
     for (idx, _) in mol.atoms() {
         let p = layout.get(idx);
         let x = ((p.x + offset_x) * PIXELS_PER_UNIT) as f32;
@@ -124,10 +125,13 @@ pub fn render_png_opts(mol: &Molecule, layout: &Layout, _opts: &RenderOptions) -
             }
         }
     }
+}
 
-    // Draw bonds as lines between atoms (with wedge/dash styling)
+fn draw_bonds(pixmap: &mut Pixmap, mol: &Molecule, layout: &Layout, offset_x: f64, offset_y: f64) {
     use chematic_core::BondOrder;
 
+    let mut paint = Paint::default();
+    paint.set_color(Color::BLACK);
     for (_, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
         let p2 = layout.get(bond.atom2);
@@ -136,13 +140,11 @@ pub fn render_png_opts(mol: &Molecule, layout: &Layout, _opts: &RenderOptions) -
         let x2 = ((p2.x + offset_x) * PIXELS_PER_UNIT) as f32;
         let y2 = ((p2.y + offset_y) * PIXELS_PER_UNIT) as f32;
 
-        // Determine stroke width and style based on bond order
         let stroke_width = match bond.order {
-            BondOrder::Up => BOND_WIDTH * 2.5,   // Wedge: thicker
-            BondOrder::Down => BOND_WIDTH * 0.8, // Dash: thinner
-            _ => BOND_WIDTH,                     // Normal: regular
+            BondOrder::Up => BOND_WIDTH * 2.5,
+            BondOrder::Down => BOND_WIDTH * 0.8,
+            _ => BOND_WIDTH,
         };
-
         let stroke = Stroke {
             width: stroke_width,
             ..Default::default()
@@ -154,54 +156,49 @@ pub fn render_png_opts(mol: &Molecule, layout: &Layout, _opts: &RenderOptions) -
         if let Some(path) = pb.finish() {
             pixmap.stroke_path(
                 &path,
-                &paint_bond,
+                &paint,
                 &stroke,
                 tiny_skia::Transform::default(),
                 None,
             );
         }
-
-        // Draw dashed lines for down bonds (approximation)
         if bond.order == BondOrder::Down {
-            let dx = x2 - x1;
-            let dy = y2 - y1;
-            let len = (dx * dx + dy * dy).sqrt();
-            if len > 0.0 {
-                let ux = dx / len;
-                let uy = dy / len;
-                let dash_len = 2.0;
-                let gap_len = 2.0;
-
-                let mut pos = 0.0;
-                while pos < len {
-                    let start_pos = (pos).min(len);
-                    let end_pos = (pos + dash_len).min(len);
-
-                    let sx = x1 + ux * start_pos;
-                    let sy = y1 + uy * start_pos;
-                    let ex = x1 + ux * end_pos;
-                    let ey = y1 + uy * end_pos;
-
-                    let mut pb = tiny_skia::PathBuilder::new();
-                    pb.move_to(sx, sy);
-                    pb.line_to(ex, ey);
-                    if let Some(path) = pb.finish() {
-                        pixmap.stroke_path(
-                            &path,
-                            &paint_bond,
-                            &stroke,
-                            tiny_skia::Transform::default(),
-                            None,
-                        );
-                    }
-
-                    pos += dash_len + gap_len;
-                }
-            }
+            draw_dash_overlay(pixmap, &paint, &stroke, [x1, y1], [x2, y2]);
         }
     }
+}
 
-    pixmap.encode_png().unwrap_or_else(|_| empty_png())
+fn draw_dash_overlay(
+    pixmap: &mut Pixmap,
+    paint: &Paint,
+    stroke: &Stroke,
+    start: [f32; 2],
+    end: [f32; 2],
+) {
+    let dx = end[0] - start[0];
+    let dy = end[1] - start[1];
+    let length = (dx * dx + dy * dy).sqrt();
+    if length <= 0.0 {
+        return;
+    }
+    let direction = [dx / length, dy / length];
+    let mut position: f32 = 0.0;
+    while position < length {
+        let dash_end = (position + 2.0).min(length);
+        let mut builder = tiny_skia::PathBuilder::new();
+        builder.move_to(
+            start[0] + direction[0] * position,
+            start[1] + direction[1] * position,
+        );
+        builder.line_to(
+            start[0] + direction[0] * dash_end,
+            start[1] + direction[1] * dash_end,
+        );
+        if let Some(path) = builder.finish() {
+            pixmap.stroke_path(&path, paint, stroke, tiny_skia::Transform::default(), None);
+        }
+        position += 4.0;
+    }
 }
 
 fn empty_png() -> Vec<u8> {

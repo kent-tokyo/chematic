@@ -271,97 +271,9 @@ impl ReactionDocument {
         }
         let mut ids = std::collections::HashSet::new();
         for step in &self.steps {
-            if step.id.is_empty() || !ids.insert(step.id.clone()) {
-                return Err(ReactionDocumentError::InvalidDocument(
-                    "step IDs must be non-empty and unique".to_string(),
-                ));
-            }
-            let mut condition_keys = std::collections::HashSet::new();
-            for condition in &step.conditions {
-                if condition.key.is_empty() {
-                    return Err(ReactionDocumentError::InvalidDocument(
-                        "reaction condition keys must be non-empty".to_string(),
-                    ));
-                }
-                if !condition_keys.insert(&condition.key) {
-                    return Err(ReactionDocumentError::InvalidDocument(
-                        "reaction condition keys must be unique within a step".to_string(),
-                    ));
-                }
-            }
-            for provenance in &step.provenance {
-                if provenance.source.is_empty() || provenance.kind.is_empty() {
-                    return Err(ReactionDocumentError::InvalidDocument(
-                        "step provenance source and kind must be non-empty".to_string(),
-                    ));
-                }
-            }
-            for component in &step.components {
-                if component.id.is_empty() || !ids.insert(component.id.clone()) {
-                    return Err(ReactionDocumentError::InvalidDocument(
-                        "component IDs must be non-empty and globally unique".to_string(),
-                    ));
-                }
-                if component.coefficient == 0 || component.smiles.is_empty() {
-                    return Err(ReactionDocumentError::InvalidDocument(
-                        "component SMILES and positive coefficient are required".to_string(),
-                    ));
-                }
-                // A component is one molecule, not a reaction section.  Going
-                // through `parse_reaction` here could accidentally accept a
-                // payload containing `>` when the surrounding text happened
-                // to split into three parseable sections.  Keep this boundary
-                // loss-aware by validating the payload with the molecule
-                // parser directly.
-                let molecule = chematic_smiles::parse(&component.smiles).map_err(|e| {
-                    ReactionDocumentError::Parse(RxnErrorMessage(format!(
-                        "invalid component '{}': {e}",
-                        component.id
-                    )))
-                })?;
-                if !component.atom_maps.is_empty() {
-                    let mut seen = std::collections::HashSet::new();
-                    for atom_map in &component.atom_maps {
-                        if atom_map.atom_index as usize >= molecule.atom_count() {
-                            return Err(ReactionDocumentError::InvalidDocument(format!(
-                                "atom-map index {} is outside component '{}'",
-                                atom_map.atom_index, component.id
-                            )));
-                        }
-                        if !seen.insert(atom_map.map_number) {
-                            return Err(ReactionDocumentError::InvalidDocument(format!(
-                                "atom-map number {} is duplicated in component '{}'",
-                                atom_map.map_number, component.id
-                            )));
-                        }
-                        if molecule
-                            .atom(chematic_core::AtomIdx(atom_map.atom_index))
-                            .atom_map
-                            != Some(atom_map.map_number)
-                        {
-                            return Err(ReactionDocumentError::InvalidDocument(format!(
-                                "atom-map identity {}:{} does not match component '{}' SMILES",
-                                atom_map.map_number, atom_map.atom_index, component.id
-                            )));
-                        }
-                    }
-                    let expected = atom_maps_for_molecule(&molecule);
-                    if component.atom_maps != expected {
-                        return Err(ReactionDocumentError::InvalidDocument(format!(
-                            "atom-map identities do not cover component '{}' SMILES",
-                            component.id
-                        )));
-                    }
-                }
-            }
+            validate_step(step, &mut ids)?;
         }
-        for provenance in &self.provenance {
-            if provenance.source.is_empty() || provenance.kind.is_empty() {
-                return Err(ReactionDocumentError::InvalidDocument(
-                    "document provenance source and kind must be non-empty".to_string(),
-                ));
-            }
-        }
+        validate_provenance(&self.provenance, "document")?;
         Ok(())
     }
 
@@ -421,6 +333,114 @@ impl ReactionDocument {
         }
         Ok(write_reaction(&reaction))
     }
+}
+
+fn validate_step(
+    step: &ReactionStep,
+    ids: &mut std::collections::HashSet<String>,
+) -> Result<(), ReactionDocumentError> {
+    if step.id.is_empty() || !ids.insert(step.id.clone()) {
+        return Err(ReactionDocumentError::InvalidDocument(
+            "step IDs must be non-empty and unique".to_string(),
+        ));
+    }
+    let mut condition_keys = std::collections::HashSet::new();
+    for condition in &step.conditions {
+        if condition.key.is_empty() || !condition_keys.insert(&condition.key) {
+            let detail = if condition.key.is_empty() {
+                "reaction condition keys must be non-empty"
+            } else {
+                "reaction condition keys must be unique within a step"
+            };
+            return Err(ReactionDocumentError::InvalidDocument(detail.to_string()));
+        }
+    }
+    validate_provenance(&step.provenance, "step")?;
+    for component in &step.components {
+        validate_component(component, ids)?;
+    }
+    Ok(())
+}
+
+fn validate_provenance(
+    records: &[ProvenanceRecord],
+    owner: &str,
+) -> Result<(), ReactionDocumentError> {
+    if records
+        .iter()
+        .any(|record| record.source.is_empty() || record.kind.is_empty())
+    {
+        return Err(ReactionDocumentError::InvalidDocument(format!(
+            "{owner} provenance source and kind must be non-empty"
+        )));
+    }
+    Ok(())
+}
+
+fn validate_component(
+    component: &ReactionComponent,
+    ids: &mut std::collections::HashSet<String>,
+) -> Result<(), ReactionDocumentError> {
+    if component.id.is_empty() || !ids.insert(component.id.clone()) {
+        return Err(ReactionDocumentError::InvalidDocument(
+            "component IDs must be non-empty and globally unique".to_string(),
+        ));
+    }
+    if component.coefficient == 0 || component.smiles.is_empty() {
+        return Err(ReactionDocumentError::InvalidDocument(
+            "component SMILES and positive coefficient are required".to_string(),
+        ));
+    }
+    // A component is one molecule, not a reaction section. Validate it with
+    // the molecule parser so an embedded `>` can never cross this boundary.
+    let molecule = chematic_smiles::parse(&component.smiles).map_err(|error| {
+        ReactionDocumentError::Parse(RxnErrorMessage(format!(
+            "invalid component '{}': {error}",
+            component.id
+        )))
+    })?;
+    validate_component_atom_maps(component, &molecule)
+}
+
+fn validate_component_atom_maps(
+    component: &ReactionComponent,
+    molecule: &chematic_core::Molecule,
+) -> Result<(), ReactionDocumentError> {
+    if component.atom_maps.is_empty() {
+        return Ok(());
+    }
+    let mut seen = std::collections::HashSet::new();
+    for atom_map in &component.atom_maps {
+        if atom_map.atom_index as usize >= molecule.atom_count() {
+            return Err(ReactionDocumentError::InvalidDocument(format!(
+                "atom-map index {} is outside component '{}'",
+                atom_map.atom_index, component.id
+            )));
+        }
+        if !seen.insert(atom_map.map_number) {
+            return Err(ReactionDocumentError::InvalidDocument(format!(
+                "atom-map number {} is duplicated in component '{}'",
+                atom_map.map_number, component.id
+            )));
+        }
+        if molecule
+            .atom(chematic_core::AtomIdx(atom_map.atom_index))
+            .atom_map
+            != Some(atom_map.map_number)
+        {
+            return Err(ReactionDocumentError::InvalidDocument(format!(
+                "atom-map identity {}:{} does not match component '{}' SMILES",
+                atom_map.map_number, atom_map.atom_index, component.id
+            )));
+        }
+    }
+    if component.atom_maps != atom_maps_for_molecule(molecule) {
+        return Err(ReactionDocumentError::InvalidDocument(format!(
+            "atom-map identities do not cover component '{}' SMILES",
+            component.id
+        )));
+    }
+    Ok(())
 }
 
 fn atom_maps_for_molecule(molecule: &chematic_core::Molecule) -> Vec<ReactionAtomMap> {

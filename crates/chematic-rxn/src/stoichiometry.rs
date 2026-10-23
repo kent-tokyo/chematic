@@ -11,6 +11,8 @@ use serde::{Deserialize, Serialize};
 use crate::document::{ComponentRole, ReactionDocument, ReactionStep};
 
 const EPSILON: f64 = 1e-9;
+type AtomInventoryMap = BTreeMap<(u8, Option<u16>), f64>;
+type ComponentInventory = (AtomInventoryMap, f64);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -192,99 +194,173 @@ pub fn analyze_reaction_step(
 pub fn analyze_components(
     step: &StoichiometryStep,
 ) -> Result<StepStoichiometryReport, StoichiometryError> {
-    let mut components = Vec::with_capacity(step.components.len());
-    let mut reactants = BTreeMap::new();
-    let mut products = BTreeMap::new();
-    let mut reactant_charge = 0.0;
-    let mut product_charge = 0.0;
-    let mut has_reactants = false;
-    let mut has_products = false;
-    let mut has_agents = false;
-    let mut diagnostics = Vec::new();
+    let mut state = StoichiometryState::new(step.components.len());
     for component in &step.components {
         let path = format!("/steps/{}/components/{}", step.id, component.id);
-        if !component.coefficient.is_finite() || component.coefficient <= 0.0 {
-            return Err(StoichiometryError::InvalidCoefficient {
-                path,
-                coefficient: component.coefficient,
-            });
+        state.absorb(component, path)?;
+    }
+    Ok(state.finish(step.id.clone()))
+}
+
+struct StoichiometryState {
+    components: Vec<ComponentEvidence>,
+    reactants: AtomInventoryMap,
+    products: AtomInventoryMap,
+    reactant_charge: f64,
+    product_charge: f64,
+    has_reactants: bool,
+    has_products: bool,
+    has_agents: bool,
+    diagnostics: Vec<StoichiometryDiagnostic>,
+}
+
+impl StoichiometryState {
+    fn new(capacity: usize) -> Self {
+        Self {
+            components: Vec::with_capacity(capacity),
+            reactants: BTreeMap::new(),
+            products: BTreeMap::new(),
+            reactant_charge: 0.0,
+            product_charge: 0.0,
+            has_reactants: false,
+            has_products: false,
+            has_agents: false,
+            diagnostics: Vec::new(),
         }
-        if component.smiles.is_empty() {
-            return Err(StoichiometryError::EmptyComponent { path });
-        }
-        let molecule =
-            chematic_smiles::parse(&component.smiles).map_err(|e| StoichiometryError::Parse {
-                path: path.clone(),
-                message: e.to_string(),
-            })?;
-        let (atoms, charge) = inventory(&molecule, component.coefficient);
+    }
+
+    fn absorb(
+        &mut self,
+        component: &StoichiometryComponent,
+        path: String,
+    ) -> Result<(), StoichiometryError> {
+        let (atoms, charge) = component_inventory(component, &path)?;
         if component.coefficient.fract().abs() > EPSILON {
-            diagnostics.push(StoichiometryDiagnostic {
-                path: path.clone(),
-                code: StoichiometryIssueCode::FractionalCoefficient,
-                severity: DiagnosticSeverity::Info,
-                message: "fractional coefficient was evaluated exactly as supplied".into(),
-            });
+            self.diagnostics.push(diag(
+                &path,
+                StoichiometryIssueCode::FractionalCoefficient,
+                "fractional coefficient was evaluated exactly as supplied",
+                DiagnosticSeverity::Info,
+            ));
         }
         match component.role {
             ComponentRole::Reactant => {
-                has_reactants = true;
-                merge(&mut reactants, &atoms);
-                reactant_charge += charge;
+                self.has_reactants = true;
+                merge(&mut self.reactants, &atoms);
+                self.reactant_charge += charge;
             }
             ComponentRole::Product => {
-                has_products = true;
-                merge(&mut products, &atoms);
-                product_charge += charge;
+                self.has_products = true;
+                merge(&mut self.products, &atoms);
+                self.product_charge += charge;
             }
-            ComponentRole::Agent => {
-                has_agents = true;
-            }
+            ComponentRole::Agent => self.has_agents = true,
         }
-        components.push(ComponentEvidence {
-            path,
-            id: component.id.clone(),
-            role: component.role,
+        self.components
+            .push(component_evidence(component, path, atoms, charge));
+        Ok(())
+    }
+
+    fn finish(mut self, step_id: String) -> StepStoichiometryReport {
+        add_presence_diagnostics(&mut self);
+        let reactant_atoms = to_inventory(self.reactants);
+        let product_atoms = to_inventory(self.products);
+        add_balance_diagnostics(
+            &mut self.diagnostics,
+            &reactant_atoms,
+            &product_atoms,
+            self.reactant_charge,
+            self.product_charge,
+        );
+        let status = report_status(self.has_reactants, self.has_products, &self.diagnostics);
+        StepStoichiometryReport {
+            step_id,
+            status,
+            components: self.components,
+            reactant_atoms,
+            product_atoms,
+            reactant_charge: self.reactant_charge,
+            product_charge: self.product_charge,
+            diagnostics: self.diagnostics,
+        }
+    }
+}
+
+fn component_inventory(
+    component: &StoichiometryComponent,
+    path: &str,
+) -> Result<ComponentInventory, StoichiometryError> {
+    if !component.coefficient.is_finite() || component.coefficient <= 0.0 {
+        return Err(StoichiometryError::InvalidCoefficient {
+            path: path.to_string(),
             coefficient: component.coefficient,
-            atoms: atoms
-                .into_iter()
-                .map(|((atomic_number, isotope), count)| AtomInventory {
-                    atomic_number,
-                    isotope,
-                    count,
-                })
-                .collect(),
-            formal_charge: charge,
         });
     }
-    if !has_reactants {
-        diagnostics.push(diag(
+    if component.smiles.is_empty() {
+        return Err(StoichiometryError::EmptyComponent {
+            path: path.to_string(),
+        });
+    }
+    let molecule =
+        chematic_smiles::parse(&component.smiles).map_err(|error| StoichiometryError::Parse {
+            path: path.to_string(),
+            message: error.to_string(),
+        })?;
+    Ok(inventory(&molecule, component.coefficient))
+}
+
+fn component_evidence(
+    component: &StoichiometryComponent,
+    path: String,
+    atoms: AtomInventoryMap,
+    charge: f64,
+) -> ComponentEvidence {
+    ComponentEvidence {
+        path,
+        id: component.id.clone(),
+        role: component.role,
+        coefficient: component.coefficient,
+        atoms: to_inventory(atoms),
+        formal_charge: charge,
+    }
+}
+
+fn add_presence_diagnostics(state: &mut StoichiometryState) {
+    if !state.has_reactants {
+        state.diagnostics.push(diag(
             "/steps",
             StoichiometryIssueCode::MissingReactants,
             "reaction has no reactant components",
             DiagnosticSeverity::Warning,
         ));
     }
-    if !has_products {
-        diagnostics.push(diag(
+    if !state.has_products {
+        state.diagnostics.push(diag(
             "/steps",
             StoichiometryIssueCode::MissingProducts,
             "reaction has no product components",
             DiagnosticSeverity::Warning,
         ));
     }
-    if has_agents && !has_reactants && !has_products {
-        diagnostics.push(diag(
+    if state.has_agents && !state.has_reactants && !state.has_products {
+        state.diagnostics.push(diag(
             "/steps",
             StoichiometryIssueCode::AgentOnly,
             "agents are present without reactant or product components",
             DiagnosticSeverity::Warning,
         ));
     }
-    let reactant_atoms = to_inventory(reactants);
-    let product_atoms = to_inventory(products);
-    let reactant_elements = element_totals(&reactant_atoms);
-    let product_elements = element_totals(&product_atoms);
+}
+
+fn add_balance_diagnostics(
+    diagnostics: &mut Vec<StoichiometryDiagnostic>,
+    reactants: &[AtomInventory],
+    products: &[AtomInventory],
+    reactant_charge: f64,
+    product_charge: f64,
+) {
+    let reactant_elements = element_totals(reactants);
+    let product_elements = element_totals(products);
     if reactant_elements != product_elements {
         diagnostics.push(diag(
             "/steps",
@@ -292,8 +368,7 @@ pub fn analyze_components(
             "explicit atom inventories differ",
             DiagnosticSeverity::Error,
         ));
-    }
-    if reactant_elements == product_elements && reactant_atoms != product_atoms {
+    } else if reactants != products {
         diagnostics.push(diag(
             "/steps",
             StoichiometryIssueCode::IsotopeInventoryImbalance,
@@ -309,32 +384,26 @@ pub fn analyze_components(
             DiagnosticSeverity::Error,
         ));
     }
-    let status = if !has_reactants || !has_products {
+}
+
+fn report_status(
+    has_reactants: bool,
+    has_products: bool,
+    diagnostics: &[StoichiometryDiagnostic],
+) -> StoichiometryStatus {
+    if !has_reactants || !has_products {
         StoichiometryStatus::UnderSpecified
     } else if diagnostics
         .iter()
-        .any(|d| d.severity == DiagnosticSeverity::Error)
+        .any(|diagnostic| diagnostic.severity == DiagnosticSeverity::Error)
     {
         StoichiometryStatus::Unbalanced
     } else {
         StoichiometryStatus::Balanced
-    };
-    Ok(StepStoichiometryReport {
-        step_id: step.id.clone(),
-        status,
-        components,
-        reactant_atoms,
-        product_atoms,
-        reactant_charge,
-        product_charge,
-        diagnostics,
-    })
+    }
 }
 
-fn inventory(
-    molecule: &chematic_core::Molecule,
-    coefficient: f64,
-) -> (BTreeMap<(u8, Option<u16>), f64>, f64) {
+fn inventory(molecule: &chematic_core::Molecule, coefficient: f64) -> ComponentInventory {
     let mut atoms = BTreeMap::new();
     let mut charge = 0.0;
     for (_, atom) in molecule.atoms() {
@@ -346,12 +415,12 @@ fn inventory(
     (atoms, charge)
 }
 
-fn merge(target: &mut BTreeMap<(u8, Option<u16>), f64>, source: &BTreeMap<(u8, Option<u16>), f64>) {
+fn merge(target: &mut AtomInventoryMap, source: &AtomInventoryMap) {
     for (key, value) in source {
         *target.entry(*key).or_insert(0.0) += value;
     }
 }
-fn to_inventory(map: BTreeMap<(u8, Option<u16>), f64>) -> Vec<AtomInventory> {
+fn to_inventory(map: AtomInventoryMap) -> Vec<AtomInventory> {
     map.into_iter()
         .map(|((atomic_number, isotope), count)| AtomInventory {
             atomic_number,
