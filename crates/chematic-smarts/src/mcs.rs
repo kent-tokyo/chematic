@@ -20,6 +20,10 @@ use bounds::{upper_bound_additional, upper_bound_for_seeds};
 mod frontier;
 use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
 
+#[path = "mcs_stereo.rs"]
+mod stereo;
+use stereo::mapped_chirality_compatible;
+
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
 mod comparator_tests;
@@ -85,8 +89,8 @@ pub struct McsConfig {
     pub atom_compare: AtomCompare,
     /// Bond-level comparison strategy.  Defaults to [`BondCompare::OrderOrAromatic`].
     pub bond_compare: BondCompare,
-    /// If `true`, stereochemistry (chirality) must match between atoms. If `false`, chirality
-    /// is ignored (default). Prevents matching of enantiomers in MCS.
+    /// If `true`, fully mapped tetrahedral centers must have the same stereochemistry
+    /// after accounting for ligand order. If `false`, chirality is ignored (default).
     pub match_chiral_tag: bool,
     /// If `true`, formal charge must match between atoms. If `false` (default), charge is
     /// ignored -- e.g. a carboxylate `[O-]` matches a neutral `O`. Mirrors `match_chiral_tag`.
@@ -463,13 +467,14 @@ fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
     mapping.query_to_mol.iter().map(|row| row[0].0).collect()
 }
 
-fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
-    if let Some(limit) = state.config.max_search_nodes {
-        if state.search_nodes >= limit {
-            state.resource_limited = true;
-            return;
-        }
-        state.search_nodes += 1;
+/// Reject a fully mapped stereocenter with incompatible ligand parity, and
+/// keep the best candidate that satisfies all configured constraints.
+fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
+    // A raw @/@@ tag is relative to the SMILES neighbor order. Only a mapped
+    // ligand permutation can establish whether two fully represented centers
+    // have the same stereochemistry. A partial center remains eligible.
+    if state.config.match_chiral_tag && !mapped_chirality_compatible(state.mols, mapping) {
+        return false;
     }
     // Update best if this mapping is larger, or same size but more bonds (if enabled),
     // or a same-size-and-bond-count tie broken by a canonical key (not "first found in
@@ -489,6 +494,20 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
             || mapping_has_complete_rings(state.mols, mapping, &state.ring_sets, state.config))
     {
         state.best = mapping.clone();
+    }
+    true
+}
+
+fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
+    if let Some(limit) = state.config.max_search_nodes {
+        if state.search_nodes >= limit {
+            state.resource_limited = true;
+            return;
+        }
+        state.search_nodes += 1;
+    }
+    if !consider_mapping(state, mapping) {
+        return;
     }
 
     // Check timeout.
@@ -641,7 +660,10 @@ fn atoms_compatible(
     if !base {
         return false;
     }
-    if match_chiral && a.chirality != b.chirality {
+    if match_chiral
+        && !(a.chirality.is_tetrahedral() && b.chirality.is_tetrahedral())
+        && a.chirality != b.chirality
+    {
         return false;
     }
     if match_charge && a.charge != b.charge {

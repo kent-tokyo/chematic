@@ -229,7 +229,7 @@ fn query_has_positive_h_count(query: &AtomQuery) -> bool {
     }
 }
 
-fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
+pub(crate) fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
     if from.len() != to.len() {
         return None;
     }
