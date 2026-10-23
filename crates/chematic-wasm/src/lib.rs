@@ -162,6 +162,12 @@ impl MolHandle {
         chematic_chem::calc_mol_formula(&self.inner)
     }
 
+    /// Total formula with explicit isotope labels, hydrogens and net charge.
+    /// D/T use [2H]/[3H]; maps/stereo and isotope locations are not encoded.
+    pub fn formula_with_isotopes(&self) -> String {
+        chematic_chem::calc_mol_formula_with_isotopes(&self.inner)
+    }
+
     /// Canonical SMILES string.
     pub fn canonical_smiles(&self) -> String {
         chematic_smiles::canonical_smiles(&self.inner)

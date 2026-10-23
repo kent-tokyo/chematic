@@ -32,6 +32,8 @@ pub mod hash;
 pub mod hydrogen;
 pub mod ifg;
 pub mod isotope_distribution;
+mod isotope_formula;
+pub use isotope_formula::calc_mol_formula_with_isotopes;
 pub mod iupac_stereo;
 pub mod logd;
 pub mod meso_stereo_group;

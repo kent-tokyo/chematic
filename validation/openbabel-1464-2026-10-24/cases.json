@@ -1,0 +1,1018 @@
+{
+  "schema": "chematic.isotope-formula-fixtures.v1",
+  "cases": [
+    {
+      "id": "methane",
+      "smiles": "C",
+      "expected_formula": "CH4",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "acetate",
+      "smiles": "CC(=O)[O-]",
+      "expected_formula": "C2H3O2-",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 3
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 2
+        }
+      ],
+      "expected_charge": -1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "ammonium",
+      "smiles": "[NH4+]",
+      "expected_formula": "H4N+",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "N",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "sulfate",
+      "smiles": "[O-]S(=O)(=O)[O-]",
+      "expected_formula": "O4S-2",
+      "expected_counts": [
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "S",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": -2,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "salt",
+      "smiles": "[Na+].[Cl-]",
+      "expected_formula": "ClNa",
+      "expected_counts": [
+        {
+          "element": "Cl",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "Na",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "iron",
+      "smiles": "[Fe+2]",
+      "expected_formula": "Fe+2",
+      "expected_counts": [
+        {
+          "element": "Fe",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 2,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "radical",
+      "smiles": "[CH2]",
+      "expected_formula": "CH2",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "bromide-acid",
+      "smiles": "Br",
+      "expected_formula": "HBr",
+      "expected_counts": [
+        {
+          "element": "Br",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "carbon-13",
+      "smiles": "[13CH4]",
+      "expected_formula": "[13C]H4",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "mixed-carbon",
+      "smiles": "C[13CH3]",
+      "expected_formula": "C[13C]H6",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 6
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "explicit-carbon-12",
+      "smiles": "[12CH3][13CH3]",
+      "expected_formula": "[12C][13C]H6",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 12,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 6
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "repeated-carbon-13",
+      "smiles": "[13CH3][13CH3]",
+      "expected_formula": "[13C]2H6",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 2
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 6
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "carbon-14",
+      "smiles": "[14CH4]",
+      "expected_formula": "[14C]H4",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 14,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "carbon-nitrogen",
+      "smiles": "[13CH3][15NH2]",
+      "expected_formula": "[13C]H5[15N]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "atom-mapped",
+      "smiles": "[13CH3:1][15NH2:2]",
+      "expected_formula": "[13C]H5[15N]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "nitrogen-cation",
+      "smiles": "[15NH4+]",
+      "expected_formula": "H4[15N]+",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "labelled-acetate",
+      "smiles": "[13CH3]C(=O)[O-]",
+      "expected_formula": "C[13C]H3O2-",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 3
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 2
+        }
+      ],
+      "expected_charge": -1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "labelled-oxygen-anion",
+      "smiles": "CC(=O)[18O-]",
+      "expected_formula": "C2H3O[18O]-",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 3
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": 18,
+          "count": 1
+        }
+      ],
+      "expected_charge": -1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "oxygen-water",
+      "smiles": "[18OH2]",
+      "expected_formula": "H2[18O]",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "O",
+          "isotope": 18,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "mixed-oxygen",
+      "smiles": "[18OH2].[16OH2]",
+      "expected_formula": "H4[16O][18O]",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "O",
+          "isotope": 16,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": 18,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "sulfur-dianion",
+      "smiles": "[34S-2]",
+      "expected_formula": "[34S]-2",
+      "expected_counts": [
+        {
+          "element": "S",
+          "isotope": 34,
+          "count": 1
+        }
+      ],
+      "expected_charge": -2,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "silicon",
+      "smiles": "[30SiH4]",
+      "expected_formula": "H4[30Si]",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "Si",
+          "isotope": 30,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "labelled-salt",
+      "smiles": "[37Cl-].[23Na+]",
+      "expected_formula": "[37Cl][23Na]",
+      "expected_counts": [
+        {
+          "element": "Cl",
+          "isotope": 37,
+          "count": 1
+        },
+        {
+          "element": "Na",
+          "isotope": 23,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "labelled-iron",
+      "smiles": "[57Fe+2]",
+      "expected_formula": "[57Fe]+2",
+      "expected_counts": [
+        {
+          "element": "Fe",
+          "isotope": 57,
+          "count": 1
+        }
+      ],
+      "expected_charge": 2,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "carbon-mass-order",
+      "smiles": "[13C][12C][14C]",
+      "expected_formula": "[12C][13C][14C]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 12,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 14,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "heavy-water",
+      "smiles": "[2H]O[2H]",
+      "expected_formula": "[2H]2O",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 2
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "hdo",
+      "smiles": "[2H]O",
+      "expected_formula": "H[2H]O",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "deuterated-amine",
+      "smiles": "[2H][NH2]",
+      "expected_formula": "H2[2H]N",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "N",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "tritiated-water",
+      "smiles": "[3H]O[2H]",
+      "expected_formula": "[2H][3H]O",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": 3,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "hydrogen-isotope-order",
+      "smiles": "[1H].[2H].[3H]",
+      "expected_formula": "[1H][2H][3H]",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": 1,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": 3,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "deuteron",
+      "smiles": "[2H+]",
+      "expected_formula": "[2H]+",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        }
+      ],
+      "expected_charge": 1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "tritide",
+      "smiles": "[3H-]",
+      "expected_formula": "[3H]-",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": 3,
+          "count": 1
+        }
+      ],
+      "expected_charge": -1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "three-elements-labelled",
+      "smiles": "[2H][13CH2][15NH2]",
+      "expected_formula": "[13C]H4[2H][15N]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "zero-is-unspecified",
+      "smiles": "[0CH4]",
+      "expected_formula": "CH4",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "maximum-mass-label",
+      "smiles": "[65535CH4]",
+      "expected_formula": "[65535C]H4",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 65535,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 4
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "candidate_profile"
+    },
+    {
+      "id": "numeric-mass-order",
+      "smiles": "[9CH4].[13CH4]",
+      "expected_formula": "[9C][13C]H8",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 9,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 8
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "candidate_profile"
+    },
+    {
+      "id": "wildcard-hydrogen",
+      "smiles": "[*H2]",
+      "expected_formula": "H2*",
+      "expected_counts": [
+        {
+          "element": "*",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "candidate_profile"
+    },
+    {
+      "id": "isotope-wildcard",
+      "smiles": "[13*H2]",
+      "expected_formula": "H2[13*]",
+      "expected_counts": [
+        {
+          "element": "*",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "candidate_profile"
+    },
+    {
+      "id": "wildcard-mass-order",
+      "smiles": "[13*].[12*]",
+      "expected_formula": "[12*][13*]",
+      "expected_counts": [
+        {
+          "element": "*",
+          "isotope": 12,
+          "count": 1
+        },
+        {
+          "element": "*",
+          "isotope": 13,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "candidate_profile"
+    },
+    {
+      "id": "charge-cancellation",
+      "smiles": "[13CH3][O-].[Na+]",
+      "expected_formula": "[13C]H3NaO",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 3
+        },
+        {
+          "element": "Na",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "charged-labelled-chain",
+      "smiles": "C[13CH2][15NH3+]",
+      "expected_formula": "C[13C]H8[15N]+",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 8
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 1,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "aromatic-carbon",
+      "smiles": "[13cH]1ccccc1",
+      "expected_formula": "C5[13C]H6",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "C",
+          "isotope": 13,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 6
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "aromatic-nitrogen",
+      "smiles": "[15nH]1cccc1",
+      "expected_formula": "C4H5[15N]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 4
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "n-oxide",
+      "smiles": "[18O-][15n+]1ccccc1",
+      "expected_formula": "C5H5[15N][18O]",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 5
+        },
+        {
+          "element": "N",
+          "isotope": 15,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": 18,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "explicit-hydrogen",
+      "smiles": "[H]O[2H]",
+      "expected_formula": "H[2H]O",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": 2,
+          "count": 1
+        },
+        {
+          "element": "O",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "hydrogen-chain-regression",
+      "smiles": "[N][H][H]",
+      "expected_formula": "H2N",
+      "expected_counts": [
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "N",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    },
+    {
+      "id": "disconnected-hydrogen-regression",
+      "smiles": "[He].[H].[H].[Co][C]",
+      "expected_formula": "CH2CoHe",
+      "expected_counts": [
+        {
+          "element": "C",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "Co",
+          "isotope": null,
+          "count": 1
+        },
+        {
+          "element": "H",
+          "isotope": null,
+          "count": 2
+        },
+        {
+          "element": "He",
+          "isotope": null,
+          "count": 1
+        }
+      ],
+      "expected_charge": 0,
+      "comparison_lane": "common"
+    }
+  ]
+}

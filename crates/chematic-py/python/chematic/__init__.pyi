@@ -666,6 +666,16 @@ class Mol:
         ...
 
     @property
+    def formula_with_isotopes(self) -> str:
+        """Total isotope-separated formula including H and net charge.
+
+        C/H element families precede alphabetical symbols; within a family,
+        unspecified atoms precede numeric isotope labels. D/T use [2H]/[3H].
+        Isotope positions, atom maps, stereo and radical state are not encoded.
+        """
+        ...
+
+    @property
     def heavy_atoms(self) -> int:
         """Number of heavy atoms (does not count implicit H)."""
         ...
