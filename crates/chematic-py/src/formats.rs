@@ -17,7 +17,9 @@ use cml::*;
 
 mod serialized_input;
 use serialized_input::serialized_text;
+mod reaction_cx;
 mod registration;
+use reaction_cx::normalize_reaction_cxsmiles;
 
 mod hin;
 use hin::*;
@@ -1345,6 +1347,7 @@ fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m,
         write_reaction_cdxml_checked,
         write_reaction,
+        normalize_reaction_cxsmiles,
         from_rxn_file,
         to_rxn_file,
         from_rxn_document_json,

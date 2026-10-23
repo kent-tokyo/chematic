@@ -1,0 +1,175 @@
+{
+  "schema": "chematic.reaction-cx-fixtures.v1",
+  "positive": [
+    {
+      "id": "issue",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2|"
+    },
+    {
+      "id": "reordered",
+      "input": "C[C@H](O)CC.O>>CCC(C)=O |&1:1|"
+    },
+    {
+      "id": "or-group",
+      "input": "Cl.C[C@H](O)CC.O>>CCC(C)=O |o7:2|"
+    },
+    {
+      "id": "absolute",
+      "input": "O.C[C@H](F)Cl>>CC |a:2|"
+    },
+    {
+      "id": "product",
+      "input": "O>N>C[C@H](F)Cl |&2:3|"
+    },
+    {
+      "id": "agent",
+      "input": "O>C[C@H](F)Cl>CC=O |a:2|"
+    },
+    {
+      "id": "shared-roles",
+      "input": "O.[CH3:10][C@H:11](F)Cl>[CH3:20][C@@H:21](Br)I>[CH3:30][C@H:31](N)O |&1:2,6,10|"
+    },
+    {
+      "id": "independent-roles",
+      "input": "O.[CH3:10][C@H:11](F)Cl>[CH3:20][C@@H:21](Br)I>[CH3:30][C@H:31](N)O |&1:2,o2:6,a:10|"
+    },
+    {
+      "id": "two-centres",
+      "input": "[CH3:10][C@H:11](F)[C@@H:12](O)Cl>>C |&3:1,3|"
+    },
+    {
+      "id": "labelled",
+      "input": "[13CH3:10][C@H:11](F)Cl>>C |o4:1|"
+    },
+    {
+      "id": "explicit-h",
+      "input": "O.[H][C@](F)(Cl)Br>>CC |&1:2|"
+    },
+    {
+      "id": "mapped-order",
+      "input": "[CH3:20][C@@H:21](F)Br.[CH3:10][C@H:11](F)Cl>>C |o2:1,&1:5|"
+    },
+    {
+      "id": "plain",
+      "input": "O.CCO>N>CC=O"
+    },
+    {
+      "id": "empty-extension",
+      "input": "CC>>CO ||"
+    },
+    {
+      "id": "empty-reaction",
+      "input": ">>"
+    },
+    {
+      "id": "dative-arrow",
+      "input": "N->[Pt].C[C@H](F)Cl>>CC |&4:3|"
+    },
+    {
+      "id": "charged-isotope",
+      "input": "[NH3+:8][C@H:11]([2H])C>>C |&5:1|"
+    },
+    {
+      "id": "shared-reactants",
+      "input": "C[C@H](F)Cl.C[C@@H](F)Br>>CC |&1:1,5|"
+    },
+    {
+      "id": "same-number-different-kinds",
+      "input": "C[C@H](F)Cl.C[C@@H](F)Br>>CC |&1:1,o1:5|"
+    },
+    {
+      "id": "maximum-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&4294967295:2|"
+    }
+  ],
+  "negative": [
+    {
+      "id": "nonchiral",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:0|"
+    },
+    {
+      "id": "outside",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:999|"
+    },
+    {
+      "id": "duplicate-atom",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2,2|"
+    },
+    {
+      "id": "overlap",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2,o2:2|"
+    },
+    {
+      "id": "duplicate-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2,&1:2|"
+    },
+    {
+      "id": "zero-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&0:2|"
+    },
+    {
+      "id": "negative-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&-1:2|"
+    },
+    {
+      "id": "group-overflow",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&4294967296:2|"
+    },
+    {
+      "id": "atom-overflow",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:4294967296|"
+    },
+    {
+      "id": "empty-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:|"
+    },
+    {
+      "id": "missing-close",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2"
+    },
+    {
+      "id": "trailing-title",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2| title"
+    },
+    {
+      "id": "multiple-blocks",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2| |a:2|"
+    },
+    {
+      "id": "prefix-index",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |2|"
+    },
+    {
+      "id": "labels",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |$x$|"
+    },
+    {
+      "id": "atom-props",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |atomProp:2.name.x|"
+    },
+    {
+      "id": "coordinates",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |(0,0,;)|"
+    },
+    {
+      "id": "radicals",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |^1:2|"
+    },
+    {
+      "id": "wavy",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |w:1|"
+    },
+    {
+      "id": "bond-group",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1b:2|"
+    },
+    {
+      "id": "negative-atom",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:-1|"
+    },
+    {
+      "id": "trailing-comma",
+      "input": "O.C[C@H](O)CC>>CCC(C)=O |&1:2,|"
+    }
+  ]
+}
