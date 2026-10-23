@@ -25,6 +25,9 @@ import json
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT))
+
 from scripts.lib.refactor_budget_scanner import (
     collect,
     function_metrics,
@@ -34,7 +37,6 @@ from scripts.lib.refactor_budget_scanner import (
 )
 
 
-ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_BASELINE = ROOT / "validation" / "refactor_budget_v1.json"
 
 def generated_baseline(config: dict[str, object]) -> dict[str, object]:
