@@ -17,9 +17,9 @@ use crate::shape_descriptors::jacobi3;
 pub struct AlignResult {
     /// RMSD after optimal superposition (Å or whatever unit `reference` uses).
     pub rmsd: f64,
-    /// 3×3 rotation matrix R such that `mobile_centred @ R ≈ reference_centred`.
+    /// 3×3 rotation matrix R such that `R * mobile_centred ≈ reference_centred`.
     pub rotation: [[f64; 3]; 3],
-    /// Translation to apply to mobile *after* rotation to match reference centroid.
+    /// Translation in `aligned = rotation * mobile + translation`.
     pub translation: [f64; 3],
 }
 
@@ -53,8 +53,7 @@ pub fn rmsd_no_align(a: &[[f64; 3]], b: &[[f64; 3]]) -> f64 {
 ///
 /// To obtain the aligned coordinates, apply:
 /// ```text
-/// aligned[i][j] = Σ_k rotation[j][k] * (mobile[i][k] - mobile_centroid[k])
-///                + reference_centroid[j]
+/// aligned[i][j] = Σ_k rotation[j][k] * mobile[i][k] + translation[j]
 /// ```
 /// Or use [`apply_alignment`].
 pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult {
@@ -73,11 +72,12 @@ pub fn align_coords(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> AlignResult 
     let mobile_centered = center(&mobile[..n], mobile_centroid);
     let rotation = kabsch_rotation(&reference_centered, &mobile_centered);
     let rmsd = aligned_rmsd(&reference_centered, &mobile_centered, rotation);
-    let translation = [
-        reference_centroid[0] - mobile_centroid[0],
-        reference_centroid[1] - mobile_centroid[1],
-        reference_centroid[2] - mobile_centroid[2],
-    ];
+    let translation = std::array::from_fn(|axis| {
+        reference_centroid[axis]
+            - (0..3)
+                .map(|column| rotation[axis][column] * mobile_centroid[column])
+                .sum::<f64>()
+    });
 
     AlignResult {
         rmsd,
@@ -141,7 +141,7 @@ fn kabsch_rotation(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> [[f64; 3]; 3]
             }
         }
     }
-    let (values, mut right) = jacobi3(square);
+    let (values, right) = jacobi3(square);
     let mut left = [[0.0; 3]; 3];
     for column in 0..3 {
         let sigma = values[column].max(0.0).sqrt();
@@ -156,9 +156,47 @@ fn kabsch_rotation(reference: &[[f64; 3]], mobile: &[[f64; 3]]) -> [[f64; 3]; 3]
             };
         }
     }
+    // An exactly planar or linear cloud has one or two zero singular values.
+    // The corresponding projected left columns above are zero: using them
+    // directly produces a projection matrix, not a rigid-body rotation.
+    let rank = values
+        .iter()
+        .filter(|&&value| value.max(0.0).sqrt() > 1e-10)
+        .count();
+    if rank == 0 {
+        return [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+    }
+    if rank < 3 {
+        let dominant = [left[0][2], left[1][2], left[2][2]];
+        let dominant = normalize3(dominant);
+        for axis in 0..3 {
+            left[axis][2] = dominant[axis];
+        }
+        let second = if rank == 2 {
+            normalize3([left[0][1], left[1][1], left[2][1]])
+        } else {
+            // Choose a deterministic axis furthest from the dominant one.
+            let axis = dominant
+                .iter()
+                .enumerate()
+                .min_by(|(_, a), (_, b)| a.abs().total_cmp(&b.abs()))
+                .map(|(index, _)| index)
+                .unwrap();
+            let mut basis = [0.0; 3];
+            basis[axis] = 1.0;
+            normalize3(cross3(dominant, basis))
+        };
+        for axis in 0..3 {
+            left[axis][1] = second[axis];
+        }
+        let first = cross3(second, dominant);
+        for axis in 0..3 {
+            left[axis][0] = first[axis];
+        }
+    }
     let mut rotation = multiply_transpose(left, right);
     if det3(rotation) < 0.0 {
-        for row in &mut right {
+        for row in &mut left {
             row[0] *= -1.0;
         }
         rotation = multiply_transpose(left, right);
@@ -188,45 +226,30 @@ fn aligned_rmsd(reference: &[[f64; 3]], mobile: &[[f64; 3]], rotation: [[f64; 3]
 ///
 /// Returns a new `Vec` of aligned coordinates.
 pub fn apply_alignment(mobile: &[[f64; 3]], result: &AlignResult) -> Vec<[f64; 3]> {
-    // Compute mobile centroid.
-    let n = mobile.len();
-    if n == 0 {
-        return Vec::new();
-    }
-    let mut cm = [0.0f64; 3];
-    for v in mobile {
-        for k in 0..3 {
-            cm[k] += v[k];
-        }
-    }
-    for k in 0..3 {
-        cm[k] /= n as f64;
-    }
-
-    // Compute reference centroid from translation.
-    // translation = cr - cm_orig, so cr = cm_orig + translation.
-    // We need the reference centroid to shift into, but it's embedded in translation.
-    // Simpler: rotate (mobile - cm) then add (cm + translation).
-    let cr = [
-        cm[0] + result.translation[0],
-        cm[1] + result.translation[1],
-        cm[2] + result.translation[2],
-    ];
-
     mobile
         .iter()
         .map(|v| {
-            let centered = [v[0] - cm[0], v[1] - cm[1], v[2] - cm[2]];
             let mut out = [0.0f64; 3];
             for row in 0..3 {
-                out[row] = (0..3)
-                    .map(|k| result.rotation[row][k] * centered[k])
-                    .sum::<f64>()
-                    + cr[row];
+                out[row] = (0..3).map(|k| result.rotation[row][k] * v[k]).sum::<f64>()
+                    + result.translation[row];
             }
             out
         })
         .collect()
+}
+
+fn cross3(a: [f64; 3], b: [f64; 3]) -> [f64; 3] {
+    [
+        a[1] * b[2] - a[2] * b[1],
+        a[2] * b[0] - a[0] * b[2],
+        a[0] * b[1] - a[1] * b[0],
+    ]
+}
+
+fn normalize3(v: [f64; 3]) -> [f64; 3] {
+    let norm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
+    v.map(|x| x / norm)
 }
 
 fn det3(m: [[f64; 3]; 3]) -> f64 {
@@ -390,5 +413,39 @@ mod tests {
             "a chiral point set can't be superposed onto its mirror image by any rotation, rmsd={}",
             result.rmsd
         );
+    }
+
+    #[test]
+    fn planar_fit_is_a_proper_rotation_and_transforms_extra_atoms() {
+        let reference = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0], [0.0, 3.0, 0.0]];
+        let mobile = [[5.0, -3.0, 2.0], [5.0, -1.0, 2.0], [2.0, -3.0, 2.0]];
+        let fit = align_coords(&reference, &mobile);
+        assert!(fit.rmsd < 1e-8);
+        assert!((det3(fit.rotation) - 1.0).abs() < 1e-8);
+        let extra = [4.0, -2.0, 4.0];
+        let transformed = apply_alignment(&[extra], &fit)[0];
+        let expected = [1.0, 1.0, 2.0];
+        for axis in 0..3 {
+            assert!((transformed[axis] - expected[axis]).abs() < 1e-8);
+        }
+        for (found, expected) in apply_alignment(&mobile, &fit).iter().zip(reference) {
+            for axis in 0..3 {
+                assert!((found[axis] - expected[axis]).abs() < 1e-8);
+            }
+        }
+    }
+
+    #[test]
+    fn linear_fit_preserves_distances_off_axis() {
+        let reference = [[3.0, 4.0, 5.0], [3.0, 6.0, 5.0]];
+        let mobile = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]];
+        let fit = align_coords(&reference, &mobile);
+        assert!(fit.rmsd < 1e-8);
+        assert!((det3(fit.rotation) - 1.0).abs() < 1e-8);
+        let transformed = apply_alignment(&[[0.0, 1.0, 0.0]], &fit)[0];
+        let dx = transformed[0] - reference[0][0];
+        let dy = transformed[1] - reference[0][1];
+        let dz = transformed[2] - reference[0][2];
+        assert!((dx * dx + dy * dy + dz * dz - 1.0).abs() < 1e-8);
     }
 }

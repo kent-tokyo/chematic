@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
 
 
-def select_rows() -> list[dict[str, str]]:
+def select_rows(start: int = 0, count: int = 12) -> list[dict[str, str]]:
     candidates = []
     for row in json.loads(MANIFEST.read_text())["molecules"]:
         if row["heavy_atom_count"] > 30 or row["primary_category"] == "macrocycle":
@@ -42,7 +42,7 @@ def select_rows() -> list[dict[str, str]]:
             continue
         key = hashlib.sha256(row["smiles"].encode()).hexdigest()
         candidates.append((key, {"name": row["name"], "smiles": row["smiles"]}))
-    return [row for _, row in sorted(candidates)[:12]]
+    return [row for _, row in sorted(candidates)[start : start + count]]
 
 
 def check_graph(source: dict, mol: Chem.Mol) -> None:
