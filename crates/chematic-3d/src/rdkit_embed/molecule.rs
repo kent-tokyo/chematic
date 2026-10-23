@@ -6,6 +6,8 @@ use chematic_smiles::RdkitMolView;
 
 mod quality_retry;
 use quality_retry::refine_unfinished_quality_minimum;
+mod torsion_search;
+use torsion_search::refine_best_with_torsion_moves;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
@@ -555,6 +557,23 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
         )),
         Err(_) => Ok(selected),
     }
+}
+
+/// Accuracy-oriented follow-up to the quality profile. For the lowest
+/// converged MMFF94 conformer, rotate each of at most twelve strict,
+/// acyclic rotatable bonds by ±120 degrees and minimize the resulting
+/// coordinates for at most `max_iters` steps. Only a finite, converged,
+/// lower-energy and stereo-safe result may replace an ensemble member.
+/// This adds up to 24 MMFF minimizations and leaves the compatibility and
+/// existing quality profiles unchanged.
+pub fn etkdg_embed_multiple_confs_mmff_torsion_search(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let candidates = etkdg_embed_multiple_confs_mmff_best_gradient(mh, num_confs, o, max_iters)?;
+    Ok(refine_best_with_torsion_moves(mh, candidates, max_iters))
 }
 
 fn select_quality_candidates(

@@ -46,6 +46,27 @@ fn quality_profile_uses_new_seeds_when_gradients_match() {
 }
 
 #[test]
+fn torsion_search_recovers_lower_converged_minimum() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let baseline =
+        etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200).unwrap();
+    let improved =
+        etkdg_embed_multiple_confs_mmff_torsion_search(&molecule, 20, &options, 200).unwrap();
+    let best_converged = |rows: &[RdkitMmffConformer]| {
+        rows.iter()
+            .filter(|row| row.status == 0)
+            .map(|row| row.energy)
+            .min_by(f64::total_cmp)
+            .unwrap()
+    };
+    assert_eq!(baseline.len(), improved.len());
+    assert!(best_converged(&improved) < best_converged(&baseline) - 0.5);
+}
+
+#[test]
 fn quality_profile_retries_best_unconverged_candidate() {
     let molecule = chematic_chem::add_hydrogens(
         &chematic_smiles::parse("COc1cc(N2CCN(c3cc(OC)c(OC)c(OC)c3)CC2)cc(OC)c1OC").unwrap(),

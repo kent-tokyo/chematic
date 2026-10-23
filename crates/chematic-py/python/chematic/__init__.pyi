@@ -420,6 +420,19 @@ class Mol:
         """
         ...
 
+    def etkdg_embed_multiple_confs_mmff_torsion_search(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Extend the quality ensemble with bounded, stereo-checked
+        rotatable-bond moves and MMFF94 minimizations.
+        """
+        ...
+
     def rdkit_embed_multiple_confs_mmff_gradient_rescue(
         self,
         num_confs: int,
