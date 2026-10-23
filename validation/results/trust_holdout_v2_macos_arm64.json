@@ -1,0 +1,1920 @@
+{
+  "candidate_commit": "29b3fdc9ddf17c26cdb65b73be101e8e82046841",
+  "frozen_manifest_sha256": "2a5fc84463627d4b89974e80867ae90974cff1899b4551f340fa4408e4849898",
+  "holdout_version": "v2",
+  "lanes": {
+    "mcs": {
+      "columns": {
+        "atom_count": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 25,
+          "refusal": 0,
+          "success": 29
+        },
+        "bond_count": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 23,
+          "refusal": 0,
+          "success": 31
+        },
+        "completion": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 9,
+          "success": 54
+        },
+        "parse": {
+          "internal_error": 0,
+          "invalid_input": 1,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 63
+        }
+      },
+      "input": "mcs-comparison.jsonl",
+      "rows": [
+        {
+          "chematic_atoms": 12,
+          "chematic_bonds": 11,
+          "id": "mcs-000",
+          "rdkit_atoms": 11,
+          "rdkit_bonds": 11,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 13,
+          "id": "mcs-001",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 13,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-002",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 12,
+          "id": "mcs-003",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 12,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-004",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 7,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 8,
+          "chematic_bonds": 7,
+          "id": "mcs-005",
+          "rdkit_atoms": 12,
+          "rdkit_bonds": 11,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 9,
+          "chematic_bonds": 9,
+          "id": "mcs-006",
+          "rdkit_atoms": 9,
+          "rdkit_bonds": 9,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-007",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 9,
+          "chematic_bonds": 8,
+          "id": "mcs-008",
+          "rdkit_atoms": 11,
+          "rdkit_bonds": 11,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 16,
+          "chematic_bonds": 15,
+          "id": "mcs-009",
+          "rdkit_atoms": 22,
+          "rdkit_bonds": 21,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 6,
+          "chematic_bonds": 5,
+          "id": "mcs-010",
+          "rdkit_atoms": 6,
+          "rdkit_bonds": 5,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 19,
+          "chematic_bonds": 19,
+          "id": "mcs-011",
+          "rdkit_atoms": 20,
+          "rdkit_bonds": 19,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 5,
+          "chematic_bonds": 4,
+          "id": "mcs-012",
+          "rdkit_atoms": 4,
+          "rdkit_bonds": 3,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 12,
+          "chematic_bonds": 11,
+          "id": "mcs-013",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 12,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 12,
+          "chematic_bonds": 11,
+          "id": "mcs-014",
+          "rdkit_atoms": 12,
+          "rdkit_bonds": 11,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-015",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 7,
+          "id": "mcs-016",
+          "rdkit_atoms": 11,
+          "rdkit_bonds": 10,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-017",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 9,
+          "chematic_bonds": 9,
+          "id": "mcs-018",
+          "rdkit_atoms": 9,
+          "rdkit_bonds": 9,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 16,
+          "chematic_bonds": 17,
+          "id": "mcs-019",
+          "rdkit_atoms": 16,
+          "rdkit_bonds": 17,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 14,
+          "chematic_bonds": 13,
+          "id": "mcs-020",
+          "rdkit_atoms": 17,
+          "rdkit_bonds": 16,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 12,
+          "id": "mcs-021",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 7,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 8,
+          "chematic_bonds": 7,
+          "id": "mcs-022",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 7,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-023",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-024",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-025",
+          "rdkit_atoms": 10,
+          "rdkit_bonds": 9,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 11,
+          "chematic_bonds": 10,
+          "id": "mcs-026",
+          "rdkit_atoms": 11,
+          "rdkit_bonds": 10,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-027",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 3,
+          "chematic_bonds": 2,
+          "id": "mcs-028",
+          "rdkit_atoms": 4,
+          "rdkit_bonds": 3,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 10,
+          "chematic_bonds": 10,
+          "id": "mcs-029",
+          "rdkit_atoms": 12,
+          "rdkit_bonds": 11,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 8,
+          "chematic_bonds": 7,
+          "id": "mcs-030",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 7,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 17,
+          "chematic_bonds": 16,
+          "id": "mcs-031",
+          "rdkit_atoms": 18,
+          "rdkit_bonds": 17,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 8,
+          "chematic_bonds": 8,
+          "id": "mcs-032",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 8,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 16,
+          "chematic_bonds": 15,
+          "id": "mcs-033",
+          "rdkit_atoms": 24,
+          "rdkit_bonds": 23,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-034",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 12,
+          "id": "mcs-035",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 12,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 11,
+          "chematic_bonds": 11,
+          "id": "mcs-036",
+          "rdkit_atoms": 15,
+          "rdkit_bonds": 15,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 16,
+          "chematic_bonds": 16,
+          "id": "mcs-037",
+          "rdkit_atoms": 15,
+          "rdkit_bonds": 15,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 10,
+          "chematic_bonds": 10,
+          "id": "mcs-038",
+          "rdkit_atoms": 10,
+          "rdkit_bonds": 10,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 12,
+          "id": "mcs-039",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 12,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 6,
+          "chematic_bonds": 6,
+          "id": "mcs-040",
+          "rdkit_atoms": 9,
+          "rdkit_bonds": 9,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 12,
+          "chematic_bonds": 12,
+          "id": "mcs-041",
+          "rdkit_atoms": 14,
+          "rdkit_bonds": 13,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 15,
+          "chematic_bonds": 14,
+          "id": "mcs-042",
+          "rdkit_atoms": 15,
+          "rdkit_bonds": 14,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 13,
+          "chematic_bonds": 12,
+          "id": "mcs-043",
+          "rdkit_atoms": 13,
+          "rdkit_bonds": 12,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 7,
+          "id": "mcs-044",
+          "rdkit_atoms": 10,
+          "rdkit_bonds": 9,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 11,
+          "chematic_bonds": 10,
+          "id": "mcs-045",
+          "rdkit_atoms": 10,
+          "rdkit_bonds": 10,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-046",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-047",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 6,
+          "chematic_bonds": 6,
+          "id": "mcs-048",
+          "rdkit_atoms": 6,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 5,
+          "chematic_bonds": 4,
+          "id": "mcs-049",
+          "rdkit_atoms": 6,
+          "rdkit_bonds": 5,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 4,
+          "chematic_bonds": 3,
+          "id": "mcs-050",
+          "rdkit_atoms": 4,
+          "rdkit_bonds": 3,
+          "status": "success"
+        },
+        {
+          "error": "RDKit rejected a frozen input",
+          "id": "mcs-051",
+          "status": "invalid_input"
+        },
+        {
+          "chematic_atoms": 3,
+          "chematic_bonds": 2,
+          "id": "mcs-052",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 7,
+          "status": "mismatch"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-053",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-054",
+          "rdkit_atoms": 7,
+          "rdkit_bonds": 6,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-055",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 7,
+          "id": "mcs-056",
+          "rdkit_atoms": 9,
+          "rdkit_bonds": 8,
+          "status": "mismatch"
+        },
+        {
+          "chematic_atoms": 6,
+          "chematic_bonds": 5,
+          "id": "mcs-057",
+          "rdkit_atoms": 6,
+          "rdkit_bonds": 5,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 5,
+          "chematic_bonds": 4,
+          "id": "mcs-058",
+          "rdkit_atoms": 5,
+          "rdkit_bonds": 4,
+          "status": "success"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-059",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 6,
+          "chematic_bonds": 5,
+          "id": "mcs-060",
+          "rdkit_atoms": 6,
+          "rdkit_bonds": 5,
+          "status": "success"
+        },
+        {
+          "chematic_atoms": 7,
+          "chematic_bonds": 6,
+          "id": "mcs-061",
+          "rdkit_atoms": 8,
+          "rdkit_bonds": 7,
+          "status": "mismatch"
+        },
+        {
+          "error": "MCS search reached its configured resource limit before proving the result optimal",
+          "id": "mcs-062",
+          "status": "refusal"
+        },
+        {
+          "chematic_atoms": 14,
+          "chematic_bonds": 13,
+          "id": "mcs-063",
+          "rdkit_atoms": 14,
+          "rdkit_bonds": 13,
+          "status": "success"
+        }
+      ]
+    },
+    "sdf": {
+      "columns": {
+        "graph": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 64
+        },
+        "parse": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 64
+        },
+        "properties": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 64
+        },
+        "stereo": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 64
+        },
+        "title": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 64
+        }
+      },
+      "input": "sdf-attributes.jsonl",
+      "rows": [
+        {
+          "graph": true,
+          "id": "sdf-000",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-001",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-002",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-003",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-004",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-005",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-006",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-007",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-008",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-009",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-010",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-011",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-012",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-013",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-014",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-015",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-016",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-017",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-018",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-019",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-020",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-021",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-022",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-023",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-024",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-025",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-026",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-027",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-028",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-029",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-030",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-031",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-032",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-033",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-034",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-035",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-036",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-037",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-038",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-039",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-040",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-041",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-042",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-043",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-044",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-045",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-046",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-047",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-048",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-049",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-050",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-051",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-052",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-053",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-054",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-055",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-056",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-057",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-058",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-059",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-060",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-061",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-062",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        },
+        {
+          "graph": true,
+          "id": "sdf-063",
+          "properties": true,
+          "status": "success",
+          "stereo": true,
+          "title": true
+        }
+      ]
+    },
+    "stereo_3d": {
+      "columns": {
+        "chematic_embed": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 96
+        },
+        "conformer_count": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 1,
+          "refusal": 0,
+          "success": 95
+        },
+        "coordinates": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 92,
+          "refusal": 0,
+          "success": 4
+        },
+        "joint_embed_status": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 96
+        },
+        "parse": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 96
+        },
+        "rdkit_embed": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 96
+        },
+        "stereo_graph": {
+          "internal_error": 0,
+          "invalid_input": 0,
+          "mismatch": 0,
+          "refusal": 0,
+          "success": 96
+        }
+      },
+      "input": "stereo-3d.jsonl",
+      "rows": [
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-000",
+          "max_pair_distance_delta": 12.225782125854735,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-001",
+          "max_pair_distance_delta": 8.66593852605656,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-002",
+          "max_pair_distance_delta": 4.229445043566866,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-003",
+          "max_pair_distance_delta": 1.4106156026142758,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-004",
+          "max_pair_distance_delta": 4.73769317950786,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-005",
+          "max_pair_distance_delta": 7.4130426877760005,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 0,
+          "id": "stereo3d-006",
+          "max_pair_distance_delta": 0.0,
+          "rdkit_conformers": 0,
+          "status": "success",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-007",
+          "max_pair_distance_delta": 0.12484691623772592,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-008",
+          "max_pair_distance_delta": 8.839603667120151,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-009",
+          "max_pair_distance_delta": 6.1741867731255216,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-010",
+          "max_pair_distance_delta": 0.24480001072758295,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-011",
+          "max_pair_distance_delta": 7.086527354338591,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-012",
+          "max_pair_distance_delta": 2.9953644422629484,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-013",
+          "max_pair_distance_delta": 11.154661466267829,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-014",
+          "max_pair_distance_delta": 2.8434517170244753,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-015",
+          "max_pair_distance_delta": 6.980736001585664,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 0,
+          "id": "stereo3d-016",
+          "max_pair_distance_delta": 0.0,
+          "rdkit_conformers": 0,
+          "status": "success",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-017",
+          "max_pair_distance_delta": 6.89495717080094,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-018",
+          "max_pair_distance_delta": 4.215792544533515,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-019",
+          "max_pair_distance_delta": 0.2788173908783076,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-020",
+          "max_pair_distance_delta": 0.1422509544130146,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-021",
+          "max_pair_distance_delta": 0.39743179855844524,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-022",
+          "max_pair_distance_delta": 5.252385660695088,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-023",
+          "max_pair_distance_delta": 1.8735895144425445,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-024",
+          "max_pair_distance_delta": 9.050683877943381,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-025",
+          "max_pair_distance_delta": 5.803825651635732,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-026",
+          "max_pair_distance_delta": 8.012952375784327,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-027",
+          "max_pair_distance_delta": 4.999388796226418,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-028",
+          "max_pair_distance_delta": 12.144870028894687,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-029",
+          "max_pair_distance_delta": 2.378601718842164,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 0,
+          "id": "stereo3d-030",
+          "max_pair_distance_delta": 0.0,
+          "rdkit_conformers": 0,
+          "status": "success",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-031",
+          "max_pair_distance_delta": 0.3838640021370274,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-032",
+          "max_pair_distance_delta": 8.802481778896148,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-033",
+          "max_pair_distance_delta": 10.72731395248551,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-034",
+          "max_pair_distance_delta": 5.039905524641421,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-035",
+          "max_pair_distance_delta": 4.644088380429475,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-036",
+          "max_pair_distance_delta": 6.648518918159123,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 0,
+          "id": "stereo3d-037",
+          "max_pair_distance_delta": 0.0,
+          "rdkit_conformers": 0,
+          "status": "success",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-038",
+          "max_pair_distance_delta": 3.979960632279326,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-039",
+          "max_pair_distance_delta": 8.287458043523038,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-040",
+          "max_pair_distance_delta": 4.9949152271075015,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-041",
+          "max_pair_distance_delta": 7.634273071209179,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-042",
+          "max_pair_distance_delta": 1.8061512936483552,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-043",
+          "max_pair_distance_delta": 0.00968979077132559,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-044",
+          "max_pair_distance_delta": 11.555627572439825,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-045",
+          "max_pair_distance_delta": 5.397260896287547,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-046",
+          "max_pair_distance_delta": 8.443947537675268,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-047",
+          "max_pair_distance_delta": 8.799394064368542,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-048",
+          "max_pair_distance_delta": 0.0355851676490655,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 6,
+          "id": "stereo3d-049",
+          "max_pair_distance_delta": 4.98140470109924,
+          "rdkit_conformers": 6,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-050",
+          "max_pair_distance_delta": 2.915310820762449,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-051",
+          "max_pair_distance_delta": 9.862456912346541,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-052",
+          "max_pair_distance_delta": 0.8275195527245351,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-053",
+          "max_pair_distance_delta": 1.3416234812708154,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-054",
+          "max_pair_distance_delta": 3.4278586044898507,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-055",
+          "max_pair_distance_delta": 0.9449253944847911,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-056",
+          "max_pair_distance_delta": 1.2269242001506981,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 4,
+          "id": "stereo3d-057",
+          "max_pair_distance_delta": 7.5963255760462705,
+          "rdkit_conformers": 4,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-058",
+          "max_pair_distance_delta": 6.0961375310794175,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-059",
+          "max_pair_distance_delta": 9.36776448781907,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-060",
+          "max_pair_distance_delta": 1.5879381697964927,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-061",
+          "max_pair_distance_delta": 5.135418804231641,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-062",
+          "max_pair_distance_delta": 4.903682997912419,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-063",
+          "max_pair_distance_delta": 1.4376521889910983,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-064",
+          "max_pair_distance_delta": 2.572700460531272,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-065",
+          "max_pair_distance_delta": 6.86855778982311,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-066",
+          "max_pair_distance_delta": 7.942757033590317,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-067",
+          "max_pair_distance_delta": 0.17098764699351143,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-068",
+          "max_pair_distance_delta": 1.9612949427604378,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-069",
+          "max_pair_distance_delta": 4.95872725208538,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-070",
+          "max_pair_distance_delta": 7.446725217624529,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-071",
+          "max_pair_distance_delta": 3.4421891475371447,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-072",
+          "max_pair_distance_delta": 8.782024654703747,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-073",
+          "max_pair_distance_delta": 6.868584032054226,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 6,
+          "id": "stereo3d-074",
+          "max_pair_distance_delta": 11.638761894171385,
+          "rdkit_conformers": 6,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 7,
+          "id": "stereo3d-075",
+          "max_pair_distance_delta": 0.0,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-076",
+          "max_pair_distance_delta": 0.12438523213458152,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-077",
+          "max_pair_distance_delta": 8.517434395060869,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 5,
+          "id": "stereo3d-078",
+          "max_pair_distance_delta": 9.370810917604894,
+          "rdkit_conformers": 5,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-079",
+          "max_pair_distance_delta": 6.659374861016612,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-080",
+          "max_pair_distance_delta": 4.6308414893747205,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-081",
+          "max_pair_distance_delta": 6.6695273500973045,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-082",
+          "max_pair_distance_delta": 2.8283734530399887,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-083",
+          "max_pair_distance_delta": 3.045793124929741,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 4,
+          "id": "stereo3d-084",
+          "max_pair_distance_delta": 3.465469915466051,
+          "rdkit_conformers": 4,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-085",
+          "max_pair_distance_delta": 1.7774832109497076,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-086",
+          "max_pair_distance_delta": 6.3534220205717284,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 2,
+          "id": "stereo3d-087",
+          "max_pair_distance_delta": 3.2803199571479844,
+          "rdkit_conformers": 2,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-088",
+          "max_pair_distance_delta": 1.4479759500154845,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-089",
+          "max_pair_distance_delta": 0.1324456935760434,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-090",
+          "max_pair_distance_delta": 7.136437811171591,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-091",
+          "max_pair_distance_delta": 4.828216607002224,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-092",
+          "max_pair_distance_delta": 9.73985574682995,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-093",
+          "max_pair_distance_delta": 0.1669529411274997,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-094",
+          "max_pair_distance_delta": 1.708483026116765,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        },
+        {
+          "chematic_conformers": 8,
+          "id": "stereo3d-095",
+          "max_pair_distance_delta": 9.703029780864409,
+          "rdkit_conformers": 8,
+          "status": "mismatch",
+          "stereo_graph": true
+        }
+      ]
+    }
+  },
+  "module": {
+    "native_extensions": {
+      "chematic.cpython-313-darwin.so": "ad88bc9cbebfbbdcdc052d9f25f37cc0d302ea90dda19050c54ecf8e30d7349b"
+    },
+    "path": "/private/tmp/chematic-holdout-v2-env/lib/python3.13/site-packages/chematic/__init__.py",
+    "sha256": "1ba8d816053a6208767f8f4fda0eb34b1adf0f09165a1aa5b2d9cc6bdc158a14"
+  },
+  "policy": "One-shot scoring only; no tuning on these rows after inspection.",
+  "schema": "chematic.trust-holdout-score.v2",
+  "versions": {
+    "chematic": "1.2.1",
+    "python": "3.13.6",
+    "rdkit": "2026.09.1"
+  },
+  "wheel": {
+    "path": "/private/tmp/chematic-v121-wheel/chematic-1.2.1-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "fcba25a934c021ccc8ec5cdc5ded01191ef7484f369a99e624c39529333481f6"
+  }
+}
