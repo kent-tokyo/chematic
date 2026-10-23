@@ -1,0 +1,156 @@
+{
+  "schema": "chematic.rdkit-9735-validation.v1",
+  "utc": "2026-10-23T17:59:32.257589+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "candidate_base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "candidate_state": "working tree, not a published release",
+  "upstream": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/rdkit-9735-2026-10-24/upstream.json",
+    "sha256": "50f02b74d99f11c01e239346135f700c42b85a595ac721f1cd848d8f87b8cc85",
+    "size_bytes": 197
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/rdkit-9735-2026-10-24/cases.json",
+    "sha256": "276f3bb051bf41639752714a1904d6ac494a0f90ed65a9d75a5884bd2e7dd59e",
+    "size_bytes": 4160
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/rdkit-9735-2026-10-24.packet.json.gz",
+    "sha256": "09e070b516065a4537cd4f1e4fa5f34a3db66cfcd2899853870969ff5e54051e",
+    "size_bytes": 26689
+  },
+  "counts": {
+    "baseline_python.accept.accepted": 24,
+    "baseline_python.regression.accepted": 1000,
+    "baseline_python.valence_error.accepted": 8,
+    "baseline_python.valence_error.other_refusal": 4,
+    "baseline_python.valence_error.valence_error": 1,
+    "candidate_python.accept.accepted": 24,
+    "candidate_python.regression.accepted": 1000,
+    "candidate_python.valence_error.valence_error": 13,
+    "candidate_wasm.accept.accepted": 24,
+    "candidate_wasm.valence_error.valence_error": 13,
+    "rdkit.accept.accepted": 24,
+    "rdkit.valence_error.accepted": 8,
+    "rdkit.valence_error.other_refusal": 5
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+      "size_bytes": 63572
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles/src/rdkit/mol.rs",
+      "sha256": "a87d68fb305a102b682df78c4a8998220571c7dc7767e812c11721b492db3924",
+      "size_bytes": 39422
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles/src/rdkit/mod.rs",
+      "sha256": "9912d4945ce0e753481617e273c387a6f76f344b4a9305e5592c20a5989662d7",
+      "size_bytes": 57959
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_rdkit_issue9735.py",
+      "sha256": "f13223d1472366d2386a52a672a6a3bfa07701284240f8396c0e146b6d8a645b",
+      "size_bytes": 8158
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_rdkit_issue9735_node.mjs",
+      "sha256": "86c83898aa150d2ca510a96d32911f3feebfee961fde90fd672256aa7b85479c",
+      "size_bytes": 497
+    }
+  ],
+  "baseline": {
+    "commit": "a4a2e732f50a892c8accf29273d8481f3a005e0a",
+    "smiles_tree": "476417719332f30ecc1349c04856075e834d7f4c",
+    "scope": "Retained previous PR candidate, SMILES source tree equal to base main; artifact attested against its ORCA report. Not a separately rebuilt main/release executable."
+  },
+  "regression": {
+    "source": {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/fixtures/chembl_accuracy_corpus_4999.smi",
+      "sha256": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+      "size_bytes": 261081
+    },
+    "selection": "first 1000 physical lines, fixed existing development corpus; no holdout claim",
+    "count": 1000
+  },
+  "artifacts": {
+    "candidate_python": [
+      {
+        "path": "/private/tmp/chematic-rdkit-9735-python-20261024/chematic/chematic.cpython-313-darwin.so",
+        "sha256": "1009a6ed0867b9b83c01348b0eed12c402d44e082689dcc2cbe6c7d428bfbcac",
+        "size_bytes": 45287856
+      },
+      {
+        "path": "/private/tmp/chematic-rdkit-9735-python-20261024/chematic/__init__.py",
+        "sha256": "1ba8d816053a6208767f8f4fda0eb34b1adf0f09165a1aa5b2d9cc6bdc158a14",
+        "size_bytes": 30089
+      }
+    ],
+    "baseline_python": [
+      {
+        "path": "/private/tmp/chematic-orca-checked-python-20261024/chematic/chematic.cpython-313-darwin.so",
+        "sha256": "a639864773c2f56b8bb02d9734369e0b22394990becf6e50e52ef49999678019",
+        "size_bytes": 45387664
+      },
+      {
+        "path": "/private/tmp/chematic-orca-checked-python-20261024/chematic/__init__.py",
+        "sha256": "1ba8d816053a6208767f8f4fda0eb34b1adf0f09165a1aa5b2d9cc6bdc158a14",
+        "size_bytes": 30089
+      }
+    ],
+    "rdkit": [
+      {
+        "path": "/private/tmp/chematic-rdkit-202609-venv/lib/python3.13/site-packages/rdkit/Chem/rdchem.so",
+        "sha256": "2fc3606e02f28a03d9e017cbc4e43923e704a8b7b77600de6e817536b9675a5a",
+        "size_bytes": 2844864
+      },
+      {
+        "path": "/private/tmp/chematic-rdkit-202609-venv/lib/python3.13/site-packages/rdkit/rdBase.so",
+        "sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff",
+        "size_bytes": 1438592
+      },
+      {
+        "path": "/private/tmp/chematic-rdkit-202609-venv/lib/python3.13/site-packages/rdkit/__init__.py",
+        "sha256": "eca4a895c02c16eadbe7887ed1463c7ed75b86b222f0843d1c090c331e7c40a7",
+        "size_bytes": 1838
+      }
+    ],
+    "candidate_wasm": []
+  },
+  "wasm_artifacts": [
+    {
+      "path": "/private/tmp/chematic-rdkit-9735-wasm-20261024/chematic_wasm.js",
+      "sha256": "5ee9a4c4327cdda1a821d7fcc71f8468fda53eae5828f0e6b9629d284081978f",
+      "size_bytes": 374873
+    },
+    {
+      "path": "/private/tmp/chematic-rdkit-9735-wasm-20261024/chematic_wasm_bg.wasm",
+      "sha256": "77d6bf7773f3563190566114e3a8f14511a90c93921885371947fd66e9d11d19",
+      "size_bytes": 46036306
+    }
+  ],
+  "versions": {
+    "rdkit": "2026.09.1",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "rust": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+      "stderr": ""
+    },
+    "node": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "v24.5.0\n",
+      "stderr": ""
+    }
+  },
+  "scope": "Strict compatibility sanitization/diagnostics and SMILES writing. Ordinary graph parsing and non-strict caches remain unchanged; this intentionally differs from RDKit on #9735 invalid inputs.",
+  "process_limits": {
+    "seconds": 120,
+    "combined_pipe_bytes": 8388608,
+    "memory": "not imposed"
+  }
+}

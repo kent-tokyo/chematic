@@ -1,0 +1,204 @@
+{
+  "schema": "chematic.rdkit-9735-fixtures.v1",
+  "upstream": "https://github.com/rdkit/rdkit/issues/9735",
+  "cases": [
+    {
+      "id": "reported-aromatic",
+      "smiles": "Oc1cc2=[c](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "reported-aliphatic",
+      "smiles": "Oc1cc2=[C](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "unbracketed",
+      "smiles": "Oc1cc2=c(=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "isotope",
+      "smiles": "Oc1cc2=[13c](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "atom-map",
+      "smiles": "Oc1cc2=[c:7](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "isotope-map",
+      "smiles": "Oc1cc2=[13c:7](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "amino-variant",
+      "smiles": "Nc1cc2=[c](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "disconnected-prefix",
+      "smiles": "Cl.Oc1cc2=[c](=O)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 5
+    },
+    {
+      "id": "thione-variant",
+      "smiles": "Oc1cc2=[c](=S)c(cccn2)n1",
+      "expected": "valence_error",
+      "atom": 4
+    },
+    {
+      "id": "nonring-carbonyl",
+      "smiles": "O=[c](=O)c1ccccc1",
+      "expected": "valence_error",
+      "atom": 1
+    },
+    {
+      "id": "triple-double",
+      "smiles": "[c](#N)=O",
+      "expected": "valence_error",
+      "atom": 0
+    },
+    {
+      "id": "explicit-h",
+      "smiles": "[cH](=O)=C",
+      "expected": "valence_error",
+      "atom": 0
+    },
+    {
+      "id": "charged-carbon",
+      "smiles": "[c-](=O)=C",
+      "expected": "valence_error",
+      "atom": 0
+    },
+    {
+      "id": "valid-01",
+      "smiles": "c1ccccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-02",
+      "smiles": "c1ccc2ccccc2c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-03",
+      "smiles": "c1ccc2ncccc2c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-04",
+      "smiles": "c1ccc2cc3ccccc3cc2c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-05",
+      "smiles": "c1cc[nH]c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-06",
+      "smiles": "c1ccsc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-07",
+      "smiles": "c1ccoc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-08",
+      "smiles": "c1cc[nH+]cc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-09",
+      "smiles": "C[n+]1ccccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-10",
+      "smiles": "[O-][n+]1ccccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-11",
+      "smiles": "O=c1cccc[nH]1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-12",
+      "smiles": "O=C1C=CC(=O)C=C1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-13",
+      "smiles": "[cH-]1cccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-14",
+      "smiles": "c1ncncn1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-15",
+      "smiles": "c1cc[se]c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-16",
+      "smiles": "c1ccc2[nH]ccc2c1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-17",
+      "smiles": "[13cH]1ccccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-18",
+      "smiles": "[cH:7]1ccccc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-19",
+      "smiles": "C=O",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-20",
+      "smiles": "O=C=O",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-21",
+      "smiles": "[C-]#[O+]",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-22",
+      "smiles": "CS(=O)(=O)C",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-23",
+      "smiles": "c1cc[n+](C)cc1",
+      "expected": "accept"
+    },
+    {
+      "id": "valid-24",
+      "smiles": "[Fe]<-n1ccccc1",
+      "expected": "accept"
+    }
+  ]
+}
