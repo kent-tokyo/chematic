@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_PATH = ROOT / "scripts" / "descriptor_census_corpus.smi"
+SOURCE_PATH = ROOT / "scripts" / "fixtures" / "descriptor_census_corpus.smi"
 OUT_PATH = ROOT / "validation" / "manifests" / "pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
 
 TARGET_COUNT = 200

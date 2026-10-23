@@ -163,7 +163,11 @@ def main() -> int:
     parser.add_argument("--engine", choices=("chromium", "firefox", "webkit"), default="chromium")
     parser.add_argument("--browser", type=Path, help="explicit Chromium executable; required only with --engine chromium")
     parser.add_argument("--output", type=Path, required=True)
-    parser.add_argument("--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi")
+    parser.add_argument(
+        "--corpus",
+        type=Path,
+        default=ROOT / "scripts" / "fixtures" / "descriptor_census_corpus.smi",
+    )
     parser.add_argument("--schematic-dir", type=Path, default=ROOT / "demo" / "pkg")
     parser.add_argument(
         "--schematic-tarball", type=Path,

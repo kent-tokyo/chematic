@@ -19,7 +19,7 @@ from rdkit import Chem, rdBase
 
 ROOT = Path(__file__).resolve().parents[2]
 TARGET = ROOT / "validation" / "stereo_torture_suite_development.jsonl"
-SAMPLE_SOURCE = ROOT / "scripts" / "descriptor_census_corpus.smi"
+SAMPLE_SOURCE = ROOT / "scripts" / "fixtures" / "descriptor_census_corpus.smi"
 SOURCES = tuple(
     ROOT / path
     for path in (

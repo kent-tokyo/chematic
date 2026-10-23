@@ -467,7 +467,9 @@ def main() -> int:
     parser.add_argument("--schematic-source-revision")
     parser.add_argument("--schematic-source-diff-sha256")
     parser.add_argument(
-        "--corpus", type=Path, default=ROOT / "scripts" / "descriptor_census_corpus.smi"
+        "--corpus",
+        type=Path,
+        default=ROOT / "scripts" / "fixtures" / "descriptor_census_corpus.smi",
     )
     parser.add_argument("--rows", type=int, default=1000)
     parser.add_argument("--warmup", type=int, default=20)
