@@ -44,9 +44,16 @@ ensembles match RDKit. The row-level result is
 [retained verbatim](../validation/results/trust_holdout_v2_macos_arm64.json);
 inspected v2 rows must not be reused as sealed data or tuned against.
 
-The Linux x86-64 workflow rebuilds the frozen candidate commit and uploads a
-second-host row packet. Until that hosted job completes, the scored result is
-one-host evidence.
+The [Linux x86-64 workflow](https://github.com/kent-tokyo/chematic/actions/runs/40028299124)
+rebuilt the frozen candidate commit and completed the same one-shot score.
+MCS and SDF aggregates were identical across hosts. Both hosts embedded 96/96
+rows, preserved 96/96 stereo graphs and met the strict coordinate contract on
+4/96 rows. Conformer counts matched on 95/96 rows on macOS and 94/96 on Linux,
+so platform-specific ensemble behavior remains visible rather than averaged
+away. The Linux wheel SHA-256 is
+`a49c09620230f939591bb8cc07f75eab505d6e5109b9c134494fcb6e22e53c5e`;
+the uploaded row packet SHA-256 is
+`46d694a27d3b757207907ba03ffbaf7d090973fc522c0d8fe95f67ad092e1c83`.
 
 ## Verification performed before freezing
 

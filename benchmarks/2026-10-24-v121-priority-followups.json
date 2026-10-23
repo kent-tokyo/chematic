@@ -52,6 +52,21 @@
       "coordinates_within_1e_4_angstrom": 4,
       "median_max_pair_distance_delta_angstrom": 4.865949802457322,
       "maximum_pair_distance_delta_angstrom": 12.225782125854735
+    },
+    "linux_x86_64": {
+      "workflow_run": "https://github.com/kent-tokyo/chematic/actions/runs/40028299124",
+      "score_sha256": "46d694a27d3b757207907ba03ffbaf7d090973fc522c0d8fe95f67ad092e1c83",
+      "wheel_sha256": "a49c09620230f939591bb8cc07f75eab505d6e5109b9c134494fcb6e22e53c5e",
+      "python": "3.13.16",
+      "mcs_atom_count_exact": 29,
+      "mcs_bond_count_exact": 31,
+      "sdf_all_columns_exact": 64,
+      "both_embedded": 96,
+      "stereo_graph_exact": 96,
+      "conformer_count_exact": 94,
+      "coordinates_within_1e_4_angstrom": 4,
+      "median_max_pair_distance_delta_angstrom": 5.176119846491401,
+      "maximum_pair_distance_delta_angstrom": 12.123203059525274
     }
   }
 }
