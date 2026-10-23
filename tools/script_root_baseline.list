@@ -1,3 +1,4 @@
 scripts/README.md
 scripts/benchmark_version.py
 scripts/check.sh
+scripts/rdkit_cleanup_source_gate.py
