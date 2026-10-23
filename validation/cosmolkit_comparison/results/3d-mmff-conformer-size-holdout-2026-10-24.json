@@ -1,0 +1,294 @@
+{
+  "schema_version": 1,
+  "metric": "minimum converged MMFF94 energy in kcal/mol; difference threshold 0.01",
+  "conditions": {
+    "embedding": "ETKDGv3, seed 42, one thread",
+    "conformers_per_batch": 24,
+    "max_mmff_iterations": 1000,
+    "nonbonded_threshold": 100.0,
+    "quality_budget": "2-4 batches of 24; conditional fourth batch"
+  },
+  "manifest": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+  "manifest_indices": [
+    33,
+    41,
+    40,
+    46,
+    37,
+    42,
+    39,
+    43
+  ],
+  "manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
+  "source_results_sha256": "9c74b9db068d8780a2554993e72092bdf217f7ed5515a549d513eb4cd2c95a76",
+  "source_binary_sha256": "f2646880c324f9849db5fe6292bb0a7c8ccf39174a63d159050000f9deaaba07",
+  "cosmolkit_version": "0.5.0",
+  "rdkit_version": "2026.09.1",
+  "cosmolkit_extension_sha256": "9a413ff2700f6266fa2192a8687dd073d31e2f9079912374e2c9f48a969177d7",
+  "python_version": "3.13.6",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "summary": {
+    "compat": {
+      "chematic_lower": 6,
+      "cosmolkit_lower": 1,
+      "within_0.01": 1,
+      "incomparable": 0
+    },
+    "quality": {
+      "chematic_lower": 7,
+      "cosmolkit_lower": 0,
+      "within_0.01": 1,
+      "incomparable": 0
+    }
+  },
+  "rows": [
+    {
+      "name": "chembl_tier_b_0033",
+      "smiles": "Cc1cc(-n2ncc(=O)[nH]c2=O)ccc1C(=O)c1ccc(Cl)cc1Cl",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": 77.7640245680928
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": 77.76402455318838,
+          "converged": 24,
+          "name": "chembl_tier_b_0033",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": 77.76402455318838,
+          "converged": 24,
+          "name": "chembl_tier_b_0033",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "within_0.01",
+        "quality": "within_0.01"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0041",
+      "smiles": "C/C=C/C=C/C(=O)N1CCN(c2nc(N)c3cc(OC)c(OC)cc3n2)CC1",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -36.651534711757414
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -38.57400802350695,
+          "converged": 24,
+          "name": "chembl_tier_b_0041",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -38.57464047637451,
+          "converged": 24,
+          "name": "chembl_tier_b_0041",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0040",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)C4CC5C=CC4C5)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -0.7268681993502639
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -1.2084097232509023,
+          "converged": 24,
+          "name": "chembl_tier_b_0040",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -1.2084097232509023,
+          "converged": 24,
+          "name": "chembl_tier_b_0040",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0046",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)Nc4ccccc4)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -71.83655120053253
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -71.98250158220993,
+          "converged": 24,
+          "name": "chembl_tier_b_0046",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -71.98250158220993,
+          "converged": 24,
+          "name": "chembl_tier_b_0046",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0037",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)CCc4ccccc4)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -19.4751325463357
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -19.83211635444779,
+          "converged": 24,
+          "name": "chembl_tier_b_0037",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -19.83211635444779,
+          "converged": 24,
+          "name": "chembl_tier_b_0037",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0042",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccccc4)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -22.769463754842178
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -21.372467457674666,
+          "converged": 24,
+          "name": "chembl_tier_b_0042",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -23.588879304384122,
+          "converged": 24,
+          "name": "chembl_tier_b_0042",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "cosmolkit_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0039",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4cccc(F)c4)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -27.938657446138215
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -28.127770384055466,
+          "converged": 24,
+          "name": "chembl_tier_b_0039",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -28.84556121045061,
+          "converged": 24,
+          "name": "chembl_tier_b_0039",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    },
+    {
+      "name": "chembl_tier_b_0043",
+      "smiles": "COc1cc2nc(N3CCN(C(=O)/C=C/c4ccc(F)cc4)CC3)nc(N)c2cc1OC",
+      "cosmolkit": {
+        "retained": 24,
+        "converged": 24,
+        "best_converged_energy": -26.38466073634551
+      },
+      "chematic": {
+        "compat": {
+          "best_converged_energy": -26.497281919807826,
+          "converged": 24,
+          "name": "chembl_tier_b_0043",
+          "profile": "compat",
+          "requested": 24,
+          "retained": 24
+        },
+        "quality": {
+          "best_converged_energy": -26.497281919807826,
+          "converged": 24,
+          "name": "chembl_tier_b_0043",
+          "profile": "quality",
+          "requested": 24,
+          "retained": 24
+        }
+      },
+      "classification": {
+        "compat": "chematic_lower",
+        "quality": "chematic_lower"
+      }
+    }
+  ]
+}

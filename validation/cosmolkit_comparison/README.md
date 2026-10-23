@@ -10,6 +10,11 @@ COSMolKit is an explicit comparison target. This directory holds two harnesses:
 * **Smoke harness** (below): a ten-row public corpus and a common JSONL
   contract for adapter validation.
 
+The [ETKDGv3/MMFF94 conformer search comparison](3d-mmff-conformer-2026-10-24.md)
+records source-built compatibility and quality profiles against COSMolKit
+0.5.0, with row-level energy and convergence results, disjoint checks, and
+the candidate-budget limitation.
+
 The focused mixed V2000/V3000 SDF recognition fixture is
 `corpora/mixed-v2000-v3000-v1.sdf`. With RDKit 2025.09.3 and COSMolKit 0.5.0
 installed, run `python check_sdf_v3000_recognition.py` to verify the two

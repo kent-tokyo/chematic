@@ -463,11 +463,12 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// unfinished ones, ordered by energy. At most `num_confs` conformers are
 /// returned. The lowest finite-energy unfinished candidate gets an additional
 /// MMFF pass of at most twice `max_iters` steps after the first two ensembles,
-/// and again after the third ensemble when gradients match. Only a converged,
-/// non-higher-energy and stereo-safe retry is retained.
+/// and again after the third and optional fourth ensembles when gradients
+/// match. Only a converged, non-higher-energy and stereo-safe retry is retained.
 /// The profile spends roughly twice the embedding and MMFF work of the
-/// compatibility API when gradient modes differ, or three times when they do
-/// not, plus up to one or two optional retries respectively.
+/// compatibility API when gradient modes differ. Otherwise it runs three
+/// seed batches and a fourth only when the third improves the best energy by
+/// more than 0.01 kcal/mol. Up to three optional MMFF retries follow.
 pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     mh: &Molecule,
     num_confs: usize,
@@ -543,18 +544,58 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     {
         return Ok(selected);
     }
+    let before_third = lowest_finite_energy(&selected);
     let third = match embed_prepared_multiple_confs(&prepared, num_confs, num_confs * 2, o, false) {
         Ok(coords) => optimize_mmff_molecule(mh, coords, max_iters),
         Err(_) => return Ok(selected),
     };
     match third {
-        Ok(third) => Ok(refine_unfinished_quality_minimum(
-            mh,
-            select_quality_candidates(selected, third, num_confs),
-            max_iters,
-        )),
+        Ok(third) => {
+            let selected = refine_unfinished_quality_minimum(
+                mh,
+                select_quality_candidates(selected, third, num_confs),
+                max_iters,
+            );
+            let improved = before_third
+                .zip(lowest_finite_energy(&selected))
+                .is_some_and(|(before, after)| after < before - 0.01);
+            let fourth_seed_fits = num_confs
+                .checked_mul(4)
+                .and_then(|count| i32::try_from(count).ok())
+                .and_then(|count| o.random_seed.checked_mul(count))
+                .is_some();
+            if !improved || !fourth_seed_fits {
+                return Ok(selected);
+            }
+            let fourth = match embed_prepared_multiple_confs(
+                &prepared,
+                num_confs,
+                num_confs * 3,
+                o,
+                false,
+            ) {
+                Ok(coords) => optimize_mmff_molecule(mh, coords, max_iters),
+                Err(_) => return Ok(selected),
+            };
+            match fourth {
+                Ok(fourth) => Ok(refine_unfinished_quality_minimum(
+                    mh,
+                    select_quality_candidates(selected, fourth, num_confs),
+                    max_iters,
+                )),
+                Err(_) => Ok(selected),
+            }
+        }
         Err(_) => Ok(selected),
     }
+}
+
+fn lowest_finite_energy(candidates: &[RdkitMmffConformer]) -> Option<f64> {
+    candidates
+        .iter()
+        .map(|candidate| candidate.energy)
+        .filter(|energy| energy.is_finite())
+        .min_by(f64::total_cmp)
 }
 
 fn select_quality_candidates(
