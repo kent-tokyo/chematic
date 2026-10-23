@@ -1,0 +1,57 @@
+{
+  "schema": "chematic.v121-priority-followups.v1",
+  "candidate_commit": "29b3fdc9ddf17c26cdb65b73be101e8e82046841",
+  "candidate_version": "1.2.1",
+  "mcs_benchmark": {
+    "operation": "benzene/toluene MCS, Criterion",
+    "host": "macOS 27.0.1 arm64",
+    "baseline": "v1.2.1",
+    "baseline_interval_us": [299.16, 315.05, 327.52],
+    "candidate_interval_us": [3.8967, 3.9332, 3.9668],
+    "median_speedup": 80.1,
+    "output_contract": "same maximum atom and bond counts"
+  },
+  "cleanup": {
+    "oracle": "RDKit 2026.09.1",
+    "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+    "source_rows": 4072,
+    "comparable_rows": 4069,
+    "source_exact": 4069,
+    "public_python_exact": 4069,
+    "typed_incompatible_rows": 3
+  },
+  "compatibility": {
+    "baseline": "v1.2.0",
+    "surfaces": ["changed public Rust crates", "Python API and stubs", "WASM TypeScript", "shared JSON contracts"]
+  },
+  "holdout_v2": {
+    "score": "../validation/results/trust_holdout_v2_macos_arm64.json",
+    "score_sha256": "95635e8338b6fed3e3fc579364d23ba2635a9768dc1c93ada9fffcab9cc12c1e",
+    "wheel_sha256": "fcba25a934c021ccc8ec5cdc5ded01191ef7484f369a99e624c39529333481f6",
+    "mcs": {
+      "rows": 64,
+      "parsed": 63,
+      "completed": 54,
+      "refused": 9,
+      "invalid": 1,
+      "atom_count_exact": 29,
+      "bond_count_exact": 31
+    },
+    "sdf": {
+      "rows": 64,
+      "graph_exact": 64,
+      "title_exact": 64,
+      "properties_exact": 64,
+      "stereo_exact": 64
+    },
+    "stereo_3d": {
+      "rows": 96,
+      "both_embedded": 96,
+      "stereo_graph_exact": 96,
+      "conformer_count_exact": 95,
+      "coordinates_within_1e_4_angstrom": 4,
+      "median_max_pair_distance_delta_angstrom": 4.865949802457322,
+      "maximum_pair_distance_delta_angstrom": 12.225782125854735
+    }
+  }
+}
