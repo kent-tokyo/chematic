@@ -178,6 +178,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     use from_pdbqt_with_data() when those values are needed without rounding.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    CML to CML retains exact UTF-8 source for one well-formed XML 1.0 document
+    with a CML-namespace molecule root. Nested molecules and DTDs are refused;
+    unknown fields, references and stereo are retained opaquely, not validated
+    chemically. Overrides are rejected; this route does not edit the source.
     GJF/COM to GJF/COM retains exact source for one Cartesian job, including
     opaque job sections; overrides are rejected. Other GJF output routes
     require the explicit geometry writer.
@@ -232,6 +236,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if source in {"mol", "sdf"}:
         text = single_sdf_mol_block(text)
         source = "mol_v3000" if text.split("\n", 4)[3].rstrip().endswith("V3000") else "mol"
+    if source == target == "cml":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CML source-preserving conversion does not accept overrides")
+        return roundtrip_cml_source(text)
     if source == target == "mol2":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")

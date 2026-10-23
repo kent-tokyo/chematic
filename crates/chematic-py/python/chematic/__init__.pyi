@@ -3566,6 +3566,14 @@ def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
     ...
 
+def roundtrip_cml_source(text: str | bytes) -> str:
+    """Retain exact bounded XML 1.0 CML source with opaque chemistry.
+
+    Requires one namespaced molecule root; rejects DTDs, nested molecules,
+    malformed XML, unsupported encodings and resource-limit violations.
+    """
+    ...
+
 def project_mol2_to_cjson(text: str | bytes) -> str:
     """Project selected MOL2 fields to CJSON with mapped reparse checks.
 
