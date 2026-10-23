@@ -20,6 +20,7 @@
 //! - [`enumerate_library`]: combinatorial library enumeration from SMIRKS + fragment sets.
 
 pub mod balance;
+pub mod cx_reaction;
 pub mod document;
 pub mod enumerate;
 pub mod green;
@@ -34,6 +35,10 @@ pub mod stoichiometry;
 pub mod transform;
 
 pub use balance::{BalanceResult, balance_check};
+pub use cx_reaction::{
+    ReactionCxError, parse_reaction_cxsmiles, parse_reaction_cxsmiles_with_limits,
+    write_reaction_cxsmiles,
+};
 pub use document::{
     ComponentRole, ContentOrigin, ProvenanceRecord, ReactionAtomMap, ReactionComponent,
     ReactionCondition, ReactionDocument, ReactionDocumentEdit, ReactionDocumentError, ReactionLoss,

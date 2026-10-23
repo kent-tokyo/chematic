@@ -4246,6 +4246,16 @@ def maxmin_picks(smiles: list[str], n: int) -> list[int]:
     """
     ...
 
+def normalize_reaction_cxsmiles(text: str | bytes, *, canonical: bool = True) -> str:
+    """Preserve enhanced atom-group membership through reaction ordering.
+
+    Supports a/&n/on groups with global reactant/agent/product atom indices.
+    Other CX fields, titles, invalid references and non-tetrahedral members
+    raise ValueError. Group numbers are reaction-wide and preserved. This is
+    not a unique enhanced-stereo reaction key; legacy writers are unchanged.
+    """
+    ...
+
 def from_rxn_file(text: str) -> str:
     """Parse a MDL RXN V2000 file and return the canonical reaction SMILES.
 
