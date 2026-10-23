@@ -25,7 +25,7 @@ import json
 import sys
 from pathlib import Path
 
-from refactor_budget_scanner import (
+from lib.refactor_budget_scanner import (
     collect,
     function_metrics,
     mask_rust,
