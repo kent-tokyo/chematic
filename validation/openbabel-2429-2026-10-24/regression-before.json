@@ -1,0 +1,9 @@
+{
+  "command": "pytest test_v3000_either_single.py --maxfail=1",
+  "runtime": {
+    "path": "/private/tmp/chematic-rdkit-9738-python-20261024/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "57056d8850e314cf9d713b9a04d4cc971265c057db0684a275c1998e1e9d98e0"
+  },
+  "expected_exit_code": 1,
+  "output": "============================= test session starts ==============================\nplatform darwin -- Python 3.13.6, pytest-9.1.1, pluggy-1.6.0\nrootdir: /Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py\nconfigfile: pytest.ini\ncollected 18 items\n\ncrates/chematic-py/tests/test_v3000_either_single.py F\n\n=================================== FAILURES ===================================\n___ test_either_carriers_keep_alkene_stereo_unknown[False-False-False-left] ____\ncrates/chematic-py/tests/test_v3000_either_single.py:33: in test_either_carriers_keep_alkene_stereo_unknown\n    assert \"/\" not in mol.smiles and \"\\\\\" not in mol.smiles\nE   AssertionError: assert ('/' not in 'C(=C/C)\\\\C'\nE     \nE     '/' is contained here:\nE       C(=C/C)\\C\nE     ?     +)\n=========================== short test summary info ============================\nFAILED crates/chematic-py/tests/test_v3000_either_single.py::test_either_carriers_keep_alkene_stereo_unknown[False-False-False-left]\n!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!\n============================== 1 failed in 0.26s ===============================\n"
+}

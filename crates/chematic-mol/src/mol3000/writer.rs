@@ -596,7 +596,15 @@ fn write_v3000_reporting(
     let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic\n");
 
-    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
+    // Real coordinates must not assign E/Z to an undeclared alkene merely
+    // because a graph-only binding discarded source CFG=2 metadata (#2429).
+    let real_coords = coords.len() >= mol.atom_count()
+        && coords[..mol.atom_count()]
+            .iter()
+            .any(|&(x, y)| x != 0.0 || y != 0.0);
+    let needs_either =
+        real_coords && !crate::stereo_depiction::undeclared_stereo_double_bonds(mol).is_empty();
+    let depiction = (crate::stereo_depiction::needs_stereo_depiction(mol) || needs_either)
         .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
     let coords = depiction.as_ref().map_or(coords, |value| &value.coords);
 
