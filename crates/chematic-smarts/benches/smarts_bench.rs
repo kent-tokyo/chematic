@@ -10,7 +10,7 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use std::hint::black_box;
 
 use chematic_perception::find_sssr;
-use chematic_smarts::{SmartsCache, find_matches, parse_smarts};
+use chematic_smarts::{SmartsCache, find_matches, find_mcs, parse_smarts};
 use chematic_smiles::parse;
 
 const BENCH_SMILES: &[&str] = &[
@@ -113,6 +113,19 @@ fn bench_smarts_complex(c: &mut Criterion) {
     });
 }
 
+// ── MCS exact-optimum early stop ────────────────────────────────────────────
+
+fn bench_mcs_symmetric_ring(c: &mut Criterion) {
+    let benzene = parse("c1ccccc1").unwrap();
+    let toluene = parse("Cc1ccccc1").unwrap();
+    c.bench_function("mcs_benzene_toluene", |b| {
+        b.iter(|| {
+            let result = find_mcs(black_box(&[&benzene, &toluene]));
+            black_box(result);
+        })
+    });
+}
+
 criterion_group!(
     benches,
     bench_smarts_compile,
@@ -120,5 +133,6 @@ criterion_group!(
     bench_smarts_cache_hit,
     bench_smarts_cache_shared_rings,
     bench_smarts_complex,
+    bench_mcs_symmetric_ring,
 );
 criterion_main!(benches);

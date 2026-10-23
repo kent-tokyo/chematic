@@ -20,8 +20,12 @@
   },
   "three_input_difference": {
     "inputs": ["F[C@H](Cl)Br", "Cl[C@@H](F)Br", "Cl[C@H](F)Br"],
-    "rdkit": [2, 1],
+    "rdkit_by_first_input": {
+      "first_or_second": [2, 1],
+      "third": [3, 2]
+    },
     "chematic": [3, 2],
-    "status": "unresolved"
+    "permutations_checked": 6,
+    "status": "oracle_order_unstable"
   }
 }

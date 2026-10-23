@@ -130,10 +130,17 @@ impl Mol {
     ///
     ///     chematic.from_smiles("OC(=O)[C@@H]1CCCN1").rdkit_smiles
     ///     # 'O=C(O)[C@@H]1CCCN1'
+    ///
+    /// A Cleanup result retains RDKit's in-memory non-tetrahedral tag on a
+    /// fully disconnected metal. Re-parsing its SMILES would lose that tag.
     #[getter]
     fn rdkit_smiles(&self) -> PyResult<String> {
-        chematic_smiles::rdkit_canonical_smiles(&self.inner)
-            .map_err(|e| PyValueError::new_err(e.to_string()))
+        let write = if self.props.rdkit_cleanup_output {
+            chematic_smiles::rdkit_cleanup_canonical_smiles
+        } else {
+            chematic_smiles::rdkit_canonical_smiles
+        };
+        write(&self.inner).map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// SMILES exactly as RDKit 2026.03.1's ``Chem.MolToSmiles`` writes it
@@ -166,6 +173,10 @@ impl Mol {
             all_hs_explicit,
             rooted_at_atom,
         };
+        if self.props.rdkit_cleanup_output {
+            return chematic_smiles::rdkit_cleanup_smiles(&self.inner, &params)
+                .map_err(|e| PyValueError::new_err(e.to_string()));
+        }
         chematic_smiles::rdkit_smiles(&self.inner, &params)
             .map_err(|e| PyValueError::new_err(e.to_string()))
     }

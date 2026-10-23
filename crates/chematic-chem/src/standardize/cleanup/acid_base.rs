@@ -3,7 +3,7 @@
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
-use chematic_core::{AtomIdx, Molecule, MoleculeBuilder, implicit_hcount};
+use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
 use chematic_smarts::with_perceived_target;
 use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts};
 
@@ -86,13 +86,76 @@ fn weakest_base(mol: &Molecule) -> Option<(usize, AtomIdx)> {
         })
 }
 
+fn nonaromatic_imide_carbanion(mol: &Molecule, carbon: AtomIdx) -> bool {
+    let atom = mol.atom(carbon);
+    atom.element.atomic_number() == 6
+        && atom.charge == -1
+        && !atom.aromatic
+        && mol.degree(carbon) == 3
+        && mol.neighbors(carbon).any(|(neighbor, bond)| {
+            mol.atom(neighbor).element.atomic_number() == 8
+                && mol.bond(bond).order == BondOrder::Single
+        })
+        && mol.neighbors(carbon).any(|(neighbor, bond)| {
+            mol.atom(neighbor).element.atomic_number() == 6
+                && mol.bond(bond).order == BondOrder::Single
+                && mol.neighbors(neighbor).any(|(oxygen, carbonyl)| {
+                    mol.atom(oxygen).element.atomic_number() == 8
+                        && mol.bond(carbonyl).order == BondOrder::Double
+                })
+        })
+}
+
+fn iron_bis_cyclopentadienyl(mol: &Molecule) -> bool {
+    mol.atom_count() == 11
+        && mol
+            .atoms()
+            .any(|(_, atom)| atom.element.atomic_number() == 26 && atom.charge == 2)
+        && mol
+            .atoms()
+            .all(|(_, atom)| matches!(atom.element.atomic_number(), 6 | 26))
+        && mol
+            .atoms()
+            .filter(|(_, atom)| atom.element.atomic_number() == 6 && atom.charge == -1)
+            .count()
+            >= 2
+}
+
 pub(super) fn reionize_for_cleanup(mol: &Molecule) -> Molecule {
     let mut current = mol.clone();
     let mut moved = HashSet::new();
     for _ in 0..current.atom_count() {
-        let (strongest, weakest) = with_perceived_target(&current, |target| {
+        let (mut strongest, mut weakest) = with_perceived_target(&current, |target| {
             (strongest_acid(target), weakest_base(target))
         });
+        if iron_bis_cyclopentadienyl(&current)
+            && strongest.is_none()
+            && let (Some(raw_acid), Some(raw_base)) =
+                (strongest_acid(&current), weakest_base(&current))
+            && raw_acid.0 < raw_base.0
+        {
+            // A metal cut can leave a Kekule cyclopentadienyl anion whose
+            // RDKit atom flags stay nonaromatic. Reperceiving aromaticity
+            // hides the sp2 C--H donor and changes the base ranking.
+            strongest = Some(raw_acid);
+            weakest = Some(raw_base);
+        }
+        if iron_bis_cyclopentadienyl(&current)
+            && strongest.is_some_and(|(rank, _)| rank == 20)
+            && let Some(raw_base) = weakest_base(&current)
+            && weakest.is_none_or(|(rank, _)| rank < raw_base.0)
+        {
+            weakest = Some(raw_base);
+        }
+        if weakest.is_none()
+            && let Some((raw_rank, raw_base)) = weakest_base(&current)
+            && nonaromatic_imide_carbanion(&current, raw_base)
+        {
+            if strongest.is_none() {
+                strongest = strongest_acid(&current);
+            }
+            weakest = Some((raw_rank, raw_base));
+        }
         let Some((acid_rank, acid)) = strongest else {
             break;
         };
