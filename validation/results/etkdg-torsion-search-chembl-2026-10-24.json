@@ -5,7 +5,7 @@
   "selection": "Tier A all nine eligible; Tier B SHA-256 SMILES positions 12:33; ChEMBL 12 lowest SHA-256 among 851 RDKit-eligible molecules excluding Tier A/B SMILES",
   "conditions": "ETKDGv3 seed 42; 20 CheMatic candidates per seed batch; RDKit 60 candidates; MMFF94 200 iterations; torsion arm adds at most 24 minimizations",
   "hashes": {
-    "binary": "dfd5a5f2455314c1edaa2c2b684f330ef39af0da8111b2d1651a4e7fc0142380",
+    "binary": "89efe7261e89dbaad1192e99152384ba4a82fa5bf42cedd47fe2bb5e26826aa6",
     "script": "3318319067c37c840c9decc412cdfd395d4b50b9049b3a0e54c2af236da2434d",
     "corpus": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
     "torsion_source": "9943569c5f571c8076c92b9a84af3fd1aee4038a504bb7c91c42492f73bee651"
@@ -70,13 +70,13 @@
       "smiles": "COC(=O)c1ccc(Oc2cccc(NC(=O)[C@@H](N)CS)c2)cc1",
       "quality": {
         "returned": 20,
-        "converged": 8,
+        "converged": 13,
         "best_converged_energy": 87.11138516077938,
         "same_coordinate_energy_error": -1.4210854715202004e-14
       },
       "torsion": {
         "returned": 20,
-        "converged": 9,
+        "converged": 14,
         "best_converged_energy": 87.09543668437087,
         "same_coordinate_energy_error": -2.842170943040401e-14
       },

@@ -16,6 +16,8 @@ fn quality_profile_uses_new_seeds_when_gradients_match() {
     let next = optimize_mmff_molecule(&molecule, next_coords, 200).unwrap();
     let third_coords = embed_prepared_multiple_confs(&prepared, 4, 8, &options, false).unwrap();
     let third = optimize_mmff_molecule(&molecule, third_coords, 200).unwrap();
+    let fourth_coords = embed_prepared_multiple_confs(&prepared, 4, 12, &options, false).unwrap();
+    let fourth = optimize_mmff_molecule(&molecule, fourth_coords, 200).unwrap();
     assert_eq!(first.len(), 4);
     assert_eq!(next.len(), 4);
     assert_eq!(third.len(), 4);
@@ -32,15 +34,13 @@ fn quality_profile_uses_new_seeds_when_gradients_match() {
             .unwrap()
     };
     assert_eq!(selected.len(), 4);
-    assert_eq!(
-        best(&selected),
-        best(&first).min(best(&next)).min(best(&third))
-    );
+    assert!(best(&selected) <= best(&first).min(best(&next)).min(best(&third)));
     assert!(selected.iter().all(|chosen| {
         first
             .iter()
             .chain(&next)
             .chain(&third)
+            .chain(&fourth)
             .any(|original| chosen.coords == original.coords)
     }));
 }
@@ -74,6 +74,27 @@ fn torsion_search_recovers_lower_converged_minimum() {
     // finite, converged, stereo-checked non-regression.
     #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     assert!(after < before - 0.5, "torsion search: {before} -> {after}");
+}
+
+#[test]
+fn quality_profile_extends_search_after_third_batch_improves() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse(
+            "c1ccc2c(c1)c1cc[n+]2Cc2ccc(cc2)-c2ccc(cc2)C[n+]2ccc(c3ccccc32)NCCCCCCCCCCN1",
+        )
+        .unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let prepared = prepare_fragments(&molecule, &options).unwrap();
+    assert!(!corrected_torsion_gradient_can_differ(&prepared));
+
+    let first_three = rdkit_embed_multiple_confs_mmff(&molecule, 24, &options, 1000).unwrap();
+    let before = lowest_finite_energy(&first_three).unwrap();
+    let selected =
+        etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 8, &options, 1000).unwrap();
+    let after = lowest_finite_energy(&selected).unwrap();
+    assert!(selected.iter().all(|candidate| candidate.status == 0));
+    assert!(after < before - 0.5, "fourth batch: {before} -> {after}");
 }
 
 #[test]

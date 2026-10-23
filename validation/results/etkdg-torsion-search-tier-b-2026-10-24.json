@@ -5,7 +5,7 @@
   "selection": "Tier A all nine eligible; Tier B SHA-256 SMILES positions 12:33; ChEMBL 12 lowest SHA-256 among 851 RDKit-eligible molecules excluding Tier A/B SMILES",
   "conditions": "ETKDGv3 seed 42; 20 CheMatic candidates per seed batch; RDKit 60 candidates; MMFF94 200 iterations; torsion arm adds at most 24 minimizations",
   "hashes": {
-    "binary": "dfd5a5f2455314c1edaa2c2b684f330ef39af0da8111b2d1651a4e7fc0142380",
+    "binary": "89efe7261e89dbaad1192e99152384ba4a82fa5bf42cedd47fe2bb5e26826aa6",
     "script": "3318319067c37c840c9decc412cdfd395d4b50b9049b3a0e54c2af236da2434d",
     "corpus": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
     "torsion_source": "9943569c5f571c8076c92b9a84af3fd1aee4038a504bb7c91c42492f73bee651"
@@ -47,13 +47,13 @@
       "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(-c4ccc(N)cc4)nn3)[C@H]2S1(=O)=O",
       "quality": {
         "returned": 20,
-        "converged": 4,
+        "converged": 9,
         "best_converged_energy": -7.3028202260378094,
         "same_coordinate_energy_error": -7.105427357601002e-15
       },
       "torsion": {
         "returned": 20,
-        "converged": 4,
+        "converged": 9,
         "best_converged_energy": -7.3028202260378094,
         "same_coordinate_energy_error": -7.105427357601002e-15
       },
@@ -254,13 +254,13 @@
       "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](Cc3cn(CC4CCCN4)nn3)[C@H]2S1(=O)=O",
       "quality": {
         "returned": 20,
-        "converged": 3,
+        "converged": 5,
         "best_converged_energy": -22.368587160628007,
         "same_coordinate_energy_error": 0.0
       },
       "torsion": {
         "returned": 20,
-        "converged": 3,
+        "converged": 5,
         "best_converged_energy": -22.368587160628007,
         "same_coordinate_energy_error": 0.0
       },
@@ -277,13 +277,13 @@
       "smiles": "COc1cc2nc(N3CCN(/C(S)=N/C4CCCCC4)CC3)nc(N)c2cc1OC",
       "quality": {
         "returned": 20,
-        "converged": 2,
+        "converged": 3,
         "best_converged_energy": -56.915085051344114,
         "same_coordinate_energy_error": -2.1316282072803006e-14
       },
       "torsion": {
         "returned": 20,
-        "converged": 2,
+        "converged": 3,
         "best_converged_energy": -56.915085051344114,
         "same_coordinate_energy_error": -2.1316282072803006e-14
       },

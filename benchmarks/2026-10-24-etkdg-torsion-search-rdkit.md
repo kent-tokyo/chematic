@@ -1,7 +1,7 @@
 # Bounded torsion search after ETKDG/MMFF94
 
-Date: 2026-10-24. This source candidate starts from `origin/main` at
-`99c5c07e` and adds an opt-in quality profile. The comparator is RDKit
+Date: 2026-10-24. This source candidate includes `origin/main` at
+`02f5a37e` and adds an opt-in quality profile. The comparator is RDKit
 2026.09.1 on macOS arm64 with Python 3.13.6. The fixed workloads and source
 binary hashes are in the [Tier A](../validation/results/etkdg-torsion-search-tier-a-2026-10-24.json),
 [Tier B](../validation/results/etkdg-torsion-search-tier-b-2026-10-24.json),
@@ -20,9 +20,11 @@ when no valid improvement exists.
 
 Both engines use explicit hydrogens, ETKDGv3, seed 42, MMFF94, and up to
 200 iterations per generated candidate. CheMatic's base quality profile
-uses up to 60 candidates in three 20-seed batches and may make two bounded
-retries; it returns at most 20. RDKit generates 60 candidates and returns
-all of them. The new torsion arm has a larger optimization budget. It is a
+uses up to 80 candidates in four 20-seed batches and may make three bounded
+retries; it returns at most 20. The fourth batch runs only when the third
+lowers the best energy by more than 0.01 kcal/mol. RDKit generates 60
+candidates and returns all of them. The new torsion arm has a larger
+optimization budget. It is a
 search-quality comparison, **not** an equal-compute algorithm comparison.
 The metric is the lowest **converged** MMFF94 energy; 1e-6 kcal/mol is the
 comparison tolerance.
