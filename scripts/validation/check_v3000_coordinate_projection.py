@@ -82,11 +82,20 @@ def main():
             if result['resource_status']=='completed' and result['exit_code']==0:result['output']=result['stdout']
             row[label]=result
         for label in ['python','wasm','openbabel','openbabel_single']:row[label]['observation']=observe(case['expected'],row[label].get('output'))
+        for label in ['python','wasm']:
+            row[label]['typed_stereo_refusal'] = (not row[label].get('output') and
+                'cannot preserve atom chirality at atom 0' in row[label].get('error', ''))
         results.append(row)
     labels=['python','wasm','openbabel','openbabel_single']
     summary={label:{metric:sum(r[label]['observation'][metric] for r in results) for metric in results[0][label]['observation']} for label in labels}
+    for label in labels[:2]:summary[label]['typed_stereo_refusal']=sum(bool(r[label]['typed_stereo_refusal']) for r in results)
     record=dict(schema='chematic.v3000-coordinate-projection-results.v1',baseline=args.baseline,packet=identity(packet_path),python_package=identity(chematic.__file__),python_extension=identity(extension.__file__),wasm_module=identity(args.wasm_module),wasm_binary=identity(args.wasm_module.with_name('chematic_wasm_bg.wasm')),openbabel=identity(args.obabel),openbabel_version=terminal(bounded_run([str(args.obabel.resolve()),'-V'])),case_count=len(cases),summary=summary,cases=results)
     args.output.write_text(json.dumps(record,indent=2)+'\n');print(json.dumps(summary))
-    if not args.baseline:require(all(all(r[label]['observation'].values()) for r in results for label in labels[:2]),'candidate projection failure')
+    if not args.baseline:
+        for row in results:
+            for label in labels[:2]:
+                expected_refusal = row['id'].split('/')[0] == 'four_atom_geometry'
+                require(bool(row[label]['typed_stereo_refusal']) if expected_refusal else
+                        all(row[label]['observation'].values()), 'candidate projection/refusal failure')
 
 if __name__=='__main__':main()
