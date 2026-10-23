@@ -4,7 +4,7 @@ RDKit ETKDGv3 benchmark (Wave 1 of the "RDKit alternative" program).
 
 Source of truth for the 63 molecules: `CORPUS` in
 `crates/chematic-3d/examples/pipeline_v2_integration_gate.rs` (itself sourced
-from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`), transcribed here verbatim
+from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`), transcribed here verbatim
 (name, SMILES, primary_category unchanged) rather than hand-copied a third
 time. This script is the SINGLE extraction point: both the new Rust dump
 executable and the new RDKit oracle script read the JSON manifest this

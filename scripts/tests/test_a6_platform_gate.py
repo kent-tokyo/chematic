@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "a6_platform_gate.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "validation" / "a6_platform_gate.py"
 SPEC = importlib.util.spec_from_file_location("a6_platform_gate", SCRIPT)
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC)

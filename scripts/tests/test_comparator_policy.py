@@ -41,7 +41,7 @@ def test_every_pinned_wheel_names_its_platform_and_a_digest():
 
 
 def test_installer_refuses_a_platform_without_a_build():
-    script = ROOT / "scripts/install_pinned_rdkit.py"
+    script = ROOT / "scripts/release/install_pinned_rdkit.py"
     result = subprocess.run([sys.executable, str(script), "--platform", "macos-x86_64"],
                             capture_output=True, text=True)
     assert result.returncode == 3

@@ -188,7 +188,7 @@ fn parse_any(input: &str) -> Result<(), Box<dyn Error>> {
 
 ## Validation
 
-Run `cargo test -p chematic-mol`. Exact format coverage, round-trip semantics, coordinate handling, and resource limits are maintained in [`docs/format-capabilities.md`](../../docs/format-capabilities.md). Performance measurements are indexed in [`benchmarks/README.md`](../../benchmarks/README.md); release history is in [`CHANGELOG.md`](../../CHANGELOG.md).
+Run `cargo test -p chematic-mol`. Exact format coverage, round-trip semantics, coordinate handling, and resource limits are maintained in the [`format matrix`](../../docs/reference/format-capabilities.md). Performance measurements are indexed in [`benchmarks/README.md`](../../benchmarks/README.md); release history is in [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 

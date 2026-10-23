@@ -5,7 +5,7 @@ import argparse,hashlib,importlib,json,tempfile,sys
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT))
-from scripts.check_interchange_preservation import bounded_run,identity,require,strict_json
+from scripts.checks.check_interchange_preservation import bounded_run,identity,require,strict_json
 NODE="""
 const fs=require('node:fs'),w=require(process.argv[1]);
 const cases=JSON.parse(fs.readFileSync(0,'utf8'));

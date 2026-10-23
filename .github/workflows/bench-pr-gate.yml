@@ -243,7 +243,7 @@ jobs:
       # every benchmark, including ones in untouched crates, with
       # baseline_count 96-100/100).
       #
-      # scripts/criterion_gate.sh takes one Criterion *process run* as a
+      # scripts/diagnostics/criterion_gate.sh takes one Criterion *process run* as a
       # single observation (median per-iteration time) and assembles N
       # independent {baseline, candidate} records from N "ABBA" blocks
       # (order A,B,B,A or B,A,A,B; geometric mean of each side's 2 runs
@@ -302,9 +302,9 @@ jobs:
       - name: "Run process-level Criterion gate (issue #70 redesign)"
         run: |
           set +e
-          chmod +x pr/scripts/criterion_gate.sh
+          chmod +x pr/scripts/diagnostics/criterion_gate.sh
 
-          bin_path() { pr/scripts/criterion_gate.sh bin-path "$1" "$2" "$3"; }
+          bin_path() { pr/scripts/diagnostics/criterion_gate.sh bin-path "$1" "$2" "$3"; }
 
           # Two-build null control: independently compiled main checkouts on
           # both sides, run through the identical pipeline. This is the
@@ -318,7 +318,7 @@ jobs:
               echo "::error::null control: parse_bench missing from one of the independent main builds" >&2
               return 1
             fi
-            pr/scripts/criterion_gate.sh run-blocks \
+            pr/scripts/diagnostics/criterion_gate.sh run-blocks \
               "$null_control_bin_a" "$null_control_bin_b" "parse_smiles_10mol" \
               "$n_blocks" 0.5 1 15 "$order" "$out"
             veridict compare "$out" --metric sign-test --confidence 0.95 --min-effect 0.2 \
@@ -380,16 +380,16 @@ jobs:
           # as Stage 1's routing threshold; this is an initial value, not a
           # recalibrated one -- issue #70's real ~1.022 median incident is
           # pinned as a permanent regression fixture in
-          # scripts/test_criterion_gate.sh to guard against a future edit
+          # scripts/diagnostics/test_criterion_gate.sh to guard against a future edit
           # silently reintroducing magnitude-blind failing.
           STAGE2_FAIL_THRESHOLD=1.04
           NULL_CONTAMINATION_THRESHOLD=1.04
           NULL_CONTROL_BLOCKS=10
-          pr/scripts/criterion_gate.sh check-threshold "$STAGE1_ROUTE_THRESHOLD" \
+          pr/scripts/diagnostics/criterion_gate.sh check-threshold "$STAGE1_ROUTE_THRESHOLD" \
             || { echo "::error::invalid STAGE1_ROUTE_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
-          pr/scripts/criterion_gate.sh check-threshold "$STAGE2_FAIL_THRESHOLD" \
+          pr/scripts/diagnostics/criterion_gate.sh check-threshold "$STAGE2_FAIL_THRESHOLD" \
             || { echo "::error::invalid STAGE2_FAIL_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
-          pr/scripts/criterion_gate.sh check-threshold "$NULL_CONTAMINATION_THRESHOLD" \
+          pr/scripts/diagnostics/criterion_gate.sh check-threshold "$NULL_CONTAMINATION_THRESHOLD" \
             || { echo "::error::invalid NULL_CONTAMINATION_THRESHOLD -- infrastructure failure, not a silent skip"; exit 1; }
 
           # Stage 1: cheap screen across every benchmark first, so the (rare)
@@ -418,8 +418,8 @@ jobs:
             fi
 
             out="artifacts/${name}_stage1.jsonl"
-            pr/scripts/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 3 0.5 1 15 abba "$out"
-            route=$(pr/scripts/criterion_gate.sh route-check "$out" 3 "$STAGE1_ROUTE_THRESHOLD")
+            pr/scripts/diagnostics/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 3 0.5 1 15 abba "$out"
+            route=$(pr/scripts/diagnostics/criterion_gate.sh route-check "$out" 3 "$STAGE1_ROUTE_THRESHOLD")
             route_code=$?
             if [ "$route_code" -ne 0 ]; then
               echo "::error::$name: stage1 route-check validation failed (exit $route_code) -- this is an infrastructure failure (malformed/short/long block data), not a silent no-route"
@@ -437,7 +437,7 @@ jobs:
           run_null_control "$NULL_CONTROL_BLOCKS" abba artifacts/null_control.jsonl
           null_code=$?
           echo "=== null control: exit $null_code ==="
-          null_decision=$(pr/scripts/criterion_gate.sh contamination-check \
+          null_decision=$(pr/scripts/diagnostics/criterion_gate.sh contamination-check \
             "$null_code" artifacts/null_control.jsonl "$NULL_CONTROL_BLOCKS" \
             "$NULL_CONTAMINATION_THRESHOLD")
           decision_code=$?
@@ -445,7 +445,7 @@ jobs:
             echo "::error::null-control decision validation failed (exit $decision_code) -- infrastructure failure"
             exit 1
           fi
-          null_median=$(pr/scripts/criterion_gate.sh ratio-summary \
+          null_median=$(pr/scripts/diagnostics/criterion_gate.sh ratio-summary \
             artifacts/null_control.jsonl "$NULL_CONTROL_BLOCKS")
           environment_contaminated=0
           if [ "$null_decision" = "contaminated" ]; then
@@ -462,9 +462,9 @@ jobs:
             main_bin=$(bin_path main "$crate" "$benchfile")
             pr_bin=$(bin_path pr "$crate" "$benchfile")
             out="artifacts/${name}_stage2.jsonl"
-            pr/scripts/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 10 1 2 20 baab "$out"
+            pr/scripts/diagnostics/criterion_gate.sh run-blocks "$main_bin" "$pr_bin" "$name" 10 1 2 20 baab "$out"
 
-            stage2_median=$(pr/scripts/criterion_gate.sh ratio-summary "$out" 10)
+            stage2_median=$(pr/scripts/diagnostics/criterion_gate.sh ratio-summary "$out" 10)
             summary_code=$?
             if [ "$summary_code" -ne 0 ]; then
               echo "::error::$name: stage2 ratio-summary validation failed (exit $summary_code) -- this is an infrastructure failure (malformed/short/long block data), not a silent skip"

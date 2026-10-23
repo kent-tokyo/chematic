@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/private/tmp/chematic-huckel-fifo-setup.py", line 25, in <module>
-    with (r/'baseline-build.log').open('w') as log:subprocess.run(['maturin','build','--release','--manifest-path','crates/chematic-py/Cargo.toml','--interpreter',python,'--out',str(r/'baseline-wheel')],cwd=s,env=env,stdout=log,stderr=subprocess.STDOUT,check=True)
-                                                   ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
-    raise CalledProcessError(retcode, process.args,
-                             output=stdout, stderr=stderr)
-subprocess.CalledProcessError: Command '['maturin', 'build', '--release', '--manifest-path', 'crates/chematic-py/Cargo.toml', '--interpreter', '/private/tmp/chematic-cycle-speed-20261014/env/bin/python', '--out', '/private/tmp/chematic-huckel-fifo-20261015/baseline-wheel']' returned non-zero exit status 1.

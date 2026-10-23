@@ -15,9 +15,9 @@ use chematic_chem::{StandardizeOptions, standardize};
 use chematic_smiles::{canonical_smiles, parse};
 
 const DESCRIPTOR_CENSUS_CORPUS: &str =
-    include_str!("../../../scripts/descriptor_census_corpus.smi");
+    include_str!("../../../scripts/fixtures/descriptor_census_corpus.smi");
 const CHEMBL_ACCURACY_CORPUS: &str =
-    include_str!("../../../scripts/chembl_accuracy_corpus_4999.smi");
+    include_str!("../../../scripts/fixtures/chembl_accuracy_corpus_4999.smi");
 /// RDKit's own bundled NCI Diversity Set sample (`Data/NCI/first_5K.smi`,
 /// public-domain structures from the US National Cancer Institute; the
 /// original file's tab-separated NCI ID column is stripped, SMILES only).
@@ -27,7 +27,8 @@ const CHEMBL_ACCURACY_CORPUS: &str =
 /// fresh/blind holdout for future work (see
 /// `canonical_idempotency_corpus_nci_metal_holdout.rs` for a genuinely new,
 /// not-yet-used metal-complex holdout).
-const NCI_FIRST_5K_CORPUS: &str = include_str!("../../../scripts/nci_first_5k_smiles_only.smi");
+const NCI_FIRST_5K_CORPUS: &str =
+    include_str!("../../../scripts/fixtures/nci_first_5k_smiles_only.smi");
 
 /// For every non-empty line in `corpus`: parse, standardize, canonicalize
 /// once, re-parse, standardize again, canonicalize twice, check the two

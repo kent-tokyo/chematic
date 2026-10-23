@@ -2,9 +2,9 @@
 """Generate the Tier B (fixed drug-like) corpus manifest for the pipeline v2
 vs RDKit ETKDGv3 benchmark (Wave 1 of the "RDKit alternative" program).
 
-Source: `scripts/descriptor_census_corpus.smi` -- a 5,000-molecule ChEMBL
+Source: `scripts/fixtures/descriptor_census_corpus.smi` -- a 5,000-molecule ChEMBL
 corpus already committed to this repo for reproducibility (downloaded via
-`scripts/download_chembl_smiles.py --count 5000`, documented in
+`scripts/generators/download_chembl_smiles.py --count 5000`, documented in
 `docs/rfcs/descriptor_census_rfc.md`). Deliberately reused rather than
 re-downloaded: it is already committed (no `~/Downloads` dependency), already
 license-cleared, and its own provenance is already on record. This script
@@ -17,7 +17,7 @@ License: ChEMBL database, CC Attribution-ShareAlike 3.0
 redistributed, no other ChEMBL fields.
 
 Selection rule (fully deterministic, no RNG):
-  1. Read `scripts/descriptor_census_corpus.smi` in file order.
+  1. Read `scripts/fixtures/descriptor_census_corpus.smi` in file order.
   2. Parse each line with RDKit; drop parse failures (counted, not silently
      skipped -- see `parse_failure_count` in the output manifest).
   3. Drop multi-fragment entries (a "." in the SMILES) -- salts/disconnected
@@ -43,7 +43,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE_PATH = ROOT / "scripts" / "descriptor_census_corpus.smi"
+SOURCE_PATH = ROOT / "scripts" / "fixtures" / "descriptor_census_corpus.smi"
 OUT_PATH = ROOT / "validation" / "manifests" / "pipeline_v2_vs_rdkit_etkdgv3_tier_b.json"
 
 TARGET_COUNT = 200
@@ -143,11 +143,11 @@ def main():
         "description": "Fixed drug-like corpus for the pipeline v2 vs RDKit "
         "ETKDGv3 benchmark (Wave 1), deterministically subsetted from an "
         "already-committed ChEMBL corpus.",
-        "source_file": "scripts/descriptor_census_corpus.smi",
+        "source_file": "scripts/fixtures/descriptor_census_corpus.smi",
         "source_sha256": source_sha256,
         "source_license": "ChEMBL database, CC BY-SA 3.0 "
         "(https://www.ebi.ac.uk/about/terms-of-use); canonical SMILES only.",
-        "source_acquisition": "scripts/download_chembl_smiles.py --count 5000 "
+        "source_acquisition": "scripts/generators/download_chembl_smiles.py --count 5000 "
         "(already committed to this repo; not re-downloaded for this "
         "benchmark -- see docs/rfcs/descriptor_census_rfc.md)",
         "generator": "scripts/generators/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",

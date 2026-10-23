@@ -18,7 +18,7 @@ const retained = wasm.convert_common_format(source, "cjson", ".CJSON");
 if (retained !== source) throw new Error("source changed");
 ```
 
-Both APIs validate the [local immutable CJSON profile](../format-capabilities.md#immutable-chemicaljson-records)
+Both APIs validate the [local immutable CJSON profile](../reference/format-capabilities.md#immutable-chemicaljson-records)
 before returning the exact UTF-8 source. Coordinates, declared charge datasets,
 names, isotopes, formal charges, opaque extension fields, large integer tokens,
 numeric spelling, whitespace and line endings survive because no molecule is

@@ -3019,8 +3019,24 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
  *
  * This is the WASM counterpart of Python's `convert_format`. It supports
  * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
- * MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+ * MOL2-to-MOL2, CJSON-to-CJSON, and V3000-to-V3000 validate and retain exact source.
+ * GJF/COM supports only
+ * same-format retention of a bounded single Cartesian job, including opaque
+ * job sections (not a Gaussian job validator).
+ * V3000-to-CJSON also
+ * carries source-order x/y/z values; it does not retain opaque metadata or
+ * verify cross-format stereo.
+ * MOL2-to-CJSON checks
+ * graph/xyz/name/complete declared partial charges on reparse and refuses
+ * incomplete or undeclared charge columns. Other MOL2 metadata and stereo
+ * are not retained or verified; use convert_with_report_json for losses.
+ * NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+ * Other conversions use
  * the topology-only bridge and do not carry format-specific metadata.
+ * SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
+ * require exactly one CTAB and omit SD fields; SDF output is one framed record.
+ * CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
+ * 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
  * @param {string} text
  * @param {string} input_format
  * @param {string} output_format
@@ -3052,7 +3068,7 @@ export function convert_common_format(text, input_format, output_format) {
 }
 
 /**
- * Checked MOL2/CJSON conversion using the shared report schema.
+ * Checked MOL2/CJSON/CML conversion using the shared report schema.
  * @param {string} text
  * @param {string} input_format
  * @param {string} output_format
@@ -5044,14 +5060,16 @@ export function mcs_smiles_json(smiles_json) {
  * (camelCase keys, all optional, defaulting to `McsConfig::default()`):
  * `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
  * `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+ * `"rdkit_any_heavy_atom"` |
  * `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
- * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+ * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`, and
+ * `maxSearchNodes`.
  *
- * Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
- * `smiles` is `null` when there is no common substructure; `wasTimedOut` is
- * `true` if `timeoutMs` was reached before the search finished exhaustively
- * (the returned `smiles`, if any, is then the best result found so far, not
- * proven optimal).
+ * Returns a JSON object with `smiles`, `wasTimedOut`, and
+ * `wasResourceLimited`. `smiles` is `null` when there is no common
+ * substructure; the two status fields distinguish deadline expiry from a
+ * configured input/search limit. A returned partial result is not proven
+ * optimal when either status is true.
  * @param {string} smiles_json
  * @param {string} config_json
  * @returns {string}
@@ -5913,9 +5931,9 @@ export function mol_from_pdb_strict(pdb) {
 /**
  * Parse an AutoDock PDBQT block into a topology handle.
  *
- * Coordinates and partial charges are intentionally discarded, matching the
- * Python `from_pdbqt` binding; use the Rust parser when those arrays are
- * needed. Invalid records return a JS error instead of a partial molecule.
+ * Coordinates and partial charges are discarded; use `pdbqt_atom_data_json`
+ * when those arrays are needed. No bonds are inferred. Invalid records
+ * return a JS error instead of a partial molecule.
  * @param {string} pdbqt
  * @returns {MolHandle}
  */
@@ -6514,11 +6532,41 @@ export function opendx_values_f64(text) {
 }
 
 /**
+ * Read ordered Cartesian values and explicit Angstrom/Bohr units; no rescaling.
+ * Refuses ambiguous/unsupported unit or coordinate declarations and %coords.
+ * Atom extras remain opaque; no external geometry resources are opened.
+ * @param {string} text
+ * @returns {string}
+ */
+export function orca_cartesian_geometry_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.orca_cartesian_geometry_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Coordinates + charge + multiplicity from an ORCA input file's embedded
  * `* xyz ... *` block, in the SAME atom order [`mol_from_orca_input`]
  * returns topology for. Returns JSON
  * `{"coords":[[x,y,z],...],"charge":0,"multiplicity":1}`, or a JS error
  * under the same conditions as [`mol_from_orca_input`].
+ * This legacy view returns only Angstrom input. Bohr, conflicting units and
+ * %coords overrides are refused; use [`orca_cartesian_geometry_json`] instead.
  * @param {string} text
  * @returns {string}
  */
@@ -6741,6 +6789,33 @@ export function parse_cxsmiles_json(s) {
 }
 
 /**
+ * Inspect every ordered Cartesian job with UTF-8 byte ranges in the original source.
+ * Coordinate units are unchanged; no inferred bonds or external resource reads.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_gjf_document_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_gjf_document_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Inspect the bounded HIN record, including literal aromatic bonds and charges.
  * @param {string} text
  * @returns {string}
@@ -6862,6 +6937,37 @@ export function pdb_coords_json(pdb) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+    }
+}
+
+/**
+ * Read PDBQT atom data as JSON {atomic_numbers, coords, partial_charges}.
+ * Arrays share source ATOM/HETATM order. Coordinates are in Å and partial
+ * charges in e; parsed finite binary64 values are not rounded/recalculated.
+ * No bonds or formal charges are inferred. Source atom identities, AutoDock
+ * types, remarks and torsion trees are not retained. Throws on invalid atoms
+ * or WASM size limits. Use mol_from_pdbqt separately for an element-only handle.
+ * @param {string} pdbqt
+ * @returns {string}
+ */
+export function pdbqt_atom_data_json(pdbqt) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(pdbqt, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdbqt_atom_data_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -7998,6 +8104,60 @@ export function roundtrip_cjson_record(text) {
 }
 
 /**
+ * Retain all explicit Cartesian Link1 jobs as exact source; no job selection.
+ * Budgets are cumulative. Opaque sections and external resources are not interpreted.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_gjf_document(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_gjf_document(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Retain exact single Cartesian GJF source without regenerating job sections.
+ * Opaque sections are not interpreted; no external files are opened.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_gjf_record(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_gjf_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Validate a single HIN record and retain exact source text and line endings.
  * @param {string} text
  * @returns {string}
@@ -8050,12 +8210,12 @@ export function roundtrip_mol2_record(text) {
 }
 
 /**
- * Parse and serialize a V3000 block while preserving V3000 metadata.
+ * Validate one V3000 MOL block and return its exact source.
  *
  * Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
- * pair, this explicit round-trip API retains `SGROUP` logical lines and
- * `COLLECTION` stereo groups. SGROUP polymer/query expansion is still out of
- * scope, but the typed syntax view is available through
+ * pair, this retains 3D coordinate tokens, IDs, source ordering and opaque
+ * fields including SGROUP and COLLECTION. No normalization or opaque chemistry
+ * verification is promised. The typed SGroup view remains available through
  * [`v3000_sgroups_json`].
  * @param {string} block
  * @returns {string}
@@ -8067,6 +8227,34 @@ export function roundtrip_mol_v3000_block(block) {
         const ptr0 = passStringToWasm0(block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.roundtrip_mol_v3000_block(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Validate every local-profile SDF record and retain exact UTF-8 source.
+ * No partial output on record/limit failure. Opaque metadata/stereo is not
+ * interpreted or edited. Bounds: 1 MB input/record, 10000 records/total atoms.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_sdf_source(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_sdf_source(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -9968,6 +10156,34 @@ export function write_pqr_json(records_json) {
         const ptr0 = passStringToWasm0(records_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.write_pqr_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Write explicit PQR atom records without numeric rounding or bond inference.
+ * Strict JSON array: no duplicate/unknown fields, missing required values or
+ * incompatible elements. Non-atom source metadata is not represented.
+ * @param {string} records_json
+ * @returns {string}
+ */
+export function write_pqr_json_checked(records_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(records_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_pqr_json_checked(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {

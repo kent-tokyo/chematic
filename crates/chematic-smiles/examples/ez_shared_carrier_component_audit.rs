@@ -27,7 +27,7 @@
 //!
 //! ```text
 //! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit
-//! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- scripts/descriptor_census_corpus.smi
+//! cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- scripts/fixtures/descriptor_census_corpus.smi
 //! ```
 
 use std::collections::{HashMap, HashSet};

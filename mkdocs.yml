@@ -60,137 +60,44 @@ markdown_extensions:
 extra_css:
   - stylesheets/homepage.css
 
+# Keep the primary navigation task-oriented. Narrow reference pages remain
+# searchable and are linked from the overview pages instead of appearing here.
 nav:
   - Home: index.md
-  - When to choose chematic: choosing-chematic.md
+  - When to choose chematic: reference/choosing-chematic.md
   - Local Compound Explorer: https://kent-tokyo.github.io/chematic/explorer/
   - Getting Started:
     - Installation: getting_started/installation.md
     - Quick Start: getting_started/quickstart.md
-  - For Researchers: researchers.md
   - Use Cases:
     - Python Notebook: use-cases/python-notebook.md
     - Batch Analysis: use-cases/batch-analysis.md
-    - Browser App (WASM): use-cases/browser-app.md
-    - AI-Assisted Molecular Analysis (MCP): use-cases/ai-drug-discovery.md
+    - Browser App: use-cases/browser-app.md
     - Rust Server: use-cases/rust-server.md
-  - MCP Protocol Reference: mcp-protocol-reference.md
-  - Cookbook (EN): cookbook.md
-  - Cookbook (日本語): cookbook_ja.md
-  - Benchmarks:
-    - Method and evidence map: benchmark.md
-    - Open Babel file I/O: openbabel-file-io.md
+    - MCP / Agents: use-cases/ai-drug-discovery.md
+  - Guides:
+    - Researchers: reference/researchers.md
+    - Cookbook (EN): reference/cookbook.md
+    - Cookbook (日本語): reference/cookbook_ja.md
+    - RDKit Migration: reference/rdkit_cheatsheet.md
+    - RDKit Support Matrix: reference/rdkit-migration.md
   - Formats & Bindings:
-    - CCD Molecular Templates: ccd-components.md
-    - CIF Molecular Bonds: cif-molecular-bonds.md
-    - mmCIF Chain Records: mmcif-chain-records.md
-    - pymatgen JSON: pymatgen-json.md
-    - Linear Nucleic-Acid Diagrams: nucleic-linear-svg.md
-    - CML Molecular Collections: cml-collection.md
-    - CUBE Dataset Selection: cube-dataset-selection.md
-    - Crystal OBJ Atom Meshes: crystal-obj-mesh.md
-    - Rooted SMILES Stereo: rooted-smiles-stereo.md
-    - RDKit SMILES Stability: rdkit-smiles-stability.md
-    - XYZ Element Symbols: xyz-element-symbols.md
-    - ChemDraw Block Formats: chemdraw-block.md
-    - Bounded MOL Titles: mol-title-width.md
-    - Format Capability Matrix: format-capabilities.md
-    - PQR Atom-field Integrity: pqr-numeric-integrity.md
-    - ORCA Cartesian Integrity: orca-cartesian-integrity.md
-    - CDXML Stereo Options: cdxml-stereo-options.md
-    - Named CML Atoms: cml-named-atoms.md
-    - Hydrogen Count Accounting: hydrogen-count-accounting.md
-    - HIN Aromatic Bond Preservation: openbabel-hin-aromatic-bonds.md
-    - ORCA-AICCM EXYZ: openbabel-exyz.md
-    - FHI-aims Geometry: openbabel-fhiaims.md
-    - MOPAC archive input: mopac-archive-input.md
-    - MOPAC Cartesian: openbabel-mopac-cartesian.md
-    - MOPAC Keyword Continuations: mopac-keyword-continuation.md
-    - DMol3 Coordinates: openbabel-dmol3.md
-    - PDB Atom Selection: pdb-atom-selection.md
-    - PDB Coordinate Merging: pdb-coordinate-merge.md
-    - Explicit PDB CONECT Graph: pdb-conect-graph.md
-    - Checked PDBQT Output: pdbqt-checked-output.md
-    - PDBQT Numeric Data: pdbqt-atom-data.md
-    - Language Bindings Cross-Reference: language-bindings.md
-    - InfoTheory Feature Masks: info-ranker-masks.md
-    - Scored Tautomer Selection: scored-tautomer-selection.md
-    - Error Handling & Limits: error-and-limits.md
-    - Checked 3D Distance Matrices: rdkit-checked-3d-distance-matrix.md
-    - NumPy Graph Matrices: compat-graph-matrices.md
-    - Prepared MMFF Dielectric: mmff-dielectric-updates.md
-    - Custom MMFF Partial Charges: mmff-partial-charges.md
-  - Reliability:
-    - Supplied Geometry Checks: supplied-geometry-check.md
-    - Checked Maestro Output: maestro-output.md
-    - Distinct PDB Hydrogen Names: pdb-hydrogen-names.md
-    - Checked Core Removal: checked-core-replacement.md
-    - Typed MCS Comparator Modes: mcs-comparator-modes.md
-    - Crystal Atom STL Meshes: crystal-stl-mesh.md
-    - Descriptor Euclidean Distances: descriptor-euclidean-distances.md
-    - Sparse Tanimoto Matrices: sparse-tanimoto-matrix.md
-    - Reaction CDXML Output: reaction-cdxml-output.md
-    - NumPy Fingerprint Output: numpy-fingerprint-output.md
-    - Typed Point Alignment: point-alignment.md
-    - Typed Metric Matrices: metric-matrix-facade.md
-    - GAMESS Internal Coordinates: gamess-zmat-output.md
-    - Typed Binary Feature Ranking: info-bit-ranker.md
-    - InfoTheory Ranking Export: info-ranker-export.md
-    - Ranked-record Enrichment: scoring-enrichment-facade.md
-    - Binary Bit-pair Co-occurrence: bit-cooccurrence.md
-    - Chi-square Bit Ranking: chi-square-bit-ranking.md
-    - Class-biased Bit Ranking: biased-bit-ranking.md
-    - PDB Model Splitting: pdb-model-splitting.md
-    - PDB Atom Attributes: pdb-atom-records.md
-    - Layered Caller Counters: layered-caller-counts.md
-    - Pattern Fingerprint Inputs: pattern-fingerprint-adapter.md
-    - XYZ Output Precision: xyz-output-precision.md
-    - SDF File Partitions: sdf-file-partitions.md
-    - Explicit-Charge Coulomb Field: coulomb-interaction-field.md
-    - Local-Solvation Coulomb Field: coulomb-dielectric-field.md
-    - Checked XBS Scenes: xbs-output.md
-    - Checked XYZ Per-Atom Data: xyz-atom-data.md
-    - Checked CIF-to-XSF Geometry: cif-xsf-output.md
-    - Checked Bond Fragmentation: checked-bond-fragmentation.md
-    - Complete Molecule Reset: molecule-clear.md
-    - Python Filesystem Paths: python-filesystem-paths.md
-    - GRO to LAMMPS Units: gro-lammps-units.md
-    - Custom Feature Patterns: custom-feature-patterns.md
-    - Tautomer Candidate Selection: tautomer-candidate-selection.md
-    - Checked SASA Radii: checked-sasa-radii.md
-    - Cancellable Tautomer Enumeration: tautomer-callback.md
-    - Parent Transformations: standardization-parents.md
-    - SDF Gzip Input: sdf-gzip-input.md
-    - Python Forward SDF Streams: python-forward-sdf.md
-    - Python Stub Packaging Gate: python-stub-packaging-gate.md
-    - Proof-Backed Tetrahedral Cleanup: tetrahedral-stereo-cleanup.md
-    - MOL2 Kekulé Bond Output: mol2-kekule-bond-output.md
-    - Python Serialized Input Types: python-serialized-input.md
-    - All-reference MOL2 RMSD: mol2-reference-rmsd.md
-    - Position-Preserving InChIKey Batches: positioned-inchi-keys.md
-    - Alkene Path Stereo: alkene-path-stereo.md
-    - MOL2 Section Order: mol2-section-order.md
-    - MOL2 Hydrogen Row Order: mol2-hydrogen-order.md
-    - ChemDoodle JSON: chemdoodle-json.md
-    - Fingerprint Target Density: fingerprint-target-density.md
-    - Bounded Native Distance Matrices: native-distance-matrix-limits.md
-    - Validation vs RDKit: validation.md
-    - Compatibility Scope: compatibility-scope.md
-    - Detailed RDKit Comparison: rdkit-comparison.md
-    - RDKit Graph Queries: rdkit-graph-queries.md
-    - RDKit Atom Environments: rdkit-atom-environment.md
-    - RDKit Path Enumeration: rdkit-path-enumeration.md
-    - RDKit Accuracy Plan: rdkit-accuracy-plan.md
-    - Canonical E/Z Plan: canonical-ez-plan.md
-    - RDKit Issue Lessons: rdkit_issue_lessons.md
-    - Sparse Cleanup Candidates: rdkit-cleanup-candidates.md
-    - RDKit Conjugation Performance: rdkit-conjugation-cache.md
-  - RDKit Migration Guide: rdkit_cheatsheet.md
-  - RDKit Feature Support Matrix: rdkit-migration.md
+    - Format Capability Matrix: reference/format-capabilities.md
+    - Language Bindings: reference/language-bindings.md
+    - Compatibility Scope: reference/compatibility-scope.md
+    - Errors & Limits: reference/error-and-limits.md
+    - MCP Protocol: reference/mcp-protocol-reference.md
+  - Evidence:
+    - Validation Report: reference/validation.md
+    - Benchmark Method: reference/benchmark.md
+    - RDKit Comparison: reference/rdkit-comparison.md
+    - Open Babel File I/O: reference/openbabel-file-io.md
   - API Reference:
-    - chematic: api/chematic.md
+    - Python: api/chematic.md
   - Project:
     - Roadmap: https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md
-    - Open Work: roadmap-open-work.md
-    - Refactoring Guardrails: refactoring-plan.md
-  - Changelog: changelog.md
+    - Open Work: reference/roadmap-open-work.md
+    - Refactoring Guardrails: plans/refactoring-plan.md
+    - Contributor Corpus Policy: reference/contributor-corpus-policy.md
+    - Product Naming: reference/product-naming.md
+    - Changelog: reference/changelog.md

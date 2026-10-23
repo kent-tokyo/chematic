@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import unittest
 
-SPEC = importlib.util.spec_from_file_location('cip_packet', Path(__file__).parents[1] / 'check_python_cip_frontier_packet.py')
+SPEC = importlib.util.spec_from_file_location('cip_packet', Path(__file__).parents[1] / 'checks' / 'check_python_cip_frontier_packet.py')
 audit = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(audit)
 

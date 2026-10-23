@@ -30,7 +30,7 @@ on:
       version:
         description: Published chematic version to install from PyPI
         required: true
-        default: "1.2.0"
+        default: "1.2.1"
         type: string
       biotransformer_corpus:
         description: Also run the BioTransformer rule corpus (about 15 minutes)
@@ -91,20 +91,20 @@ jobs:
           python -c "import chematic; print(chematic.__version__)"
       - name: Fetch the pinned BioTransformer rule tables
         if: ${{ inputs.biotransformer_corpus }}
-        run: python scripts/fetch_biotransformer_rules.py --out-dir bt-rules
+        run: python scripts/generators/fetch_biotransformer_rules.py --out-dir bt-rules
       - name: Run chematic's side of the gates
         shell: bash
         run: |
           rules=()
           if [ "${{ inputs.biotransformer_corpus }}" = "true" ]; then rules=(--rules-dir bt-rules); fi
-          python scripts/published_wheel_chemistry_gates.py --phase chematic \
+          python scripts/release/published_wheel_chemistry_gates.py --phase chematic \
             --wheel "$(ls published-wheel/chematic-*.whl)" \
             --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" \
             --out-dir "chematic-${{ matrix.label }}" "${rules[@]}"
       - name: Run the 265 A6 rows (#739)
         shell: bash
         run: |
-          python scripts/public_package_3d_chematic.py --wheel "$(ls published-wheel/chematic-*.whl)" \
+          python scripts/diagnostics/public_package_3d_chematic.py --wheel "$(ls published-wheel/chematic-*.whl)" \
             --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe \
             --output "chematic-${{ matrix.label }}/a6-rows.jsonl" \
             --metadata-output "chematic-${{ matrix.label }}/a6-rows.meta.json" \
@@ -136,7 +136,7 @@ jobs:
           python-version: "3.12"
       - name: Install the pinned RDKit wheel
         run: |
-          python scripts/install_pinned_rdkit.py
+          python scripts/release/install_pinned_rdkit.py
           python -m pip install --disable-pip-version-check "json5==0.15.0"
           python -c "from rdkit import rdBase; assert rdBase.rdkitVersion == '2026.03.6', rdBase.rdkitVersion"
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
@@ -145,12 +145,12 @@ jobs:
           path: chematic-${{ matrix.label }}
       - name: Fetch the pinned BioTransformer rule tables
         if: ${{ inputs.biotransformer_corpus }}
-        run: python scripts/fetch_biotransformer_rules.py --out-dir bt-rules
+        run: python scripts/generators/fetch_biotransformer_rules.py --out-dir bt-rules
       - name: Compare with RDKit and check the counts
         run: |
           rules=()
           if [ "${{ inputs.biotransformer_corpus }}" = "true" ]; then rules=(--rules-dir bt-rules); fi
-          python scripts/published_wheel_chemistry_gates.py --phase rdkit \
+          python scripts/release/published_wheel_chemistry_gates.py --phase rdkit \
             --chematic-outputs "chematic-${{ matrix.label }}" \
             --expected "validation/published-wheel-chemistry-gates-expected-v${{ inputs.version }}.json" \
             --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" \
@@ -171,7 +171,7 @@ jobs:
           ref=$(python -c "import json, sys; print(json.load(open(sys.argv[1])).get('a6', {}).get('coordinates_sha256', ''))" "$expected")
           reference=()
           if [ -n "$ref" ]; then reference=(--reference-sha256 "$ref"); fi
-          python scripts/a6_platform_gate.py --rows "$rows" --scored "$out/a6-scored.jsonl" \
+          python scripts/validation/a6_platform_gate.py --rows "$rows" --scored "$out/a6-scored.jsonl" \
             --scope "published_pypi_v${{ inputs.version }}_${{ matrix.label }}" "${reference[@]}" \
             --output "$out/a6-gate.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -225,14 +225,14 @@ jobs:
               -d published-wheel "chematic==${{ inputs.version }}"
             python -m pip install --disable-pip-version-check --no-deps published-wheel/chematic-*.whl
           fi
-          python scripts/install_pinned_rdkit.py
+          python scripts/release/install_pinned_rdkit.py
           commit=$(python -c "import json; print(json.load(open('validation/xsmarts_autoconf_expected.json'))['autoconf_commit'])")
           python -m pip install --disable-pip-version-check \
             "xsmarts-autoconf @ git+https://github.com/swamidasslab/xsmarts-autoconf@${commit}"
       - name: Run the pinned autoconf lane
         run: |
           mkdir -p autoconf-${{ matrix.label }}
-          python scripts/xsmarts_autoconf_lane.py --output "autoconf-${{ matrix.label }}/xsmarts-autoconf.json"
+          python scripts/diagnostics/xsmarts_autoconf_lane.py --output "autoconf-${{ matrix.label }}/xsmarts-autoconf.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:

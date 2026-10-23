@@ -6,7 +6,7 @@ pytest.importorskip("rdkit")
 
 from rdkit import Chem
 
-from scripts.reaction_atom_provenance_gate import labelled_smiles, rdkit_sets, rust_sets
+from scripts.validation.reaction_atom_provenance_gate import labelled_smiles, rdkit_sets, rust_sets
 
 
 def test_labelled_product_distinguishes_source_atom_from_created_atom() -> None:

@@ -9,7 +9,7 @@ import unittest
 import warnings
 import zipfile
 from pathlib import Path
-from scripts import check_python_stubs as gate
+from scripts.checks import check_python_stubs as gate
 
 
 class StubGateTests(unittest.TestCase):

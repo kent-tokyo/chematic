@@ -5,21 +5,21 @@ on:
   pull_request:
     paths:
       - 'demo/**'
-      - 'scripts/browser_smoke.mjs'
-      - 'scripts/explorer_browser_smoke.mjs'
-      - 'scripts/explorer_worker_10k_smoke.mjs'
-      - 'scripts/explorer_native_worker_parity.mjs'
-      - 'scripts/wasm_browser_package_smoke.mjs'
+      - 'scripts/diagnostics/browser_smoke.mjs'
+      - 'scripts/diagnostics/explorer_browser_smoke.mjs'
+      - 'scripts/diagnostics/explorer_worker_10k_smoke.mjs'
+      - 'scripts/diagnostics/explorer_native_worker_parity.mjs'
+      - 'scripts/release/wasm_browser_package_smoke.mjs'
       - '.github/workflows/browser-compat.yml'
   push:
     branches: [main, ci/linux-gates-089]
     paths:
       - 'demo/**'
-      - 'scripts/browser_smoke.mjs'
-      - 'scripts/explorer_browser_smoke.mjs'
-      - 'scripts/explorer_worker_10k_smoke.mjs'
-      - 'scripts/explorer_native_worker_parity.mjs'
-      - 'scripts/wasm_browser_package_smoke.mjs'
+      - 'scripts/diagnostics/browser_smoke.mjs'
+      - 'scripts/diagnostics/explorer_browser_smoke.mjs'
+      - 'scripts/diagnostics/explorer_worker_10k_smoke.mjs'
+      - 'scripts/diagnostics/explorer_native_worker_parity.mjs'
+      - 'scripts/release/wasm_browser_package_smoke.mjs'
       - '.github/workflows/browser-compat.yml'
 
 permissions:
@@ -51,14 +51,14 @@ jobs:
       - name: Serve demo
         run: python3 -m http.server 8765 --directory demo >/tmp/chematic-browser-server.log 2>&1 &
       - name: Run browser smoke
-        run: node scripts/browser_smoke.mjs "${{ matrix.browser }}"
+        run: node scripts/diagnostics/browser_smoke.mjs "${{ matrix.browser }}"
       - name: Run CSP package import smoke
-        run: node scripts/wasm_browser_package_smoke.mjs "${{ matrix.browser }}"
+        run: node scripts/release/wasm_browser_package_smoke.mjs "${{ matrix.browser }}"
       - name: Run Explorer browser smoke
-        run: node scripts/explorer_browser_smoke.mjs "${{ matrix.browser }}"
+        run: node scripts/diagnostics/explorer_browser_smoke.mjs "${{ matrix.browser }}"
       - name: Run Explorer Worker 10,000-record smoke
         if: matrix.browser == 'chromium'
-        run: node scripts/explorer_worker_10k_smoke.mjs
+        run: node scripts/diagnostics/explorer_worker_10k_smoke.mjs
 
   explorer-native-worker-parity:
     name: Explorer native-worker parity (${{ matrix.browser }})
@@ -85,4 +85,4 @@ jobs:
       - name: Serve demo
         run: python3 -m http.server 8765 --directory demo >/tmp/chematic-browser-server.log 2>&1 &
       - name: Compare native scalar, native batch, and offline Explorer Worker
-        run: CHEMATIC_CLI=target/release/chematic node scripts/explorer_native_worker_parity.mjs "${{ matrix.browser }}"
+        run: CHEMATIC_CLI=target/release/chematic node scripts/diagnostics/explorer_native_worker_parity.mjs "${{ matrix.browser }}"

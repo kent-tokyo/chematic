@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-SCRIPT = ROOT / "scripts/check_a0_core_eight_sealed.py"
+SCRIPT = ROOT / "scripts/checks/check_a0_core_eight_sealed.py"
 SPEC = importlib.util.spec_from_file_location("check_a0_core_eight_sealed", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

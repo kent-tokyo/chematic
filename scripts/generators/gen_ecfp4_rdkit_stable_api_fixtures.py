@@ -12,7 +12,7 @@ are simultaneously checking "does chematic match RDKit" (not just "do the three
 bindings agree with each other, possibly on a shared wrong answer").
 
 Fixture SMILES are drawn from the diagnosis workstream's
-`scripts/ecfp4_bitexact_matrix_fixtures.csv` (ids 1-34; same molecules, not the same
+`scripts/fixtures/ecfp4_bitexact_matrix_fixtures.csv` (ids 1-34; same molecules, not the same
 file -- that CSV's tags reflect its own diagnosis-time classification). All 34 now
 exercise the success path; error-path coverage is retained by separate explicit
 failure fixtures in the API tests.
@@ -43,7 +43,7 @@ FP_SIZE_SWEEP = [128, 256, 512, 1024, 2048]
 _PARSE_PARAMS = Chem.SmilesParserParams()
 _PARSE_PARAMS.removeHs = False  # keep isotope-labeled/explicit atoms as real graph atoms
 
-# id, smiles -- same 33 molecules as scripts/ecfp4_bitexact_matrix_fixtures.csv (ids
+# id, smiles -- same 33 molecules as scripts/fixtures/ecfp4_bitexact_matrix_fixtures.csv (ids
 # 1-33), all of which succeed on this branch (verified via
 # `cargo run -p chematic-fp --release --features diagnostics --example
 # rdkit_ecfp4_bitexact_matrix_dump`, 33/33 "success" post-K1).

@@ -11,7 +11,7 @@ import platform
 import sys
 import xml.etree.ElementTree as ET
 
-from scripts.check_interchange_preservation import bounded_run, identity, require
+from scripts.checks.check_interchange_preservation import bounded_run, identity, require
 
 ROOT = Path(__file__).resolve().parents[2]
 NS = '{http://www.xml-cml.org/schema}'

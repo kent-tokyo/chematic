@@ -12,7 +12,7 @@ fail to recognize it). Dumps each row's extracted
 
 Also computes each successfully-parsed row's self-consistency against the
 manifest's own known ground-truth SMILES -- see
-`scripts/smiles_table_io_parity.py`'s module docs for why this project never
+`scripts/validation/smiles_table_io_parity.py`'s module docs for why this project never
 compares chematic-canonical vs. RDKit-canonical SMILES directly.
 
 Usage:

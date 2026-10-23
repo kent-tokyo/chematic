@@ -6,7 +6,7 @@ Baseline is main `cac480fb23cd8adeec6e5e9bed1f18677f87b392`. On unfiltered offse
 
 - [All raw blocks, output gates and comparisons](2026-10-14-python-cycle-path-reuse-slice0-paired20.json)
 - [Frozen source manifest](2026-10-14-python-cycle-path-reuse-source.json)
-- [Frozen candidate patch, including tests](2026-10-14-python-cycle-path-reuse-candidate.patch)
+- [Frozen candidate patch, including tests](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-cycle-path-reuse-candidate.patch)
 - [14,072-input byte-exact descriptor/Morgan parity hashes](2026-10-14-python-cycle-path-reuse-parity.json)
 
 First use excludes parsing; the raw matrix separately records actual parse-inclusive and repeated-use timing. First-use RDKit ring info is eagerly prepared by its parser. The strict criterion is CI lower endpoint above 1 plus all 20 faster blocks. Unequal comparator outputs remain unranked. The final candidate additionally avoids roots that cannot close a cycle and allocates path rows only for reached 2-core vertices.

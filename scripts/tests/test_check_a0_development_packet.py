@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-VALIDATOR = ROOT / "scripts/check_a0_development_packet.py"
+VALIDATOR = ROOT / "scripts/checks/check_a0_development_packet.py"
 PACKET = ROOT / "validation/a0-development-packet.json"
 
 

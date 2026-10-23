@@ -1,9 +1,0 @@
-{
-  "source_run": "/private/tmp/chematic-openbabel-ez-gate-20261015",
-  "source_manifest_sha256": "b12707aaa71aaf00a94263edc4711acbb0929afeed97930f09c9c73ad3a5f11f",
-  "baseline_binary_from": "accepted source13 candidate-v3000",
-  "baseline_binary_sha256": "95f24cf06fd5385710342025965a60e0a06612448237da64e58be75fb8f8cac5",
-  "all_current_baseline_files_verified": 10060,
-  "no_timing_reuse": true,
-  "built_before_current_edit": true
-}

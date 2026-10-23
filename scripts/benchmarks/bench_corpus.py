@@ -1,0 +1,550 @@
+#!/usr/bin/env python3
+"""Time the same operations in chematic, COSMolKit and RDKit (Python bindings).
+
+Each engine runs in its own interpreter. A block runs every engine once, in
+an order that rotates between blocks; per operation the median over blocks is
+reported. Molecules are re-parsed before each operation so that a result cached
+on a molecule object cannot be reused. Both the operation-only time and the
+full pipeline time (parse + operation, or 3D preparation + operation) are
+reported. Calls return each library's native result object (no normalisation),
+and SMARTS queries are compiled once where the library offers a compiled query.
+
+Timings depend on the host; the report records it. Speed is only meaningful
+next to the correctness summary from ``compare_corpus.py``: an operation whose
+outputs differ is a different amount of work.
+
+    python bench_corpus.py --corpus CORPUS.smi --output bench.json --blocks 5
+"""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import platform
+import random
+import statistics
+import subprocess
+import sys
+import tempfile
+import time
+import warnings
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+ROOT = Path(__file__).resolve().parents[2]
+SMARTS_QUERIES = json.loads(
+    (ROOT / "validation/rdkit_rebaseline_smarts_queries.json").read_text(encoding="utf-8")
+)["queries"]
+OPS = ["parse", "canonical_smiles", "formula", "mol_wt", "tpsa", "logp", "qed",
+       "morgan2_2048", "maccs", "cip", "smarts_31", "molblock", "inchi",
+       "smarts_write", "murcko", "stereoisomers"]
+# Operations the COSMolKit 0.5 table offers (``--ops all05``): every op both
+# chematic 1.0.40 and COSMolKit 0.5 support with RDKit-equivalent results.
+OPS_05 = ["parse", "canonical_smiles", "smiles_kekule", "formula", "mol_wt", "exact_mw", "tpsa",
+          "logp", "qed", "hba", "hbd", "rotatable_bonds", "morgan2_2048", "morgan3_2048",
+          "morgan2_chiral", "maccs", "fp_atom_pair", "fp_torsion", "fp_pattern", "fp_layered",
+          "fp_rdkit", "cip", "smarts_31", "molblock", "smarts_write", "cx_smarts", "stereoisomers",
+          "stereoisomer_count", "chi1v", "kappa2", "labute_asa", "slogp_vsa", "mqn", "num_rings",
+          "add_hs_smiles", "distance_matrix", "tautomer_canonical", "tautomer_set",
+          "rxn_amide_amine", "mmff_energy_gradient", "uff_energy_gradient"]
+# Ops timed on explicit-H molecules carrying RDKit-embedded coordinates
+# (prepared untimed): fn(prepared) where prepared = prep3d(mol, coords).
+THREE_D = {"mmff_energy_gradient", "uff_energy_gradient"}
+RXN_AMIDE = "[N;!H0;!$(NC=O);!$(N=*);!$(N#*);!$(Nc);!$([N+]):1].[C:2](=[O:3])[OH]>>[N:1][C:2]=[O:3]"
+
+
+def paired_median_ratio_ci(
+    numerator: list[float], denominator: list[float], *, seed: int
+) -> dict | None:
+    """Return the paired median speedup and a deterministic bootstrap CI."""
+    ratios = [n / d for n, d in zip(numerator, denominator) if n > 0 and d > 0]
+    if not ratios:
+        return None
+    rng = random.Random(seed)
+    estimates = [
+        statistics.median(ratios[rng.randrange(len(ratios))] for _ in ratios)
+        for _ in range(10_000)
+    ]
+    estimates.sort()
+    return {
+        "median": round(statistics.median(ratios), 3),
+        "ci95": [round(estimates[249], 3), round(estimates[9749], 3)],
+        "winning_blocks": sum(r > 1.0 for r in ratios),
+        "blocks": len(ratios),
+    }
+
+
+def pipeline_seconds(sample: dict, op: str) -> float | None:
+    """Return the work needed from text/preparation through ``op``."""
+    value = sample.get(op)
+    if value is None:
+        return None
+    if op == "parse":
+        return value
+    if op in THREE_D:
+        preparation = sample.get(op + "__prepare")
+        return None if preparation is None else preparation + value
+    return sample["parse"] + value
+
+
+def python_interpreters(overrides: list[str], default: str) -> dict[str, str]:
+    """Resolve per-engine interpreters without inventing benchmark engines."""
+    result = {"rdkit": default, "chematic": default, "cosmolkit": default}
+    for override in overrides:
+        engine, interpreter = override.split("=", 1)
+        if engine == "all":
+            result.update({name: interpreter for name in result})
+        elif engine in result:
+            result[engine] = interpreter
+        else:
+            raise ValueError(f"unknown benchmark engine: {engine}")
+    return result
+
+
+def operation_succeeded(samples: dict[str, list[dict]], engine: str, op: str) -> bool:
+    """Return true only when every block completed every row for ``op``."""
+    return all(sample.get(f"{op}__errors", 0) == 0 for sample in samples[engine])
+
+
+def rdkit_embedded_h(smiles: str):
+    """Return RDKit's seed-42 explicit-H conformer and its coordinates."""
+    from rdkit import Chem
+    from rdkit.Chem import AllChem
+
+    molecule = Chem.MolFromSmiles(smiles)
+    if molecule is None:
+        return None
+    molecule_h = Chem.AddHs(molecule)
+    if AllChem.EmbedMolecule(molecule_h, randomSeed=42) != 0:
+        return None
+    return molecule_h, molecule_h.GetConformer().GetPositions().tolist()
+
+
+def table(engine: str):
+    if engine == "rdkit":
+        from rdkit import Chem, RDLogger
+        from rdkit.Chem import QED, Crippen, Descriptors, MACCSkeys, rdCIPLabeler, rdDepictor, rdFingerprintGenerator
+        from rdkit.Chem import rdMolDescriptors as D
+        from rdkit.Chem.EnumerateStereoisomers import EnumerateStereoisomers
+        from rdkit.Chem.Scaffolds import MurckoScaffold
+        RDLogger.DisableLog("rdApp.*")
+        gen = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+        qs = [Chem.MolFromSmarts(q) for q in SMARTS_QUERIES]
+
+        def molblock_2d(m):
+            # 2D layout + MOL block, as chematic's rdkit_mol_block_2d and
+            # COSMolKit's to_2d_sdf_string do (MolToMolBlock alone writes zeros).
+            rdDepictor.Compute2DCoords(m)
+            return Chem.MolToMolBlock(m)
+
+        from rdkit.Chem import AllChem, GraphDescriptors
+        from rdkit.Chem.MolStandardize import rdMolStandardize
+        from rdkit.Chem.EnumerateStereoisomers import GetStereoisomerCount
+        gen3 = rdFingerprintGenerator.GetMorganGenerator(radius=3, fpSize=2048)
+        genc = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048, includeChirality=True)
+        taut = rdMolStandardize.TautomerEnumerator()
+        rxn = AllChem.ReactionFromSmarts(RXN_AMIDE)
+        acid = Chem.MolFromSmiles("CC(=O)O")
+
+        def run_rxn(m):
+            out = []
+            for ps in rxn.RunReactants((m, acid)):
+                for p in ps:
+                    Chem.SanitizeMol(p)
+                out.append([Chem.MolToSmiles(p) for p in ps])
+            return out
+
+        def prep3d(m, xyz):
+            mh = Chem.AddHs(m)
+            conf = Chem.Conformer(mh.GetNumAtoms())
+            for i, p in enumerate(xyz):
+                conf.SetAtomPosition(i, p)
+            mh.AddConformer(conf, assignId=True)
+            return mh
+
+        def mmff(mh):
+            ff = AllChem.MMFFGetMoleculeForceField(mh, AllChem.MMFFGetMoleculeProperties(mh))
+            return ff.CalcEnergy(), ff.CalcGrad()
+
+        def uff(mh):
+            ff = AllChem.UFFGetMoleculeForceField(mh)
+            return ff.CalcEnergy(), ff.CalcGrad()
+
+        extra = {
+            "smiles_kekule": lambda m: Chem.MolToSmiles(m, kekuleSmiles=True),
+            "exact_mw": Descriptors.ExactMolWt, "hba": D.CalcNumHBA, "hbd": D.CalcNumHBD,
+            "rotatable_bonds": Descriptors.NumRotatableBonds, "morgan3_2048": gen3.GetFingerprint,
+            "morgan2_chiral": genc.GetFingerprint,
+            "fp_atom_pair": lambda m: D.GetHashedAtomPairFingerprintAsBitVect(m, nBits=2048),
+            "fp_torsion": lambda m: D.GetHashedTopologicalTorsionFingerprintAsBitVect(m, nBits=2048),
+            "fp_pattern": lambda m: Chem.PatternFingerprint(m, fpSize=2048),
+            "fp_layered": lambda m: Chem.LayeredFingerprint(m, fpSize=2048),
+            "fp_rdkit": lambda m: Chem.RDKFingerprint(m, fpSize=2048),
+            "cx_smarts": Chem.MolToCXSmarts, "stereoisomer_count": GetStereoisomerCount,
+            "chi1v": D.CalcChi1v, "kappa2": D.CalcKappa2, "labute_asa": D.CalcLabuteASA,
+            "slogp_vsa": D.SlogP_VSA_, "mqn": D.MQNs_, "num_rings": D.CalcNumRings,
+            "add_hs_smiles": lambda m: Chem.MolToSmiles(Chem.AddHs(m)),
+            "distance_matrix": Chem.GetDistanceMatrix,
+            "tautomer_canonical": lambda m: Chem.MolToSmiles(taut.Canonicalize(m)),
+            "tautomer_set": lambda m: sorted(Chem.MolToSmiles(t) for t in taut.Enumerate(m)),
+            "rxn_amide_amine": run_rxn, "mmff_energy_gradient": mmff, "uff_energy_gradient": uff,
+            "__prep3d": prep3d,
+        }
+        return Chem.MolFromSmiles, extra | {
+            "canonical_smiles": Chem.MolToSmiles, "formula": D.CalcMolFormula,
+            "mol_wt": Descriptors.MolWt, "tpsa": D.CalcTPSA, "logp": Crippen.MolLogP,
+            "qed": QED.qed, "morgan2_2048": gen.GetFingerprint, "maccs": MACCSkeys.GenMACCSKeys,
+            "cip": rdCIPLabeler.AssignCIPLabels,
+            "smarts_31": lambda m: [m.GetSubstructMatches(q, maxMatches=100000) for q in qs],
+            "molblock": molblock_2d, "inchi": Chem.MolToInchi,
+            "smarts_write": Chem.MolToSmarts, "murcko": MurckoScaffold.GetScaffoldForMol,
+            "stereoisomers": lambda m: sorted(Chem.MolToSmiles(x) for x in EnumerateStereoisomers(m)),
+        }
+    if engine == "chematic":
+        import chematic as c
+        acid = c.from_smiles("CC(=O)O")
+        extra = {
+            "smiles_kekule": lambda m: m.rdkit_smiles_with(kekule=True),
+            "exact_mw": lambda m: m.exact_mass, "hba": lambda m: m.rdkit_hba, "hbd": lambda m: m.hbd,
+            "rotatable_bonds": lambda m: m.rotatable_bonds,
+            "morgan3_2048": lambda m: m.rdkit_ecfp_config(3, 2048),
+            "morgan2_chiral": lambda m: m.rdkit_ecfp_config(2, 2048, include_chirality=True),
+            "fp_atom_pair": lambda m: m.rdkit_atom_pair_fp(),
+            "fp_torsion": lambda m: m.rdkit_torsion_fp(),
+            "fp_pattern": lambda m: m.rdkit_pattern_fp(),
+            "fp_layered": lambda m: m.rdkit_layered_fp(),
+            "fp_rdkit": lambda m: m.rdkit_rdk_fp(),
+            "cx_smarts": lambda m: m.rdkit_cx_smarts(),
+            "stereoisomer_count": lambda m: m.rdkit_stereoisomer_count(),
+            "chi1v": lambda m: m.chi1v, "kappa2": lambda m: m.kappa2, "labute_asa": lambda m: m.labute_asa,
+            "slogp_vsa": lambda m: m.slogp_vsa(), "mqn": lambda m: m.mqn(), "num_rings": lambda m: m.num_rings,
+            "add_hs_smiles": lambda m: m.add_hydrogens().rdkit_smiles,
+            "distance_matrix": lambda m: m.topological_distance_matrix(),
+            "tautomer_canonical": lambda m: m.canonical_tautomer().smiles,
+            "tautomer_set": lambda m: sorted(t.smiles for t in m.enumerate_tautomers()),
+            "rxn_amide_amine": lambda m: c.run_smirks_checked(RXN_AMIDE, [m, acid], rdkit_compat=True),
+            "mmff_energy_gradient": lambda p: p[0]._rdkit_mmff_terms(p[1]),
+            "uff_energy_gradient": lambda p: (p[0].rdkit_uff_energy(p[1]), p[0].rdkit_uff_gradient(p[1])),
+            "__prep3d": lambda m, xyz: (m.add_hydrogens(), xyz),
+        }
+        return c.from_smiles, extra | {
+            "canonical_smiles": lambda m: m.rdkit_smiles, "formula": lambda m: m.formula,
+            "mol_wt": lambda m: m.rdkit_mw, "tpsa": lambda m: m.rdkit_tpsa,
+            "logp": lambda m: m.logp, "qed": lambda m: m.qed,
+            "morgan2_2048": lambda m: m.rdkit_ecfp_config(2, 2048), "maccs": lambda m: m.maccs(),
+            "cip": lambda m: m.cip_stereo(mode="accurate"),
+            "smarts_31": lambda m: [m.find_matches_rdkit_parity(q) for q in SMARTS_QUERIES],
+            "molblock": lambda m: m.rdkit_mol_block_2d(), "inchi": lambda m: m.standard_inchi,
+            "smarts_write": lambda m: m.rdkit_smarts(), "murcko": lambda m: m.rdkit_murcko_scaffold(),
+            "stereoisomers": lambda m: m.rdkit_stereoisomer_smiles(),
+        }
+    import cosmolkit as ck
+    if not ck.__version__.startswith("0.3"):
+        return _cosmolkit_05_table(ck)
+    qs = [ck.parse_smarts(q) for q in SMARTS_QUERIES]
+    return ck.Molecule.from_smiles, {
+        "canonical_smiles": lambda m: m.to_smiles(), "formula": ck.calc_mol_formula,
+        "mol_wt": ck.calc_mol_wt, "tpsa": ck.calc_tpsa,
+        "logp": lambda m: ck.calc_crippen_descriptors(m)[0], "qed": ck.calc_qed,
+        "morgan2_2048": lambda m: m.fingerprint_morgan(radius=2, n_bits=2048),
+        "maccs": lambda m: m.maccs_fingerprint(), "cip": lambda m: m.with_cip_labels(),
+        "smarts_31": lambda m: [ck.get_substruct_matches(m, q, max_matches=100000) for q in qs],
+        "molblock": lambda m: m.to_2d_sdf_string(), "inchi": lambda m: m.to_inchi(),
+        "smarts_write": lambda m: m.to_smarts(), "murcko": lambda m: m.murcko_scaffold(),
+        "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.stereoisomers()),
+    }
+
+
+def _cosmolkit_fingerprint_method(molecule, current, previous):
+    method = getattr(molecule, current, None)
+    return method if method is not None else getattr(molecule, previous)
+
+
+def _cosmolkit_05_table(ck):
+    """COSMolKit 0.5's reworked API (generator fingerprints, *_with_params)."""
+    qs = [ck.parse_smarts(q) for q in SMARTS_QUERIES]
+    gens = {key: ck.MorganFingerprintGenerator(params=ck.MorganParams(fp_size=2048, **kw))
+            for key, kw in (("m2", {"radius": 2}), ("m3", {"radius": 3}),
+                            ("m2c", {"radius": 2, "include_chirality": True}))}
+    # 0.5.0-rc.22 renamed the constructor keyword from ``do_kekule`` to
+    # ``kekule``.  The scorecard pins rc22, so keep the adapter aligned with
+    # the distributed package instead of silently benchmarking an older RC.
+    kek = ck.SmilesWriteParams(kekule=True)
+    rxn = ck.parse_smirks(RXN_AMIDE)
+    acid = ck.Molecule.from_smiles("CC(=O)O")
+    run_params = ck.ReactionRunParams()
+
+    # The final 0.5 wheel renamed these rc22 methods. Resolve the method
+    # once, outside timing; never time AttributeError as a fingerprint call.
+    def fingerprint_method(current, previous):
+        return _cosmolkit_fingerprint_method(ck.Molecule, current, previous)
+
+    atom_pair = fingerprint_method("fingerprint_atom_pair", "atom_pair_fingerprint")
+    torsion = fingerprint_method("fingerprint_topological_torsion_legacy", "legacy_topological_torsion_fingerprint")
+    pattern = fingerprint_method("fingerprint_pattern", "pattern_fingerprint")
+    layered = fingerprint_method("fingerprint_layered", "layered_fingerprint")
+    topological = fingerprint_method("fingerprint_topological", "topological_fingerprint")
+
+    def mmff(m):
+        g = m.mmff_energy_gradient()
+        return g.energy, g.gradient
+
+    def uff(m):
+        g = m.uff_energy_gradient()
+        return g.energy, g.gradient
+
+    return ck.Molecule.from_smiles, {
+        "canonical_smiles": lambda m: m.to_smiles(),
+        "smiles_kekule": lambda m: m.to_smiles_with_params(kek),
+        "formula": lambda m: m.molecular_formula(), "mol_wt": lambda m: m.molecular_weight(),
+        "exact_mw": lambda m: m.exact_molecular_weight(), "tpsa": lambda m: m.tpsa(),
+        "logp": lambda m: m.crippen_descriptors().logp, "qed": lambda m: m.qed(),
+        "hba": lambda m: m.num_hba(), "hbd": lambda m: m.num_hbd(),
+        "rotatable_bonds": lambda m: m.num_rotatable_bonds(),
+        "morgan2_2048": lambda m: m.fingerprint_morgan_with_generator(gens["m2"]),
+        "morgan3_2048": lambda m: m.fingerprint_morgan_with_generator(gens["m3"]),
+        "morgan2_chiral": lambda m: m.fingerprint_morgan_with_generator(gens["m2c"]),
+        "maccs": lambda m: m.fingerprint_maccs(),
+        "fp_atom_pair": atom_pair, "fp_torsion": torsion,
+        "fp_pattern": pattern, "fp_layered": layered,
+        "fp_rdkit": topological,
+        "cip": lambda m: m.with_cip_labels(),
+        "smarts_31": lambda m: [m.substruct_matches(q) for q in qs],
+        "molblock": lambda m: m.to_sdf_2d(), "smarts_write": lambda m: m.to_smarts(),
+        "cx_smarts": lambda m: m.to_cx_smarts(),
+        "stereoisomers": lambda m: sorted(x.to_smiles() for x in m.enumerate_stereoisomers()),
+        "stereoisomer_count": lambda m: m.stereoisomer_count(),
+        "chi1v": lambda m: m.chi_1_v(), "kappa2": lambda m: m.kappa_2(),
+        "labute_asa": lambda m: m.labute_asa(), "slogp_vsa": lambda m: m.slogp_vsa(),
+        "mqn": lambda m: m.mqns(), "num_rings": lambda m: m.num_rings(),
+        "add_hs_smiles": lambda m: m.with_hydrogens().to_smiles(),
+        "distance_matrix": lambda m: m.distance_matrix(),
+        "tautomer_canonical": lambda m: m.canonical_tautomer().to_smiles(),
+        "tautomer_set": lambda m: m.enumerate_tautomers().canonical_smiles(),
+        "rxn_amide_amine": lambda m: rxn.run([m, acid], run_params),
+        "mmff_energy_gradient": mmff, "uff_energy_gradient": uff,
+        "__prep3d": lambda m, xyz: m.with_hydrogens().with_only_3d_conformer(xyz),
+    }
+
+
+def measure(
+    engine: str,
+    corpus: Path,
+    ops: list[str],
+    limit: int | None = None,
+    coords_path: Path | None = None,
+) -> dict:
+    warnings.simplefilter("ignore")
+    parse, fns = table(engine)
+    rows = [l.split()[0] for l in corpus.read_text().splitlines() if l.strip()]
+    if limit is not None:
+        rows = rows[:limit]
+
+    def parsed():
+        out = []
+        for s in rows:
+            try:
+                m = parse(s)
+            except Exception:  # noqa: BLE001
+                m = None
+            if m is not None:
+                out.append(m)
+        return out
+
+    coords = None
+    if THREE_D & set(ops):
+        if coords_path is not None:
+            coords = json.loads(coords_path.read_text())
+        else:
+            # Child-only fallback. Normal parent-driven runs prepare this
+            # once and share it across engines and blocks.
+            coords = [(e[1] if (e := rdkit_embedded_h(s)) is not None else None) for s in rows]
+
+    def prepared():
+        out = []
+        for s, xyz in zip(rows, coords):
+            if xyz is None:
+                continue
+            try:
+                m = parse(s)
+                out.append(fns["__prep3d"](m, xyz))
+            except Exception:  # noqa: BLE001
+                pass
+        return out
+
+    res = {}
+    t = time.perf_counter()
+    mols = parsed()
+    res["parse"] = time.perf_counter() - t
+    for op in ops:
+        if op == "parse":
+            continue
+        fn = fns.get(op)
+        if fn is None:
+            res[op] = None
+            continue
+        if op in THREE_D:
+            t = time.perf_counter()
+            mols = prepared()
+            res[op + "__prepare"] = time.perf_counter() - t
+        else:
+            mols = parsed()
+        errors = 0
+        t = time.perf_counter()
+        for m in mols:
+            try:
+                fn(m)
+            except Exception:  # noqa: BLE001 - counted, still timed
+                errors += 1
+        res[op] = time.perf_counter() - t
+        if errors:
+            res[op + "__errors"] = errors
+    res["parsed"] = len(mols)
+    return res
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--corpus", type=Path, required=True)
+    ap.add_argument("--output", type=Path)
+    ap.add_argument("--blocks", type=int, default=5)
+    ap.add_argument("--limit", type=int,
+                    help="use only the first N non-empty corpus rows")
+    ap.add_argument("--ops", default=",".join(OPS))
+    ap.add_argument("--python", action="append", metavar="ENGINE=PYTHON", default=[],
+                    help="interpreter per engine (default: this one)")
+    ap.add_argument("--_child")
+    ap.add_argument("--_coords", type=Path)
+    args = ap.parse_args()
+    ops = OPS_05 if args.ops == "all05" else args.ops.split(",")
+    if args._child:
+        print(json.dumps(measure(args._child, args.corpus, ops, args.limit, args._coords)))
+        return 0
+    pythons = python_interpreters(args.python, sys.executable)
+    engines = list(pythons)
+    samples: dict[str, list[dict]] = {e: [] for e in engines}
+    load_start = list(os.getloadavg())
+    versions = {}
+    coord_tmp = None
+    coords_path = None
+    coords_sha256 = None
+    if THREE_D & set(ops):
+        rows = [l.split()[0] for l in args.corpus.read_text().splitlines() if l.strip()]
+        if args.limit is not None:
+            rows = rows[:args.limit]
+        coords = [(e[1] if (e := rdkit_embedded_h(s)) is not None else None) for s in rows]
+        coord_tmp = tempfile.TemporaryDirectory(prefix="chematic-bench-coords-")
+        coords_path = Path(coord_tmp.name) / "rdkit-seed42.json"
+        coords_text = json.dumps(coords, separators=(",", ":"))
+        coords_path.write_text(coords_text)
+        coords_sha256 = hashlib.sha256(coords_text.encode()).hexdigest()
+    for block in range(args.blocks):
+        order = engines[block % len(engines):] + engines[: block % len(engines)]
+        for e in order:
+            command = [pythons[e], __file__, "--corpus", str(args.corpus),
+                       "--ops", ",".join(ops), "--_child", e]
+            if args.limit is not None:
+                command.extend(["--limit", str(args.limit)])
+            if coords_path is not None:
+                command.extend(["--_coords", str(coords_path)])
+            out = subprocess.run(command, capture_output=True, text=True, check=True)
+            samples[e].append(json.loads(out.stdout))
+        print(f"block {block + 1}/{args.blocks} done", file=sys.stderr)
+    for e in engines:
+        code = {"rdkit": "from rdkit import rdBase;print(rdBase.rdkitVersion)",
+                "chematic": "import chematic;print(chematic.__version__)",
+                "cosmolkit": "import cosmolkit;print(cosmolkit.__version__)"}[e]
+        versions[e] = subprocess.run([pythons[e], "-c", code], capture_output=True, text=True).stdout.strip()
+    report = {"schema": "cosmolkit-corpus-bench/v2", "corpus": args.corpus.name,
+              "blocks": args.blocks, "limit": args.limit,
+              "rdkit_seed42_coords_sha256": coords_sha256,
+              "host": {"platform": platform.platform(),
+                                               "cpus": os.cpu_count(), "python": platform.python_version()},
+              "versions": versions, "samples_seconds": samples, "median_seconds": {},
+              "median_pipeline_seconds": {}, "parsed": {}, "errors": {},
+              "load_average_start": load_start, "load_average_end": list(os.getloadavg())}
+    for e in engines:
+        report["parsed"][e] = samples[e][0]["parsed"]
+        report["median_seconds"][e] = {
+            op: (None if samples[e][0].get(op) is None
+                 else statistics.median(s[op] for s in samples[e])) for op in ops}
+        report["median_pipeline_seconds"][e] = {
+            op: (None if pipeline_seconds(samples[e][0], op) is None else
+                 statistics.median(pipeline_seconds(s, op) for s in samples[e]))
+            for op in ops
+        }
+        report["errors"][e] = {k: v for k, v in samples[e][0].items() if k.endswith("__errors")}
+    ck, ch, rd = (report["median_seconds"][e] for e in ("cosmolkit", "chematic", "rdkit"))
+    valid = {
+        engine: {op: operation_succeeded(samples, engine, op) for op in ops}
+        for engine in engines
+    }
+    report["valid_operations"] = valid
+    report["chematic_speedup_vs_cosmolkit"] = {
+        op: (round(ck[op] / ch[op], 2)
+             if valid["cosmolkit"][op] and valid["chematic"][op]
+             and ck.get(op) and ch.get(op) else None) for op in ops}
+    report["chematic_speedup_vs_rdkit"] = {
+        op: (round(rd[op] / ch[op], 2)
+             if valid["rdkit"][op] and valid["chematic"][op]
+             and rd.get(op) and ch.get(op) else None) for op in ops}
+    report["cosmolkit_speedup_vs_rdkit"] = {
+        op: (round(rd[op] / ck[op], 2)
+             if valid["rdkit"][op] and valid["cosmolkit"][op]
+             and rd.get(op) and ck.get(op) else None) for op in ops}
+    ck_pipeline, ch_pipeline, rd_pipeline = (
+        report["median_pipeline_seconds"][e]
+        for e in ("cosmolkit", "chematic", "rdkit")
+    )
+    report["chematic_pipeline_speedup_vs_cosmolkit"] = {
+        op: (round(ck_pipeline[op] / ch_pipeline[op], 2)
+             if valid["cosmolkit"][op] and valid["chematic"][op]
+             and ck_pipeline.get(op) and ch_pipeline.get(op) else None)
+        for op in ops
+    }
+    report["chematic_pipeline_speedup_vs_rdkit"] = {
+        op: (round(rd_pipeline[op] / ch_pipeline[op], 2)
+             if valid["rdkit"][op] and valid["chematic"][op]
+             and rd_pipeline.get(op) and ch_pipeline.get(op) else None)
+        for op in ops
+    }
+    report["paired_speedup_ci95_vs_cosmolkit"] = {}
+    report["paired_pipeline_speedup_ci95_vs_cosmolkit"] = {}
+    report["paired_speedup_ci95_vs_rdkit"] = {}
+    report["paired_pipeline_speedup_ci95_vs_rdkit"] = {}
+    for index, op in enumerate(ops):
+        for competitor, seed in (("cosmolkit", 0xC05_000), ("rdkit", 0xD17_000)):
+            if (valid["chematic"][op] and valid[competitor][op]
+                    and all(s.get(op) for e in ("chematic", competitor) for s in samples[e])):
+                report[f"paired_speedup_ci95_vs_{competitor}"][op] = paired_median_ratio_ci(
+                    [s[op] for s in samples[competitor]],
+                    [s[op] for s in samples["chematic"]],
+                    seed=seed + index,
+                )
+                report[f"paired_pipeline_speedup_ci95_vs_{competitor}"][op] = (
+                    paired_median_ratio_ci(
+                        [pipeline_seconds(s, op) for s in samples[competitor]],
+                        [pipeline_seconds(s, op) for s in samples["chematic"]],
+                        seed=seed + 0x100_000 + index,
+                    )
+                )
+    text = json.dumps(report, indent=1, sort_keys=True) + "\n"
+    if args.output:
+        args.output.write_text(text)
+    print(f"{'op':18}{'chematic ms':>13}{'COSMolKit ms':>14}{'RDKit ms':>11}"
+          f"{'op ch/ck':>10}{'pipe ch/ck':>12}")
+    for op in ops:
+        f = lambda v: f"{v * 1000:.0f}" if v else "-"  # noqa: E731
+        cold = report["chematic_speedup_vs_cosmolkit"][op]
+        pipeline = report["chematic_pipeline_speedup_vs_cosmolkit"][op]
+        print(f"{op:18}{f(ch.get(op)):>13}{f(ck.get(op)):>14}{f(rd.get(op)):>11}"
+              f"{str(cold or '-') + 'x':>10}{str(pipeline or '-') + 'x':>12}")
+    if coord_tmp is not None:
+        coord_tmp.cleanup()
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

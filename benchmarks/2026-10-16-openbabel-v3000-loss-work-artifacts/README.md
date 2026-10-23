@@ -1,1 +1,0 @@
-Complete native V3000 writer experiment. Read ../2026-10-16-openbabel-v3000-loss-work.md for the frozen scope and decision. Every complete timing matrix and negative observation is retained. Binaries/full generated streams stay in the local evidence directory with hashes; no historical timings are reused.

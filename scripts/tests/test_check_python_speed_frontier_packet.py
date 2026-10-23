@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import unittest
 
-SPEC = importlib.util.spec_from_file_location('frontier_packet', Path(__file__).parents[1] / 'check_python_speed_frontier_packet.py')
+SPEC = importlib.util.spec_from_file_location('frontier_packet', Path(__file__).parents[1] / 'checks' / 'check_python_speed_frontier_packet.py')
 audit = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(audit)
 
@@ -133,7 +133,7 @@ class AdoptionCliTests(unittest.TestCase):
         import sys
         root = Path(__file__).parents[2]
         result = subprocess.run([
-            sys.executable, str(root/'scripts/check_python_speed_frontier_packet.py'),
+            sys.executable, str(root/'scripts/checks/check_python_speed_frontier_packet.py'),
             str(root/'benchmarks/2026-10-19-morgan-direct-connectivity-numeric.json.gz'),
             '--require-adoption',
         ], capture_output=True, text=True)

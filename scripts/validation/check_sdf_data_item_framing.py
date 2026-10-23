@@ -10,7 +10,7 @@ import platform
 import re
 import sys
 
-from scripts.check_interchange_preservation import bounded_run, identity, require
+from scripts.checks.check_interchange_preservation import bounded_run, identity, require
 
 ROOT = Path(__file__).resolve().parents[2]
 PYTHON_CALL = '''import io,json,pathlib,sys,tempfile

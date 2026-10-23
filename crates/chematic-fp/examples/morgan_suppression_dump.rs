@@ -10,7 +10,7 @@
 //! *multiplicity* (how many distinct environments hash to the same id) --
 //! the public API only exposes `(atom, radius)` pairs keyed by *folded* bit,
 //! which can't distinguish two different raw ids that happen to fold to the
-//! same bit. Compared by `scripts/ecfp_rdkit_suppression_parity.py` against
+//! same bit. Compared by `scripts/validation/ecfp_rdkit_suppression_parity.py` against
 //! `row["default"]["sparse_bit_info"]` (pair-set match) and
 //! `row["default"]["sparse_counts"]` (count-multiset shape match) from
 //! `scripts/generators/gen_ecfp_rdkit_environment_oracle.py`'s oracle rows.

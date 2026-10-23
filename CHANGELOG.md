@@ -14,11 +14,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-23
+
 ### Documentation
 
-- Consolidated the active roadmap, open-work ledger, and completed
-  refactoring plan; refreshed standardization, coverage, compatibility, and
-  security guidance without rewriting historical benchmark evidence.
+- Consolidated the active roadmap, open-work ledger, compatibility and error
+  contracts; shortened entry documents, the cookbooks, RDKit migration table,
+  language-binding guide, MCP reference and GJF integrity contract; repaired
+  moved links; retained referenced benchmark evidence and retired 88
+  unreferenced intermediate records to the immutable `v1.0.41` history.
 
 ### Fixed
 
@@ -576,7 +580,7 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 - The published release is v1.1.4. Its complete cross-platform artifact packet
   was still open at documentation cutoff; source results and older package
   packets are not relabelled as v1.1.4 package evidence.
-- See the [validation report](docs/validation.md) and
+- See the [validation report](docs/reference/validation.md) and
   [benchmark index](benchmarks/README.md) for exact denominators and artifacts.
 
 ## [1.1.3] - 2026-10-13

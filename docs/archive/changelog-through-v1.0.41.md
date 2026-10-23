@@ -5,6 +5,10 @@ the root changelog on 2026-10-10. Validation and benchmark claims remain scoped
 to their dated records. The opening post-release documentation note is retained
 for traceability.
 
+Some benchmark paths named below were retired from the active tree on
+2026-10-23. They remain available in the immutable
+[`v1.0.41` benchmark tree](https://github.com/kent-tokyo/chematic/tree/v1.0.41/benchmarks).
+
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 

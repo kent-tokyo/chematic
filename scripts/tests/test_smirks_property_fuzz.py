@@ -14,8 +14,8 @@ from rdkit import Chem  # noqa: E402
 from rdkit.Chem import AllChem  # noqa: E402
 
 SCRIPTS = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(SCRIPTS))
-SPEC = importlib.util.spec_from_file_location("smirks_property_fuzz", SCRIPTS / "smirks_property_fuzz.py")
+sys.path.insert(0, str(SCRIPTS / "diagnostics"))
+SPEC = importlib.util.spec_from_file_location("smirks_property_fuzz", SCRIPTS / "validation" / "smirks_property_fuzz.py")
 module = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(module)
 

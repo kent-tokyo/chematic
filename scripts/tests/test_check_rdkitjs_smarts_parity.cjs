@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { chematicAtomSets } = require('../check_rdkitjs_smarts_parity.cjs');
+const { chematicAtomSets } = require('../diagnostics/check_rdkitjs_smarts_parity.cjs');
 
 test('CheMatic match order and duplicate embeddings do not affect atom sets', () => {
   assert.deepEqual(chematicAtomSets('[]'), []);

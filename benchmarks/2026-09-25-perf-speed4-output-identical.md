@@ -34,7 +34,7 @@ the base, so the comparison checks the new APIs against the old results.
 
 | Run | Operations | Rows compared | Differing rows | Raw data |
 |---|---|---:|---:|---|
-| `5269d69f`, all operations | 49 (SSSR rings and ring sets, ring/aromatic ring counts incl. RDKit-compatible, RDKit-parity aromatic view (full and ok/err), kekulize, TPSA, `rdkit_tpsa`, HBA/HBD, rotatable bonds, ring bundle, LogP, MR, QED, chi (each, 1v, all), kappa, native and RDKit-compatible ECFP4 incl. bit info/bits/prepared, RDKit fingerprint, pattern fingerprint, atom pair, torsion, MACCS, canonical SMILES, stereocenters, InChI, CIP, SMARTS all/non-unique/existence/perceived/atom sets, largest fragment, standardize, PAINS, Brenk) | 2,290,064 | **8** (all `kekulize` error text, see below) | [JSON](2026-09-25-perf-digest-diff-912c4b7d-5269d69f.json) |
+| `5269d69f`, all operations | 49 (SSSR rings and ring sets, ring/aromatic ring counts incl. RDKit-compatible, RDKit-parity aromatic view (full and ok/err), kekulize, TPSA, `rdkit_tpsa`, HBA/HBD, rotatable bonds, ring bundle, LogP, MR, QED, chi (each, 1v, all), kappa, native and RDKit-compatible ECFP4 incl. bit info/bits/prepared, RDKit fingerprint, pattern fingerprint, atom pair, torsion, MACCS, canonical SMILES, stereocenters, InChI, CIP, SMARTS all/non-unique/existence/perceived/atom sets, largest fragment, standardize, PAINS, Brenk) | 2,290,064 | **8** (all `kekulize` error text, see below) | [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-perf-digest-diff-912c4b7d-5269d69f.json) |
 
 The 8 differing rows are all `kekulize` on molecules that cannot be
 kekulized: both revisions return the same error, but the base names the first
@@ -47,7 +47,7 @@ deterministic. Successful kekulizations (every bond order) are identical.
 ## 2. Rust cold timing (µs per molecule, ChEMBL 5k)
 
 Median of 3 alternating rounds, each the best of 3 cold passes (fresh
-molecule clones, empty derived caches) ([JSON](2026-09-25-perf-digest-time-pair-912c4b7d-5269d69f.json)).
+molecule clones, empty derived caches) ([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-perf-digest-time-pair-912c4b7d-5269d69f.json)).
 
 | Operation (`tools/perf_digest` name) | base | branch | speedup |
 |---|---:|---:|---:|
@@ -72,8 +72,8 @@ molecule clones, empty derived caches) ([JSON](2026-09-25-perf-digest-time-pair-
 
 ## 3. Python matrix against RDKit (µs per row, ChEMBL 5k)
 
-Base [912c4b7d matrix](2026-09-25-python-op-matrix-vs-rdkit-912c4b7d.json),
-branch [5269d69f matrix](2026-09-25-python-op-matrix-vs-rdkit-branch-5269d69f.json).
+Base [912c4b7d matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-python-op-matrix-vs-rdkit-912c4b7d.json),
+branch [5269d69f matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-python-op-matrix-vs-rdkit-branch-5269d69f.json).
 Only `checked` operations are listed (outputs compared row by row with
 RDKit); "agree" is the branch's row agreement, which equals the base's for
 every operation.
@@ -142,8 +142,8 @@ same code). The Rust cold timings above are the per-change evidence.
 ## 4. RDKit output agreement
 
 [`check_rdkit_output_agreement.py`](../scripts/check_rdkit_output_agreement.py)
-on the base and branch wheels (base [JSON](2026-09-25-rdkit-agreement-912c4b7d.json),
-branch [JSON](2026-09-25-rdkit-agreement-branch-5269d69f.json)): for all 15 operations on all three corpora
+on the base and branch wheels (base [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-rdkit-agreement-912c4b7d.json),
+branch [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-rdkit-agreement-branch-5269d69f.json)): for all 15 operations on all three corpora
 (ChEMBL 5k, NCI 5k, descriptor census 5k) the branch's counts are identical
 to the base's — e.g. ChEMBL: RDKit-compatible Morgan and atom pair 5000/5000,
 torsion 4999, MACCS 4995, QED 4962, Murcko 4998, PAINS 5000, Brenk 2565. The
@@ -169,16 +169,16 @@ Three further commits on the same branch:
 - `98f57746`: the aromatic ring count returns 0 for acyclic Kekulé input
   without running perception, and seeds the perceived copy's ring data.
 
-**Output identity** ([JSON](2026-09-25-perf-digest-diff-912c4b7d-98f57746.json)):
+**Output identity** ([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-perf-digest-diff-912c4b7d-98f57746.json)):
 50 operations x 46,736 molecules against `912c4b7d`, 2,336,800 rows; the only
 differing rows (9) are again `kekulize` error text on molecules that cannot be
 kekulized (the base's reported atom follows hash order, so the count moves
 between runs: 8 in section 1, 9 here). RDKit agreement on the three corpora:
 identical to the base for all 15 operations
-([JSON](2026-09-25-rdkit-agreement-branch-98f57746.json)).
+([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-rdkit-agreement-branch-98f57746.json)).
 
 **Rust cold timing** (µs per molecule, ChEMBL 5k, median of 3 alternating
-rounds of best-of-3; [JSON](2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json)):
+rounds of best-of-3; [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-perf-digest-time-pair-912c4b7d-98f57746.json)):
 
 | Operation | base `912c4b7d` | `5269d69f` (section 2) | `98f57746` | speedup vs base |
 |---|---:|---:|---:|---:|
@@ -197,7 +197,7 @@ noise.) By instruction count (callgrind, 2,000 ChEMBL molecules) the
 naphthalene query's matching fell from ~89k to ~31k instructions per molecule
 and the aromatic ring count from ~71k to ~57k.
 
-**Python matrix** ([JSON](2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json);
+**Python matrix** ([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-25-python-op-matrix-vs-rdkit-branch-98f57746.json);
 all 44 checked operations keep the base's row agreement). The clearest
 change is `has_substructure c1ccc2ccccc2c1`: 14.4 µs → 7.3 µs (RDKit 10.3,
 0.79x → 1.40x). The other single-query `has_substructure` rows (4–6 µs per

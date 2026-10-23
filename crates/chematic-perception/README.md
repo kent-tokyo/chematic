@@ -94,7 +94,7 @@ let mol_with_stereo = assign_stereo_from_2d(&mol)?;
 
 ## Validation
 
-Run `cargo test -p chematic-perception`. Model choices, differential results, and known residuals are documented in [`docs/validation.md`](../../docs/validation.md) and [`docs/compatibility-scope.md`](../../docs/compatibility-scope.md). Release history is maintained in the repository [`CHANGELOG.md`](../../CHANGELOG.md).
+Run `cargo test -p chematic-perception`. Model choices, differential results, and known residuals are documented in [`validation`](../../docs/reference/validation.md) and [`compatibility scope`](../../docs/reference/compatibility-scope.md). Release history is maintained in [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 

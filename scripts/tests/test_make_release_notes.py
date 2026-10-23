@@ -1,6 +1,6 @@
 """Release notes must contain the entry body, not its heading/date."""
 
-from scripts.make_release_notes import extract_latest_block
+from scripts.release.make_release_notes import extract_latest_block
 
 
 def test_extract_latest_dated_entry_without_heading_suffix():

@@ -21,7 +21,7 @@
 //! ## How to retrain
 //!
 //! ```sh
-//! python scripts/train_solubility_mlp.py --csv data/delaney.csv
+//! python scripts/generators/train_solubility_mlp.py --csv data/delaney.csv
 //! ```
 //!
 //! ## Placeholder mode

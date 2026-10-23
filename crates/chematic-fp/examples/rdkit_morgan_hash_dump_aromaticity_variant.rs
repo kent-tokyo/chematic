@@ -16,7 +16,7 @@
 //! `rdkit_parity_kekulization_failed` / `rdkit_parity_internal_error` /
 //! `parse_failed`); a row whose RDKit-parity preprocessing fails carries
 //! `entries: null` and an `aromaticity_error` message, never a Hueckel-
-//! derived trace. `scripts/ecfp_rdkit_raw_identifier_parity.py`'s
+//! derived trace. `scripts/validation/ecfp_rdkit_raw_identifier_parity.py`'s
 //! exact-match denominator only ever counts `rdkit_parity_success` rows.
 //!
 //! Load-bearing for the M4-A0 report's residual-localization claim -- run

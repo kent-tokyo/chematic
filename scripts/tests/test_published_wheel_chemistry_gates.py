@@ -4,7 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "published_wheel_chemistry_gates.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "release" / "published_wheel_chemistry_gates.py"
 SPEC = importlib.util.spec_from_file_location("published_wheel_chemistry_gates", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -85,13 +85,13 @@ def test_summary_includes_optional_descriptor_stress(tmp_path):
 
 
 CHEMATIC_SIDE = [
-    "reaction_python_checked_candidates.py",
-    "chematic_chemistry_dump.py",
-    "check_python_smarts_parity_310k.py",
-    "biotransformer_chematic_responses.py",
-    "biotransformer_rules.py",
-    "chematic_reaction_worker.py",
-    "fetch_biotransformer_rules.py",
+    ("diagnostics", "reaction_python_checked_candidates.py"),
+    ("diagnostics", "chematic_chemistry_dump.py"),
+    ("checks", "check_python_smarts_parity_310k.py"),
+    ("diagnostics", "biotransformer_chematic_responses.py"),
+    ("diagnostics", "biotransformer_rules.py"),
+    ("diagnostics", "chematic_reaction_worker.py"),
+    ("generators", "fetch_biotransformer_rules.py"),
 ]
 
 
@@ -99,9 +99,9 @@ def test_chematic_side_scripts_import_no_rdkit_at_module_level():
     """The macOS and Windows jobs run these without RDKit installed."""
     import ast
 
-    scripts = SCRIPT.parent
-    for name in CHEMATIC_SIDE:
-        tree = ast.parse((scripts / name).read_text(encoding="utf-8"))
+    scripts = SCRIPT.parents[1]
+    for directory, name in CHEMATIC_SIDE:
+        tree = ast.parse((scripts / directory / name).read_text(encoding="utf-8"))
         for node in tree.body:
             names = []
             if isinstance(node, ast.Import):
@@ -115,8 +115,9 @@ def test_replay_answers_recorded_requests(tmp_path):
     import gzip
     import sys
 
-    sys.path.insert(0, str(SCRIPT.parent))
-    spec = importlib.util.spec_from_file_location("bt_corpus", SCRIPT.parent / "biotransformer_rule_corpus.py")
+    diagnostics = SCRIPT.parents[1] / "diagnostics"
+    sys.path.insert(0, str(diagnostics))
+    spec = importlib.util.spec_from_file_location("bt_corpus", diagnostics / "biotransformer_rule_corpus.py")
     corpus = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(corpus)
 

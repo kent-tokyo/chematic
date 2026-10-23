@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from scripts.check_cross_binding_manifest import (
+from scripts.checks.check_cross_binding_manifest import (
     DuplicateJsonKeyError,
     _reject_duplicate_keys,
 )

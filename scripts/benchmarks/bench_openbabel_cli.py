@@ -54,7 +54,7 @@ def measure(command: list[str], *, input_bytes: bytes | None, repeats: int) -> f
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--smiles", type=Path, default=Path("scripts/chembl_accuracy_corpus_4999.smi"))
+    parser.add_argument("--smiles", type=Path, default=Path("scripts/fixtures/chembl_accuracy_corpus_4999.smi"))
     parser.add_argument("--sdf", type=Path)
     parser.add_argument("--limit", type=int, default=5000)
     parser.add_argument("--repeats", type=int, default=3)

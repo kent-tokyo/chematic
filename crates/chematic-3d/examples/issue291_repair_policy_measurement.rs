@@ -3,7 +3,7 @@
 //! Issue #291 measured that production `embed_pipeline_v2` under
 //! `ForceFieldPolicy::UffOnly` + `StereoPolicy::Ignore` silently ships wrong
 //! tetrahedral/E-Z stereochemistry on 18/29 (62%) of the declared-stereocenter
-//! molecules in the 58-molecule corpus (`scripts/etkdg_vs_rdkit_gap.py::CORPUS`,
+//! molecules in the 58-molecule corpus (`scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`,
 //! same 29-molecule subset `stereo_constraints_gap_check.rs`'s `stereo_subset`
 //! filters to -- copied verbatim below). That measurement used
 //! `Result::is_ok()` as its correctness signal, which under `Ignore` is

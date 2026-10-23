@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "release": {
+    "version": "1.2.1",
+    "tag": "v1.2.1",
+    "commit": "pending-main-merge"
+  },
+  "checked_at": "2026-10-23T00:00:00Z",
+  "release_ready": false,
+  "channels": [
+    {
+      "id": "github_release",
+      "status": "not_measured",
+      "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.2.1",
+      "detail": "The v1.2.1 GitHub Release will be verified after the protected-main merge and annotated tag publication."
+    },
+    {
+      "id": "npm",
+      "status": "not_measured",
+      "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.2.1",
+      "detail": "The npm package version, gitHead, integrity, and runtime smoke tests will be verified after publication."
+    },
+    {
+      "id": "pypi",
+      "status": "not_measured",
+      "url": "https://pypi.org/project/chematic/1.2.1/",
+      "detail": "The sdist, expected wheel matrix, artifact hashes, runtime smoke tests, and chemistry gates will be verified after publication."
+    },
+    {
+      "id": "crates_io",
+      "status": "not_measured",
+      "url": "https://crates.io/crates/chematic/1.2.1",
+      "detail": "The complete crates.io publish graph will be verified after publication."
+    },
+    {
+      "id": "docs_rs",
+      "status": "not_measured",
+      "url": "https://docs.rs/chematic/1.2.1/chematic/",
+      "detail": "The version-pinned docs.rs endpoint will be verified after crates.io publication."
+    },
+    {
+      "id": "site",
+      "status": "not_measured",
+      "url": "https://kent-tokyo.github.io/chematic/",
+      "detail": "The deployed site and displayed current version will be verified after the release publication workflow completes."
+    }
+  ]
+}

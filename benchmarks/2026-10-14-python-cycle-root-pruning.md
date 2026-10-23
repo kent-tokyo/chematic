@@ -2,7 +2,7 @@
 
 First-use ring counting still trails eager RDKit ring-info lookup. This follow-up removes repeated shortest-path construction in relevant-cycle candidate generation; it preserves the ring definition, relevance reduction, family expansion, cap errors, and descriptor fallback. It moves no computation into parsing.
 
-Baseline: source wheel built from main `cac480fb23cd8adeec6e5e9bed1f18677f87b392` (1.1.4). Candidate: the same source plus the [candidate patch](2026-10-14-python-cycle-root-pruning-candidate.patch). Both are local source builds, not registry artifacts. See the [source manifest](2026-10-14-python-cycle-root-pruning-source.json) for hashes.
+Baseline: source wheel built from main `cac480fb23cd8adeec6e5e9bed1f18677f87b392` (1.1.4). Candidate: the same source plus the [candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch). Both are local source builds, not registry artifacts. See the [source manifest](2026-10-14-python-cycle-root-pruning-source.json) for hashes.
 
 ## Change and correctness
 

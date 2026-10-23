@@ -411,7 +411,7 @@ mod tests {
     }
 
     /// Same raw-embed-all-seeds gate, generalized across the corpus's other small/
-    /// rigid declared-E/Z alkenes (`scripts/etkdg_vs_rdkit_gap.py::CORPUS`'s
+    /// rigid declared-E/Z alkenes (`scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`'s
     /// `alkene_ez` group minus `cinnamic_acid_E`, see the next test) -- confirms the
     /// fix isn't a but2ene-specific coincidence.
     #[test]
@@ -534,7 +534,7 @@ mod tests {
     }
 
     /// Full re-measure of the 29 stereo-bearing molecules from
-    /// `scripts/etkdg_vs_rdkit_gap.py::CORPUS` (same protocol as the module doc's
+    /// `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS` (same protocol as the module doc's
     /// original `enforce_chirality` measurement: 5 base seeds, `max_attempts: 8`),
     /// checked against the exact before-this-fix pass/fail set (independently
     /// re-measured on unmodified `main` while designing this fix, see the PR body) --

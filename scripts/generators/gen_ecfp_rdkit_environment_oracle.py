@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 RDKit Morgan/ECFP environment-parity oracle generator for the M2 diagnostic
-PR (see scripts/ecfp_rdkit_environment_parity.py for the comparator that
+PR (see scripts/validation/ecfp_rdkit_environment_parity.py for the comparator that
 consumes this).
 
 For every input SMILES, dumps RDKit's own Morgan-fingerprint intermediate
@@ -32,17 +32,17 @@ includeRedundantEnvironments=False, folded via GetFingerprint(), produces a
 bit-identical on-bit set to legacy AllChem.GetMorganFingerprintAsBitVect(mol,
 2, 2048) -- confirming the modern generator API with these exact options is
 semantically the same API this project's existing reference tooling
-(scripts/ecfp_rdkit_invariants_fingerprint_ref.py) already targets.
+(scripts/diagnostics/ecfp_rdkit_invariants_fingerprint_ref.py) already targets.
 
 Usage:
     .venv/bin/python scripts/generators/gen_ecfp_rdkit_environment_oracle.py \\
         --corpus ~/Downloads/SMILES.csv \\
-        --fixtures scripts/ecfp_rdkit_edge_fixtures.csv scripts/ecfp_rdkit_morgan_edge_fixtures.csv \\
+        --fixtures scripts/fixtures/ecfp_rdkit_edge_fixtures.csv scripts/fixtures/ecfp_rdkit_morgan_edge_fixtures.csv \\
         --rows-out /path/to/oracle_rows.jsonl \\
         --manifest-out validation/ecfp_rdkit_environment_parity_manifest.json
 
     .venv/bin/python scripts/generators/gen_ecfp_rdkit_environment_oracle.py --verify-determinism \\
-        --corpus scripts/ecfp_rdkit_morgan_edge_fixtures.csv
+        --corpus scripts/fixtures/ecfp_rdkit_morgan_edge_fixtures.csv
 """
 
 import argparse
@@ -75,7 +75,7 @@ _PARSE_PARAMS.removeHs = False
 
 
 def parse_smiles(smi):
-    """Matches scripts/ecfp_rdkit_invariant_parity.py's parsing: chematic
+    """Matches scripts/validation/ecfp_rdkit_invariant_parity.py's parsing: chematic
     keeps explicit H atoms as real graph atoms, so RDKit's default (which
     silently strips 'trivial' explicit H) must be disabled to keep atom_idx
     correspondence comparable."""

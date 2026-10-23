@@ -1089,8 +1089,8 @@ mod tests {
     /// corpus cluster (K2b's own diagnosis; see the PR description), pinned
     /// as permanent regression tests against the OPT-IN engine now that this
     /// fix resolves them there. Not exhaustive -- the fixed corpus-vs-RDKit
-    /// comparison (`scripts/aromaticity_atom_parity.py` equivalent run
-    /// against `scripts/descriptor_census_corpus.smi`) is the authoritative
+    /// comparison (`scripts/validation/aromaticity_atom_parity.py` equivalent run
+    /// against `scripts/fixtures/descriptor_census_corpus.smi`) is the authoritative
     /// check; these are a stable, minimal sample.
     #[test]
     fn test_authoritative_experimental_fused_diazine_cluster_sample_matches_rdkit() {

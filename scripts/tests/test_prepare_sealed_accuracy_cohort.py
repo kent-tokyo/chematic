@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-SCRIPT = ROOT / "scripts/prepare_sealed_accuracy_cohort.py"
+SCRIPT = ROOT / "scripts/generators/prepare_sealed_accuracy_cohort.py"
 SPEC = importlib.util.spec_from_file_location("sealed_cohort", SCRIPT)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

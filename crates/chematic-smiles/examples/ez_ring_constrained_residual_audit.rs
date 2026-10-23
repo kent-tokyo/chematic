@@ -60,12 +60,12 @@
 //! `null` rather than a guessed value.
 //!
 //! Run against the 18 pinned fixtures (no argument) or a full corpus (one
-//! SMILES per line -- `scripts/descriptor_census_corpus.smi`, committed to
+//! SMILES per line -- `scripts/fixtures/descriptor_census_corpus.smi`, committed to
 //! this repo, no external download needed):
 //!
 //! ```text
 //! cargo run -p chematic-smiles --release --example ez_ring_constrained_residual_audit
-//! cargo run -p chematic-smiles --release --example ez_ring_constrained_residual_audit -- scripts/descriptor_census_corpus.smi
+//! cargo run -p chematic-smiles --release --example ez_ring_constrained_residual_audit -- scripts/fixtures/descriptor_census_corpus.smi
 //! ```
 
 use std::collections::{HashMap, HashSet};

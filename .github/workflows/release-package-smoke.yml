@@ -43,7 +43,7 @@ jobs:
         run: >-
           python -m pip install --disable-pip-version-check --only-binary=:all: "chematic==${{ inputs.version }}"
       - name: Run published runtime smoke
-        run: python scripts/release_package_smoke.py --version "${{ inputs.version }}" --output "release-package-smoke-${{ runner.os }}.json"
+        run: python scripts/release/release_package_smoke.py --version "${{ inputs.version }}" --output "release-package-smoke-${{ runner.os }}.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: release-package-smoke-${{ inputs.version }}-${{ runner.os }}

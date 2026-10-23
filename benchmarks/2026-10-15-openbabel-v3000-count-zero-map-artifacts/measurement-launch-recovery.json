@@ -1,7 +1,0 @@
-{
-  "initial_waiter_exit_code": 120,
-  "initial_waiter_captured_output": "empty",
-  "formal_measurement_output_existed_before_restart": false,
-  "confirmed_original_waiter_exited_before_restart": true,
-  "restart_condition": "All unchanged-source native/Clippy/runner/build gates passed; launch measure.py directly; no timing blocks discarded or repeated"
-}

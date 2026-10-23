@@ -6,8 +6,8 @@ on:
     paths:
       - .github/workflows/rdkit-native-rebaseline.yml
       - tools/rdkit_native_rebaseline/**
-      - scripts/summarize_rdkit_native_rebaseline.py
-      - scripts/summarize_rdkit_ring_backend.py
+      - scripts/validation/summarize_rdkit_native_rebaseline.py
+      - scripts/validation/summarize_rdkit_ring_backend.py
       - validation/rdkit_native_rebaseline_build.json
       - validation/rdkit_rebaseline_smarts_queries.json
       - validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi
@@ -103,7 +103,7 @@ jobs:
               "$RUNNER_TEMP/rdkit-queries.txt" \
               "$RUNNER_TEMP/rdkit-native-results/$lane.jsonl"
           done
-          python3 scripts/summarize_rdkit_native_rebaseline.py \
+          python3 scripts/validation/summarize_rdkit_native_rebaseline.py \
             --build-config validation/rdkit_native_rebaseline_build.json \
             --old-source rdkit-old --new-source rdkit-new \
             --old-binary "$RUNNER_TEMP/probe-build-old/rdkit_native_rebaseline" \
@@ -119,7 +119,7 @@ jobs:
             validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
             "$RUNNER_TEMP/rdkit-queries.txt" \
             "$RUNNER_TEMP/rdkit-native-results/new-legacy.jsonl"
-          python3 -m scripts.summarize_rdkit_ring_backend \
+          python3 -m scripts.validation.summarize_rdkit_ring_backend \
             --build-config validation/rdkit_native_rebaseline_build.json \
             --old-rows "$RUNNER_TEMP/rdkit-native-results/old.jsonl" \
             --new-rows "$RUNNER_TEMP/rdkit-native-results/new.jsonl" \

@@ -2,7 +2,7 @@
 //!
 //! Mirrors Python `run_smirks_checked(..., rdkit_compat=True)` on the 83
 //! pinned fixtures and writes the candidates schema read by
-//! `scripts/reaction_python_checked_provenance_gate.py --candidates`.
+//! `scripts/validation/reaction_python_checked_provenance_gate.py --candidates`.
 //!
 //! Usage: published-chematic-checked-gate BASE_JSON STRATA_JSON OUT_JSON
 

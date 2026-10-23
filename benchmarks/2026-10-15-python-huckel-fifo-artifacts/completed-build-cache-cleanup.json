@@ -1,9 +1,0 @@
-{
-  "removed_only_completed_owned_target": "/private/tmp/chematic-huckel-fifo-target-20261015",
-  "logical_bytes": 495286730,
-  "retained_measured_wheel_sha256": {
-    "baseline": "47f791336d05907d089eb1fb3c004c6974ff3b86dbe17fd008ce50e29fc43310",
-    "candidate": "edf5c3e1e98b8f2ef0bbe6eba3f4538b0eb5d58ac9b35dfb2baa54897e61db1b"
-  },
-  "after_native_clippy_and_both_builds_before_timing": true
-}

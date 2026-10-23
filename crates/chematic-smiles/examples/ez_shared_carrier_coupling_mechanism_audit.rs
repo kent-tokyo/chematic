@@ -24,7 +24,7 @@
 //! `ez_ring_constrained_residual_audit.rs` (Wave 2C) are each frozen
 //! snapshots scoped to an already-answered hypothesis -- neither includes
 //! PR #351's ring gate, so running either today still reports the *pre-fix*
-//! topology (31 components on `scripts/descriptor_census_corpus.smi`,
+//! topology (31 components on `scripts/fixtures/descriptor_census_corpus.smi`,
 //! reconfirmed unchanged by re-running the Wave 2B example directly).
 //! This file measures the *current* population instead.
 //!
@@ -35,7 +35,7 @@
 //! # Default (no corpus arg): the 18 pinned EZ_SHARED_CARRIER_FULLY_RESOLVED
 //! # fixtures + the 2 never-corrupts SMILES.
 //! cargo run -p chematic-smiles --release --example ez_shared_carrier_coupling_mechanism_audit -- scan
-//! cargo run -p chematic-smiles --release --example ez_shared_carrier_coupling_mechanism_audit -- scan scripts/descriptor_census_corpus.smi
+//! cargo run -p chematic-smiles --release --example ez_shared_carrier_coupling_mechanism_audit -- scan scripts/fixtures/descriptor_census_corpus.smi
 //!
 //! # Axis 2 (mark relocation, no RDKit): one SMILES per line in <file>.
 //! cargo run -p chematic-smiles --release --example ez_shared_carrier_coupling_mechanism_audit -- axis2 <file>

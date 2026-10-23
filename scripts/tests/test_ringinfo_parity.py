@@ -16,7 +16,7 @@ Usage: python scripts/tests/test_ringinfo_parity.py
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "validation"))
 from ringinfo_parity import chematic_ring_metrics, self_test  # noqa: E402
 
 

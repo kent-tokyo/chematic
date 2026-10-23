@@ -159,7 +159,7 @@ impl<'a> CanonicalWriter<'a> {
     ///
     /// ```text
     /// cargo run -p chematic-smiles --release --example ez_shared_carrier_component_audit -- \
-    ///     scripts/descriptor_census_corpus.smi
+    ///     scripts/fixtures/descriptor_census_corpus.smi
     /// ```
     ///
     /// Expected output (re-run to confirm, not assumed): 18/18 pinned

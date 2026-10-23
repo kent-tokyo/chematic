@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
-const { parseV2000, indexCorresponds, differingLabels, chematicLabels, rdkitLabels } = require('../check_rdkitjs_cip_parity.cjs');
+const { parseV2000, indexCorresponds, differingLabels, chematicLabels, rdkitLabels } = require('../diagnostics/check_rdkitjs_cip_parity.cjs');
 
 test('V2000 index proof ignores coordinates and bond orientation but not element order', () => {
   const text = [

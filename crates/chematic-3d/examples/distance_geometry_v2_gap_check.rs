@@ -4,7 +4,7 @@
 //!
 //! Measures the RAW embedder output (bounds construction → smoothing → Gram/
 //! eigendecomposition → bounds-force refinement) on the frozen 58-molecule corpus
-//! from `scripts/etkdg_vs_rdkit_gap.py::CORPUS` (transcribed verbatim below — if that
+//! from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS` (transcribed verbatim below — if that
 //! list ever changes, update this one too), with **no** MMFF94/DREIDING minimization
 //! pass applied afterward, per the master plan's explicit gate scoping. This isolates
 //! Agent C's own deliverable from Agent F's (force-field minimization) and Agent E's
@@ -23,7 +23,7 @@
 //! from). Instead it hardcodes RDKit's own `GetPeriodicTable().GetRcovalent()` values
 //! for the elements this corpus needs, dumped read-only from an ISOLATED venv (never
 //! the shared repo `.venv` -- see this crate's PR body) against installed RDKit
-//! 2025.09.2, matching `scripts/etkdg_vs_rdkit_gap.py::ref_bond_length`'s own
+//! 2025.09.2, matching `scripts/diagnostics/etkdg_vs_rdkit_gap.py::ref_bond_length`'s own
 //! external-reference methodology and its `_BOND_ORDER_SCALE` factors exactly.
 //!
 //! The **angle** check below is different: it reuses `dg_fft::ideal_bond_angle`
@@ -101,7 +101,7 @@ use chematic_smiles::parse;
 
 // ---------------------------------------------------------------------------
 // Frozen 58-molecule corpus -- verbatim transcription of
-// scripts/etkdg_vs_rdkit_gap.py::CORPUS (name, SMILES, category).
+// scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS (name, SMILES, category).
 // ---------------------------------------------------------------------------
 
 const CORPUS: &[(&str, &str, &str)] = &[
@@ -243,7 +243,7 @@ fn rdkit_covalent_radius(atomic_number: u8) -> Option<f64> {
     }
 }
 
-/// Same bond-order length-scale factors `scripts/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE`
+/// Same bond-order length-scale factors `scripts/diagnostics/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE`
 /// uses against RDKit's own `BondType`.
 fn bond_order_scale(order: BondOrder) -> f64 {
     match order {
@@ -278,10 +278,10 @@ fn ref_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> Option<f64> {
 //     the 0.5 "torn" threshold, on purpose (safety gate should basically never
 //     fire; 0.5 already does via classify()'s bond_length_blowup bucket).
 const BOND_LEN_TOL_FRAC_10: f64 = 0.10;
-const BOND_LEN_TOL_FRAC_15: f64 = 0.15; // matches scripts/etkdg_vs_rdkit_gap.py
-const BOND_BLOWUP_REL_ERROR: f64 = 0.5; // matches scripts/etkdg_vs_rdkit_gap.py
+const BOND_LEN_TOL_FRAC_15: f64 = 0.15; // matches scripts/diagnostics/etkdg_vs_rdkit_gap.py
+const BOND_BLOWUP_REL_ERROR: f64 = 0.5; // matches scripts/diagnostics/etkdg_vs_rdkit_gap.py
 const CATASTROPHIC_BLOWUP_REL_ERROR: f64 = 1.0; // >2x reference bond length
-const GROSS_CLASH_DIST: f64 = 0.5; // matches scripts/etkdg_vs_rdkit_gap.py
+const GROSS_CLASH_DIST: f64 = 0.5; // matches scripts/diagnostics/etkdg_vs_rdkit_gap.py
 /// Internal-consistency tolerance (degrees) around `dg_fft::ideal_bond_angle`'s
 /// generic 109.5°/120° model -- NOT an external-oracle tolerance (see module docs).
 const ANGLE_TOL_DEG: f64 = 15.0;
@@ -292,7 +292,7 @@ struct BondCheck {
     max_rel_error: f64,
 }
 
-/// Identical check to `scripts/etkdg_vs_rdkit_gap.py::bond_violations`, reimplemented
+/// Identical check to `scripts/diagnostics/etkdg_vs_rdkit_gap.py::bond_violations`, reimplemented
 /// in Rust against the external RDKit-radius reference table above. `tol_frac`
 /// selects which precision-gate column this call is for (0.10, 0.15) or the
 /// safety-gate's catastrophic-blowup threshold (1.0) -- one implementation, three
@@ -455,7 +455,7 @@ fn all_zero_coords(coords: &Coords3D) -> bool {
 }
 
 /// Status bucket for one engine's output on one molecule, mirroring
-/// scripts/etkdg_vs_rdkit_gap.py's named-bucket status strings (no silent drops).
+/// scripts/diagnostics/etkdg_vs_rdkit_gap.py's named-bucket status strings (no silent drops).
 fn classify(mol: &Molecule, coords: Option<&Coords3D>, embed_err: Option<String>) -> String {
     if let Some(cause) = embed_err {
         return format!("embed_failed:{cause}");
@@ -833,7 +833,7 @@ fn main() {
 
     assert_eq!(
         n_total, 58,
-        "corpus size drifted from the frozen 58 -- re-sync with scripts/etkdg_vs_rdkit_gap.py::CORPUS"
+        "corpus size drifted from the frozen 58 -- re-sync with scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS"
     );
 
     if n_regressions > 0 {
@@ -1043,7 +1043,7 @@ fn adjacent_seed_differs_all(base: u64) -> (usize, usize) {
 
 /// Floppy corpus molecules (real rotatable bonds) used for the ensemble-diversity
 /// measurement -- picked from `flexible_chain`/`druglike` categories, mirroring
-/// `scripts/etkdg_vs_rdkit_gap.py::ENSEMBLE_SUBSET`'s intent.
+/// `scripts/diagnostics/etkdg_vs_rdkit_gap.py::ENSEMBLE_SUBSET`'s intent.
 const DIVERSITY_MOLECULES: &[&str] = &["decane", "diphenhydramine", "hexadecane"];
 const DIVERSITY_SEEDS: &[u64] = &[1, 2, 3, 4, 5, 6, 7, 8];
 

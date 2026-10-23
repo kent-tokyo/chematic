@@ -8,7 +8,7 @@ reading) and ``resource_limit`` (input past a declared bound). Each probe
 records whether the call returned, returned a typed envelope (``code`` /
 ``status`` / ``reason`` field), or raised, and with which class and fields.
 ``scripts/diagnostics/typed_abstention_audit.mjs`` runs the same probes on the WASM
-package. The result is the matrix in ``docs/error-and-limits.md``.
+package. The result is the matrix in ``docs/reference/error-and-limits.md``.
 """
 
 from __future__ import annotations

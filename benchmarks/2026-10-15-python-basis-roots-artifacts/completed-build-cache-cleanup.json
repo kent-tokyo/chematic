@@ -1,9 +1,0 @@
-{
-  "removed_only_completed_owned_target": "/private/tmp/chematic-basis-roots-target-20261015",
-  "logical_bytes": 495289272,
-  "retained_measured_wheel_sha256": {
-    "baseline": "b61207c5d408e988f4aafc5ece6f0db26fecbc92b3ae357b3c30d28a066f1426",
-    "candidate": "c1bd4c265f2384f763be208029b4070e92e95b1561f6881a6456ba52e7beaceb"
-  },
-  "before_timing": true
-}

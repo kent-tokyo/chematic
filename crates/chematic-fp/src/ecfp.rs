@@ -684,7 +684,7 @@ pub fn ecfp6_rdkit_environment_experimental(mol: &Molecule) -> BitVec2048 {
 /// this tie by hash value) is not guaranteed to match RDKit's specific pick
 /// when the tied atoms are chemically non-equivalent. Emitted-`(atom,
 /// radius)`-pair-set agreement with RDKit is high (measured against RDKit's
-/// own default Morgan generator; see `scripts/ecfp_rdkit_suppression_parity.py`),
+/// own default Morgan generator; see `scripts/validation/ecfp_rdkit_suppression_parity.py`),
 /// not the raw bit values.
 pub fn ecfp_with_bitinfo_rdkit_environment_experimental(
     mol: &Molecule,
@@ -1070,7 +1070,7 @@ mod tests {
     //
     // Every equivalence/non-equivalence asserted here was independently
     // verified against RDKit 2026.03.3's `GetConnectivityInvariants` (see
-    // scripts/ecfp_rdkit_invariant_parity.py and
+    // scripts/validation/ecfp_rdkit_invariant_parity.py and
     // scripts/ecfp_rdkit_edge_fixtures.csv) -- 100% partition agreement on
     // this fixture set (including cross-atom isotope/charge stress cases)
     // and the full 5,000-molecule ChEMBL corpus, no residual.

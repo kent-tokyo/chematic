@@ -21,7 +21,7 @@ under version control.
 | Host | Linux x86_64 VM, 2 vCPU "Intel(R) Xeon(R) Processor @ 2.10GHz"; shared cloud host |
 | Corpus | `scripts/chembl_accuracy_corpus_4999.smi`, SHA-256 `1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e`; 5,000/5,000 rows parsed by both libraries |
 | Script | [`scripts/bench_python_op_matrix_vs_rdkit.py`](../scripts/bench_python_op_matrix_vs_rdkit.py) |
-| Raw data | [base JSON](2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json), [branch JSON](2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json) |
+| Raw data | [base JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-base-01a86b62.json), [branch JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-8cc01365.json) |
 
 ## Protocol
 

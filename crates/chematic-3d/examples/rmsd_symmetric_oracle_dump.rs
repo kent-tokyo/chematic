@@ -14,7 +14,7 @@
 //! ```text
 //! cargo run --release -p chematic-3d --example rmsd_symmetric_oracle_dump \
 //!   > /tmp/rmsd_symmetric_oracle_dump.jsonl
-//! .venv/bin/python scripts/rmsd_symmetric_oracle_check.py \
+//! .venv/bin/python scripts/diagnostics/rmsd_symmetric_oracle_check.py \
 //!   /tmp/rmsd_symmetric_oracle_dump.jsonl
 //! ```
 

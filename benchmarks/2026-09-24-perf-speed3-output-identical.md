@@ -28,8 +28,8 @@ benchmark corpora (46,736 molecules).
 
 | Run | Operations | Rows compared | Differing rows | Raw data |
 |---|---|---:|---:|---|
-| `20b2cbc3`, all operations | 29 (SSSR rings, ring/aromatic ring counts, RDKit-parity aromatic view, TPSA, `rdkit_tpsa`, HBA/HBD, rotatable bonds, ring bundle, LogP, MR, QED, native and RDKit-compatible ECFP4 incl. bit info, canonical SMILES, stereocenters, InChI, CIP, SMARTS all/non-unique/existence, largest fragment, standardize, MACCS, PAINS, Brenk) | 1,402,080 | **0** | [JSON](2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json) |
-| `6bd3fae0`, SMARTS-affected operations | 12 (SMARTS all/non-unique/existence/first-embedding, MACCS, QED, PAINS, Brenk, LogP, MR, standardize, RDKit-parity aromatic view) | 560,832 | **0** | [JSON](2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json) |
+| `20b2cbc3`, all operations | 29 (SSSR rings, ring/aromatic ring counts, RDKit-parity aromatic view, TPSA, `rdkit_tpsa`, HBA/HBD, rotatable bonds, ring bundle, LogP, MR, QED, native and RDKit-compatible ECFP4 incl. bit info, canonical SMILES, stereocenters, InChI, CIP, SMARTS all/non-unique/existence, largest fragment, standardize, MACCS, PAINS, Brenk) | 1,402,080 | **0** | [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-perf-digest-diff-v1.0.23-20b2cbc3.json) |
+| `6bd3fae0`, SMARTS-affected operations | 12 (SMARTS all/non-unique/existence/first-embedding, MACCS, QED, PAINS, Brenk, LogP, MR, standardize, RDKit-parity aromatic view) | 560,832 | **0** | [JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-perf-digest-diff-v1.0.23-6bd3fae0-smarts.json) |
 
 In the `20b2cbc3` run the operation list contained the name `rdkit_ecfp4`
 twice (the fingerprint alone and a variant with sorted bit info), so that
@@ -40,7 +40,7 @@ records the commit.
 
 ## 2. Rust cold timing (µs per molecule, ChEMBL 5k)
 
-Median of 3 alternating rounds, each the best of 3 cold passes ([JSON](2026-09-24-perf-digest-time-pair-v1.0.23-6bd3fae0.json)). PAINS was left out of this run to stay within the session's time box.
+Median of 3 alternating rounds, each the best of 3 cold passes ([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-perf-digest-time-pair-v1.0.23-6bd3fae0.json)). PAINS was left out of this run to stay within the session's time box.
 
 | Operation (`tools/perf_digest` name) | v1.0.23 | branch | speedup |
 |---|---:|---:|---:|
@@ -60,9 +60,9 @@ Median of 3 alternating rounds, each the best of 3 cold passes ([JSON](2026-09-2
 
 ## 3. Python matrix against RDKit (µs per row, ChEMBL 5k)
 
-Base [v1.0.23 matrix](2026-09-24-python-op-matrix-vs-rdkit-v1.0.23-6f8645ef.json),
-branch [6bd3fae0 matrix](2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json)
-(the superseded [20b2cbc3 matrix](2026-09-24-python-op-matrix-vs-rdkit-branch-20b2cbc3.json)
+Base [v1.0.23 matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-v1.0.23-6f8645ef.json),
+branch [6bd3fae0 matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-6bd3fae0.json)
+(the superseded [20b2cbc3 matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-20b2cbc3.json)
 is kept because it exposed the single-query `has_substructure` regression
 fixed in `6bd3fae0`). Only `checked` operations are listed (outputs compared
 row by row with RDKit); "agree" is the branch's row agreement, which equals
@@ -129,7 +129,7 @@ The two ring-query rows (`c1ccc2ccccc2c1`, `[#7;R]`) stay at parity with RDKit
 ## 4. RDKit output agreement
 
 [`check_rdkit_output_agreement.py`](../scripts/check_rdkit_output_agreement.py)
-on the `6bd3fae0` wheel ([JSON](2026-09-24-rdkit-agreement-branch-6bd3fae0.json))
+on the `6bd3fae0` wheel ([JSON](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-rdkit-agreement-branch-6bd3fae0.json))
 gives, for all 15 operations on all three corpora (ChEMBL 5k, NCI 5k, descriptor
 census 5k), exactly the counts of the previous
 [accuracy-branch record](2026-09-24-rdkit-agreement-accuracy-branch.md)

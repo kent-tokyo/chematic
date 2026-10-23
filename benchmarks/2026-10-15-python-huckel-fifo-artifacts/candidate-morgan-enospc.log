@@ -1,9 +1,0 @@
-rdkit-js-browser-10k-v1.smi 10000 done
-Traceback (most recent call last):
-  File "/private/tmp/chematic-huckel-fifo-source-20261015/scripts/verify_python_morgan_frontier.py", line 72, in <module>
-    main()
-    ~~~~^^
-  File "/private/tmp/chematic-huckel-fifo-source-20261015/scripts/verify_python_morgan_frontier.py", line 67, in main
-    output.write(json.dumps(row, sort_keys=True) + "\n")
-    ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-OSError: [Errno 28] No space left on device

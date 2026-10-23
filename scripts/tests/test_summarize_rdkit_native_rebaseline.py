@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 
-SCRIPT = Path(__file__).resolve().parents[1] / "summarize_rdkit_native_rebaseline.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "validation" / "summarize_rdkit_native_rebaseline.py"
 SPEC = importlib.util.spec_from_file_location("native_summary", SCRIPT)
 assert SPEC is not None and SPEC.loader is not None
 MODULE = importlib.util.module_from_spec(SPEC)

@@ -1,4 +1,4 @@
-from scripts.summarize_rdkit_ring_backend import compare_triplet
+from scripts.validation.summarize_rdkit_ring_backend import compare_triplet
 
 
 def row(smarts):

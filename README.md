@@ -25,17 +25,12 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.2.0 release boundary
+### v1.2.1 release boundary
 
-v1.2.0 adds checked XBS and TURBOMOLE/POSCAR input paths, typed Pattern
-fingerprints, bounded 3D geometry diagnostics, and stronger fail-closed
-canonical-SMILES, reaction, R-group, and standardization handling. Internal
-chemistry, I/O, CLI, and evidence modules were split without intentionally
-breaking the public 1.x API. Exact performance and compatibility claims remain
-tied to their dated artifacts; source improvements are not relabelled as
-published-package evidence. See
-[validation](docs/validation.md), [benchmarks](benchmarks/README.md), and the
-[CHANGELOG](CHANGELOG.md).
+The current release is **v1.2.1**. See the [CHANGELOG](CHANGELOG.md) for release
+details. Accuracy and performance claims remain tied to the exact artifacts,
+corpora, and hosts named in [validation](docs/reference/validation.md) and the
+[benchmark index](benchmarks/README.md).
 
 ## Choose chematic when
 
@@ -46,7 +41,7 @@ published-package evidence. See
 
 Choose RDKit for maximum ecosystem and chemistry breadth, and Open Babel for
 broad command-line format conversion. Compare pure-Rust alternatives on your
-own corpus and exact operation. See [When to choose chematic](docs/choosing-chematic.md)
+own corpus and exact operation. See [When to choose chematic](docs/reference/choosing-chematic.md)
 for the decision guide and current limits.
 
 ## Use it
@@ -89,11 +84,11 @@ rich CDXML editing, and RDKit-style APIs remain experimental or bounded.
 
 ## Find the right guide
 
-- [When to choose chematic](docs/choosing-chematic.md)
+- [When to choose chematic](docs/reference/choosing-chematic.md)
 - [Getting started and cookbook](https://kent-tokyo.github.io/chematic/)
-- [Compatibility scope](docs/compatibility-scope.md) and [RDKit migration](docs/rdkit-migration.md)
-- [Validation](docs/validation.md) and [benchmark methodology](docs/benchmark.md)
-- [Formats and bindings](docs/format-capabilities.md)
+- [Compatibility scope](docs/reference/compatibility-scope.md) and [RDKit migration](docs/reference/rdkit-migration.md)
+- [Validation](docs/reference/validation.md) and [benchmark methodology](docs/reference/benchmark.md)
+- [Formats and bindings](docs/reference/format-capabilities.md)
 - [MCP server](crates/chematic-mcp/README.md)
 
 ## Development

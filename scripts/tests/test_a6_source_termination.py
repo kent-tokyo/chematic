@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "summarize_a6_mmff94_termination.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "validation" / "summarize_a6_mmff94_termination.py"
 SPEC = importlib.util.spec_from_file_location("a6_source_termination", SCRIPT)
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC)

@@ -67,7 +67,7 @@ use chematic_smiles::parse;
 // ---------------------------------------------------------------------------
 // Frozen 58-molecule corpus -- verbatim transcription of
 // `crates/chematic-3d/examples/distance_geometry_v2_gap_check.rs`'s own
-// verbatim transcription of `scripts/etkdg_vs_rdkit_gap.py::CORPUS`. Kept
+// verbatim transcription of `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`. Kept
 // byte-identical per this program's established convention (do not invent a
 // separate copy). This is the HOLDOUT set (see "Holdout declaration" below)
 // -- none of these 58 molecules appear in any unit test in this PR's own
@@ -460,7 +460,7 @@ impl ArmMetrics {
 /// from an example binary) -- uses the same public
 /// `chematic_core::Element::covalent_radius()` and the same bond-order
 /// scale factors `dg_fft.rs` documents as matching
-/// `scripts/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE`, so this is not a
+/// `scripts/diagnostics/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE`, so this is not a
 /// second, independently-invented model.
 fn approx_ideal_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {
     let ra = mol.atom(a).element.covalent_radius() as f64;

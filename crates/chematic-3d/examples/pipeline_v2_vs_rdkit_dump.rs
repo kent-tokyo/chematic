@@ -644,7 +644,7 @@ fn run_legacy_arm(mol: &Molecule) -> Value {
 
 /// A2 best-of-N arm: `embed_ensemble_v2` with `count: BEST_OF_N_COUNT`,
 /// force-field and seed matched to RDKit's own `rdkit_etkdgv3_best_of_n`
-/// arm (`scripts/pipeline_v2_vs_rdkit_oracle.py`'s `run_best_of_n`:
+/// arm (`scripts/validation/pipeline_v2_vs_rdkit_oracle.py`'s `run_best_of_n`:
 /// `EmbedMultipleConfs(numConfs=10, randomSeed=20260801)` + per-conformer
 /// UFF optimization + lowest-energy selection), so the "10 attempts, best
 /// by energy" comparison means the same quantity on both sides.

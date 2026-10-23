@@ -13,7 +13,7 @@ does `Chem.MolToSmiles(Chem.MolFromSmiles(known_smiles))` equal
 `Chem.MolToSmiles(mol_from_supplier)`? This validates RDKit's own
 tokenization extracted the right substring, using ONLY RDKit's own
 canonicalizer -- never compared against chematic's canonical output (see
-`scripts/smiles_table_io_parity.py`'s module docs for why: chematic/RDKit
+`scripts/validation/smiles_table_io_parity.py`'s module docs for why: chematic/RDKit
 canonical-SMILES divergence is a known, separately-tracked, unrelated
 issue -- this oracle is not evidence about it, and must not be misread as
 such).

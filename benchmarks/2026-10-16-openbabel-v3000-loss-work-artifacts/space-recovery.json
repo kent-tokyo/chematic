@@ -1,5 +1,0 @@
-{
-  "benchmark_checkout_removed_kib": 867180,
-  "method": "Removed unchanged tracked historical benchmark copies through sparse checkout; original Git history and separately retained raw evidence preserved",
-  "protected_previous_evidence_exists": true
-}

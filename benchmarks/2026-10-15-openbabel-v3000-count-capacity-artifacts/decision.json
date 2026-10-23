@@ -1,8 +1,0 @@
-{
-  "adopt_source": false,
-  "reason": "Reject exact-capacity reservations for adoption. Initial parser ratios improve 1.038x (all21), 1.064x (20/21) and 1.039x (20/21), but every original profile has an initial prepared-writer CI wholly below 1. Separate one-per-profile follow-ups retain clear writer regressions at NCI 0.967x [0.944,0.986] and chains 0.959x [0.930,0.986]. Original-profile roundtrip gains do not remove this prepared-operation cost; continuation/other follow-ups include wide or crossing intervals and are retained. All output and 847 native/10 runner gates pass. Only the report/evidence is delivered. A separate architecture revision will round reservation capacities toward the old Vec growth sizes while retaining the logical-row cap; no earlier observation will be pooled or replaced.",
-  "merged": false,
-  "published": false,
-  "native_tests_passed": 847,
-  "baseline_accepted_candidates": 9
-}

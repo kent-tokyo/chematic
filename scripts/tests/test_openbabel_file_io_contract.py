@@ -6,7 +6,7 @@ import copy
 import json
 from pathlib import Path
 
-from scripts.check_openbabel_file_io_contract import validate_contract
+from scripts.checks.check_openbabel_file_io_contract import validate_contract
 
 
 ROOT = Path(__file__).resolve().parents[2]

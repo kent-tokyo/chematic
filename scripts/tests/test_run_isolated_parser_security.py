@@ -5,7 +5,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).parents[2]
-MODULE_PATH = ROOT / "scripts/run_isolated_parser_security.py"
+MODULE_PATH = ROOT / "scripts/diagnostics/run_isolated_parser_security.py"
 SPEC = importlib.util.spec_from_file_location("isolated_parser_security", MODULE_PATH)
 assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)

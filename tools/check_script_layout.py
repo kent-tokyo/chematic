@@ -10,7 +10,17 @@ from pathlib import Path, PurePosixPath
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = ROOT / "tools/script_root_baseline.list"
 ALLOWED_DIRECTORIES = frozenset(
-    {"benchmarks", "checks", "diagnostics", "generators", "lib", "release", "tests", "validation"}
+    {
+        "benchmarks",
+        "checks",
+        "diagnostics",
+        "fixtures",
+        "generators",
+        "lib",
+        "release",
+        "tests",
+        "validation",
+    }
 )
 
 
@@ -40,6 +50,11 @@ def validate_layout(tracked: list[str], baseline: list[str]) -> list[str]:
     return errors
 
 
+def existing_files(root: Path, tracked: list[str]) -> list[str]:
+    """Ignore paths deleted in the working tree but still present in Git's index."""
+    return [path for path in tracked if (root / path).is_file()]
+
+
 def main() -> int:
     result = subprocess.run(
         ["git", "ls-files", "-z", "--", "scripts"],
@@ -47,7 +62,10 @@ def main() -> int:
         check=True,
         capture_output=True,
     )
-    tracked = [path for path in result.stdout.decode().split("\0") if path]
+    tracked = existing_files(
+        ROOT,
+        [path for path in result.stdout.decode().split("\0") if path],
+    )
     baseline = [
         line.strip() for line in BASELINE.read_text().splitlines()
         if line.strip() and not line.startswith("#")

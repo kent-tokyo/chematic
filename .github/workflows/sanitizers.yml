@@ -46,4 +46,4 @@ jobs:
             ${{ runner.os }}-sanitizer-${{ matrix.sanitizer }}-
 
       - name: Run ${{ matrix.sanitizer }} sanitizer tests
-        run: bash scripts/run_sanitizer.sh "${{ matrix.sanitizer }}"
+        run: bash scripts/diagnostics/run_sanitizer.sh "${{ matrix.sanitizer }}"

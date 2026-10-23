@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "validation" / "cross_binding_contract.json"
 ACCURACY_MANIFEST = ROOT / "validation" / "manifests" / "rdkit_accuracy_v2.json"
 PROFILES = ROOT / "validation" / "compatibility_profiles.json"
-DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
+DEFAULT_OUTPUT = ROOT / "docs" / "reference" / "compatibility-dashboard.md"
 
 
 def version_key(version: str) -> tuple[int, int, int]:
@@ -122,7 +122,7 @@ def render(
         "",
         "## Shared binding contract",
         "",
-        f"Operation inventory: `{len(contract['operation_manifest']['operations'])}` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.",
+        f"Operation inventory: `{len(contract['operation_manifest']['operations'])}` currently shared operations; validate with `python3 scripts/checks/check_cross_binding_manifest.py`.",
         "",
         "| Area | Checked-in assertions | Status |",
         "|---|---:|---|",
@@ -176,7 +176,7 @@ def render(
             "",
             "Evidence paths, API names, settings, and exact/numeric/semantic comparison rules live in "
             "`validation/compatibility_profiles.json`; validate them with "
-            "`python3 scripts/check_compatibility_profiles.py`.",
+            "`python3 scripts/checks/check_compatibility_profiles.py`.",
             "",
         ]
     if accuracy_manifest is not None:

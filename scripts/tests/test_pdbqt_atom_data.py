@@ -2,7 +2,7 @@
 import unittest
 from copy import deepcopy
 
-from scripts.check_interchange_preservation import ContractError
+from scripts.checks.check_interchange_preservation import ContractError
 from scripts.validation.check_pdbqt_atom_data import read_probe, numeric_data_equal
 
 

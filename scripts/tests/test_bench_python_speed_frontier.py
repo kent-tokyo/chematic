@@ -3,7 +3,7 @@ from pathlib import Path
 import unittest
 
 SPEC = importlib.util.spec_from_file_location(
-    "speed_frontier", Path(__file__).parents[1] / "bench_python_speed_frontier.py"
+    "speed_frontier", Path(__file__).parents[1] / "benchmarks" / "bench_python_speed_frontier.py"
 )
 frontier = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(frontier)

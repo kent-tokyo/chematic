@@ -1,5 +1,0 @@
-{
-  "original_wheel": "/private/tmp/chematic-huckel-fifo-20261015/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl",
-  "wheel_sha256": "47f791336d05907d089eb1fb3c004c6974ff3b86dbe17fd008ce50e29fc43310",
-  "scope": "Exact original ten-candidate baseline source/wheel reused; all 10057 source/input hashes verified. Full exact baseline dumps reused and retained. Every new timing block is separate, without pooling."
-}

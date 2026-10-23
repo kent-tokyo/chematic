@@ -1,2 +1,0 @@
-continued21 {'parse': {'speedup': {'median': 1.01, 'ci95': [1.006, 1.018], 'winning_blocks': 17, 'blocks': 21}, 'strict_speed_win': False}, 'write': {'speedup': {'median': 1.083, 'ci95': [1.068, 1.087], 'winning_blocks': 21, 'blocks': 21}, 'strict_speed_win': True}, 'roundtrip': {'speedup': {'median': 1.031, 'ci95': [1.023, 1.036], 'winning_blocks': 20, 'blocks': 21}, 'strict_speed_win': False}}
-All source diagnostics complete

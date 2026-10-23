@@ -12,7 +12,7 @@
 //! diverges from RDKit at every radius >= 1, since RDKit's own
 //! `Chem.MolFromSmiles` always sanitizes before hashing).
 //!
-//! Compared by `scripts/ecfp_rdkit_raw_identifier_parity.py` against
+//! Compared by `scripts/validation/ecfp_rdkit_raw_identifier_parity.py` against
 //! `row["full"]["sparse_bit_info"]` (radius 0/1/2 numeric parity) and
 //! `row["default"]["sparse_bit_info"]`/`["sparse_counts"]`/
 //! `["folded_on_bits"]`/`["folded_bit_info"]` (representative-selection,

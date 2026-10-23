@@ -1,9 +1,0 @@
-5000 complete
-Traceback (most recent call last):
-  File "/private/tmp/chematic-component-packed-20261015/run-frontiers.py", line 9, in <module>
-    with (r/f'frontier-{offset}.log').open('w') as f:subprocess.run(cmd,stdout=f,stderr=subprocess.STDOUT,check=True)
-                                                     ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
-    raise CalledProcessError(retcode, process.args,
-                             output=stdout, stderr=stderr)
-subprocess.CalledProcessError: Command '['/private/tmp/chematic-cycle-speed-20261014/env/bin/python', '/private/tmp/chematic-component-packed-source-20261015/scripts/bench_python_speed_frontier.py', '--corpus', '/private/tmp/chematic-component-packed-source-20261015/validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi', '--offset', '0', '--limit', '1000', '--blocks', '20', '--baseline-wheel', '/private/tmp/chematic-component-packed-20261015/baseline-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl', '--baseline-path', '/private/tmp/chematic-component-packed-20261015/baseline', '--candidate-wheel', '/private/tmp/chematic-component-packed-20261015/candidate-wheel/chematic-1.1.4-cp313-cp313-macosx_11_0_arm64.whl', '--candidate-path', '/private/tmp/chematic-component-packed-20261015/candidate', '--source-manifest', '/private/tmp/chematic-component-packed-20261015/source-manifest.json', '--base-revision', 'cac480fb23cd8adeec6e5e9bed1f18677f87b392-plus-ten-accepted-source-candidates', '--output', '/private/tmp/chematic-component-packed-20261015/frontier-0.json']' returned non-zero exit status 1.

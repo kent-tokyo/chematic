@@ -2,7 +2,7 @@
 //! 3D Breakthrough Program Wave 2 → Wave 3 Coordinator Integration 1.
 //!
 //! Compares 10 arms (A-J, spec §13) on the same seed over the frozen 58-molecule
-//! corpus (hand-copied verbatim from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, same
+//! corpus (hand-copied verbatim from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`, same
 //! transcription already used by every sibling example in this directory -- see
 //! `examples/cf_integration_smoke_test.rs`) plus 5 molecules added specifically to
 //! close a gap found during independent verification round 4: spec §14 explicitly

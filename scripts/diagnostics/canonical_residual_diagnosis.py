@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Canonical SMILES residual diagnosis: chematic vs RDKit (diag/canonical-smiles-residual).
 
-Builds on the existing `scripts/canonical_diff.py` (round-trip + idempotency,
+Builds on the existing `scripts/validation/canonical_diff.py` (round-trip + idempotency,
 committed results in `validation/results/canonical_diff.jsonl`) and
-`scripts/canonical_structural_correctness.py` (per-molecule structural
+`scripts/diagnostics/canonical_structural_correctness.py` (per-molecule structural
 correctness under RDKit-generated variants). This script adds the four checks
 requested for this diagnosis round, measured and reported SEPARATELY (never
 pooled into one "agreement %"):

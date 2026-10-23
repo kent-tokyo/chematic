@@ -71,7 +71,7 @@ def main():
     parse_fail_rd = 0
 
     # per-molecule signed deltas (ch - rd), keyed by SMILES, for drift
-    # tracking across runs (see scripts/veridict_accuracy_report.py) —
+    # tracking across runs (see scripts/validation/veridict_accuracy_report.py) —
     # separate from the match/over/under aggregate counters above.
     tpsa_deltas = {}
     logp_deltas = {}

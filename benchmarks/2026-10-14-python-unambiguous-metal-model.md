@@ -98,7 +98,7 @@ The preceding [root-pruning report](2026-10-14-python-cycle-root-pruning.md) ret
 
 ## Evidence and reproduction
 
-- [Candidate patch](2026-10-14-python-unambiguous-metal-model-candidate.patch), [source hashes](2026-10-14-python-unambiguous-metal-model-source.json), and [verification index](2026-10-14-python-unambiguous-metal-model-verification.json).
+- [Candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-unambiguous-metal-model-candidate.patch), [source hashes](2026-10-14-python-unambiguous-metal-model-source.json), and [verification index](2026-10-14-python-unambiguous-metal-model-verification.json).
 - [Slice 0](2026-10-14-python-unambiguous-metal-model-slice0-paired20.json) and [slice 5000](2026-10-14-python-unambiguous-metal-model-slice5000-paired20.json): every final block, load averages, versions, agreements, timings, RSS, and output hashes.
 - [Self-contained tested source](../validation/results/python-unambiguous-metal-model-source-2026-10-14.tar.gz). Extract `candidate/`; to recover baseline, replace the two files from `baseline-overrides/`, remove `crates/chematic-smiles/src/rdkit/sanitize_metal_tests.rs`, and verify every baseline manifest hash. The prerequisite candidates are already included.
 - Exact baseline/candidate descriptor and Morgan dumps, build/check logs, setup failure, and intermediate raw blocks are retained under `validation/results/python-unambiguous-metal-model-*`. Measured wheel paths and hashes are recorded; wheels are local build artifacts.

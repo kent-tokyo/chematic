@@ -1,8 +1,0 @@
-{
-  "file": "crates/chematic-chem/src/descriptors/descriptor_view_tests.rs",
-  "only_rustfmt_formatting": true,
-  "baseline_sha256": "42e0793f77625b60b490497ebad093dfdffd93e9a155ad91e50274758307e8ee",
-  "candidate_sha256": "be4539144b0a58402a2b0e62fe966285f0cd710f3b6f8b3e279cbfaa89718458",
-  "compiled_and_tested_before_freeze": true,
-  "preflight_failed_before_any_timing_block": true
-}

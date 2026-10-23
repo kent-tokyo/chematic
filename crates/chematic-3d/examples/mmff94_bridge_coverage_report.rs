@@ -1,13 +1,13 @@
 //! Measures MMFF94 parameter coverage (bond/angle/torsion/out-of-plane) and
 //! the mechanism-3 "silent zero-gradient" fix, over the frozen 58-molecule
-//! corpus from `scripts/etkdg_vs_rdkit_gap.py::CORPUS` (`docs/rfcs/etkdg_3d_gap_rfc.md`).
+//! corpus from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS` (`docs/rfcs/etkdg_3d_gap_rfc.md`).
 //!
 //! This is a self-contained validation entry point owned by this PR (Agent
 //! F, `feat/3d-full-force-field-bridge`) — it does not write into
 //! `validation/` (that directory is Agent H's territory per
 //! `docs/rfcs/3d_breakthrough_master_plan.md` §3) and does not touch the shared
 //! repo `.venv`; it is a pure-Rust `cargo run --example` tool. The SMILES
-//! list below is hand-copied from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`
+//! list below is hand-copied from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`
 //! (58 entries) so this can run without Python at all.
 //!
 //! For each molecule this reports:
@@ -28,7 +28,7 @@ use chematic_3d::minimize::{
 use chematic_core::Molecule;
 use chematic_smiles::parse;
 
-/// Hand-copied verbatim from `scripts/etkdg_vs_rdkit_gap.py::CORPUS` (58
+/// Hand-copied verbatim from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS` (58
 /// entries, name/SMILES/category — category dropped, not needed here).
 const CORPUS: &[(&str, &str)] = &[
     ("benzene", "c1ccccc1"),

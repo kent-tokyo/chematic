@@ -163,7 +163,7 @@ pub(crate) fn apply_vdw_bounds(mol: &Molecule, lower: &mut [Vec<f64>], upper: &m
 /// every aromatic bond (true aromatic C-C is ~1.39 Å, not 1.54 Å) and every other
 /// element pair not in the 9-entry list (S, P, Br, I, N-N, O-O, ...). The scale
 /// factors below (single=1.00, double=0.87, triple=0.78, aromatic=0.93) are the
-/// same values `scripts/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE` uses against
+/// same values `scripts/diagnostics/etkdg_vs_rdkit_gap.py::_BOND_ORDER_SCALE` uses against
 /// RDKit's `GetRcovalent`, so this is a standard/public bond-order correction, not
 /// something reverse-engineered from a single molecule.
 pub(crate) fn ideal_bond_length(mol: &Molecule, a: AtomIdx, b: AtomIdx) -> f64 {

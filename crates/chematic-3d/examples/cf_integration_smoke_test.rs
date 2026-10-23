@@ -14,7 +14,7 @@
 //! into any production path by this file.
 //!
 //! Frozen 58-molecule corpus, hand-copied verbatim (name, SMILES, category)
-//! from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, same transcription already
+//! from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`, same transcription already
 //! used by both sibling examples in this directory.
 //!
 //! Run: `cargo run --release -p chematic-3d --example cf_integration_smoke_test`

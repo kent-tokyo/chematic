@@ -3,7 +3,7 @@
 //! * `digest <out.tsv> <corpus.smi>...` — one line per (corpus row, op) with the
 //!   op's full output; every op runs on a fresh clone so no memoized state
 //!   leaks between ops. Two revisions' digests must be byte-identical for an
-//!   output-preserving change (see `scripts/perf_digest_diff.sh`).
+//!   output-preserving change (see `scripts/benchmarks/perf_digest_diff.sh`).
 //! * `time <corpus.smi>` — cold µs/mol per op (fresh clones every repeat;
 //!   `REPS`, default 3, best-of), plus a shared-molecule session total.
 //! * `patterns <smarts.txt> <corpus.smi>` — per-SMARTS existence-search cost.

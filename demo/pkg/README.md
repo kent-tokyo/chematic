@@ -4,7 +4,7 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.2.0. The binding keeps bounded parsing,
+The current workspace line is 1.2.1. The binding keeps bounded parsing,
 typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
 Experimental and is not a claim of full RDKit parity.
 
@@ -281,10 +281,11 @@ interpretation, or cross-engine semantic compatibility.
 
 ## Bundle size
 
-The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499
-bytes gzip**. Bundle size depends on features and toolchain; see the
-[published-package scorecard](../../benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md)
-for package versions, digests, tools, and reproduction steps.
+Bundle size depends on the release, enabled features, and toolchain. Measure
+the installed npm artifact for the version you deploy. The retained
+[three-browser packet](../../benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md)
+documents the bounded browser performance comparison; it is not a current
+bundle-size claim.
 
 PNG rasterization (`tiny_skia`) is excluded from the WASM build — use SVG output instead. All SVG depiction APIs remain fully available.
 

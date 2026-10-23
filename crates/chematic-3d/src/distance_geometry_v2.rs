@@ -140,7 +140,7 @@
 //! chance — stereo assignment shouldn't depend on getting lucky.
 //!
 //! **Measured (2026-08-11, `max_attempts: 8`, the 29 stereo-bearing molecules of
-//! `scripts/etkdg_vs_rdkit_gap.py::CORPUS`, `random_seed` swept over 0..5 — see
+//! `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`, `random_seed` swept over 0..5 — see
 //! `ez_bounds_29_corpus_regression_but2ene_z_fixed_nothing_else_broken` for the exact
 //! before/after sets, independently re-measured on unmodified `main` for the "before"
 //! side). This measures the embedder alone (no UFF minimization, unlike issue #291's

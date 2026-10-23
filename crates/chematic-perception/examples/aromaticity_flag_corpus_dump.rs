@@ -16,12 +16,12 @@
 //! run it once on `main` (or any earlier commit), once on the branch under
 //! test, and diff the two JSONL dumps by `smiles`.
 //!
-//! Run (default corpus: `scripts/descriptor_census_corpus.smi`, reused from
+//! Run (default corpus: `scripts/fixtures/descriptor_census_corpus.smi`, reused from
 //! PR #137's descriptor census -- not rebuilt here):
 //! ```text
 //! cargo run -p chematic-perception --release \
 //!     --example aromaticity_flag_corpus_dump \
-//!     -- scripts/descriptor_census_corpus.smi \
+//!     -- scripts/fixtures/descriptor_census_corpus.smi \
 //!     > /tmp/corpus_dump.jsonl
 //! ```
 
@@ -34,7 +34,7 @@ use serde_json::json;
 fn main() {
     let path = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "scripts/descriptor_census_corpus.smi".to_string());
+        .unwrap_or_else(|| "scripts/fixtures/descriptor_census_corpus.smi".to_string());
     let text = fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
 
     let mut n_total = 0usize;

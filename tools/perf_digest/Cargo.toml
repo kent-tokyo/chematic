@@ -1,4 +1,4 @@
-# Standalone (non-workspace) harness: `scripts/perf_digest_diff.sh` rewrites
+# Standalone (non-workspace) harness: `scripts/benchmarks/perf_digest_diff.sh` rewrites
 # the `../../crates/` paths to build the same harness against two revisions.
 [package]
 name = "chematic-perf-digest"

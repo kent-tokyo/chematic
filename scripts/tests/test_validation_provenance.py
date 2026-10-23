@@ -1,7 +1,7 @@
 import re
 from pathlib import Path
 
-from scripts.validation_provenance import collect
+from scripts.lib.validation_provenance import collect
 
 
 ROOT = Path(__file__).parents[2]
@@ -28,3 +28,4 @@ def test_provenance_digest_is_nonempty_without_worktree_mutation(tmp_path):
     # the digest contract without mutating the shared worktree.
     assert first["tracked_diff_sha256"] != ""
     assert tmp_path.is_dir()
+

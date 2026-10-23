@@ -5,7 +5,7 @@ from zipfile import ZipFile
 
 import pytest
 
-from scripts.reaction_python_checked_provenance_gate import source_artifact
+from scripts.validation.reaction_python_checked_provenance_gate import source_artifact
 
 
 def test_source_artifact_checks_installed_extension_bytes(tmp_path):
@@ -35,7 +35,7 @@ def test_source_artifact_checks_installed_extension_bytes(tmp_path):
 def test_candidates_must_cover_the_pinned_fixtures(tmp_path):
     import json
 
-    from scripts.reaction_python_checked_provenance_gate import candidates_rows
+    from scripts.validation.reaction_python_checked_provenance_gate import candidates_rows
 
     cases = [{"id": "a"}, {"id": "b"}]
     hashes = {"base_sha256": "x", "strata_sha256": "y"}

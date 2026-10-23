@@ -16,8 +16,8 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'scripts'))
-from check_interchange_preservation import bounded_run, identity, require
+sys.path.insert(0, str(ROOT))
+from scripts.checks.check_interchange_preservation import bounded_run, identity, require
 
 
 def observe(text):

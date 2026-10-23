@@ -37,7 +37,7 @@
 //! [`crate::rdkit_torsion_fp`]'s.
 //!
 //! **Status**: 87.2% bit-exact on a 1000-molecule general corpus sample
-//! (`scripts/descriptor_census_corpus.smi`), verified against a live RDKit
+//! (`scripts/fixtures/descriptor_census_corpus.smi`), verified against a live RDKit
 //! oracle (`rdkit.Chem.AllChem.GetHashedAtomPairFingerprintAsBitVect`) --
 //! zero implementation bugs found this round. Every single mismatching
 //! molecule in the sample contains a hypervalent S or P atom (confirmed: 0

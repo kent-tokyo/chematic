@@ -984,7 +984,7 @@ impl Mol {
     /// runs a neural-network forward pass on the molecule's ECFP4 fingerprint.
     /// Until then, transparently falls back to the Delaney ESOL linear regression.
     ///
-    /// To install trained weights, run `scripts/train_solubility_mlp.py` and
+    /// To install trained weights, run `scripts/generators/train_solubility_mlp.py` and
     /// follow the instructions printed at the end.
     ///
     ///     mol = chematic.from_smiles("c1ccccc1")

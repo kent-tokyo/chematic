@@ -9,7 +9,7 @@ Pure Rust chemical intelligence library — **descriptors, drug-likeness rules, 
 The Python facade exposes 70+ descriptor functions and 190+ individual values;
 the Rust crate provides the underlying scalar and vector implementations.
 RDKit agreement is metric-specific rather than universal; see
-[`docs/validation.md`](../../docs/validation.md).
+[`validation`](../../docs/reference/validation.md).
 
 - **Physicochemical**: MW, LogP (Crippen), TPSA, PSA, MOLAR_REFR, VdW volume
 - **Van der Waals volume**: `vabc(mol) -> f64` — Bondi radii + spherical-cap overlaps, no 3D coordinates required
@@ -137,7 +137,7 @@ println!("Selected {} diverse molecules", picks.len());
 
 ## Validation
 
-Run `cargo test -p chematic-chem`. Corpus-level agreement and known residuals are documented in [`docs/validation.md`](../../docs/validation.md). Release history is maintained in the repository [`CHANGELOG.md`](../../CHANGELOG.md).
+Run `cargo test -p chematic-chem`. Corpus-level agreement and known residuals are documented in [`validation`](../../docs/reference/validation.md). Release history is maintained in [`CHANGELOG.md`](../../CHANGELOG.md).
 
 ## License
 

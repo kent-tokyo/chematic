@@ -5,7 +5,7 @@ import sys
 import unittest
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
 from bench_python_scalar_bundle import agreement, comparable
 
 class BundleGateTests(unittest.TestCase):

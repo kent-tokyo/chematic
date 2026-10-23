@@ -3,9 +3,9 @@
 > Historical validation snapshot. These measurements were generated for
 > chematic **v0.4.20** and are not evidence for the current v1.1.4 release.
 > For current scope and evidence, see
-> [`docs/compatibility-scope.md`](../../docs/compatibility-scope.md),
-> [`docs/validation.md`](../../docs/validation.md), and
-> [`docs/benchmark.md`](../../docs/benchmark.md).
+> [`docs/reference/compatibility-scope.md`](../../docs/reference/compatibility-scope.md),
+> [`docs/reference/validation.md`](../../docs/reference/validation.md), and
+> [`docs/reference/benchmark.md`](../../docs/reference/benchmark.md).
 
 Reference tool: **RDKit 2026.03.3**  
 Historical chematic version: **v0.4.20**

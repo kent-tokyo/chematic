@@ -6,7 +6,7 @@
 //! CIP gate (Milestone 4 included) needs the same rigor again.
 //!
 //! `SMILES.csv` itself is not checked into this repo (same convention as
-//! `scripts/benchmarks/bench5k.py`/`scripts/cip_ground_truth.py`) -- this is a `cargo run --example`
+//! `scripts/benchmarks/bench5k.py`/`scripts/diagnostics/cip_ground_truth.py`) -- this is a `cargo run --example`
 //! tool for local, on-demand use against a corpus file the user supplies, not a
 //! `scripts/check.sh`/CI step.
 //!
@@ -16,7 +16,7 @@
 //!
 //! Output: one TSV row per candidate stereocenter (`smiles\tatom_idx\tvalue`), where
 //! `value` is `R`/`S`/`E`/`Z`, `skip:tied`/`skip:budget`/`skip:not4`, or `ERR\t<message>`.
-//! Row selection matches `scripts/cip_ground_truth.py`'s corpus convention (skip the CSV
+//! Row selection matches `scripts/diagnostics/cip_ground_truth.py`'s corpus convention (skip the CSV
 //! header line) but gates on `chematic`'s own chirality flag, not RDKit's -- see
 //! `scripts/cip_accurate_full_corpus_report.py`'s module docs for why that set can differ
 //! slightly from the oracle's own stereocenter selection, and why that's a distinct cause

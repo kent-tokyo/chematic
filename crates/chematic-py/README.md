@@ -162,7 +162,7 @@ the chirality retained in `record.mol` from the CTAB wedge representation.
 - **190+ descriptor values** (70+ functions; several return vectors): MW,
   LogP, TPSA, QED, Fsp3, SA Score, HBD, `vabc`, `schultz_mti`,
   `gutman_mti`, and `gravitational_index`. RDKit agreement is metric-specific;
-  see the [validation report](../../docs/validation.md).
+  see the [validation report](../../docs/reference/validation.md).
 - **14 fingerprint algorithms**: ECFP2/4/6, FCFP4/6, MACCS, AtomPair, Torsion, …
 - **pKa prediction** (15 SMARTS rules — unique to chematic)
 - **ADMET profile**: BBB, Caco-2, hERG, CYP3A4
@@ -183,7 +183,7 @@ The operation/profile boundaries and measured oracle lanes are listed in the
 [Compatibility Contract dashboard](../../docs/compatibility-dashboard.md).
 For persisted fingerprints, saved indices, canonical identity, stereo, and
 browser/Worker migration decisions, read the
-[RDKit migration guide](../../docs/rdkit-migration.md) before changing a
+[RDKit migration guide](../../docs/reference/rdkit-migration.md) before changing a
 production workflow. Native ECFP and RDKit-compatible Morgan are separate
 profiles; rebuild stored fingerprints and indices under the chosen profile.
 
@@ -267,7 +267,7 @@ diff to `validation/results/rdkit_diff.jsonl`.
 
 `chematic.rdkit_compat` is **not a full RDKit clone** — it is a lightweight
 RDKit-compatible subset for common 2D cheminformatics workflows. See the full
-[RDKit migration guide](https://github.com/kent-tokyo/chematic/blob/main/docs/rdkit-migration.md)
+[RDKit migration guide](https://github.com/kent-tokyo/chematic/blob/main/docs/reference/rdkit-migration.md)
 (compatibility matrix, differential-validation results, known divergences, and runnable examples).
 
 ## License

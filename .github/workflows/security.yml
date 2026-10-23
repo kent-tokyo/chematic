@@ -25,7 +25,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Run repository-local S4/S5 gate
-        run: python3 scripts/security_review_gate.py
+        run: python3 scripts/validation/security_review_gate.py
 
   parser-security-corpus:
     name: Isolated parser-security corpus
@@ -39,7 +39,7 @@ jobs:
         run: cargo build --release -p chematic-cli --example parser_security_case
       - name: Run sourced fixed corpus with time and address-space limits
         run: >-
-          python3 scripts/run_isolated_parser_security.py
+          python3 scripts/diagnostics/run_isolated_parser_security.py
           validation/parser_security_corpus_v1.json
           --runner target/release/examples/parser_security_case
           --json-out parser-security-results.json

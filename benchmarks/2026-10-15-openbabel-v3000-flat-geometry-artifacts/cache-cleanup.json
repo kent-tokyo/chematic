@@ -1,9 +1,0 @@
-{
-  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-flat-geometry-target-20261015",
-  "logical_bytes": 212045002,
-  "retained_measured_binaries_sha256": {
-    "baseline": "218af18747a2456034caec290607cf6e358632563aaffc94f49d8ba214c722a2",
-    "candidate": "c446283a83f38d696df09966e49cff39dc47355e2747d1794590627b5357f58a"
-  },
-  "after_validation_before_timing": true
-}

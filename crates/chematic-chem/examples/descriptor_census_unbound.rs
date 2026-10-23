@@ -1,4 +1,4 @@
-//! Dumps `descriptors.rs` values that `scripts/descriptor_census.py` cannot
+//! Dumps `descriptors.rs` values that `scripts/generators/descriptor_census.py` cannot
 //! cheaply reach from Python for two different reasons:
 //!
 //! 1. No Python/WASM/MCP binding at all (confirmed by grepping chematic-py/
@@ -19,7 +19,7 @@
 //!
 //! Usage:
 //!   cargo run -p chematic-chem --release --example descriptor_census_unbound \
-//!       < scripts/descriptor_census_corpus.smi > validation/results/descriptor_census_unbound.jsonl
+//!       < scripts/fixtures/descriptor_census_corpus.smi > validation/results/descriptor_census_unbound.jsonl
 
 use chematic_chem::descriptors::{
     bcut2d, carbon_types, geary_autocorr, information_content, mde_carbon, mmff94_charges,

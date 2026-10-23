@@ -1,5 +1,5 @@
 //! Original minimal MIT OR Apache-2.0 EXYZ fixtures. Independent oracle recipe
-//! and normalized payload hashes: scripts/exyz_openbabel_gate.py.
+//! and normalized payload hashes: scripts/validation/exyz_openbabel_gate.py.
 use chematic_core::Element;
 use chematic_mol::{
     ExyzAtom, ExyzGeometry, ExyzParseLimits, parse_exyz, parse_exyz_with_limits, write_exyz,
