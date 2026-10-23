@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- V2000 MOL/SDF to ChemicalJSON conversion now retains source x/y/z values
+  instead of dropping the coordinate array. Rust and Python expose a bounded
+  source-triplet reader, refusing missing/nonfinite fields and retaining flat
+  or tiny z values independently of stereo perception. Python also supplies
+  this geometry to PDB, XYZ and PDBQT output within each writer's precision.
+
 ## [1.2.1] - 2026-10-23
 
 ### Documentation

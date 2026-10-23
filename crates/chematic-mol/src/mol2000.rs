@@ -1114,6 +1114,8 @@ fn parse_unsigned_ascii(field: &str) -> Option<usize> {
 
 mod reader;
 pub use reader::*;
+mod coordinates;
+pub use coordinates::parse_mol_with_coords_3d;
 mod writer;
 #[cfg(test)]
 use writer::push_right_aligned_i16;

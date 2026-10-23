@@ -95,7 +95,7 @@ Related records:
 - **CML:** checked source retention preserves the original XML document. The
   separate graph/coordinate projection validates the interpreted subset and
   rejects partial or conflicting coordinate declarations.
-- **V3000:** coordinate projection keeps source-order finite x/y/z values, but
+- **V2000/V3000:** coordinate projection keeps source-order finite x/y/z values, but
   target formats retain only the fields they can represent.
 
 ## LAMMPS dump/trajectory
@@ -136,6 +136,7 @@ Use these pages when the short matrix is not enough:
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)
 - [XYZ precision](xyz-output-precision.md),
   [per-atom data](xyz-atom-data.md), and [GRO/LAMMPS units](gro-lammps-units.md)
+- [V2000 source coordinate projection](v2000-coordinate-projection.md)
 
 The generated [Python API reference](../api/chematic.md) is authoritative for
 current Python signatures. Rustdoc and TypeScript declarations remain the

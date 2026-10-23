@@ -3384,6 +3384,16 @@ def from_mol_v3000(block: str | bytes) -> Mol:
     """
     ...
 
+def from_mol_block_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
+    """Return V2000 (Mol, name, source-order xyz in angstroms).
+
+    Requires finite values in all three fixed-width fields. Keeps tiny/flat z
+    and signed zero independently of perception and headers. Graph/stereo
+    interpretation is unchanged. Bounded to 16 MiB; metadata loss is not audited.
+    """
+    ...
+
+
 def from_mol_v3000_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Return Mol, name and source-order x/y/z in Angstrom, including tiny z.
 
@@ -5574,6 +5584,8 @@ def convert_format(
     Coordinate, charge, name and comment overrides are refused on those paths.
     CJSON source retention validates the immutable local record profile;
     opaque fields are retained without interpreting their chemistry.
+    V2000/V3000 inputs supply source xyz for CJSON, PDB, XYZ and PDBQT output;
+    target precision/metadata limits apply. Explicit coords retains precedence.
     """
     ...
 
