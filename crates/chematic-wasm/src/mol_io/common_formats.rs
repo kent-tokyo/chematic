@@ -264,6 +264,8 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
 /// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
 /// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
+/// That projection resolves CML namespaces and forward references; foreign
+/// subtrees and attributes never become graph records.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,

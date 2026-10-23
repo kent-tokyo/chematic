@@ -8,6 +8,9 @@ mod quality_retry;
 use quality_retry::refine_unfinished_quality_minimum;
 mod torsion_search;
 use torsion_search::refine_best_with_torsion_moves;
+#[path = "molecule/ensemble_seed.rs"]
+mod ensemble_seed;
+use ensemble_seed::conformer_seed;
 
 #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
 use rayon::prelude::*;
@@ -346,7 +349,11 @@ pub fn rdkit_embed_initial_molecule(
 /// Bounds, ring information, and experimental torsion preferences are built
 /// once and reused across conformers. Failed conformer attempts are omitted,
 /// matching RDKit's returned conformer-id list; input and setup failures remain
-/// typed errors.
+/// typed errors. Positive seeds retain RDKit's multiplicative schedule.
+/// For seed zero, attempts use `0, 2, 3, ...` to avoid RDKit #9738's repeated
+/// zero seeds (zero and one also alias in the RNG). The first conformer still
+/// matches single-conformer embedding; later zero-seed results intentionally
+/// differ from RDKit 2026.09.1. Distinct seeds do not guarantee distinct shapes.
 pub fn rdkit_embed_multiple_confs(
     mh: &Molecule,
     num_confs: usize,
@@ -397,6 +404,9 @@ fn embed_prepared_multiple_confs(
     let end_index = start_index.checked_add(num_confs).ok_or_else(|| {
         RdkitEmbedError::Unsupported("numConfs exceeds the reproducible seed range".into())
     })?;
+    if num_confs > 0 {
+        conformer_seed(o.random_seed, end_index - 1)?;
+    }
     #[cfg(not(all(target_arch = "wasm32", target_os = "unknown")))]
     let attempts: Vec<_> = (start_index..end_index)
         .into_par_iter()
@@ -490,12 +500,10 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     let compatibility = optimize_mmff_molecule(mh, compatibility, max_iters)?;
     let gradient_differs = corrected_torsion_gradient_can_differ(&prepared);
     if !gradient_differs
-        && (o.random_seed == 0
-            || num_confs
-                .checked_mul(2)
-                .and_then(|count| i32::try_from(count).ok())
-                .and_then(|count| o.random_seed.checked_mul(count))
-                .is_none())
+        && num_confs
+            .checked_mul(2)
+            .and_then(|count| conformer_seed(o.random_seed, count - 1).ok())
+            .is_none()
     {
         return Ok(refine_unfinished_quality_minimum(
             mh,
@@ -540,8 +548,7 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
     if gradient_differs
         || num_confs
             .checked_mul(3)
-            .and_then(|count| i32::try_from(count).ok())
-            .and_then(|count| o.random_seed.checked_mul(count))
+            .and_then(|count| conformer_seed(o.random_seed, count - 1).ok())
             .is_none()
     {
         return Ok(selected);
@@ -984,12 +991,7 @@ fn embed_conformer_attempt(
     index: usize,
     corrected_torsion_gradient: bool,
 ) -> Result<Option<Vec<[f64; 3]>>, RdkitEmbedError> {
-    let multiplier = i32::try_from(index + 1).map_err(|_| {
-        RdkitEmbedError::Unsupported("numConfs exceeds the reproducible seed range".into())
-    })?;
-    let seed = o.random_seed.checked_mul(multiplier).ok_or_else(|| {
-        RdkitEmbedError::Unsupported("conformer seed overflows a signed 32-bit integer".into())
-    })?;
+    let seed = conformer_seed(o.random_seed, index)?;
     match embed_prepared_fragments_with(prepared, o, seed, false, corrected_torsion_gradient) {
         Ok(coords) => Ok(Some(coords)),
         Err(RdkitEmbedError::Failed) => Ok(None),

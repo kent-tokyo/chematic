@@ -1,0 +1,150 @@
+{
+  "schema": "chematic.zero-seed-ensemble-summary.v1",
+  "utc": "2026-10-23T18:32:27.825615+00:00",
+  "base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "state": "unpublished candidate",
+  "upstream_state": "open",
+  "scope": "Four fixed flexible SMILES, three seeds and five explicit-H unoptimized conformers. Variation is maximum change in heavy-atom pair distances, not aligned RMS or distinct optimized minima.",
+  "baseline": "Prior local runtime from 86afa09f (main 38b4c92c plus the unrelated isotope-formula feature), not a separately rebuilt release. The native regression also fails on current main before this fix.",
+  "summary": {
+    "before": [
+      {
+        "seed": 0,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 0,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "seed": 1,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "seed": 42,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      }
+    ],
+    "candidate": [
+      {
+        "seed": 0,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "seed": 1,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "seed": 42,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      }
+    ],
+    "rdkit": [
+      {
+        "seed": 0,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 0,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      {
+        "seed": 1,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      },
+      {
+        "seed": 42,
+        "cases": 4,
+        "nonrigid_variation_over_0_1_angstrom": 4,
+        "repeat_equal": 4,
+        "prefix_equal": 4,
+        "unique_coordinate_arrays": [
+          5,
+          5,
+          5,
+          5
+        ]
+      }
+    ]
+  },
+  "first_conformers_preserved": 12,
+  "positive_seed_ensembles_preserved": 8,
+  "sources_and_packets": {
+    "Cargo.lock": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+    "crates/chematic-3d/src/rdkit_embed/mod.rs": "c3c18e05cc6f2adabb101bbc5baa1c729b606529010d4b5305c3d7cc20f42179",
+    "crates/chematic-3d/src/rdkit_embed/molecule.rs": "f656b4cf237740ae13c5a3e05e98d75566bb579b3b0d372f09548e16df13406b",
+    "crates/chematic-3d/src/rdkit_embed/molecule/ensemble_seed.rs": "b866883017f868fd93b0db2acbdaa1767fe0fa8c4d15072d2529e3662a303037",
+    "crates/chematic-py/src/mol_methods/identity.rs": "7c1585ad52cc34e7690c27f1fd4eab771f8966cc736a0cb8f8da29397bd0b775",
+    "crates/chematic-py/python/chematic/__init__.pyi": "a964bbe3b0c09536029b10d8e6012933883df1f197877a068b97409acb5cecb1",
+    "scripts/validation/validate_zero_seed_ensemble.py": "8afe317c80ff9876e3ea6a6a1971d486332cfbbf4eb6d796c79f4d7255731ea2",
+    "validation/rdkit-9738-2026-10-24/before.json.gz": "5db29677e3b9cd588a17d15077837e62fbaa01331aea39d7c7b398af1c1be2ee",
+    "validation/rdkit-9738-2026-10-24/candidate.json.gz": "694df804555dfdaee405d04c92da00963107ad64987e7aaf11dfb8d3221fc4ec",
+    "validation/rdkit-9738-2026-10-24/native-before.txt": "e61a528fed3e499d148019aa05daebdb059c720ce128104d6e8130a4a303c0a0",
+    "validation/rdkit-9738-2026-10-24/rdkit.json.gz": "3199aa57c54999af653dab05e7b2a4ab8e409fed77334507a721bf3e29279ef8",
+    "validation/rdkit-9738-2026-10-24/upstream.json": "6a218f5380a129b4b664e7675db6cdf2b78a02136bd802c936157f91c6875aa1"
+  }
+}

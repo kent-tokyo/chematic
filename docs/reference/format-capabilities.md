@@ -47,7 +47,7 @@ means the operation is not exposed on that binding.
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ does not carry bonds |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
-| ORCA input | R/W | R/W | R/W | Cartesian profile and explicit units |
+| ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |
 | ORCA output | R | R | R | No writer |
 | Gaussian input/log | R/W or R | R/W or R | bounded | Input and output are separate APIs |
 | Gaussian Cube | R/W | R/W | R/W | Volumetric grid profile |
@@ -94,7 +94,8 @@ Related records:
   bytes, and line endings after validating every local-profile record.
 - **CML:** checked source retention preserves the original XML document. The
   separate graph/coordinate projection validates the interpreted subset and
-  rejects partial or conflicting coordinate declarations.
+  rejects partial or conflicting coordinate declarations. Its namespace-aware
+  profile excludes foreign annotations from the graph and resolves forward IDs.
 - **V3000:** coordinate projection keeps source-order finite x/y/z values, but
   target formats retain only the fields they can represent.
 
@@ -129,6 +130,7 @@ Use these pages when the short matrix is not enough:
   [model splitting](pdb-model-splitting.md), and
   [checked PDBQT output](pdbqt-checked-output.md)
 - [CML collections](cml-collection.md) and [named atoms](cml-named-atoms.md)
+- [CML namespace-aware projection](cml-namespace-projection.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),

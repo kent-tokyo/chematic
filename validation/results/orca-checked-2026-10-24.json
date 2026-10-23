@@ -1,0 +1,190 @@
+{
+  "schema": "chematic.orca-checked-validation.v1",
+  "utc": "2026-10-23T17:46:20.305628+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "candidate_base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "candidate_state": "working tree, not a published release",
+  "scope": "Represented structured xyz input fields and f64 values. Opaque settings are not executable-job validation or source identity.",
+  "counts": {
+    "openbabel.common.changed": 10,
+    "openbabel.common.fields_match": 2,
+    "python.checked.common.fields_match": 12,
+    "python.checked.metadata_match": 24,
+    "python.checked.numeric.fields_match": 6,
+    "python.checked.profile.fields_match": 6,
+    "python.invalid.refused": 30,
+    "python.legacy.common.changed": 10,
+    "python.legacy.common.fields_match": 2,
+    "python.legacy.metadata_match": 24,
+    "python.legacy.numeric.changed": 4,
+    "python.legacy.numeric.fields_match": 2,
+    "python.legacy.profile.changed": 6,
+    "wasm.checked.common.fields_match": 12,
+    "wasm.checked.metadata_match": 24,
+    "wasm.checked.numeric.fields_match": 6,
+    "wasm.checked.profile.fields_match": 6,
+    "wasm.invalid.refused": 38,
+    "wasm.legacy.common.changed": 10,
+    "wasm.legacy.common.fields_match": 2,
+    "wasm.legacy.metadata_match": 24,
+    "wasm.legacy.numeric.changed": 4,
+    "wasm.legacy.numeric.fields_match": 2,
+    "wasm.legacy.profile.changed": 6
+  },
+  "common_max_coordinate_error": {
+    "python.checked": 0,
+    "python.legacy": 4.999999999e-07,
+    "wasm.checked": 0,
+    "wasm.legacy": 4.999999999e-07,
+    "openbabel": 4.567205905914307e-06
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/orca-checked-2026-10-24/cases.json",
+    "sha256": "0e4f2650b01fbe9f95188a9d5f30d31e7d9ae0c8b8f69246c1c9bf302e4606b4",
+    "size_bytes": 60408
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/orca-checked-2026-10-24.packet.json.gz",
+    "sha256": "50d972698df362770cdae53ca313bfd15aa017fc9a9a193bed20dad39cc48572",
+    "size_bytes": 8185
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+      "size_bytes": 63572
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca/checked.rs",
+      "sha256": "3987aaa224d7118b667f56dac2226e2d9b0f087b6c46639926bbc8e78c7c0705",
+      "size_bytes": 6163
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca/checked_json.rs",
+      "sha256": "9f8e765ac18f06aedce6079efbb152a567b8c33df17eafd377661bf23863135f",
+      "size_bytes": 3349
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca/cartesian.rs",
+      "sha256": "7cbb907361d21826806c0062a9108f38072ac1bfbaf3c2a4ef2e808163c297d3",
+      "size_bytes": 5328
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca.rs",
+      "sha256": "f07efe7296b1492e4c6558519174bcd9b56e08c369128b87862d06759746c754",
+      "size_bytes": 50703
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "74084ded82c1a242f45caf0d315e7c05be668a00f0df0a6117b45eedfd067a8b",
+      "size_bytes": 15342
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/orca_checked.rs",
+      "sha256": "62c6645dbcf948d44d8c13f27a019f1b5af34296a1ed2dbce95ce11ee5454618",
+      "size_bytes": 1590
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/registration.rs",
+      "sha256": "b660cced515eba0f0c33a0bd79d530862d84c94ab226b6625064bce31eed5f9e",
+      "size_bytes": 749
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "4692c3450a9d3dca43157498c0cb699ae5823ccb10d9c67b1659a15ca45d6cf4",
+      "size_bytes": 52915
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/format_io/orca_checked.rs",
+      "sha256": "596a2b60a228464f77daa126e9eff39c04691a7b7a66cb3ce33cc6c0bd4657a0",
+      "size_bytes": 1074
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/format_io.rs",
+      "sha256": "3b2ca5034c968f518d7a3c67670263c210733f23a7fff07f8ba9409c89006bb5",
+      "size_bytes": 58049
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_orca_checked.py",
+      "sha256": "2d13cc334754ec1d4cf752fdd25d61439d7591103773a880ee6cba987c23e265",
+      "size_bytes": 8579
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_orca_checked_node.mjs",
+      "sha256": "8c1091327bfe9e2e33bd64a625ec8b6ace1c75ee12790e6eb4e61aa2028f4c69",
+      "size_bytes": 698
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/orca_checked_observer.py",
+      "sha256": "f1f3abda0371293119a256719cf7291782e8afd9593df66461ec5e1c5f945407",
+      "size_bytes": 5089
+    }
+  ],
+  "legacy_control": {
+    "scope": "Old writer APIs in the same candidate runtime. Source bodies equal pinned main; not a separately rebuilt main/release binary.",
+    "source_commit": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+    "source_section_sha256": {
+      "crates/chematic-mol/src/orca.rs": "add02291fc73f20c0183bf199b9b4ced3c5e1d9920361828847ff5bbc4d737e8",
+      "crates/chematic-wasm/src/format_io.rs": "89ad3a2cf4ccbd90c14c10f02c79d4ced1f080d733a3f64e0cd340b34c6afc85",
+      "crates/chematic-py/src/formats/materials.rs": "dcae20e3dfef98ee3a1d3c3e03e8c8f20df31cc5bc28854a0d9bd1d3e221e934"
+    }
+  },
+  "artifacts": {
+    "python_extension": {
+      "path": "/private/tmp/chematic-orca-checked-python-20261024/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "a639864773c2f56b8bb02d9734369e0b22394990becf6e50e52ef49999678019",
+      "size_bytes": 45387664
+    },
+    "python_wrapper": {
+      "path": "/private/tmp/chematic-orca-checked-python-20261024/chematic/__init__.py",
+      "sha256": "1ba8d816053a6208767f8f4fda0eb34b1adf0f09165a1aa5b2d9cc6bdc158a14",
+      "size_bytes": 30089
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-orca-checked-wasm-20261024/chematic_wasm.js",
+      "sha256": "f9ab451891881d5aa8360c7e9cc05f3be00e0b823658297a1b43712ab856e164",
+      "size_bytes": 375978
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-orca-checked-wasm-20261024/chematic_wasm_bg.wasm",
+      "sha256": "d10d56d092e832a348710889ed0d7e29859f83b3b473a5373ed7597cff664791",
+      "size_bytes": 46187825
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "versions": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "rust": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+      "stderr": ""
+    },
+    "node": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "v24.5.0\n",
+      "stderr": ""
+    },
+    "openbabel": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "comparison_notes": [
+    "Common lane: 12 identical ordered element/coordinate arrays, Angstrom, charge 0/spin 1. Open Babel is XYZ-to-ORCA pipeline, not identical internal state.",
+    "12 profile/numeric positives and 38 raw-JSON refusals are candidate controls, not additional Open Babel losses. Python cannot represent duplicate JSON keys and exercises 30 dictionary refusals.",
+    "No ORCA execution, chemistry validation, timing, release or toolkit-wide superiority claim."
+  ],
+  "process_limits": {
+    "seconds": 30,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  }
+}

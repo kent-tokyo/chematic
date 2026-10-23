@@ -5,8 +5,8 @@
 //! `<atom>`, and `<bond>` elements with the attributes needed to represent
 //! 2D chemical structures.
 //!
-//! No external XML library is used; attributes are extracted with a simple
-//! key="value" scanner.
+//! Legacy graph/2D readers use a lightweight attribute scanner. The additive
+//! Cartesian profile uses bounded, namespace-aware XML parsing.
 //!
 //! # Supported attributes
 //!
@@ -30,13 +30,15 @@
 //! - Aromatic bonds ("A") are stored as alternating single/double bonds (no
 //!   special aromatic bond order in the core model).
 //! - Stereochemistry attributes are ignored.
-//! - The CML namespace declaration is accepted but not validated.
+//! - Legacy readers accept but do not validate namespace declarations. The
+//!   Cartesian profile resolves CML namespaces and excludes foreign subtrees.
 
 use std::collections::HashMap;
 
 use chematic_core::{Atom, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount};
 
 mod geometry;
+mod geometry_xml;
 pub use geometry::{CmlWith3d, parse_cml_with_3d, parse_cml_with_3d_with_limits};
 
 /// Resource limits for the lightweight CML parser.

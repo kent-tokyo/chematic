@@ -10,7 +10,9 @@ type CmlWith3d = (Mol, Option<Vec<Vec<f64>>>);
 /// Parse one CML molecule and return ``(Mol, coords_or_none)`` in source order.
 /// Cartesian Angstrom coordinates must be complete and finite on every atom,
 /// or absent on all atoms. No geometry is generated. Requires unique atom IDs.
-/// The lightweight XML profile does not interpret metadata or coordinate stereo.
+/// Resolves CML namespace prefixes and excludes foreign subtrees/attributes.
+/// Graph references may precede atoms. XML metadata/schema and coordinate stereo
+/// are not interpreted; this projection does not retain opaque source fields.
 #[pyfunction]
 pub(super) fn from_cml_with_3d(
     #[pyo3(from_py_with = serialized_text)] cml_str: &str,

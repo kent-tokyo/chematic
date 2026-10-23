@@ -59,6 +59,8 @@ use crate::{
     MolHandle, WASM_MAX_ATOMS, WASM_MAX_BATCH_ITEMS, WASM_MAX_INPUT_BYTES,
     WASM_MAX_JSON_STRING_BYTES, WASM_MAX_OUTPUT_BYTES,
 };
+mod orca_checked;
+pub use orca_checked::*;
 use wasm_bindgen::prelude::*;
 
 mod lammps;

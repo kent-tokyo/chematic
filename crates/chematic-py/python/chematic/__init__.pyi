@@ -355,7 +355,10 @@ class Mol:
     ) -> list[list[list[float]]]:
         """RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
         defaults on this explicit-hydrogen molecule. Failed attempts are
-        omitted; reusable setup is shared across conformers."""
+        omitted; reusable setup is shared across conformers. Seed zero uses
+        attempts 0, 2, 3, ... to fix RDKit #9738 while preserving the first
+        single-conformer result. Positive seeds retain their existing schedule.
+        Different seeds do not guarantee different shapes."""
         ...
 
     def rdkit_embed_multiple_confs_mmff(
@@ -414,9 +417,10 @@ class Mol:
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Keep the lowest-energy candidate, then converged conformers from
         ETKDG/MMFF94 runs. The second uses the corrected gradient when
-        relevant; otherwise two additional runs use new seeds. Uses twice or
-        three times the candidate work, respectively, plus up to one or two
-        optional MMFF retries.
+        relevant; otherwise up to three additional runs use new seeds. The
+        fourth batch runs only when the third improves the best energy by
+        more than 0.01 kcal/mol. Uses up to four times the candidate work
+        and up to three optional MMFF retries.
         """
         ...
 
@@ -676,6 +680,16 @@ class Mol:
     @property
     def formula(self) -> str:
         """Molecular formula in Hill notation (C first, H second, then alphabetical)."""
+        ...
+
+    @property
+    def formula_with_isotopes(self) -> str:
+        """Total isotope-separated formula including H and net charge.
+
+        C/H element families precede alphabetical symbols; within a family,
+        unspecified atoms precede numeric isotope labels. D/T use [2H]/[3H].
+        Isotope positions, atom maps, stereo and radical state are not encoded.
+        """
         ...
 
     @property
@@ -3327,7 +3341,9 @@ def from_cml_with_3d(cml_str: str | bytes) -> tuple[Mol, list[list[float]] | Non
     Returns source atom order; absent 3D coordinates return None. Requires
     unique nonempty atom IDs and refuses partial triplets/mixed presence.
     Limits: 16 MiB input, 100000 atoms plus native CML line/element/bond caps.
-    Metadata, namespaces/schema and coordinate stereo are not interpreted.
+    Resolves CML namespaces, excluding foreign subtrees and qualified metadata
+    attributes. Forward bond references are resolved by ID. XML schema, opaque
+    metadata and coordinate stereo are not interpreted; source is not retained.
     """
     ...
 
@@ -4017,6 +4033,15 @@ def parse_orca_cartesian(text: str, *, max_input_bytes: int = 16_777_216, max_at
     Values are not rescaled; Angs/Bohrs or default Angstrom. Refuses conflicting
     unit declarations, %coords overrides, internal/external geometry and limits.
     Opaque extras are not interpreted; JSON output is limited to 16 MiB.
+    """
+    ...
+
+def write_orca_input_checked(input: dict[str, Any], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write represented xyz ORCA fields with exact finite coordinate values.
+
+    Preserves unit keywords, charge/spin, freeze flags, extras and opaque blocks;
+    refuses unsupported units, defaults for missing required fields and any
+    represented metadata that would change on reparse. Not source/job validation.
     """
     ...
 

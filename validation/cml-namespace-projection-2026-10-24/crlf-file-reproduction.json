@@ -1,0 +1,31 @@
+{
+  "case_id": "default/crlf",
+  "input_sha256": "a70d978ccb47a8c51c6f155c6e49a504e18ba69776362c3b98cdf7911432f84d",
+  "runs": [
+    {
+      "mode": "file",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "/private/tmp/chematic-cml-namespace-crlf-repro.cml",
+        "-ocjson",
+        "-xs"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "0 molecules converted\n"
+    },
+    {
+      "mode": "stdin",
+      "command": [
+        "/opt/homebrew/bin/obabel",
+        "-icml",
+        "-ocjson",
+        "-xs"
+      ],
+      "exit_code": 0,
+      "stdout": "",
+      "stderr": "0 molecules converted\n"
+    }
+  ]
+}

@@ -54,6 +54,8 @@ use mol2_ensemble::*;
 mod materials;
 mod orca_cartesian;
 use orca_cartesian::parse_orca_cartesian;
+mod orca_checked;
+use orca_checked::write_orca_input_checked;
 mod pqr_checked;
 use pqr_checked::write_pqr_checked;
 mod mmcif_pdb;
