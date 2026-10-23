@@ -88,7 +88,7 @@ not an acceptable completion condition.
 | R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Complete |
 | R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Complete |
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Complete |
-| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Ready for review |
+| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Complete |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Ready for review |
 | R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Planned |
 | R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Planned |
@@ -131,7 +131,6 @@ selection and response bounding. The three MCP boundary functions now fit the
 normal limits, reducing the ratchet to 8 file and 60 function allowances. All
 140 MCP unit, schema-conformance and Streamable HTTP tests pass, including the
 real loopback-bind tests, together with warnings-as-errors clippy.
-
 Notable outcomes include a bounded reaction module tree, separated
 lexical/semantic format stages, API-domain binding modules, bounded descriptor
 and tautomer helpers, split canonical/ring/aromaticity algorithms, staged
