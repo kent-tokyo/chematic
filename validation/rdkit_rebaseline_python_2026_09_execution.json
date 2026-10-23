@@ -29,7 +29,7 @@
           "covers": ["provenance"],
           "argv": [
             "${PYTHON}",
-            "scripts/collect_rdkit_rebaseline_provenance.py",
+            "scripts/diagnostics/collect_rdkit_rebaseline_provenance.py",
             "--python",
             "--python-wrapper-backend", "${PYTHON_BACKEND}",
             "--python-backend-evidence", "${PYTHON_BACKEND_EVIDENCE}",
@@ -44,7 +44,7 @@
           "covers": ["binding_contract"],
           "argv": [
             "${PYTHON}",
-            "scripts/probe_rdkit_python_contract.py",
+            "scripts/diagnostics/probe_rdkit_python_contract.py",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
             "--output", "${OUTPUT_DIR}/python-binding-contract.json",
             "--expected-rdkit", "2026.09.1",
@@ -58,7 +58,7 @@
           "covers": ["smiles_parse_write", "cip", "smarts", "morgan"],
           "argv": [
             "${PYTHON}",
-            "scripts/run_rdkit_python_chemistry_lane.py",
+            "scripts/diagnostics/run_rdkit_python_chemistry_lane.py",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
             "--queries", "validation/rdkit_rebaseline_smarts_queries.json",
             "--output", "${OUTPUT_DIR}/python-chemistry-summary.json",

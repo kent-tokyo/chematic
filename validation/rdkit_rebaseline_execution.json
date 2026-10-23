@@ -29,7 +29,7 @@
           "covers": ["provenance"],
           "argv": [
             "${PYTHON}",
-            "scripts/collect_rdkit_rebaseline_provenance.py",
+            "scripts/diagnostics/collect_rdkit_rebaseline_provenance.py",
             "--python",
             "--python-wrapper-backend",
             "${PYTHON_BACKEND}",
@@ -50,7 +50,7 @@
           "covers": ["binding_contract"],
           "argv": [
             "${PYTHON}",
-            "scripts/probe_rdkit_python_contract.py",
+            "scripts/diagnostics/probe_rdkit_python_contract.py",
             "--corpus",
             "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
             "--output",
@@ -70,7 +70,7 @@
           "covers": ["smiles_parse_write", "cip", "smarts", "morgan"],
           "argv": [
             "${PYTHON}",
-            "scripts/run_rdkit_python_chemistry_lane.py",
+            "scripts/diagnostics/run_rdkit_python_chemistry_lane.py",
             "--corpus",
             "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
             "--queries",
@@ -99,7 +99,7 @@
           "covers": ["provenance"],
           "argv": [
             "${PYTHON}",
-            "scripts/collect_rdkit_rebaseline_provenance.py",
+            "scripts/diagnostics/collect_rdkit_rebaseline_provenance.py",
             "--npm-package",
             "${RDKIT_NPM_PACKAGE}",
             "--npm-artifact",
@@ -119,7 +119,7 @@
           "covers": ["morgan", "binding_contract"],
           "argv": [
             "${PYTHON}",
-            "scripts/check_browser_rdkit_ecfp4_parity.py",
+            "scripts/checks/check_browser_rdkit_ecfp4_parity.py",
             "--rdkit-package",
             "${RDKIT_NPM_PACKAGE}",
             "--schematic-dir",
@@ -142,7 +142,7 @@
           "covers": ["browser_runtime", "smiles_parse_write"],
           "argv": [
             "${PYTHON}",
-            "scripts/bench_browser_wasm_vs_rdkit_isolated.py",
+            "scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py",
             "--rdkit-package",
             "${RDKIT_NPM_PACKAGE}",
             "--schematic-dir",
@@ -170,7 +170,7 @@
           "id": "npm-cip-parity",
           "covers": ["cip"],
           "argv": [
-            "${NODE}", "scripts/check_rdkitjs_cip_parity.cjs",
+            "${NODE}", "scripts/diagnostics/check_rdkitjs_cip_parity.cjs",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
@@ -182,7 +182,7 @@
           "id": "npm-smarts-parity",
           "covers": ["smarts"],
           "argv": [
-            "${NODE}", "scripts/check_rdkitjs_smarts_parity.cjs",
+            "${NODE}", "scripts/diagnostics/check_rdkitjs_smarts_parity.cjs",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
@@ -207,7 +207,7 @@
           "covers": ["provenance"],
           "argv": [
             "${PYTHON}",
-            "scripts/collect_rdkit_rebaseline_provenance.py",
+            "scripts/diagnostics/collect_rdkit_rebaseline_provenance.py",
             "--npm-package", "${RDKIT_NPM_PACKAGE}",
             "--npm-artifact", "${RDKIT_NPM_ARTIFACT}",
             "--npm-runtime-version", "2026.09.1",
@@ -220,7 +220,7 @@
           "id": "npm-2026-09-morgan-parity",
           "covers": ["morgan", "binding_contract"],
           "argv": [
-            "${PYTHON}", "scripts/check_browser_rdkit_ecfp4_parity.py",
+            "${PYTHON}", "scripts/checks/check_browser_rdkit_ecfp4_parity.py",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--schematic-dir", "${SCHEMATIC_NPM_PACKAGE}",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
@@ -233,7 +233,7 @@
           "id": "npm-2026-09-browser-runtime",
           "covers": ["browser_runtime", "smiles_parse_write"],
           "argv": [
-            "${PYTHON}", "scripts/bench_browser_wasm_vs_rdkit_isolated.py",
+            "${PYTHON}", "scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--schematic-dir", "${SCHEMATIC_NPM_PACKAGE}",
             "--schematic-tarball", "${SCHEMATIC_NPM_TARBALL}",
@@ -248,7 +248,7 @@
           "id": "npm-2026-09-cip-parity",
           "covers": ["cip"],
           "argv": [
-            "${NODE}", "scripts/check_rdkitjs_cip_parity.cjs",
+            "${NODE}", "scripts/diagnostics/check_rdkitjs_cip_parity.cjs",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
@@ -260,7 +260,7 @@
           "id": "npm-2026-09-smarts-parity",
           "covers": ["smarts"],
           "argv": [
-            "${NODE}", "scripts/check_rdkitjs_smarts_parity.cjs",
+            "${NODE}", "scripts/diagnostics/check_rdkitjs_smarts_parity.cjs",
             "--rdkit-package", "${RDKIT_NPM_PACKAGE}",
             "--chematic-package", "${SCHEMATIC_NPM_PACKAGE}",
             "--corpus", "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
