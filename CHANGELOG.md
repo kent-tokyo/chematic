@@ -14,6 +14,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Documentation
+
+- Consolidated the active roadmap, open-work ledger, and completed
+  refactoring plan; refreshed standardization, coverage, compatibility, and
+  security guidance without rewriting historical benchmark evidence.
+
 ### Fixed
 
 - SDF named properties now accept registry information before the field name

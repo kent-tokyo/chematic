@@ -2,9 +2,9 @@
 
 [English](README.md) | [中文](README_zh.md)
 
-[![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
+[![CI](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml/badge.svg?branch=main&event=push)](https://github.com/kent-tokyo/chematic/actions/workflows/ci.yml)
 [![Docs](https://img.shields.io/github/deployments/kent-tokyo/chematic/github-pages?label=docs)](https://kent-tokyo.github.io/chematic/)
-[![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
+[![Coverage](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml/badge.svg?branch=main&event=push)](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
 [![codecov](https://codecov.io/gh/kent-tokyo/chematic/branch/main/graph/badge.svg)](https://app.codecov.io/github/kent-tokyo/chematic)
 [![PyPI](https://img.shields.io/pypi/v/chematic?logo=pypi)](https://pypi.org/project/chematic/)
 [![crates.io](https://img.shields.io/crates/v/chematic?logo=rust)](https://crates.io/crates/chematic)
@@ -13,7 +13,8 @@
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
 分子データを外部へ送らず、未対応の化学表現を曖昧に処理したくない場面に向けた、
-Python・Rust・ブラウザ対応のPure Rustケモインフォマティクスです。
+Rust製のケモインフォマティクスライブラリです。Python、Rust、Node、ブラウザから
+同じコアを利用できます。
 
 [公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 

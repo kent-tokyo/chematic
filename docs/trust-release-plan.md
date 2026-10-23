@@ -1,6 +1,6 @@
 # chematic 1.x Trust Release rules
 
-Updated 2026-10-21 for the **v1.2.0** release line.
+Updated 2026-10-23 for the **v1.2.0** release line.
 
 This document defines release rules. Priorities are in the
 [roadmap](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md), open

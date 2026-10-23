@@ -1,165 +1,68 @@
-# Refactoring plan
+# Refactoring closeout and maintenance rules
 
-The original structural-debt program is complete for its declared R0-R8
-scope. A second pass, R9-R16, is now reducing the remaining checked-in debt
-without changing chemistry or public contracts. Implementation history belongs
-in the changelog and [inventory](refactoring-inventory.md).
+The R0-R25 structural-debt program is complete. Implementation history and
+the reasons for retained exceptions are in the
+[refactoring inventory](refactoring-inventory.md); user-visible changes belong
+in the changelog.
 
-## Active guardrails
+## Current guardrails
 
 - `scripts/check_refactor_budget.py` scans handwritten production Rust code.
-- `validation/refactor_budget_v1.json` is a debt ratchet: existing exceptions
-  may shrink but may not grow.
+- `validation/refactor_budget_v1.json` is a ratchet: existing allowances may
+  shrink but may not grow.
 - New production files are limited to 1,500 lines. New functions are limited
   to 120 lines and 25 lexical decision points.
 - Generated and declarative tables require narrow, documented exclusions.
-- Public paths, struct-literal compatibility, typed errors, Python names,
+- Public Rust paths, struct-literal compatibility, typed errors, Python names,
   TypeScript names, and JSON shapes stay stable during structural work.
 
 The scanner is not a correctness oracle. Chemistry regressions, cross-binding
 contracts, output digests, and paired performance gates remain authoritative.
 
-## Completed phases
+## Completed program
 
-| Phase | Scope | Result |
+| Phases | Scope | Result |
 |---|---|---|
-| R0 | Budget scanner, CI ratchet, baselines | Complete |
-| R1 | Registries, generated data, test separation | Complete |
-| R2 | Reaction templates, matching, products, diagnostics | Complete |
-| R3 | Molecular format parsers and writers | Complete |
-| R4 | Python and WASM bindings | Complete |
-| R5 | Descriptors and tautomer logic | Complete |
-| R6 | Canonicalization, rings, aromaticity | Complete |
-| R7 | MMFF/UFF and 3D pipeline | Complete |
-| R8 | Dead code, dependency, and helper audit | Complete |
+| R0-R8 | Scanner, baseline, core chemistry, formats, bindings, 3D, dead code | Complete |
+| R9-R16 | Test extraction, boundary cleanup, hot spots, CI, first closeout | Complete |
+| R17 | Format-I/O pull-request convergence and baseline freeze | Complete |
+| R18-R20 | Checked conversion, standardization, depiction, and layout | Complete |
+| R21-R23 | Search/reaction internals, compatibility ports, bindings, and MCP | Complete |
+| R24 | Shared validation and CI harnesses | Complete |
+| R25 | Final orchestration splits and release-grade verification | Complete |
 
-## Completed second pass
+R17-R25 reduced the checked debt baseline from 14 file and 76 function
+allowances to **8 file and 50 function allowances**. The program separated:
 
-| Phase | Scope | Result |
-|---|---|---|
-| R9 | Open-PR convergence and baseline pin | Complete |
-| R10 | Test extraction and file-budget reduction | Complete |
-| R11 | Python, WASM, CLI, and MCP boundaries | Complete |
-| R12 | Chemistry hot spots | Complete |
-| R13 | I/O and depiction | Complete |
-| R14 | Cache and compatibility algorithms | Complete |
-| R15 | Scripts and CI | Complete |
-| R16 | Final ratchet and verification | Complete |
+- standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
+  CIP/canonical/ring orchestration;
+- CJSON/MOL2 conversion policy from loss reporting;
+- layout, depiction preflight, PNG/EPS rendering, and periodic-neighbor work;
+- MMFF, InChI, PDB, valence, ring-stereo, and RDKit-compatibility branches;
+- CLI, Python, WASM, MCP transport/schema, and validation-script boundaries.
 
-R9 completed on 2026-10-20 with an empty pull-request queue at `9945f1ed`.
-R10 removes the CLI and SVG file allowances by moving their inline unit tests
-to dedicated test modules; no production logic or public API changes.
-R11 groups CLI dispatch into conversion, molecule, reaction, and batch
-boundaries. The public command surface is unchanged, and the former 166-line
-dispatcher allowance is removed.
-R12 separates fragment scoring, SMARTS primitive families, and RDKit-compatible
-reaction stereo application into named stages. The three former function
-allowances are removed; chemistry ordering and public results are unchanged.
-R13 separates CJSON conversion policy from loss reporting and EPS orchestration
-from viewport, highlight, bond, and label emission. The two former function
-allowances are removed; conversion reports and EPS byte ordering are unchanged.
-R14 gives the RDKit ring-compatibility search one explicit state owner for its
-candidate cache, budget, and fallback stages, and separates the molecule-owned
-RDKit-model cache gate from per-atom compatibility rules. Two more function
-allowances are removed without changing parity or budget-exhaustion results.
-R15 consolidates JSON, compressed-row, digest, and failure handling shared by
-four RDKit evidence gates. Every original checker still runs independently;
-the refactor removes duplicated harness mechanics without weakening a gate.
-R16 closes the ratchet at 14 file and 76 function allowances, classifies the
-remaining debt in the inventory, and verifies the stacked result with the
-workspace, binding, budget, and hosted-CI gates.
+The final stacked result passed the affected crate tests, doctests, warnings-
+as-errors clippy, budget scanner, release-document checks, Python/WASM gates,
+security checks, CodeQL, and Rust coverage before merge.
 
-The 2026-10-21 maintenance pass retires one unreferenced exploratory probe and
-places 13 retained evidence scripts under diagnostics or validation. It does
-not change production chemistry or the R16 debt-ratchet baseline; see the
-[script inventory](script-inventory-2026-10-20.md) for paths and retention
-reasons.
+## Retained debt
 
-## Active third pass
+The remaining allowances are ordered chemistry data, bounded graph/search
+algorithms, format state machines, or compatibility ports whose branch and
+accumulation order is observable. They are reviewed debt, not exemptions.
 
-R17-R25 finishes the remaining structural debt without broadening chemistry
-scope. Every phase must reduce or preserve the ratchet; raising an allowance is
-not an acceptable completion condition.
-
-| Phase | Scope | Exit condition | Status |
-|---|---|---|---|
-| R17 | Converge the open format-I/O pull-request stacks | Parent-to-child CI is green, merged state is reproducible, baseline is frozen | Complete |
-| R18 | MOL2/CJSON checked-conversion orchestration | Candidate generation, loss accounting and verification are separate; two function allowances removed | Complete |
-| R19 | Standardization and chemistry transforms | Long orchestration functions split with unchanged typed outcomes | Complete |
-| R20 | Depiction and layout | Layout stages bounded; image and coordinate fixtures unchanged | Complete |
-| R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Complete |
-| R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Complete |
-| R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Complete |
-| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Complete |
-| R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Complete |
-
-R18 reduced the checked function allowances from 76 to 74. Its hosted CI,
-Python/WASM bindings, security audit, CodeQL and format-contract suites passed
-before merge.
-
-The R19 candidate moves the auditable standardization pipeline and its unit
-tests behind dedicated module boundaries. `standardize.rs` falls from 3,446 to
-1,329 lines, removing its file allowance and reducing the checked baseline to
-13 files and 74 functions. The Rust unit tests plus the standardization
-idempotency, metal-disconnection, stereo-preservation and shared-contract suites
-must preserve stage order, warnings and typed outcomes.
-
-R20 assigns ring placement, acyclic growth and clash
-relief to separate modules, leaving the public layout facade at 397 lines.
-Two one-stage placement functions are brought below the function limits, so the
-ratchet reaches 12 file and 72 function allowances. The complete depiction
-crate (107 unit tests, 3 public stress tests and doctests) preserves the
-coordinate, crossing, SVG, PNG and EPS contracts.
-
-The R21 candidate separates reaction-query, VF2, MCS and SMARTS-parser tests
-from production ownership and gives the VF2 size/element prefilter its own
-module. The four production files are each below 1,500 lines, reducing the
-ratchet to 8 file and 72 function allowances without changing public search or
-reaction behavior. The complete `chematic-smarts` and `chematic-rxn` suites,
-their doctests, and warnings-as-errors clippy checks pass.
-
-The R22 candidate separates ordered MMFF torsion cases, InChI cleanup
-families, PDB residue bond rules, implicit-valence branches, ring-stereo
-bookkeeping and depiction merge operations. Nine compatibility-port functions
-now fit the normal limits, reducing the ratchet to 8 file and 63 function
-allowances. Full `chematic-smiles` and `chematic-ff` tests preserve the pinned
-PDB, InChI, stereo, depiction and force-field contracts.
-
-The stacked R23 candidate separates HTTP request-line, header and body parsing,
-schema validation by JSON value kind, and stdio frame parsing, protocol-era
-selection and response bounding. The three MCP boundary functions now fit the
-normal limits, reducing the ratchet to 8 file and 60 function allowances. All
-140 MCP unit, schema-conformance and Streamable HTTP tests pass, including the
-real loopback-bind tests, together with warnings-as-errors clippy.
-The stacked R24 candidate separates the refactor-budget command from its
-lexical Rust scanner. The command now owns baseline generation, ratchet policy
-and reporting, while the reusable scanner owns masking, function discovery and
-production-source selection. The existing six scanner and ratchet tests pass
-unchanged, and both normal checking and baseline printing use the same scanner.
-This phase preserves the 8-file/60-function ratchet for the final R25 closeout.
-R25 separates ten final orchestration functions across
-reaction documents and stoichiometry, scaffold selection, CIP expansion,
-periodic neighbor indexing, POSCAR writing, depiction preflight/PNG rendering,
-and canonical orbit comparison. POSCAR write planning now lives in a bounded
-private module instead of growing the retained parser file. The ratchet reaches
-the declared closeout target of 8 file and 50 function allowances. Complete
-tests for all six affected crates, their integration tests and doctests passed,
-along with warnings-as-errors clippy, the budget scanner, release-document
-checks, Python/WASM gates, security checks, CodeQL and Rust coverage.
-Notable outcomes include a bounded reaction module tree, separated
-lexical/semantic format stages, API-domain binding modules, bounded descriptor
-and tautomer helpers, split canonical/ring/aromaticity algorithms, staged
-force-field and 3D preparation, and removal of unused dependencies and dead
-private implementations.
+Remove one bounded stage at a time with its domain corpus. Do not split tables
+or reorder chemistry merely to reduce line count. A new phase is warranted
+only when it can lower the ratchet without changing public behavior.
 
 ## Required checks for future refactors
 
 1. Run formatting, affected tests, and clippy with warnings denied.
-2. Run the refactor-budget checker and its scanner tests.
+2. Run the budget checker and scanner tests.
 3. Run relevant Rust, Python, WASM/Node, and cross-binding gates.
 4. Compare outputs for every touched chemistry or format domain.
-5. Measure paired time/instructions before accepting a hot-path change.
+5. Measure paired time or instructions before accepting a hot-path change.
 
-Moving code alone is not sufficient. A refactor is complete only when public
-contracts remain stable, applicable gates pass, and any retained exception is
-documented as generated or priority-sensitive declarative data.
+Moving code alone is not completion. Public contracts must remain stable,
+applicable gates must pass, and every retained exception must remain justified
+in the inventory.

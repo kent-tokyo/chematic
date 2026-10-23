@@ -7,7 +7,7 @@ Thank you for your interest in contributing! chematic is a pure-Rust cheminforma
 ```bash
 git clone https://github.com/kent-tokyo/chematic.git
 cd chematic
-cargo test --workspace --lib --quiet   # 211 tests, all should pass
+cargo test --workspace --lib --quiet
 cargo clippy --workspace -- -D warnings
 ```
 
@@ -106,47 +106,22 @@ cargo test -p chematic-inchi --features native-inchi --lib --quiet
 ## Code coverage
 
 The [Coverage workflow](https://github.com/kent-tokyo/chematic/actions/workflows/coverage.yml)
-measures Rust library, binary, and integration tests with `cargo-llvm-cov` and uploads
-LCOV to [Codecov](https://app.codecov.io/github/kent-tokyo/chematic). It also saves
-LCOV and an HTML report as the `rust-unit-coverage` Actions artifact.
+measures Rust library, binary, and integration tests with `cargo-llvm-cov`.
+It enforces at least **96.7% line coverage**, uploads LCOV to
+[Codecov](https://app.codecov.io/github/kent-tokyo/chematic), and retains LCOV
+and HTML reports as an Actions artifact. Documentation-only pull requests skip
+the heavy measurement while still completing the required check.
 
-The scope uses default features plus `chematic-inchi/native-inchi`, and excludes
-`chematic-py`, `chematic-wasm`, the offline `gen-sa-table` tool, and a manual
-ignored differential-evaluation harness. Python/WASM runtime tests, doctests,
-and optional-feature lanes are not part of this percentage.
-Coverage describes executed code; chemistry correctness and cross-engine
-compatibility still depend on their separate validation gates.
+The percentage excludes Python/WASM runtime tests, doctests, `chematic-py`,
+`chematic-wasm`, `gen-sa-table`, and the manual 3D differential harness.
+Coverage shows which Rust lines ran; chemistry correctness remains the job of
+the separate compatibility and validation gates. For an exact local rerun,
+follow the commands in `.github/workflows/coverage.yml` rather than copying a
+versioned command into this guide.
 
-To reproduce locally:
-
-```bash
-rustup component add llvm-tools-preview
-cargo install cargo-llvm-cov --version 0.8.7 --locked
-mkdir -p target/coverage
-cargo llvm-cov --locked --workspace --lib --bins --tests \
-  --features chematic-inchi/native-inchi \
-  --exclude chematic-py --exclude chematic-wasm --exclude gen-sa-table \
-  --no-report
-cargo llvm-cov report \
-  --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)' \
-  --lcov --output-path target/coverage/lcov.info
-cargo llvm-cov report \
-  --ignore-filename-regex '(crates/(chematic-py|chematic-wasm)/|tools/gen_sa_table/|crates/chematic-3d/src/issue256_255_phase2_evaluation.rs)' \
-  --html --output-dir target/coverage
-```
-
-Uploads use GitHub Actions OIDC (`id-token: write`), so no `CODECOV_TOKEN`
-secret is required. Public coverage results can be viewed without signing in;
-account and repository settings require a separate Codecov login.
-Fork pull requests use the Codecov action's
-public-repository tokenless upload path. Upload errors fail the Coverage job;
-the saved artifact helps distinguish measurement from upload problems.
-Dependabot pull requests still produce reports, but skip the Codecov upload
-because their read-only workflow permissions cannot request an OIDC token.
-
-Project and patch coverage checks are initially informational in `codecov.yml`.
-They show changes without imposing a minimum percentage before a baseline is
-available. The existing test and compatibility checks remain required.
+Codecov project and patch statuses remain informational. The repository's
+96.7% threshold is enforced directly by `cargo-llvm-cov`, so an upload or badge
+does not replace the local pass/fail result.
 
 ## Code style
 
