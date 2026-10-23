@@ -22,8 +22,8 @@ and reproducible evidence over feature-count parity.
   bond count. Do not promote the focused speed result into a broad claim.
 - Frozen v2 preserves SDF graph, title, properties, and stereo on 64/64 rows.
   Both engines embed all 96 3D rows, but only 4/96 coordinate sets satisfy the
-  strict 1e-4 Å pair-distance contract; success and coordinate parity remain
-  separate claims.
+  strict 1e-4 Å pair-distance contract on both macOS arm64 and Linux x86-64;
+  success and coordinate parity remain separate claims.
 - 3D/MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer support,
   and rich CDXML editing remain experimental or bounded.
 
