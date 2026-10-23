@@ -12,15 +12,9 @@
   "file_allowances": {
     "crates/chematic-chem/src/alerts.rs": 2579,
     "crates/chematic-chem/src/cip.rs": 2766,
-    "crates/chematic-chem/src/standardize.rs": 3513,
     "crates/chematic-crystal/src/poscar.rs": 1644,
-    "crates/chematic-depict/src/layout.rs": 3740,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
-    "crates/chematic-rxn/src/query.rs": 1969,
-    "crates/chematic-smarts/src/match_vf2.rs": 1877,
-    "crates/chematic-smarts/src/mcs.rs": 1645,
-    "crates/chematic-smarts/src/parser.rs": 2259,
     "crates/chematic-smiles/src/rdkit/depict.rs": 2303,
     "crates/chematic-smiles/src/rdkit/pdb_read.rs": 1710,
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680
@@ -46,77 +40,41 @@
       "decisions": 29,
       "lines": 188
     },
-    "crates/chematic-chem/src/scaffold.rs::schuffenhauer_remove_ring#1": {
-      "decisions": 12,
-      "lines": 166
-    },
     "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
       "decisions": 24,
-      "lines": 148
-    },
-    "crates/chematic-cip/src/digraph.rs::expand_children#1": {
-      "decisions": 17,
       "lines": 148
     },
     "crates/chematic-core/src/element.rs::from_symbol#1": {
       "decisions": 1,
       "lines": 123
     },
-    "crates/chematic-crystal/src/neighbor.rs::periodic_cell_list#1": {
-      "decisions": 22,
-      "lines": 166
-    },
     "crates/chematic-crystal/src/poscar.rs::parse_poscar#1": {
       "decisions": 47,
       "lines": 278
-    },
-    "crates/chematic-crystal/src/poscar.rs::write_poscar#1": {
-      "decisions": 25,
-      "lines": 143
     },
     "crates/chematic-depict/src/layout.rs::compute_layout#1": {
       "decisions": 25,
       "lines": 211
     },
-    "crates/chematic-depict/src/layout.rs::defects_after_move#1": {
+    "crates/chematic-depict/src/layout/clashes.rs::defects_after_move#1": {
       "decisions": 46,
       "lines": 141
     },
-    "crates/chematic-depict/src/layout.rs::dfs_zigzag#1": {
+    "crates/chematic-depict/src/layout/chains.rs::dfs_zigzag#1": {
       "decisions": 23,
       "lines": 206
     },
-    "crates/chematic-depict/src/layout.rs::place_ring_anchored#1": {
-      "decisions": 17,
-      "lines": 130
-    },
-    "crates/chematic-depict/src/layout.rs::place_ring_system#1": {
-      "decisions": 11,
-      "lines": 121
-    },
-    "crates/chematic-depict/src/layout.rs::porphyrin_core#1": {
+    "crates/chematic-depict/src/layout/rings.rs::porphyrin_core#1": {
       "decisions": 37,
       "lines": 149
     },
-    "crates/chematic-depict/src/layout.rs::relieve_clashes_pass#1": {
+    "crates/chematic-depict/src/layout/clashes.rs::relieve_clashes_pass#1": {
       "decisions": 64,
       "lines": 344
     },
-    "crates/chematic-depict/src/layout.rs::untangle_bridged_system#1": {
+    "crates/chematic-depict/src/layout/rings.rs::untangle_bridged_system#1": {
       "decisions": 58,
       "lines": 277
-    },
-    "crates/chematic-depict/src/png.rs::render_png_opts#1": {
-      "decisions": 17,
-      "lines": 150
-    },
-    "crates/chematic-depict/src/preflight.rs::preflight_svg#1": {
-      "decisions": 26,
-      "lines": 167
-    },
-    "crates/chematic-ff/src/mmff94_energy/torsion.rs::torsion_empirical#1": {
-      "decisions": 51,
-      "lines": 99
     },
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
       "decisions": 375,
@@ -142,29 +100,9 @@
       "decisions": 39,
       "lines": 166
     },
-    "crates/chematic-mcp/src/http.rs::read_request#1": {
-      "decisions": 24,
-      "lines": 121
-    },
-    "crates/chematic-mcp/src/schema.rs::walk#1": {
-      "decisions": 33,
-      "lines": 110
-    },
-    "crates/chematic-mcp/src/transport.rs::handle_line#1": {
-      "decisions": 15,
-      "lines": 130
-    },
     "crates/chematic-mol/src/cjson_record.rs::validate_projection#1": {
       "decisions": 47,
       "lines": 105
-    },
-    "crates/chematic-mol/src/conversion.rs::convert_with_report_with_limits#1": {
-      "decisions": 54,
-      "lines": 375
-    },
-    "crates/chematic-mol/src/conversion/cjson_mol2.rs::convert#1": {
-      "decisions": 43,
-      "lines": 311
     },
     "crates/chematic-mol/src/mol2_source.rs::parse_mol2_impl#1": {
       "decisions": 51,
@@ -173,10 +111,6 @@
     "crates/chematic-perception/src/rdkit_sssr_order.rs::libstdcxx_sort#1": {
       "decisions": 30,
       "lines": 153
-    },
-    "crates/chematic-rxn/src/document.rs::validate#1": {
-      "decisions": 26,
-      "lines": 101
     },
     "crates/chematic-rxn/src/rdkit_stereo.rs::chirality_cleanup_with_perception#1": {
       "decisions": 41,
@@ -190,21 +124,9 @@
       "decisions": 58,
       "lines": 303
     },
-    "crates/chematic-rxn/src/reaction.rs::find_reaction_center#1": {
-      "decisions": 26,
-      "lines": 108
-    },
-    "crates/chematic-rxn/src/stoichiometry.rs::analyze_components#1": {
-      "decisions": 19,
-      "lines": 141
-    },
     "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
       "decisions": 33,
       "lines": 171
-    },
-    "crates/chematic-smiles/src/canonical_search.rs::exact_orbit_representatives#1": {
-      "decisions": 17,
-      "lines": 138
     },
     "crates/chematic-smiles/src/parser.rs::parse_chain#1": {
       "decisions": 27,
@@ -226,29 +148,9 @@
       "decisions": 29,
       "lines": 134
     },
-    "crates/chematic-smiles/src/rdkit/depict.rs::merge_with_common#1": {
-      "decisions": 29,
-      "lines": 69
-    },
-    "crates/chematic-smiles/src/rdkit/depict.rs::open_angles#1": {
-      "decisions": 26,
-      "lines": 55
-    },
     "crates/chematic-smiles/src/rdkit/depict.rs::remove_collisions_shorten_bonds#1": {
       "decisions": 28,
       "lines": 83
-    },
-    "crates/chematic-smiles/src/rdkit/findstereo.rs::flag_ring_stereo#1": {
-      "decisions": 26,
-      "lines": 80
-    },
-    "crates/chematic-smiles/src/rdkit/findstereo.rs::update_atoms#1": {
-      "decisions": 26,
-      "lines": 97
-    },
-    "crates/chematic-smiles/src/rdkit/inchi_read.rs::inchi_clean_up#1": {
-      "decisions": 35,
-      "lines": 74
     },
     "crates/chematic-smiles/src/rdkit/inchi_read.rs::rdkit_molecule_from_inchi_output#1": {
       "decisions": 52,
@@ -257,10 +159,6 @@
     "crates/chematic-smiles/src/rdkit/kekulize.rs::mark_dbond_cands#1": {
       "decisions": 40,
       "lines": 115
-    },
-    "crates/chematic-smiles/src/rdkit/mol.rs::calc_implicit_valence_value#1": {
-      "decisions": 30,
-      "lines": 100
     },
     "crates/chematic-smiles/src/rdkit/mol2_read.rs::clean_up_mol2_substructures#1": {
       "decisions": 41,
@@ -302,10 +200,6 @@
       "decisions": 29,
       "lines": 117
     },
-    "crates/chematic-smiles/src/rdkit/pdb_read.rs::standard_double_bond#1": {
-      "decisions": 29,
-      "lines": 54
-    },
     "crates/chematic-smiles/src/rdkit/pdb_read.rs::to_chematic#1": {
       "decisions": 33,
       "lines": 136
@@ -321,10 +215,6 @@
     "crates/chematic-smiles/src/rdkit/rxn_smarts.rs::rdkit_mol_of#1": {
       "decisions": 30,
       "lines": 101
-    },
-    "crates/chematic-smiles/src/rdkit/stereo.rs::find_chiral_atom_special_cases#1": {
-      "decisions": 27,
-      "lines": 104
     },
     "crates/chematic-smiles/src/rdkit/stereo.rs::legacy_stereo_perception_impl#1": {
       "decisions": 67,

@@ -2,6 +2,53 @@ use super::*;
 use chematic_smiles::parse;
 
 #[test]
+fn chiral_mcs_uses_mapped_neighbor_parity_not_smiles_tag_spelling() {
+    let config = McsConfig {
+        match_chiral_tag: true,
+        ..Default::default()
+    };
+    let record: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../benchmarks/2026-10-22-mcs-stereo-neighbor-parity.json"
+    ))
+    .unwrap();
+    let pairs = record["pairs"].as_array().unwrap();
+    assert_eq!(pairs.len(), 7);
+    for pair in pairs {
+        let left = parse(pair["left"].as_str().unwrap()).unwrap();
+        let right = parse(pair["right"].as_str().unwrap()).unwrap();
+        for refs in [[&left, &right], [&right, &left]] {
+            let outcome = find_mcs_with_config_checked(&refs, &config);
+            assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+            let query = outcome.into_query();
+            assert_eq!(
+                query.atom_count(),
+                pair["expected"][0].as_u64().unwrap() as usize
+            );
+            assert_eq!(
+                query.bonds.len(),
+                pair["expected"][1].as_u64().unwrap() as usize
+            );
+        }
+    }
+}
+
+#[test]
+fn chiral_mcs_checks_each_molecule_in_a_multi_input_mapping() {
+    let first = parse("F[C@H](Cl)Br").unwrap();
+    let same_ordered_differently = parse("Cl[C@@H](F)Br").unwrap();
+    let same_again = parse("Br[C@@H](Cl)F").unwrap();
+    let config = McsConfig {
+        match_chiral_tag: true,
+        ..Default::default()
+    };
+    let outcome =
+        find_mcs_with_config_checked(&[&first, &same_ordered_differently, &same_again], &config);
+    assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+    let query = outcome.into_query();
+    assert_eq!([query.atom_count(), query.bonds.len()], [4, 3]);
+}
+
+#[test]
 fn comparator_cross_element_chains_keep_the_full_common_topology() {
     for (a, b, size) in [("CCC", "NNN", 3), ("CCCO", "NCCN", 4), ("COC", "NNN", 3)] {
         let a = parse(a).unwrap();

@@ -456,6 +456,12 @@ fn exact_orbit_representatives(
     limits: &CanonicalizationLimits,
     budget: &mut SearchBudget,
 ) -> Result<Vec<usize>, CanonicalizationError> {
+    let pair_context = OrbitPairContext {
+        graph,
+        coloring,
+        members,
+        limits,
+    };
     let mut signatures: Vec<Option<BranchSignature>> = (0..members.len()).map(|_| None).collect();
     // Union-Find is indexed by POSITION within `members` (0..members.len()),
     // not by atom index -- `members` are raw atom indices which may be
@@ -478,91 +484,7 @@ fn exact_orbit_representatives(
             if ri == rj {
                 continue;
             }
-            // A local-twin swap is an exact automorphism: both vertices have
-            // the same writer-visible color, and fixing every other vertex
-            // while swapping this pair preserves the complete edge-colored
-            // graph. This avoids invoking the much more expensive general
-            // automorphism search for repeated terminal groups such as the
-            // methyl arms of tBu/Boc. It is deliberately stricter than a
-            // Morgan/WL rank comparison and rejects asymmetric dative edges.
-            if local_twins(
-                graph,
-                coloring,
-                AtomIdx(members[i] as u32),
-                AtomIdx(members[j] as u32),
-            ) {
-                parent[ri] = rj;
-                continue;
-            }
-            // One automorphism test per pair, however it is settled below.
-            budget.automorphism_tests += 1;
-            if let Some(max) = limits.max_automorphism_tests
-                && budget.automorphism_tests > max
-            {
-                stats::record_budget_exhaustion();
-                return Err(CanonicalizationError::SearchBudgetExceeded {
-                    nodes_visited: budget.nodes_visited,
-                    automorphism_tests: budget.automorphism_tests,
-                });
-            }
-            // A short search settles most pairs (a real automorphism maps
-            // one atom per step); only when it runs out are the branch
-            // signatures computed.
-            let quick = if members.len() < SIGNATURE_FIRST_CELL_SIZE {
-                colored_automorphism_mapping_within(
-                    graph,
-                    coloring,
-                    AtomIdx(members[i] as u32),
-                    AtomIdx(members[j] as u32),
-                    QUICK_AUTOMORPHISM_STEPS_PER_ATOM * graph.n() + 64,
-                )
-            } else {
-                None
-            };
-            match quick {
-                Some(true) => {
-                    stats::record_orbit_test(true);
-                    parent[ri] = rj;
-                    continue;
-                }
-                Some(false) => {
-                    stats::record_orbit_test(false);
-                    continue;
-                }
-                None => {}
-            }
-            if signatures[i].is_none() {
-                signatures[i] = Some(signature_of(members[i]));
-            }
-            if signatures[j].is_none() {
-                signatures[j] = Some(signature_of(members[j]));
-            }
-            let (Some(si), Some(sj)) = (&signatures[i], &signatures[j]) else {
-                unreachable!("both signatures were just computed")
-            };
-            if si.quotient != sj.quotient {
-                continue;
-            }
-            // Both branches refine to a discrete partition with the same
-            // labelled quotient: the rank-matching map is the only
-            // candidate, so check it directly.
-            if let Some(image) = si.rank_matching_image(sj)
-                && is_cell_preserving_automorphism(graph, coloring, &image)
-            {
-                stats::record_orbit_test(true);
-                parent[ri] = rj;
-                continue;
-            }
-            let equivalent = has_colored_automorphism_mapping_keyed(
-                graph,
-                coloring,
-                AtomIdx(members[i] as u32),
-                AtomIdx(members[j] as u32),
-                &si.refined,
-                &sj.refined,
-            );
-            stats::record_orbit_test(equivalent);
-            if equivalent {
+            if pair_context.is_equivalent(i, j, &mut signatures, &mut signature_of, budget)? {
                 parent[ri] = rj;
             }
         }
@@ -585,6 +507,113 @@ fn exact_orbit_representatives(
     let mut reps: Vec<usize> = by_root.into_values().collect();
     reps.sort_unstable();
     Ok(reps)
+}
+
+struct OrbitPairContext<'a, 'm> {
+    graph: &'a CanonicalColoredGraph<'m>,
+    coloring: &'a Partition,
+    members: &'a [usize],
+    limits: &'a CanonicalizationLimits,
+}
+
+impl OrbitPairContext<'_, '_> {
+    fn is_equivalent(
+        &self,
+        left: usize,
+        right: usize,
+        signatures: &mut [Option<BranchSignature>],
+        signature_of: &mut impl FnMut(usize) -> BranchSignature,
+        budget: &mut SearchBudget,
+    ) -> Result<bool, CanonicalizationError> {
+        let left_atom = AtomIdx(self.members[left] as u32);
+        let right_atom = AtomIdx(self.members[right] as u32);
+        if local_twins(self.graph, self.coloring, left_atom, right_atom) {
+            return Ok(true);
+        }
+        self.consume_test_budget(budget)?;
+        if let Some(result) = self.quick_search(left_atom, right_atom) {
+            stats::record_orbit_test(result);
+            return Ok(result);
+        }
+        self.ensure_signatures(left, right, signatures, signature_of);
+        self.compare_signatures(left_atom, right_atom, left, right, signatures)
+    }
+
+    fn consume_test_budget(&self, budget: &mut SearchBudget) -> Result<(), CanonicalizationError> {
+        budget.automorphism_tests += 1;
+        if let Some(maximum) = self.limits.max_automorphism_tests
+            && budget.automorphism_tests > maximum
+        {
+            stats::record_budget_exhaustion();
+            return Err(CanonicalizationError::SearchBudgetExceeded {
+                nodes_visited: budget.nodes_visited,
+                automorphism_tests: budget.automorphism_tests,
+            });
+        }
+        Ok(())
+    }
+
+    fn quick_search(&self, left: AtomIdx, right: AtomIdx) -> Option<bool> {
+        (self.members.len() < SIGNATURE_FIRST_CELL_SIZE)
+            .then(|| {
+                colored_automorphism_mapping_within(
+                    self.graph,
+                    self.coloring,
+                    left,
+                    right,
+                    QUICK_AUTOMORPHISM_STEPS_PER_ATOM * self.graph.n() + 64,
+                )
+            })
+            .flatten()
+    }
+
+    fn ensure_signatures(
+        &self,
+        left: usize,
+        right: usize,
+        signatures: &mut [Option<BranchSignature>],
+        signature_of: &mut impl FnMut(usize) -> BranchSignature,
+    ) {
+        if signatures[left].is_none() {
+            signatures[left] = Some(signature_of(self.members[left]));
+        }
+        if signatures[right].is_none() {
+            signatures[right] = Some(signature_of(self.members[right]));
+        }
+    }
+
+    fn compare_signatures(
+        &self,
+        left_atom: AtomIdx,
+        right_atom: AtomIdx,
+        left: usize,
+        right: usize,
+        signatures: &[Option<BranchSignature>],
+    ) -> Result<bool, CanonicalizationError> {
+        let (Some(left_signature), Some(right_signature)) = (&signatures[left], &signatures[right])
+        else {
+            unreachable!("both signatures were just computed")
+        };
+        if left_signature.quotient != right_signature.quotient {
+            return Ok(false);
+        }
+        if let Some(image) = left_signature.rank_matching_image(right_signature)
+            && is_cell_preserving_automorphism(self.graph, self.coloring, &image)
+        {
+            stats::record_orbit_test(true);
+            return Ok(true);
+        }
+        let equivalent = has_colored_automorphism_mapping_keyed(
+            self.graph,
+            self.coloring,
+            left_atom,
+            right_atom,
+            &left_signature.refined,
+            &right_signature.refined,
+        );
+        stats::record_orbit_test(equivalent);
+        Ok(equivalent)
+    }
 }
 
 /// Step budget per atom of the short automorphism search tried before

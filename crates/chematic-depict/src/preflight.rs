@@ -79,29 +79,77 @@ pub fn preflight_svg(
 ) -> PreflightReport {
     let style = effective_style(layout, opts);
     let mut diagnostics = Vec::new();
-    let mut push = |code, path: String, message: &str| {
-        diagnostics.push(PreflightDiagnostic {
-            code,
-            path,
-            message: message.to_string(),
-        });
-    };
+    let labels = display_labels(mol, layout);
+    check_preflight_limits(mol, layout, &style, limits, labels.len(), &mut diagnostics);
+    check_finite_coordinates(layout, &mut diagnostics);
+    if geometry_is_complete(mol, layout) {
+        check_complete_geometry(mol, layout, &style, &labels, &mut diagnostics);
+    }
+    let fingerprint = fingerprint(mol, layout, &style);
+    PreflightReport {
+        schema_version: 1,
+        ready: diagnostics.is_empty(),
+        diagnostics,
+        style,
+        fingerprint,
+    }
+}
+
+type DisplayLabel = (usize, Point, String);
+
+fn diagnostic(
+    diagnostics: &mut Vec<PreflightDiagnostic>,
+    code: PreflightCode,
+    path: String,
+    message: &str,
+) {
+    diagnostics.push(PreflightDiagnostic {
+        code,
+        path,
+        message: message.to_string(),
+    });
+}
+
+fn display_labels(mol: &Molecule, layout: &Layout) -> Vec<DisplayLabel> {
+    mol.atoms()
+        .filter_map(|(idx, _)| {
+            layout
+                .coords
+                .get(idx.0 as usize)
+                .copied()
+                .map(|point| (idx.0 as usize, point, atom_display_label(mol, idx)))
+        })
+        .filter(|(_, _, label)| !label.is_empty())
+        .collect()
+}
+
+fn check_preflight_limits(
+    mol: &Molecule,
+    layout: &Layout,
+    style: &PreflightStyle,
+    limits: &PreflightLimits,
+    label_count: usize,
+    diagnostics: &mut Vec<PreflightDiagnostic>,
+) {
     if mol.atom_count() > limits.max_atoms {
-        push(
+        diagnostic(
+            diagnostics,
             PreflightCode::ResourceLimit,
             "molecule.atoms".into(),
             "atom count exceeds limit",
         );
     }
     if mol.bond_count() > limits.max_bonds {
-        push(
+        diagnostic(
+            diagnostics,
             PreflightCode::ResourceLimit,
             "molecule.bonds".into(),
             "bond count exceeds limit",
         );
     }
     if layout.coords.len() != mol.atom_count() {
-        push(
+        diagnostic(
+            diagnostics,
             PreflightCode::ResourceLimit,
             "layout.coords".into(),
             "layout coordinate count does not match atom count",
@@ -112,130 +160,136 @@ pub fn preflight_svg(
         || style.font_size <= 0.0
         || style.bond_width <= 0.0
     {
-        push(
+        diagnostic(
+            diagnostics,
             PreflightCode::NegativeStyle,
             "style".into(),
             "style values must be finite and positive",
         );
     }
-    let labels: Vec<(usize, Point, String)> = mol
-        .atoms()
-        .filter_map(|(idx, _)| {
-            layout
-                .coords
-                .get(idx.0 as usize)
-                .copied()
-                .map(|p| (idx.0 as usize, p, atom_display_label(mol, idx)))
-        })
-        .filter(|(_, _, label)| !label.is_empty())
-        .collect();
-    if labels.len() > limits.max_labels {
-        push(
+    if label_count > limits.max_labels {
+        diagnostic(
+            diagnostics,
             PreflightCode::ResourceLimit,
             "molecule.labels".into(),
             "label count exceeds limit",
         );
     }
-    for (i, p) in layout.coords.iter().enumerate() {
-        if !p.x.is_finite() || !p.y.is_finite() {
-            push(
+}
+
+fn check_finite_coordinates(layout: &Layout, diagnostics: &mut Vec<PreflightDiagnostic>) {
+    for (index, point) in layout.coords.iter().enumerate() {
+        if !point.x.is_finite() || !point.y.is_finite() {
+            diagnostic(
+                diagnostics,
                 PreflightCode::NonFiniteGeometry,
-                format!("atoms[{i}].geometry"),
+                format!("atoms[{index}].geometry"),
                 "atom coordinates must be finite",
             );
         }
     }
-    if layout.coords.len() == mol.atom_count()
+}
+
+fn geometry_is_complete(mol: &Molecule, layout: &Layout) -> bool {
+    layout.coords.len() == mol.atom_count()
         && layout
             .coords
             .iter()
-            .all(|p| p.x.is_finite() && p.y.is_finite())
-    {
-        let (min_x, min_y, max_x, max_y) = layout.bounding_box();
-        let view = (
-            min_x - style.padding,
-            min_y - style.padding,
-            (max_x - min_x).max(crate::BOND_LEN) + 2.0 * style.padding,
-            (max_y - min_y).max(crate::BOND_LEN) + 2.0 * style.padding,
-        );
-        for (i, p) in layout.coords.iter().enumerate() {
-            if outside(view, *p, ATOM_RADIUS) {
-                push(
-                    PreflightCode::ClippedAtom,
-                    format!("atoms[{i}].geometry"),
-                    "atom extends outside the SVG viewBox",
-                );
-            }
-        }
-        for (idx, bond) in mol.bonds() {
-            let Some(a) = layout.coords.get(bond.atom1.0 as usize).copied() else {
-                continue;
-            };
-            let Some(b) = layout.coords.get(bond.atom2.0 as usize).copied() else {
-                continue;
-            };
-            if a.dist(&b) <= f64::EPSILON {
-                push(
-                    PreflightCode::DegenerateBond,
-                    format!("bonds[{}].geometry", idx.0),
-                    "bond endpoints are coincident",
-                );
-            } else if segment_outside(view, a, b) {
-                push(
-                    PreflightCode::ClippedBond,
-                    format!("bonds[{}].geometry", idx.0),
-                    "bond extends outside the SVG viewBox",
-                );
-            }
-        }
-        for (i, (atom_i, p, _)) in labels.iter().enumerate() {
-            if outside(view, *p, LABEL_HALF_W.max(LABEL_HALF_H)) {
-                push(
-                    PreflightCode::ClippedLabel,
-                    format!("atoms[{atom_i}].label"),
-                    "label may be clipped by the SVG viewBox",
-                );
-            }
-            for (atom_j, q, _) in labels.iter().skip(i + 1) {
-                if rect_overlap(
-                    (*p, LABEL_HALF_W, LABEL_HALF_H),
-                    (*q, LABEL_HALF_W, LABEL_HALF_H),
-                ) {
-                    push(
-                        PreflightCode::LabelOverlap,
-                        format!("atoms[{atom_i}].label/atoms[{atom_j}].label"),
-                        "label boxes overlap",
-                    );
-                }
-            }
-            if layout
-                .coords
-                .iter()
-                .enumerate()
-                .any(|(j, q)| j != *atom_i && p.dist(q) < ATOM_RADIUS + LABEL_HALF_H)
-            {
-                push(
-                    PreflightCode::AtomOverlap,
-                    format!("atoms[{atom_i}].label"),
-                    "label overlaps a nearby atom",
-                );
-            }
-        }
-        for (a, b) in detect_crossings(layout, mol) {
-            push(
-                PreflightCode::CrossingBond,
-                format!("bonds[{}]/bonds[{}]", a.0, b.0),
-                "bonds cross",
+            .all(|point| point.x.is_finite() && point.y.is_finite())
+}
+
+fn check_complete_geometry(
+    mol: &Molecule,
+    layout: &Layout,
+    style: &PreflightStyle,
+    labels: &[DisplayLabel],
+    diagnostics: &mut Vec<PreflightDiagnostic>,
+) {
+    let (min_x, min_y, max_x, max_y) = layout.bounding_box();
+    let view = (
+        min_x - style.padding,
+        min_y - style.padding,
+        (max_x - min_x).max(crate::BOND_LEN) + 2.0 * style.padding,
+        (max_y - min_y).max(crate::BOND_LEN) + 2.0 * style.padding,
+    );
+    for (index, point) in layout.coords.iter().enumerate() {
+        if outside(view, *point, ATOM_RADIUS) {
+            diagnostic(
+                diagnostics,
+                PreflightCode::ClippedAtom,
+                format!("atoms[{index}].geometry"),
+                "atom extends outside the SVG viewBox",
             );
         }
     }
-    let fingerprint = fingerprint(mol, layout, &style);
-    PreflightReport {
-        schema_version: 1,
-        ready: diagnostics.is_empty(),
-        diagnostics,
-        style,
-        fingerprint,
+    for (index, bond) in mol.bonds() {
+        let Some(a) = layout.coords.get(bond.atom1.0 as usize).copied() else {
+            continue;
+        };
+        let Some(b) = layout.coords.get(bond.atom2.0 as usize).copied() else {
+            continue;
+        };
+        if a.dist(&b) <= f64::EPSILON {
+            diagnostic(
+                diagnostics,
+                PreflightCode::DegenerateBond,
+                format!("bonds[{}].geometry", index.0),
+                "bond endpoints are coincident",
+            );
+        } else if segment_outside(view, a, b) {
+            diagnostic(
+                diagnostics,
+                PreflightCode::ClippedBond,
+                format!("bonds[{}].geometry", index.0),
+                "bond extends outside the SVG viewBox",
+            );
+        }
+    }
+    for (index, (atom_i, point, _)) in labels.iter().enumerate() {
+        if outside(view, *point, LABEL_HALF_W.max(LABEL_HALF_H)) {
+            diagnostic(
+                diagnostics,
+                PreflightCode::ClippedLabel,
+                format!("atoms[{atom_i}].label"),
+                "label may be clipped by the SVG viewBox",
+            );
+        }
+        for (atom_j, other, _) in labels.iter().skip(index + 1) {
+            if rect_overlap(
+                (*point, LABEL_HALF_W, LABEL_HALF_H),
+                (*other, LABEL_HALF_W, LABEL_HALF_H),
+            ) {
+                diagnostic(
+                    diagnostics,
+                    PreflightCode::LabelOverlap,
+                    format!("atoms[{atom_i}].label/atoms[{atom_j}].label"),
+                    "label boxes overlap",
+                );
+            }
+        }
+        if layout
+            .coords
+            .iter()
+            .enumerate()
+            .any(|(other_index, other)| {
+                other_index != *atom_i && point.dist(other) < ATOM_RADIUS + LABEL_HALF_H
+            })
+        {
+            diagnostic(
+                diagnostics,
+                PreflightCode::AtomOverlap,
+                format!("atoms[{atom_i}].label"),
+                "label overlaps a nearby atom",
+            );
+        }
+    }
+    for (a, b) in detect_crossings(layout, mol) {
+        diagnostic(
+            diagnostics,
+            PreflightCode::CrossingBond,
+            format!("bonds[{}]/bonds[{}]", a.0, b.0),
+            "bonds cross",
+        );
     }
 }
 

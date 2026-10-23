@@ -953,3 +953,5 @@ fn rgroup_fragment_smiles(
 
 mod pdbqt_checked;
 pub use pdbqt_checked::*;
+mod pdbqt_data;
+pub use pdbqt_data::*;

@@ -374,6 +374,21 @@ fn read_line<R: BufRead>(reader: &mut R, max: usize) -> Result<Option<Vec<u8>>, 
 pub fn read_request<R: BufRead>(reader: &mut R) -> Result<HttpRequest, HttpResponse> {
     let line = read_line(reader, MAX_REQUEST_LINE_BYTES)?
         .ok_or_else(|| http_error(400, protocol::INVALID_REQUEST, "empty request"))?;
+    let (method, path) = parse_request_line(line)?;
+    let headers = read_headers(reader)?;
+    let mut request = HttpRequest {
+        method,
+        path,
+        headers,
+        body: Vec::new(),
+    };
+    if request.method == "POST" {
+        request.body = read_post_body(reader, &request)?;
+    }
+    Ok(request)
+}
+
+fn parse_request_line(line: Vec<u8>) -> Result<(String, String), HttpResponse> {
     let line = String::from_utf8(line)
         .map_err(|_| http_error(400, protocol::INVALID_REQUEST, "request line is not UTF-8"))?;
     let mut parts = line.split(' ');
@@ -393,8 +408,13 @@ pub fn read_request<R: BufRead>(reader: &mut R) -> Result<HttpRequest, HttpRespo
             "only HTTP/1.x is served",
         ));
     }
-    let path = target.split('?').next().unwrap_or("").to_string();
+    Ok((
+        method.to_string(),
+        target.split('?').next().unwrap_or("").to_string(),
+    ))
+}
 
+fn read_headers<R: BufRead>(reader: &mut R) -> Result<Vec<(String, String)>, HttpResponse> {
     let mut headers = Vec::new();
     let mut header_bytes = 0usize;
     loop {
@@ -432,16 +452,13 @@ pub fn read_request<R: BufRead>(reader: &mut R) -> Result<HttpRequest, HttpRespo
             value.trim_matches(|c| c == ' ' || c == '\t').to_string(),
         ));
     }
+    Ok(headers)
+}
 
-    let mut request = HttpRequest {
-        method: method.to_string(),
-        path,
-        headers,
-        body: Vec::new(),
-    };
-    if request.method != "POST" {
-        return Ok(request);
-    }
+fn read_post_body<R: BufRead>(
+    reader: &mut R,
+    request: &HttpRequest,
+) -> Result<Vec<u8>, HttpResponse> {
     if request.header("transfer-encoding").is_some() {
         return Err(http_error(
             411,
@@ -489,8 +506,7 @@ pub fn read_request<R: BufRead>(reader: &mut R) -> Result<HttpRequest, HttpRespo
             "body shorter than Content-Length",
         ),
     })?;
-    request.body = body;
-    Ok(request)
+    Ok(body)
 }
 
 /// RFC 9110 `tchar`.

@@ -1074,75 +1074,76 @@ fn v3cl_1(m: &mut Mol, a: usize) -> bool {
 fn inchi_clean_up(m: &mut Mol) {
     for a in 0..m.atoms.len() {
         match m.atoms[a].anum {
-            7 => {
-                if ev(m, a) == 4 {
-                    if v4n_1(m, a) {
-                        continue;
-                    }
-                    if m.atoms[a].charge == -1 {
-                        v4n_2(m, a);
-                    }
-                    continue;
-                }
-                if m.atoms[a].charge != 0 {
-                    continue;
-                }
-                let arom = m.atoms[a].aromatic;
-                m.atoms[a].aromatic = false;
-                if ev(m, a) == 5 {
-                    let _ = v5n_6(m, a)
-                        || v5n_7(m, a)
-                        || v5n_8(m, a)
-                        || v5n_9(m, a)
-                        || v5n_a(m, a)
-                        || v5n_1(m, a)
-                        || v5n_2(m, a)
-                        || v5n_3(m, a)
-                        || v5n_4(m, a)
-                        || v5n_5(m, a, 8)
-                        || v5n_5(m, a, 16)
-                        || v5n_5(m, a, 9)
-                        || v5n_5(m, a, 17)
-                        || v5n_b(m, a);
-                }
-                if arom {
-                    m.atoms[a].aromatic = true;
-                }
-            }
-            17 => {
-                if ev(m, a) == 8 && v8cl_1(m, a) {
-                    continue;
-                }
-                if ev(m, a) == 5 && v5cl_1(m, a) {
-                    continue;
-                }
-                if ev(m, a) == 3 {
-                    v3cl_1(m, a);
-                }
-            }
-            16 => {
-                let e = ev(m, a);
-                if e == 7 {
-                    if v7s_1(m, a) || v7s_2(m, a) || v7s_3(m, a) {
-                        continue;
-                    }
-                    v8s_1(m, a);
-                } else if e == 8 {
-                    v8s_1(m, a);
-                }
-            }
-            35 => {
-                let e = ev(m, a);
-                if e == 3 && m.atoms[a].charge == 0 && m.degree(a) == 1 {
-                    let b = m.atom_bonds[a][0];
-                    let o = m.bonds[b].other(a);
-                    if m.atoms[o].anum == 34 {
-                        m.bonds[b].bt = S;
-                    }
-                }
-            }
+            7 => cleanup_nitrogen(m, a),
+            17 => cleanup_chlorine(m, a),
+            16 => cleanup_sulfur(m, a),
+            35 => cleanup_bromine(m, a),
             _ => {}
         }
+    }
+}
+
+fn cleanup_nitrogen(m: &mut Mol, a: usize) {
+    if ev(m, a) == 4 {
+        if !v4n_1(m, a) && m.atoms[a].charge == -1 {
+            v4n_2(m, a);
+        }
+        return;
+    }
+    if m.atoms[a].charge != 0 {
+        return;
+    }
+    let arom = m.atoms[a].aromatic;
+    m.atoms[a].aromatic = false;
+    if ev(m, a) == 5 {
+        let _ = v5n_6(m, a)
+            || v5n_7(m, a)
+            || v5n_8(m, a)
+            || v5n_9(m, a)
+            || v5n_a(m, a)
+            || v5n_1(m, a)
+            || v5n_2(m, a)
+            || v5n_3(m, a)
+            || v5n_4(m, a)
+            || v5n_5(m, a, 8)
+            || v5n_5(m, a, 16)
+            || v5n_5(m, a, 9)
+            || v5n_5(m, a, 17)
+            || v5n_b(m, a);
+    }
+    if arom {
+        m.atoms[a].aromatic = true;
+    }
+}
+
+fn cleanup_chlorine(m: &mut Mol, a: usize) {
+    if ev(m, a) == 8 && v8cl_1(m, a) {
+        return;
+    }
+    if ev(m, a) == 5 && v5cl_1(m, a) {
+        return;
+    }
+    if ev(m, a) == 3 {
+        v3cl_1(m, a);
+    }
+}
+
+fn cleanup_sulfur(m: &mut Mol, a: usize) {
+    match ev(m, a) {
+        7 if !(v7s_1(m, a) || v7s_2(m, a) || v7s_3(m, a)) => v8s_1(m, a),
+        8 => v8s_1(m, a),
+        _ => false,
+    };
+}
+
+fn cleanup_bromine(m: &mut Mol, a: usize) {
+    if ev(m, a) != 3 || m.atoms[a].charge != 0 || m.degree(a) != 1 {
+        return;
+    }
+    let b = m.atom_bonds[a][0];
+    let other = m.bonds[b].other(a);
+    if m.atoms[other].anum == 34 {
+        m.bonds[b].bt = S;
     }
 }
 

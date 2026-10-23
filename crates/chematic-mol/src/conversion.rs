@@ -1,4 +1,4 @@
-//! Checked conversion: MOL2/CJSON source retention and bounded graph projection.
+//! Checked conversion: MOL2/CJSON/CML retention and bounded graph projection.
 //!
 //! Reports account for source information before graph projection. Candidate
 //! verification covers the declared graph fields only, not MOL2 chemistry in
@@ -10,6 +10,9 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 mod cjson_mol2;
+mod cml_source;
+mod mol2_cjson_projection;
+pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -109,7 +112,7 @@ impl std::error::Error for ConversionError {}
 /// Bounded defaults; existing graph-only conversion APIs are unchanged.
 #[derive(Debug, Clone, Copy)]
 pub struct ConversionLimits {
-    /// Shared input byte/atom/bond caps, also applied to CJSON input.
+    /// Shared input/element caps, also used by CJSON and the CML XML profile.
     pub mol2: Mol2ParseLimits,
     /// Applies to the molecule output and the serialized report separately.
     pub max_output_bytes: usize,
@@ -174,22 +177,18 @@ pub fn convert_with_report_with_limits(
     policy: ConversionPolicy,
     limits: &ConversionLimits,
 ) -> Result<ConversionReport, ConversionError> {
-    let source = input_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
-    let target = output_format
-        .trim()
-        .trim_start_matches('.')
-        .to_ascii_lowercase();
+    let normalize = |s: &str| s.trim().trim_start_matches('.').to_ascii_lowercase();
+    let source = normalize(input_format);
+    let target = normalize(output_format);
     let supported = match source.as_str() {
         "mol2" => matches!(target.as_str(), "mol2" | "smiles" | "smi" | "cjson"),
         "cjson" => matches!(target.as_str(), "cjson" | "smiles" | "smi" | "mol2"),
+        "cml" => target == "cml",
         _ => false,
     };
     if !supported {
         return Err(ConversionError::Unsupported(
-            "checked conversion supports MOL2 → MOL2/SMILES/CJSON and CJSON → CJSON/SMILES/MOL2"
+            "checked conversion supports MOL2 → MOL2/SMILES/CJSON, CJSON → CJSON/SMILES/MOL2 and CML → CML"
                 .into(),
         ));
     }
@@ -198,68 +197,18 @@ pub fn convert_with_report_with_limits(
             "preserve_source requires same-format conversion".into(),
         ));
     }
-    if source == "cjson" {
-        return convert_cjson(text, &target, policy, limits);
+    match source.as_str() {
+        "cjson" => return convert_cjson(text, &target, policy, limits),
+        "cml" => return cml_source::convert(text, policy, limits),
+        _ => {}
     }
     let record =
         parse_mol2_source_record_with_limits(text, &limits.mol2).map_err(ConversionError::Parse)?;
-    let mut report = ConversionReport {
-        schema: "chematic.conversion-report.v1",
-        input_format: "mol2",
-        output_format: match target.as_str() {
-            "mol2" => "mol2",
-            "cjson" => "cjson",
-            _ => "smiles",
-        },
-        policy,
-        status: "completed",
-        source_record_index: 0,
-        verification_scope: "exact_source_bytes",
-        candidate_graph_verified: false,
-        output: None,
-        observations: Vec::new(),
-        candidate_atom_mapping: Vec::new(),
-        candidate_bond_mapping: Vec::new(),
-    };
-    let mut note = |field, status, stage, reason| {
-        report.observations.push(ConversionObservation {
-            field,
-            status,
-            stage,
-            reason,
-        })
-    };
+    let mut report = mol2_conversion_report(&target, policy);
     if target == "mol2" {
-        // Immutable record: all bytes, including unparsed columns and sections,
-        // retain their source representation. No editable chemistry is claimed.
-        let output = crate::write_mol2_source_record(&record);
-        if output.len() > limits.max_output_bytes {
-            return Err(ConversionError::ResourceLimit("output bytes"));
-        }
-        if output == text {
-            note(
-                "source_text",
-                PreservationStatus::Preserved,
-                "source_retention",
-                "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised.",
-            );
-        }
-        note(
-            "source_semantics",
-            PreservationStatus::OpaqueRetained,
-            "source_retention",
-            "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified.",
-        );
-        report.output = Some(output);
-        return Ok(report);
+        return retain_mol2_source(text, &record, report, limits);
     }
 
-    note(
-        "source_text",
-        PreservationStatus::Dropped,
-        "write",
-        "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns.",
-    );
     let partial_values: Option<Vec<f64>> =
         record.atoms().iter().map(|a| a.partial_charge).collect();
     let partial_method = record
@@ -269,132 +218,21 @@ pub fn convert_with_report_with_limits(
         && !record.atoms().is_empty()
         && partial_values.is_some()
         && partial_method.is_some();
-    note(
-        "molecule_metadata",
-        PreservationStatus::Dropped,
-        "write",
-        if target == "cjson" {
-            "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
-        } else {
-            "Molecule name, molecule type and charge-method header are not emitted."
-        },
+    record_mol2_projection_losses(
+        &record,
+        &target,
+        emit_partial,
+        partial_method.is_some(),
+        &mut report,
     );
-    note(
-        "atom_identity",
-        PreservationStatus::Dropped,
-        "write",
-        "Source atom IDs and names are omitted; candidate correspondence is reported separately.",
-    );
-    note(
-        "atom_types",
-        PreservationStatus::Dropped,
-        "projection",
-        "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted.",
-    );
-    if record
-        .atoms()
-        .iter()
-        .any(|atom| atom.substructure_id.is_some() || atom.substructure_name.is_some())
-    {
-        note(
-            "substructures",
-            PreservationStatus::Dropped,
-            "projection",
-            "Source atom substructure ownership and names are not emitted.",
-        );
-    }
-    if record
-        .atoms()
-        .iter()
-        .any(|atom| atom.partial_charge.is_some())
-        && !emit_partial
-    {
-        note(
-            "partial_charges",
-            PreservationStatus::Dropped,
-            "write",
-            if target == "cjson" {
-                "Partial charges require a non-NO_CHARGES method label and one value for every atom; missing values are not filled and undeclared charge columns are not labeled as a computed dataset."
-            } else {
-                "Source charge-column values are not formal charges; the candidate writer does not emit them as partial charges."
-            },
-        );
-    }
-    if target != "cjson" && !record.coordinates().is_empty() {
-        note(
-            "coordinates",
-            PreservationStatus::Dropped,
-            "write",
-            "Plain SMILES has no source coordinates; geometry stereochemistry is not interpreted.",
-        );
-    }
-    if !record.opaque_sections().is_empty() {
-        note(
-            "opaque_sections",
-            PreservationStatus::Dropped,
-            "projection",
-            "Additional MOL2 sections are not interpreted and are not emitted.",
-        );
-    }
-    if !record.bonds().is_empty() {
-        note(
-            "bond_records",
-            PreservationStatus::Dropped,
-            "projection",
-            "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata.",
-        );
-    }
-    note(
-        "formal_charge_interpretation",
-        PreservationStatus::Unverified,
-        "projection",
-        "Explicit UNITY charge attributes are projected by source atom ID, with N.4 implying +1 only when no explicit charge exists. Other atom-type and extension rules are not interpreted. Preserving the projected charge is not verification of source chemistry.",
-    );
-    note(
-        "stereochemistry",
-        PreservationStatus::Unverified,
-        "projection",
-        "Coordinate-derived and extension stereochemistry are not interpreted or verified.",
-    );
-    let (candidate, order) = if target == "cjson" {
-        // This writer emits atom arrays in source order and retains all three
-        // coordinate components; no coordinates or hydrogens are generated.
-        let mut json: serde_json::Value =
-            serde_json::from_str(&crate::write_cjson(record.molecule(), record.coordinates()))
-                .expect("CJSON writer emits valid JSON");
-        if let Some(name) = record.name() {
-            json["properties"] = serde_json::json!({"name": name});
-        }
-        if emit_partial {
-            let mut datasets = serde_json::Map::new();
-            datasets.insert(
-                partial_method.unwrap().to_owned(),
-                serde_json::json!(partial_values.as_ref().unwrap()),
-            );
-            json["partialCharges"] = serde_json::Value::Object(datasets);
-        }
-        (
-            json.to_string(),
-            (0..record.molecule().atom_count())
-                .map(|i| AtomIdx(i as u32))
-                .collect(),
-        )
-    } else {
-        note(
-            "implicit_hydrogens",
-            PreservationStatus::Inferred,
-            "write",
-            "SMILES hydrogen counts follow the graph valence model, not an independently verified MOL2 hydrogen assignment.",
-        );
-        // Current SMILES writer uses recursive traversal. Bound this route
-        // independently of reader limits until an iterative writer is available.
-        if record.molecule().atom_count() > 512 {
-            return Err(ConversionError::ResourceLimit(
-                "SMILES projection atoms (512)",
-            ));
-        }
-        chematic_smiles::write_with_atom_order(record.molecule())
-    };
+    let (candidate, order) = write_mol2_projection_candidate(
+        &record,
+        &target,
+        partial_values.as_ref(),
+        partial_method,
+        emit_partial,
+        &mut report,
+    )?;
     if candidate.len() > limits.max_output_bytes {
         return Err(ConversionError::ResourceLimit("output bytes"));
     }
@@ -430,78 +268,402 @@ pub fn convert_with_report_with_limits(
         reason: if verified.is_some() { "Candidate output reparsed; explicit atom counts, mapped elements/aromaticity/projected formal charges and mapped bond orders agree. Source chemical interpretation and inferred hydrogens are outside this check." } else { "Candidate graph could not be verified against the source projection; no correspondence is claimed." },
     });
     if target == "cjson" {
-        let coords_verified = verified.is_some()
-            && parsed.as_ref().is_some_and(|(_, coords)| {
-                coords.len() == record.coordinates().len()
-                    && order.iter().enumerate().all(|(candidate_index, source)| {
-                        let before = record.coordinates()[source.0 as usize];
-                        let after = coords[candidate_index];
-                        before.0.to_bits() == after.0.to_bits()
-                            && before.1.to_bits() == after.1.to_bits()
-                            && before.2.to_bits() == after.2.to_bits()
-                    })
-            });
-        report.observations.push(ConversionObservation {
-            field: "coordinates",
-            status: if coords_verified { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-            stage: "candidate_verification",
-            reason: if coords_verified { "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check." } else { "Source-to-candidate graph correspondence or exact f64 coordinate equality could not be verified." },
-        });
-        // Reparse the emitted metadata independently of the writer's Value.
-        // Partial charges are separate from formal charges and are never
-        // computed here. The method is the source declaration only.
-        let metadata: serde_json::Value =
-            serde_json::from_str(&candidate).expect("CJSON candidate already parsed");
+        record_mol2_cjson_verification(
+            &record,
+            &candidate,
+            &order,
+            parsed.as_ref().map(|(_, coords)| coords.as_slice()),
+            verified.is_some(),
+            partial_values.as_ref(),
+            partial_method,
+            emit_partial,
+            &mut report,
+        );
+    }
+    Ok(finalize_mol2_projection(
+        &record,
+        order,
+        verified,
+        parsed.is_some(),
+        candidate,
+        policy,
+        report,
+    ))
+}
+
+fn mol2_conversion_report(target: &str, policy: ConversionPolicy) -> ConversionReport {
+    ConversionReport {
+        schema: "chematic.conversion-report.v1",
+        input_format: "mol2",
+        output_format: match target {
+            "mol2" => "mol2",
+            "cjson" => "cjson",
+            _ => "smiles",
+        },
+        policy,
+        status: "completed",
+        source_record_index: 0,
+        verification_scope: "exact_source_bytes",
+        candidate_graph_verified: false,
+        output: None,
+        observations: Vec::new(),
+        candidate_atom_mapping: Vec::new(),
+        candidate_bond_mapping: Vec::new(),
+    }
+}
+
+fn retain_mol2_source(
+    text: &str,
+    record: &crate::Mol2SourceRecord,
+    mut report: ConversionReport,
+    limits: &ConversionLimits,
+) -> Result<ConversionReport, ConversionError> {
+    let output = crate::write_mol2_source_record(record);
+    if output.len() > limits.max_output_bytes {
+        return Err(ConversionError::ResourceLimit("output bytes"));
+    }
+    if output == text {
+        observe(
+            &mut report,
+            "source_text",
+            PreservationStatus::Preserved,
+            "source_retention",
+            "Exact input bytes retained after bounded structural validation; no edits or chemical interpretation promised.",
+        );
+    }
+    observe(
+        &mut report,
+        "source_semantics",
+        PreservationStatus::OpaqueRetained,
+        "source_retention",
+        "Source representations retained, including any unparsed status columns, formal-charge extensions and geometry stereo; their chemistry is not verified.",
+    );
+    report.output = Some(output);
+    Ok(report)
+}
+
+fn record_mol2_projection_losses(
+    record: &crate::Mol2SourceRecord,
+    target: &str,
+    emit_partial: bool,
+    has_partial_method: bool,
+    report: &mut ConversionReport,
+) {
+    observe(
+        report,
+        "source_text",
+        PreservationStatus::Dropped,
+        "write",
+        "Candidate output omits MOL2 layout, comments, header flags and any unparsed optional columns.",
+    );
+    observe(
+        report,
+        "molecule_metadata",
+        PreservationStatus::Dropped,
+        "write",
+        if target == "cjson" {
+            "Molecule type and other header flags are not emitted. Parsed name and any complete declared partial-charge dataset are checked separately."
+        } else {
+            "Molecule name, molecule type and charge-method header are not emitted."
+        },
+    );
+    observe(
+        report,
+        "atom_identity",
+        PreservationStatus::Dropped,
+        "write",
+        "Source atom IDs and names are omitted; candidate correspondence is reported separately.",
+    );
+    observe(
+        report,
+        "atom_types",
+        PreservationStatus::Dropped,
+        "projection",
+        "Source MOL2 atom types are reduced to the bounded graph projection; the original typing model is not emitted.",
+    );
+    record_mol2_optional_losses(record, target, emit_partial, has_partial_method, report);
+    observe(
+        report,
+        "formal_charge_interpretation",
+        PreservationStatus::Unverified,
+        "projection",
+        "Explicit UNITY charge attributes are projected by source atom ID, with N.4 implying +1 only when no explicit charge exists. Other atom-type and extension rules are not interpreted. Preserving the projected charge is not verification of source chemistry.",
+    );
+    observe(
+        report,
+        "stereochemistry",
+        PreservationStatus::Unverified,
+        "projection",
+        "Coordinate-derived and extension stereochemistry are not interpreted or verified.",
+    );
+}
+
+fn record_mol2_optional_losses(
+    record: &crate::Mol2SourceRecord,
+    target: &str,
+    emit_partial: bool,
+    has_partial_method: bool,
+    report: &mut ConversionReport,
+) {
+    if record
+        .atoms()
+        .iter()
+        .any(|atom| atom.substructure_id.is_some() || atom.substructure_name.is_some())
+    {
+        observe(
+            report,
+            "substructures",
+            PreservationStatus::Dropped,
+            "projection",
+            "Source atom substructure ownership and names are not emitted.",
+        );
+    }
+    if let Some(observation) = mol2_cjson_projection::unemitted_charge_observation(
+        record,
+        target,
+        emit_partial,
+        has_partial_method,
+    ) {
+        observe(
+            report,
+            observation.field,
+            observation.status,
+            observation.stage,
+            observation.reason,
+        );
+    }
+    if target != "cjson" && !record.coordinates().is_empty() {
+        observe(
+            report,
+            "coordinates",
+            PreservationStatus::Dropped,
+            "write",
+            "Plain SMILES has no source coordinates; geometry stereochemistry is not interpreted.",
+        );
+    }
+    if !record.opaque_sections().is_empty() {
+        observe(
+            report,
+            "opaque_sections",
+            PreservationStatus::Dropped,
+            "projection",
+            "Additional MOL2 sections are not interpreted and are not emitted.",
+        );
+    }
+    if !record.bonds().is_empty() {
+        observe(
+            report,
+            "bond_records",
+            PreservationStatus::Dropped,
+            "projection",
+            "Source bond IDs and MOL2 tokens such as am, du and nc are not retained as source metadata.",
+        );
+    }
+}
+
+fn write_mol2_projection_candidate(
+    record: &crate::Mol2SourceRecord,
+    target: &str,
+    partial_values: Option<&Vec<f64>>,
+    partial_method: Option<&str>,
+    emit_partial: bool,
+    report: &mut ConversionReport,
+) -> Result<(String, Vec<AtomIdx>), ConversionError> {
+    if target == "cjson" {
+        let mut json: serde_json::Value =
+            serde_json::from_str(&crate::write_cjson(record.molecule(), record.coordinates()))
+                .expect("CJSON writer emits valid JSON");
         if let Some(name) = record.name() {
-            let equal = metadata
-                .pointer("/properties/name")
-                .and_then(serde_json::Value::as_str)
-                == Some(name);
-            report.observations.push(ConversionObservation {
-                field: "molecule_name",
-                status: if equal { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-                stage: "candidate_verification",
-                reason: "Reparsed properties.name equals the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
-            });
+            json["name"] = serde_json::json!(name);
+            json["properties"] = serde_json::json!({"name": name});
         }
         if emit_partial {
-            let method = partial_method.unwrap();
-            let datasets = metadata
-                .get("partialCharges")
-                .and_then(serde_json::Value::as_object);
-            let values = datasets
-                .and_then(|sets| sets.get(method))
-                .and_then(serde_json::Value::as_array);
-            let values_equal = verified.is_some()
-                && values.is_some_and(|values| {
-                    values.len() == record.atoms().len()
-                        && order.iter().enumerate().all(|(candidate_index, source)| {
-                            values[candidate_index].as_f64().is_some_and(|after| {
-                                after.to_bits()
-                                    == partial_values.as_ref().unwrap()[source.0 as usize].to_bits()
-                            })
-                        })
-                });
-            report.observations.push(ConversionObservation {
-                field: "partial_charges",
-                status: if values_equal { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-                stage: "candidate_verification",
-                reason: "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values.",
-            });
-            report.observations.push(ConversionObservation {
-                field: "charge_method",
-                status: if datasets.is_some_and(|sets| sets.len() == 1 && sets.contains_key(method)) { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-                stage: "candidate_verification",
-                reason: "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated.",
-            });
+            let mut datasets = serde_json::Map::new();
+            datasets.insert(
+                partial_method.unwrap().to_owned(),
+                serde_json::json!(partial_values.unwrap()),
+            );
+            json["partialCharges"] = serde_json::Value::Object(datasets);
         }
-        report.observations.push(ConversionObservation {
-            field: "projected_formal_charges",
-            status: if verified.is_some() { PreservationStatus::Preserved } else { PreservationStatus::Unverified },
-            stage: "candidate_verification",
-            reason: "CJSON formal charges are checked as part of mapped graph verification. MOL2 projection uses explicit UNITY charge attributes, then N.4 as a fallback; partial-charge preservation is checked separately. Source valence and other charge rules are not verified.",
-        });
+        let order = (0..record.molecule().atom_count())
+            .map(|i| AtomIdx(i as u32))
+            .collect();
+        return Ok((json.to_string(), order));
     }
+    observe(
+        report,
+        "implicit_hydrogens",
+        PreservationStatus::Inferred,
+        "write",
+        "SMILES hydrogen counts follow the graph valence model, not an independently verified MOL2 hydrogen assignment.",
+    );
+    if record.molecule().atom_count() > 512 {
+        return Err(ConversionError::ResourceLimit(
+            "SMILES projection atoms (512)",
+        ));
+    }
+    Ok(chematic_smiles::write_with_atom_order(record.molecule()))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn record_mol2_cjson_verification(
+    record: &crate::Mol2SourceRecord,
+    candidate: &str,
+    order: &[AtomIdx],
+    coords: Option<&[(f64, f64, f64)]>,
+    graph_verified: bool,
+    partial_values: Option<&Vec<f64>>,
+    partial_method: Option<&str>,
+    emit_partial: bool,
+    report: &mut ConversionReport,
+) {
+    let coords_verified = graph_verified
+        && coords.is_some_and(|coords| {
+            coords.len() == record.coordinates().len()
+                && order.iter().enumerate().all(|(candidate_index, source)| {
+                    let before = record.coordinates()[source.0 as usize];
+                    let after = coords[candidate_index];
+                    before.0.to_bits() == after.0.to_bits()
+                        && before.1.to_bits() == after.1.to_bits()
+                        && before.2.to_bits() == after.2.to_bits()
+                })
+        });
+    observe(
+        report,
+        "coordinates",
+        if coords_verified {
+            PreservationStatus::Preserved
+        } else {
+            PreservationStatus::Unverified
+        },
+        "candidate_verification",
+        if coords_verified {
+            "Reparsed candidate coordinates agree bit for bit with source f64 x/y/z values through verified atom correspondence, including signed zero. Original decimal spelling and physical dimensionality are outside this check."
+        } else {
+            "Source-to-candidate graph correspondence or exact f64 coordinate equality could not be verified."
+        },
+    );
+    let metadata: serde_json::Value =
+        serde_json::from_str(candidate).expect("CJSON candidate already parsed");
+    record_mol2_cjson_metadata(
+        record,
+        order,
+        &metadata,
+        graph_verified,
+        partial_values,
+        partial_method,
+        emit_partial,
+        report,
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn record_mol2_cjson_metadata(
+    record: &crate::Mol2SourceRecord,
+    order: &[AtomIdx],
+    metadata: &serde_json::Value,
+    graph_verified: bool,
+    partial_values: Option<&Vec<f64>>,
+    partial_method: Option<&str>,
+    emit_partial: bool,
+    report: &mut ConversionReport,
+) {
+    if let Some(name) = record.name() {
+        let equal = cjson_names_match(metadata, name);
+        observe(
+            report,
+            "molecule_name",
+            if equal {
+                PreservationStatus::Preserved
+            } else {
+                PreservationStatus::Unverified
+            },
+            "candidate_verification",
+            "Reparsed standard root name and legacy properties.name both equal the parsed (trimmed) source molecule name; original header whitespace is accounted for by source_text loss.",
+        );
+    }
+    if emit_partial {
+        record_mol2_cjson_charges(
+            record,
+            order,
+            metadata,
+            graph_verified,
+            partial_values.unwrap(),
+            partial_method.unwrap(),
+            report,
+        );
+    }
+    observe(
+        report,
+        "projected_formal_charges",
+        if graph_verified {
+            PreservationStatus::Preserved
+        } else {
+            PreservationStatus::Unverified
+        },
+        "candidate_verification",
+        "CJSON formal charges are checked as part of mapped graph verification. MOL2 projection uses explicit UNITY charge attributes, then N.4 as a fallback; partial-charge preservation is checked separately. Source valence and other charge rules are not verified.",
+    );
+}
+
+fn record_mol2_cjson_charges(
+    record: &crate::Mol2SourceRecord,
+    order: &[AtomIdx],
+    metadata: &serde_json::Value,
+    graph_verified: bool,
+    partial_values: &[f64],
+    method: &str,
+    report: &mut ConversionReport,
+) {
+    let datasets = metadata
+        .get("partialCharges")
+        .and_then(serde_json::Value::as_object);
+    let values = datasets
+        .and_then(|sets| sets.get(method))
+        .and_then(serde_json::Value::as_array);
+    let values_equal = graph_verified
+        && values.is_some_and(|values| {
+            values.len() == record.atoms().len()
+                && order.iter().enumerate().all(|(candidate_index, source)| {
+                    values[candidate_index].as_f64().is_some_and(|after| {
+                        after.to_bits() == partial_values[source.0 as usize].to_bits()
+                    })
+                })
+        });
+    observe(
+        report,
+        "partial_charges",
+        if values_equal {
+            PreservationStatus::Preserved
+        } else {
+            PreservationStatus::Unverified
+        },
+        "candidate_verification",
+        "Partial-charge preservation requires complete source values, reparsed bitwise equality and verified atom correspondence; no rounding into formal charges or filling missing values.",
+    );
+    observe(
+        report,
+        "charge_method",
+        if datasets.is_some_and(|sets| sets.len() == 1 && sets.contains_key(method)) {
+            PreservationStatus::Preserved
+        } else {
+            PreservationStatus::Unverified
+        },
+        "candidate_verification",
+        "Source charge-method label retained verbatim as the partialCharges dataset key; the declared method is not recomputed or independently validated.",
+    );
+}
+
+#[allow(clippy::too_many_arguments)]
+fn finalize_mol2_projection(
+    record: &crate::Mol2SourceRecord,
+    order: Vec<AtomIdx>,
+    verified: Option<Vec<usize>>,
+    parsed: bool,
+    candidate: String,
+    policy: ConversionPolicy,
+    mut report: ConversionReport,
+) -> ConversionReport {
     if let Some(bond_order) = verified {
         report.candidate_atom_mapping = order
             .iter()
@@ -530,7 +692,7 @@ pub fn convert_with_report_with_limits(
                 | PreservationStatus::Inferred
         )
     });
-    if (policy == ConversionPolicy::Strict && has_loss) || parsed.is_none() {
+    if (policy == ConversionPolicy::Strict && has_loss) || !parsed {
         report.status = "refused";
     } else {
         report.status = if has_loss {
@@ -540,7 +702,7 @@ pub fn convert_with_report_with_limits(
         };
         report.output = Some(candidate);
     }
-    Ok(report)
+    report
 }
 
 fn cjson_conversion_report(target: &str, policy: ConversionPolicy) -> ConversionReport {
@@ -623,11 +785,11 @@ fn record_cjson_smiles_losses(record: &crate::CjsonRecord, report: &mut Conversi
             "Fields listed by the CJSON record inspection API are retained in the source record only and omitted from SMILES; their semantics are not interpreted.",
         ),
         (
-            record.name().is_some(),
+            record.has_name_declarations(),
             "molecule_name",
             PreservationStatus::Dropped,
             "write",
-            "Plain SMILES omits source properties.name.",
+            "Plain SMILES omits source root name and legacy properties.name, including conflicting declarations.",
         ),
         (
             record.coordinates_present(),
@@ -800,6 +962,10 @@ fn convert_cjson(
     }
     record_cjson_smiles_losses(&record, &mut report);
     finalize_cjson_smiles(&record, report, policy, limits)
+}
+
+fn cjson_names_match(metadata: &serde_json::Value, name: &str) -> bool {
+    metadata["name"] == name && metadata["properties"]["name"] == name
 }
 
 /// Check through emitted atom correspondence, including branches, rings and

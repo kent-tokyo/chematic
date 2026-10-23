@@ -1,0 +1,108 @@
+    Blocking waiting for file lock on build directory
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling smallvec v1.16.3
+   Compiling autocfg v1.5.1
+   Compiling syn v3.0.5
+   Compiling chematic-perception v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-perception)
+   Compiling bytemuck_derive v1.12.0
+   Compiling bytemuck v1.25.2
+   Compiling libc v0.2.189
+   Compiling log v0.4.34
+   Compiling target-lexicon v0.13.5
+   Compiling num-traits v0.2.19
+   Compiling float-cmp v0.9.0
+   Compiling strict-num v0.1.1
+   Compiling pyo3-build-config v0.29.3
+   Compiling version_check v0.9.5
+   Compiling slotmap v1.1.1
+   Compiling core_maths v0.1.1
+   Compiling serde_derive v1.0.229
+   Compiling chematic-smarts v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smarts)
+   Compiling ttf-parser v0.25.1
+   Compiling serde v1.0.229
+   Compiling font-types v0.11.3
+   Compiling chematic-smiles v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-smiles)
+   Compiling weezl v0.1.12
+   Compiling tinyvec_macros v0.1.1
+   Compiling color_quant v1.1.0
+   Compiling tinyvec v1.13.2
+   Compiling read-fonts v0.39.2
+   Compiling chematic-rxn v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-rxn)
+   Compiling pyo3-ffi v0.29.3
+   Compiling tiny-skia-path v0.11.4
+   Compiling memmap2 v0.9.11
+   Compiling kurbo v0.11.3
+   Compiling polycool v0.4.0
+   Compiling unicode-bidi-mirroring v0.4.0
+   Compiling unicode-properties v0.1.4
+   Compiling equivalent v1.0.2
+   Compiling unicode-script v0.5.8
+   Compiling siphasher v1.0.3
+   Compiling byteorder-lite v0.1.0
+   Compiling hashbrown v0.17.1
+   Compiling bitflags v1.3.2
+   Compiling unicode-ccc v0.4.0
+   Compiling rustybuzz v0.20.1
+   Compiling indexmap v2.14.2
+   Compiling png v0.17.16
+   Compiling svgtypes v0.15.3
+   Compiling kurbo v0.13.1
+   Compiling fontdb v0.23.0
+   Compiling simplecss v0.2.2
+   Compiling chematic-cip v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-cip)
+   Compiling data-url v0.3.2
+   Compiling roxmltree v0.20.0
+   Compiling pxfm v0.1.30
+   Compiling pico-args v0.5.0
+   Compiling base64 v0.22.1
+   Compiling quick-error v2.0.1
+   Compiling unicode-bidi v0.3.18
+   Compiling xmlwriter v0.1.0
+   Compiling zune-core v0.4.12
+   Compiling zune-core v0.5.3
+   Compiling once_cell v1.21.4
+   Compiling imagesize v0.13.0
+   Compiling unicode-vo v0.1.0
+   Compiling usvg v0.45.1
+   Compiling moxcms v0.8.1
+   Compiling zune-jpeg v0.5.15
+   Compiling zune-jpeg v0.4.21
+   Compiling image-webp v0.2.4
+   Compiling chematic-fp v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-fp)
+   Compiling write-fonts v0.48.1
+   Compiling tiny-skia v0.11.4
+   Compiling skrifa v0.42.1
+   Compiling gif v0.14.2
+   Compiling gif v0.13.3
+   Compiling pyo3 v0.29.3
+   Compiling rgb v0.8.53
+   Compiling chematic-iupac v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-iupac)
+   Compiling syn v2.0.119
+   Compiling matrixmultiply v0.3.11
+   Compiling heck v0.5.0
+   Compiling ryu v1.0.23
+   Compiling pdf-writer v0.12.1
+   Compiling pyo3-macros-backend v0.29.3
+   Compiling chematic-chem v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem)
+   Compiling resvg v0.45.1
+   Compiling image v0.25.10
+   Compiling subsetter v0.2.6
+   Compiling tiny-skia-path v0.12.0
+   Compiling rawpointer v0.2.1
+   Compiling tiny-skia v0.12.0
+   Compiling svg2pdf v0.13.0
+   Compiling pyo3-macros v0.29.3
+   Compiling chematic-ff v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-ff)
+   Compiling numpy v0.29.0
+   Compiling num-integer v0.1.47
+   Compiling num-complex v0.4.6
+   Compiling inventory v0.3.25
+   Compiling chematic-inchi v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-inchi)
+   Compiling chematic-3d v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+   Compiling ndarray v0.17.2
+   Compiling chematic-depict v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-depict)
+   Compiling chematic-crystal v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-crystal)
+   Compiling chematic-mol v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol)
+   Compiling chematic-py v1.2.0 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py)
+    Finished `dev` profile [unoptimized] target(s) in 1m 31s

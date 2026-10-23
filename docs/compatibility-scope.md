@@ -34,12 +34,11 @@ unless a narrower section explicitly records a compatible extension:
 
 ### Evidence boundary
 
-The v1.0 release decision is based on reproducible repository-local gates:
-the S1-S4 checks, binding contract suite, focused Miri, sanitizer jobs, fuzz
-regressions, and dependency/license checks. Independent external review,
-third-party audit, hosted CI execution, and external oracle campaigns are
-supplementary evidence and are not presented as completed v1.0 guarantees.
-They remain post-release follow-up work with findings published separately.
+The current v1.2.0 release has hosted Rust, binding, security, cross-platform
+wheel, and chemistry-gate evidence. Exact support and accuracy claims still
+come from their named dated records; a CI pass does not turn source-only or
+older-package measurements into v1.2.0 results. Independent external review
+and third-party audit remain outside the completed release evidence.
 
 ## Python `RWMol`
 

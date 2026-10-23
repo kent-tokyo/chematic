@@ -1,0 +1,224 @@
+{
+  "provenance": "Original minimal synthetic fixtures authored for chematic on 2026-10-22; no third-party source copied.",
+  "license": "MIT",
+  "redistribution": "allowed: original project-authored data",
+  "minimization": "Six short records isolate atom order, AutoDock element aliases, explicit H, finite numeric precision, charge semantics and line endings.",
+  "oracle": {
+    "engine": "Hand-authored source-field contract",
+    "version": "pdbqt-atom-data-v1",
+    "settings": "Exact parsed binary64 coordinates in angstrom and partial charges in elementary charge; no tolerance for API arrays. PDBQT output is rounded to three decimals, absolute tolerance 0.000500000001."
+  },
+  "normalization": "UTF-8, CRLF to LF, otherwise exact input string; SHA-256 per case",
+  "cases": [
+    {
+      "id": "mixed_types",
+      "input": "REMARK original synthetic numeric-data fixture\nROOT\nATOM      7  Q   LIG Z   7       0.000   0.000  -0.000  1.00  0.00    -0.123 A\nHETATM   10  Q   LIG Z   7       1.250  -2.500   3.750  1.00  0.00    +0.456 NA\nATOM     13  Q   LIG Z   7      -0.001   4.321   8.765  1.00  0.00    -0.789 OA\nHETATM   16  Q   LIG Z   7      20.000 -30.000  40.000  1.00  0.00         0 SA\nATOM     19  Q   LIG Z   7       1.000   1.000   1.000  1.00  0.00     0.111 HD\nHETATM   22  Q   LIG Z   7      -9.000   2.000   5.000  1.00  0.00    -1.000 Cl\nENDROOT\nTORSDOF 0\n",
+      "sha256": "0ef192efee4501285228e3fe3ba84b29b1de1d49fb2e791eed08d916a4d3985a",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          7,
+          8,
+          16,
+          1,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            -0.0
+          ],
+          [
+            1.25,
+            -2.5,
+            3.75
+          ],
+          [
+            -0.001,
+            4.321,
+            8.765
+          ],
+          [
+            20,
+            -30,
+            40
+          ],
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            -9,
+            2,
+            5
+          ]
+        ],
+        "partial_charges": [
+          -0.123,
+          0.456,
+          -0.789,
+          0.0,
+          0.111,
+          -1.0
+        ]
+      },
+      "profile": "fixed-column PDBQT atom records"
+    },
+    {
+      "id": "wide_charge",
+      "input": "REMARK original synthetic numeric-data fixture\nROOT\nATOM      7  Q   LIG Z   7      12.345  -9.876   0.125  1.00  0.00    +0.123456789012345 Zn\nHETATM   10  Q   LIG Z   7       1.000   2.000   3.000  1.00  0.00    -0.00000000000001 C\nENDROOT\nTORSDOF 0\n",
+      "sha256": "5875e50a39362064899389ce430d0f9be3240d4bc3363568a163539f486c1f89",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          6
+        ],
+        "coords": [
+          [
+            12.345,
+            -9.876,
+            0.125
+          ],
+          [
+            1,
+            2,
+            3
+          ]
+        ],
+        "partial_charges": [
+          0.123456789012345,
+          -1e-14
+        ]
+      },
+      "profile": "whitespace-separated widened-charge extension"
+    },
+    {
+      "id": "charge_not_formal",
+      "input": "REMARK original synthetic numeric-data fixture\nROOT\nATOM      7  Q   LIG Z   7       0.000   0.000   0.000  1.00  0.00     2.000 Zn\nHETATM   10  Q   LIG Z   7       8.000   0.000   0.000  1.00  0.00    -1.000 Cl\nENDROOT\nTORSDOF 0\n",
+      "sha256": "fbe30712ba5f71fd83578529bb100bfd47bf7fc3e4f3bb0128a1e241d805dbd9",
+      "expected": {
+        "atomic_numbers": [
+          30,
+          17
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          2.0,
+          -1.0
+        ]
+      },
+      "profile": "fixed-column PDBQT atom records"
+    },
+    {
+      "id": "explicit_hydrogens",
+      "input": "REMARK original synthetic numeric-data fixture\nROOT\nATOM      7  Q   LIG Z   7       0.000   0.000   0.000  1.00  0.00    -0.125 C\nHETATM   10  Q   LIG Z   7       1.000   0.000   0.000  1.00  0.00     0.125 H\nATOM     13  Q   LIG Z   7       2.000   0.000   0.000  1.00  0.00      0.25 HD\nHETATM   16  Q   LIG Z   7       3.000   0.000   0.000  1.00  0.00     -0.25 OA\nENDROOT\nTORSDOF 0\n",
+      "sha256": "a873c587e32cc23df2ac03ce152e9b001311b549e07104f244f4a64b44b87bf9",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          1,
+          1,
+          8
+        ],
+        "coords": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0
+          ],
+          [
+            3,
+            0,
+            0
+          ]
+        ],
+        "partial_charges": [
+          -0.125,
+          0.125,
+          0.25,
+          -0.25
+        ]
+      },
+      "profile": "fixed-column PDBQT atom records"
+    },
+    {
+      "id": "coordinate_edges",
+      "input": "REMARK original synthetic numeric-data fixture\nROOT\nATOM      7  Q   LIG Z   7    9999.999-999.999  -0.001  1.00  0.00    99.999 C\nHETATM   10  Q   LIG Z   7      -0.125   0.250   2.500  1.00  0.00    -9.999 Br\nENDROOT\nTORSDOF 0\n",
+      "sha256": "8fa8d7c5abc906bb2d0fcf5c1a5ae22966a660134da8d512ba6967c51191aa91",
+      "expected": {
+        "atomic_numbers": [
+          6,
+          35
+        ],
+        "coords": [
+          [
+            9999.999,
+            -999.999,
+            -0.001
+          ],
+          [
+            -0.125,
+            0.25,
+            2.5
+          ]
+        ],
+        "partial_charges": [
+          99.999,
+          -9.999
+        ]
+      },
+      "profile": "fixed-column PDBQT atom records"
+    },
+    {
+      "id": "crlf_no_final_newline",
+      "input": "REMARK original synthetic numeric-data fixture\r\nROOT\r\nATOM      7  Q   LIG Z   7       1.111   2.222   3.333  1.00  0.00      -0.4 N\r\nHETATM   10  Q   LIG Z   7      -4.444   5.555  -6.666  1.00  0.00       0.4 F\r\nENDROOT\r\nTORSDOF 0",
+      "sha256": "f279c303ba244a5aaacf376e12d1d568663134a513e029f714bdff6c42759f88",
+      "expected": {
+        "atomic_numbers": [
+          7,
+          9
+        ],
+        "coords": [
+          [
+            1.111,
+            2.222,
+            3.333
+          ],
+          [
+            -4.444,
+            5.555,
+            -6.666
+          ]
+        ],
+        "partial_charges": [
+          -0.4,
+          0.4
+        ]
+      },
+      "profile": "fixed-column PDBQT atom records"
+    }
+  ]
+}

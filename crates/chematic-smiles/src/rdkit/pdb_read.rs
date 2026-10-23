@@ -8,6 +8,8 @@ use super::mol::{Atom, Bond, BondDir, BondType, ChiralTag, Mol, insert_implicit_
 use super::periodic;
 use super::sanitize;
 
+mod standard_bonds;
+
 fn parse_error(what: impl Into<String>) -> RdkitSmilesError {
     RdkitSmilesError::Unsupported(what.into())
 }
@@ -590,66 +592,6 @@ fn connect_the_dots(pdb: &mut PdbMol) {
     }
 }
 
-const fn atm(s: &[u8; 4]) -> [u8; 4] {
-    *s
-}
-
-/// `StandardPDBDoubleBond(rescode, atm1, atm2)`.
-fn standard_double_bond(res: &[u8], a1: [u8; 4], a2: [u8; 4]) -> bool {
-    let (a1, a2) = if u32::from_be_bytes(a1) > u32::from_be_bytes(a2) {
-        (a2, a1)
-    } else {
-        (a1, a2)
-    };
-    let is = |x: &[u8; 4], y: &[u8; 4]| a1 == atm(x) && a2 == atm(y);
-    let backbone = is(b" C  ", b" O  ");
-    match res {
-        b"ACE" | b"ALA" | b"CYS" | b"GLY" | b"ILE" | b"LEU" | b"LYS" | b"MET" | b"PRO" | b"SER"
-        | b"THR" | b"VAL" => backbone,
-        b"ARG" => backbone || is(b" CZ ", b" NH2"),
-        b"ASN" | b"ASP" => backbone || is(b" CG ", b" OD1"),
-        b"GLN" | b"GLU" => backbone || is(b" CD ", b" OE1"),
-        b"HIS" => backbone || is(b" CD2", b" CG ") || is(b" CE1", b" ND1"),
-        b"PHE" | b"TYR" => {
-            backbone || is(b" CD1", b" CG ") || is(b" CD2", b" CE2") || is(b" CE1", b" CZ ")
-        }
-        b"TRP" => {
-            backbone
-                || is(b" CD1", b" CG ")
-                || is(b" CD2", b" CE2")
-                || is(b" CE3", b" CZ3")
-                || is(b" CH2", b" CZ2")
-        }
-        b"  A" | b" DA" => {
-            is(b" C6 ", b" N1 ")
-                || is(b" C2 ", b" N3 ")
-                || is(b" C4 ", b" C5 ")
-                || is(b" C8 ", b" N7 ")
-                || is(b" OP1", b" P  ")
-        }
-        b"  G" | b" DG" => {
-            is(b" C6 ", b" O6 ")
-                || is(b" C2 ", b" N3 ")
-                || is(b" C4 ", b" C5 ")
-                || is(b" C8 ", b" N7 ")
-                || is(b" OP1", b" P  ")
-        }
-        b"  C" | b" DC" => {
-            is(b" C2 ", b" O2 ")
-                || is(b" C4 ", b" N3 ")
-                || is(b" C5 ", b" C6 ")
-                || is(b" OP1", b" P  ")
-        }
-        b"  T" | b" DT" | b"  U" | b" DU" => {
-            is(b" C2 ", b" O2 ")
-                || is(b" C4 ", b" O4 ")
-                || is(b" C5 ", b" C6 ")
-                || is(b" OP1", b" P  ")
-        }
-        _ => false,
-    }
-}
-
 /// `StandardPDBResidueBondOrders`.
 fn standard_residue_bond_orders(pdb: &mut PdbMol) {
     for b in 0..pdb.mol.bonds.len() {
@@ -661,7 +603,7 @@ fn standard_residue_bond_orders(pdb: &mut PdbMol) {
         if !same_residue(bi, ei) || bi.hetero || ei.hetero {
             continue;
         }
-        if !standard_double_bond(&bi.res_name, bi.name, ei.name) {
+        if !standard_bonds::is_double_bond(&bi.res_name, bi.name, ei.name) {
             continue;
         }
         let has_double = |a: usize| {

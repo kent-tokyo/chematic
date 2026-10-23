@@ -231,6 +231,78 @@ struct State {
     ring_bonds: Vec<u32>,
 }
 
+fn flag_divisor_ring_stereo(
+    mol: &Mol,
+    st: &State,
+    aring: &[usize],
+    bring: &[usize],
+    atom_pos: usize,
+    in_ring: &mut [bool],
+) -> u32 {
+    let mut contribution = 0;
+    let size = aring.len();
+    for divisor in [2usize, 3] {
+        if !size.is_multiple_of(divisor) {
+            continue;
+        }
+        let increment = size / divisor;
+        let mut by_bond = 0usize;
+        let mut by_atom = 0usize;
+        let mut offset = increment;
+        while offset < size {
+            let other = aring[(atom_pos + offset) % size];
+            if mol.atom_bonds[other].iter().any(|&bond| {
+                (st.known_bonds[bond] || st.possible_bonds[bond]) && !bring.contains(&bond)
+            }) {
+                by_bond += 1;
+            }
+            if by_bond == 0 && (st.known_atoms[other] || st.possible_atoms[other]) {
+                by_atom += 1;
+            }
+            offset += increment;
+        }
+        if by_bond == divisor - 1 || by_atom == divisor - 1 {
+            contribution += 1 + by_bond as u32;
+            let mut offset = 0;
+            while offset < size {
+                in_ring[aring[(atom_pos + offset) % size]] = true;
+                offset += increment;
+            }
+        }
+    }
+    contribution
+}
+
+fn flag_fused_ring_stereo(
+    mol: &Mol,
+    st: &State,
+    aring: &[usize],
+    atom_pos: usize,
+    in_ring: &mut [bool],
+) -> u32 {
+    let atom = aring[atom_pos];
+    let ring_info = mol.ring_info();
+    if ring_info.num_atom_rings(atom) <= 1 {
+        return 0;
+    }
+    let mut previous = atom;
+    let half = aring.len() / 2 + aring.len() % 2;
+    for step in 1..=half {
+        let other = aring[(atom_pos + step) % aring.len()];
+        let bond = mol.bond_between(previous, other).expect("ring bond");
+        if ring_info.num_bond_rings(bond) < 2 {
+            break;
+        }
+        if st.known_atoms[other] || st.possible_atoms[other] {
+            in_ring[atom] = true;
+            in_ring[other] = true;
+            return 2;
+        }
+        previous = other;
+    }
+    0
+}
+
 /// `flagRingStereo` (with the possible sets, `cleanIt=false`).
 fn flag_ring_stereo(mol: &Mol, st: &mut State) {
     let ri = mol.ring_info();
@@ -240,65 +312,14 @@ fn flag_ring_stereo(mol: &Mol, st: &mut State) {
         let aring = &ri.atom_rings[ridx];
         let bring = &ri.bond_rings[ridx];
         let mut n_here = 0u32;
-        let sz = aring.len();
-        let half = sz / 2 + sz % 2;
         in_ring.iter_mut().for_each(|x| *x = false);
-        for ai in 0..sz {
+        for ai in 0..aring.len() {
             let aidx = aring[ai];
             if !st.known_atoms[aidx] && !st.possible_atoms[aidx] {
                 continue;
             }
-            // (RDKit's `continue` here only moves on to the next divisor;
-            // the fused-ring exploration below always runs.)
-            for div in [2usize, 3] {
-                if !sz.is_multiple_of(div) {
-                    continue;
-                }
-                let inc = sz / div;
-                let mut by_bond = 0usize;
-                let mut by_atom = 0usize;
-                let mut k = inc;
-                while k < sz {
-                    let other = aring[(ai + k) % sz];
-                    for &bidx in &mol.atom_bonds[other] {
-                        if (st.known_bonds[bidx] || st.possible_bonds[bidx])
-                            && !bring.contains(&bidx)
-                        {
-                            by_bond += 1;
-                            break;
-                        }
-                    }
-                    if by_bond == 0 && (st.known_atoms[other] || st.possible_atoms[other]) {
-                        by_atom += 1;
-                    }
-                    k += inc;
-                }
-                if by_bond == div - 1 || by_atom == div - 1 {
-                    n_here += 1 + by_bond as u32;
-                    let mut k = 0;
-                    while k < sz {
-                        in_ring[aring[(ai + k) % sz]] = true;
-                        k += inc;
-                    }
-                }
-            }
-            if ri.num_atom_rings(aidx) > 1 {
-                let mut prev = aidx;
-                for step in 1..=half {
-                    let other = aring[(ai + step) % sz];
-                    let bnd = mol.bond_between(prev, other).expect("ring bond");
-                    if ri.num_bond_rings(bnd) < 2 {
-                        break;
-                    }
-                    if st.known_atoms[other] || st.possible_atoms[other] {
-                        n_here += 2;
-                        in_ring[aidx] = true;
-                        in_ring[other] = true;
-                        break;
-                    }
-                    prev = other;
-                }
-            }
+            n_here += flag_divisor_ring_stereo(mol, st, aring, bring, ai, &mut in_ring);
+            n_here += flag_fused_ring_stereo(mol, st, aring, ai, &mut in_ring);
         }
         if n_here > 1 {
             for &a in aring {
@@ -311,6 +332,31 @@ fn flag_ring_stereo(mol: &Mol, st: &mut State) {
             }
         }
     }
+}
+
+fn tetrahedral_has_duplicate_rank(
+    mol: &Mol,
+    atom: usize,
+    controlling: &[usize],
+    ranks: &[u32],
+    state: &State,
+    neighbour_ranks: &mut Vec<u32>,
+) -> bool {
+    for &neighbour in controlling {
+        let rank = ranks[neighbour];
+        if !neighbour_ranks.contains(&rank) {
+            neighbour_ranks.push(rank);
+            continue;
+        }
+        if state.ring_atoms[atom] == 0 {
+            return true;
+        }
+        match mol.bond_between(atom, neighbour) {
+            Some(bond) if state.ring_bonds[bond] != 0 => {}
+            _ => return true,
+        }
+    }
+    false
 }
 
 /// `areStereobondControllingAtomsDupes`.
@@ -375,28 +421,8 @@ fn update_atoms(mol: &Mol, ranks: &[u32], st: &mut State, res: &mut Vec<StereoIn
             continue;
         }
         let mut nbrs: Vec<u32> = Vec::with_capacity(info.controlling.len());
-        let mut dupe = false;
-        if info.kind == StereoType::AtomTetrahedral {
-            for &nbr in &info.controlling {
-                let rnk = ranks[nbr];
-                if nbrs.contains(&rnk) {
-                    if st.ring_atoms[aidx] != 0 {
-                        match mol.bond_between(aidx, nbr) {
-                            Some(b) if st.ring_bonds[b] != 0 => {}
-                            _ => {
-                                dupe = true;
-                                break;
-                            }
-                        }
-                    } else {
-                        dupe = true;
-                        break;
-                    }
-                } else {
-                    nbrs.push(rnk);
-                }
-            }
-        }
+        let dupe = info.kind == StereoType::AtomTetrahedral
+            && tetrahedral_has_duplicate_rank(mol, aidx, &info.controlling, ranks, st, &mut nbrs);
         if !dupe {
             let mut acs = st.atom_symbols[aidx].clone();
             if !st.possible_atoms[aidx] {

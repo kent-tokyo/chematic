@@ -96,6 +96,7 @@ pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
+    project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
 };
 pub use error::MolParseError;
 pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
@@ -126,11 +127,12 @@ pub use cif::{
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
 pub use cjson_record::{
-    CjsonRecord, parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
+    CjsonProjection, CjsonRecord, parse_cjson_checked, parse_cjson_checked_with_limits,
+    parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
 };
 pub use cml::{
-    CmlError, CmlParseLimits, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
-    parse_cml_with_limits, write_cml,
+    CmlError, CmlParseLimits, CmlWith3d, parse_cml, parse_cml_strict, parse_cml_strict_with_limits,
+    parse_cml_with_3d, parse_cml_with_3d_with_limits, parse_cml_with_limits, write_cml,
 };
 pub use cube::{
     CubeError, CubeFileReader, CubeParseLimits, parse_cube, parse_cube_with_limits, write_cube,
@@ -149,8 +151,13 @@ pub use fhiaims::{
     FhiaimsParseLimits, parse_fhiaims, parse_fhiaims_with_limits, write_fhiaims,
 };
 pub use gaussian::{
-    GaussianError, GaussianLogResult, GaussianParseLimits, parse_gaussian_log,
-    parse_gaussian_log_with_limits, parse_gjf, parse_gjf_with_limits, write_gjf,
+    GaussianError, GaussianLogResult, GaussianParseLimits, GjfCoordinateUnits, GjfDocumentLimits,
+    GjfGeometry, GjfSourceDocument, GjfSourceJob, GjfSourceRecord, GjfWriteError, GjfWriteOptions,
+    parse_gaussian_log, parse_gaussian_log_with_limits, parse_gjf, parse_gjf_geometry,
+    parse_gjf_geometry_with_limits, parse_gjf_source_document,
+    parse_gjf_source_document_with_limits, parse_gjf_source_record,
+    parse_gjf_source_record_with_limits, parse_gjf_with_limits, write_gjf, write_gjf_cartesian,
+    write_gjf_source_document, write_gjf_source_record,
 };
 pub use gzmat::{
     GzmatWriteOptions, ZMatrixError, ZMatrixRow, cartesian_to_zmatrix, validate_zmatrix,
@@ -196,8 +203,9 @@ pub use mol2000::{
     write_sdf_with_charges,
 };
 pub use mol3000::{
-    V3000SGroup, V3000SGroupKind, parse_mol_v3000, parse_mol_v3000_with_coords,
-    parse_v3000_sgroup_line, read_mol_v3000_with_diagnostics, write_mol_v3000,
+    V3000SGroup, V3000SGroupKind, V3000SourceLimits, parse_mol_v3000, parse_mol_v3000_with_coords,
+    parse_mol_v3000_with_coords_3d, parse_v3000_sgroup_line, read_mol_v3000_with_diagnostics,
+    roundtrip_mol_v3000_source, roundtrip_mol_v3000_source_with_limits, write_mol_v3000,
     write_mol_v3000_with_conformer, write_mol_v3000_with_conformer_checked,
     write_mol_v3000_with_stereo_report,
 };
@@ -265,8 +273,10 @@ pub use rxn::{
 pub use sdf::{
     ConformerEnsemble, SdfBatch, SdfBatchProgress, SdfBatchReader, SdfCompression, SdfDataset,
     SdfFileReader, SdfIndexedBatch, SdfInput, SdfParseLimits, SdfReader, SdfRecord,
-    SdfRecordMetadata, SdfRecordReader, SdfSelectionError, SdfSelectionLimits,
-    parse_sdf_with_limits, read_sdf_conformer_ensembles,
+    SdfRecordMetadata, SdfRecordReader, SdfSelectionError, SdfSelectionLimits, SdfSourceLimits,
+    SdfSourceSummary, parse_sdf_with_limits, read_sdf_conformer_ensembles, roundtrip_sdf_source,
+    roundtrip_sdf_source_with_limits, single_sdf_mol_block, single_sdf_mol_block_with_limits,
+    validate_sdf_source_with_limits,
 };
 pub use semantic::{
     AtomRef, ExpandedSemantic, PolymerEndGroup, PolymerLinkage, PolymerRepeatUnit,
