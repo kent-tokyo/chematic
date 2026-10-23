@@ -14,6 +14,9 @@ The [ETKDGv3/MMFF94 conformer search comparison](3d-mmff-conformer-2026-10-24.md
 records source-built compatibility and quality profiles against COSMolKit
 0.5.0, with row-level energy and convergence results, disjoint checks, and
 the candidate-budget limitation.
+The [bounded torsion-search follow-up](3d-mmff-torsion-search-2026-10-24.md)
+adds a disjoint 12-molecule selection, indexed-graph and stereochemistry
+checks, and independent RDKit MMFF94 re-scoring of both engines' coordinates.
 
 The focused mixed V2000/V3000 SDF recognition fixture is
 `corpora/mixed-v2000-v3000-v1.sdf`. With RDKit 2025.09.3 and COSMolKit 0.5.0
