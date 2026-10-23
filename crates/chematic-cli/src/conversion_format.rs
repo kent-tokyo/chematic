@@ -19,12 +19,27 @@ pub(super) fn format_name(format: &str) -> Option<String> {
     }
 }
 
-/// Handle the source-only GJF family before entering the graph bridge.
-pub(super) fn gjf_source_conversion(
+/// Handle source-only CML and GJF routes before entering the graph bridge.
+pub(super) fn source_only_conversion(
     text: &str,
     input: &str,
     output: &str,
 ) -> Option<Result<String, String>> {
+    if input == "cml" && output == "cml" {
+        return Some(
+            chematic_mol::roundtrip_cml_source_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
     if input != "gjf" && output != "gjf" {
         return None;
     }

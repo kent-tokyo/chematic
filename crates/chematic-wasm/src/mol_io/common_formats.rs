@@ -1,5 +1,24 @@
 use super::*;
 
+/// Exact bounded XML 1.0 CML source retention. Requires one CML-namespace
+/// molecule root; rejects nested molecules/DTDs. Chemistry, references and
+/// stereo remain opaque, with no interpretation or schema validation promised.
+#[wasm_bindgen]
+pub fn roundtrip_cml_source(text: &str) -> Result<String, JsValue> {
+    chematic_mol::roundtrip_cml_source_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 /// Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
 /// Retains atom types and every other source byte; errors throw, no partial text.
 #[wasm_bindgen]
@@ -223,6 +242,9 @@ fn write_common_format(
 }
 
 fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option<String>, JsValue> {
+    if input == "cml" && output == "cml" {
+        return roundtrip_cml_source(text).map(Some);
+    }
     if input == "cml" && output == "cjson" {
         let limits = chematic_mol::CmlParseLimits {
             max_input_bytes: WASM_MAX_INPUT_BYTES,
@@ -279,6 +301,8 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
 /// Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
+/// CML-to-CML retains one bounded XML 1.0 CML-namespace molecule document exactly;
+/// chemistry/references/stereo remain opaque, with no edits or validation promised.
 /// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
 /// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent

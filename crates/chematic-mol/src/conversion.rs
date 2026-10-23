@@ -11,6 +11,7 @@ use std::collections::HashMap;
 
 mod cjson_mol2;
 mod cml_source;
+pub use cml_source::{roundtrip_cml_source, roundtrip_cml_source_with_limits};
 mod mol2_cjson_projection;
 pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};
 
