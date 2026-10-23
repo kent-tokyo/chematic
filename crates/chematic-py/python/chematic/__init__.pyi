@@ -355,7 +355,10 @@ class Mol:
     ) -> list[list[list[float]]]:
         """RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
         defaults on this explicit-hydrogen molecule. Failed attempts are
-        omitted; reusable setup is shared across conformers."""
+        omitted; reusable setup is shared across conformers. Seed zero uses
+        attempts 0, 2, 3, ... to fix RDKit #9738 while preserving the first
+        single-conformer result. Positive seeds retain their existing schedule.
+        Different seeds do not guarantee different shapes."""
         ...
 
     def rdkit_embed_multiple_confs_mmff(

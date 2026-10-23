@@ -1,0 +1,19 @@
+   Compiling chematic-3d v1.2.1 (/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-3d)
+    Finished `test` profile [unoptimized] target(s) in 0.30s
+     Running tests/zero_seed_ensemble.rs (/private/tmp/chematic-orca-write-target-20261024/debug/deps/zero_seed_ensemble-f7ee5efa0b94aaa7)
+
+running 1 test
+
+thread 'zero_seed_ensemble_is_reproducible_nonrigid_and_prefix_stable' (11916069) panicked at crates/chematic-3d/tests/zero_seed_ensemble.rs:26:5:
+assertion failed: distance_change(&conformers[0], &conformers[1], 7) > 0.1
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+test zero_seed_ensemble_is_reproducible_nonrigid_and_prefix_stable ... FAILED
+
+failures:
+
+failures:
+    zero_seed_ensemble_is_reproducible_nonrigid_and_prefix_stable
+
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 4 filtered out; finished in 0.04s
+
+error: test failed, to rerun pass `-p chematic-3d --test zero_seed_ensemble`
