@@ -169,8 +169,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and same-format GJF/COM
     source retention. PDB, XYZ, and PDBQT output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
-    The molecular graph and supported stereochemistry are preserved. Format-
-    specific metadata is not promised to survive conversion. PDBQT input supplies
+    The bridge projects supported graph fields. Target formats can omit stereo
+    declarations and format-specific metadata; use format-specific APIs or
+    checked conversion reports when those fields matter. PDBQT input supplies
     coordinates and partial charges unless explicitly overridden; PDBQT output
     from that input uses checked field widths and rounds to three decimals.
     Its bonds are not inferred and source AutoDock types, identities and torsion
@@ -181,7 +182,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     GJF/COM to GJF/COM retains exact source for one Cartesian job, including
     opaque job sections; overrides are rejected. Other GJF output routes
     require the explicit geometry writer.
-    V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
+    V2000 and V3000 input supply source x/y/z for CJSON, PDB, XYZ and PDBQT output
     unless coords is explicitly provided. Each writer's precision and metadata
     limits still apply; this does not verify cross-format stereochemistry.
     V3000 to V3000 also validates and retains one exact source block, including
@@ -257,7 +258,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":
-        mol = from_mol_block(text)
+        if target in {"cjson", "pdb", "xyz", "pdbqt"}:
+            mol, _, parsed_coords = from_mol_block_with_coords_3d(text)
+            if coords is None:
+                coords = parsed_coords
+        else:
+            mol = from_mol_block(text)
     elif source == "mol_v3000":
         mol, _, parsed_coords = from_mol_v3000_with_coords_3d(text)
         if coords is None:

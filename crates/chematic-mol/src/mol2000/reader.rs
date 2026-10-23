@@ -62,7 +62,7 @@ fn parse_header(
     ))
 }
 
-fn parse_counts(lines: &mut NumberedLines<'_>) -> Result<(usize, usize), MolParseError> {
+pub(super) fn parse_counts(lines: &mut NumberedLines<'_>) -> Result<(usize, usize), MolParseError> {
     let (line_number, line) = next_required(lines)?;
     if !line.contains("V2000") {
         return Err(MolParseError::InvalidCountLine {

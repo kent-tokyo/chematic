@@ -176,6 +176,22 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
     }
 }
 
+type CommonGeometry = (chematic_core::Molecule, Vec<(f64, f64, f64)>);
+
+fn parse_common_geometry(text: &str, input: &str, output: &str) -> Result<CommonGeometry, String> {
+    if output == "cjson" && matches!(input, "mol" | "mol_v3000") {
+        let parsed = if input == "mol" {
+            chematic_mol::parse_mol_with_coords_3d(text)
+        } else {
+            chematic_mol::parse_mol_v3000_with_coords_3d(text)
+        };
+        return parsed
+            .map(|(mol, _, coords)| (mol, coords))
+            .map_err(|e| e.to_string());
+    }
+    parse_common_format(text, input).map(|mol| (mol, Vec::new()))
+}
+
 fn write_common_format(
     mol: &chematic_core::Molecule,
     coords: &[(f64, f64, f64)],
@@ -250,7 +266,7 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// GJF/COM supports only
 /// same-format retention of a bounded single Cartesian job, including opaque
 /// job sections (not a Gaussian job validator).
-/// V3000-to-CJSON also
+/// V2000/V3000-to-CJSON also
 /// carries source-order x/y/z values; it does not retain opaque metadata or
 /// verify cross-format stereo.
 /// MOL2-to-CJSON checks
@@ -322,16 +338,8 @@ pub fn convert_common_format(
     if let Some(projected) = project_source_format(text, &input, &output)? {
         return Ok(projected);
     }
-    let (mol, coords) = if input == "mol_v3000" && output == "cjson" {
-        let (mol, _, coords) = chematic_mol::parse_mol_v3000_with_coords_3d(text)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
-        (mol, coords)
-    } else {
-        (
-            parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?,
-            Vec::new(),
-        )
-    };
+    let (mol, coords) =
+        parse_common_geometry(text, &input, &output).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "format input exceeds maximum atom count ({WASM_MAX_ATOMS})"
