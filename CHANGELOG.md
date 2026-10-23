@@ -14,6 +14,8 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-10-23
+
 ### Documentation
 
 - Consolidated the active roadmap, open-work ledger, compatibility and error

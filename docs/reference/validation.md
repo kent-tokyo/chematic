@@ -1,20 +1,22 @@
 # Validation report
 
-Updated 2026-10-23 for the **v1.2.0 release** plus Unreleased source evidence.
+Updated 2026-10-23 for the **v1.2.1 release**. Completed hosted package evidence
+remains labelled with the release that produced it.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.2.0 is the current release. Its exact PyPI wheels passed the hosted Linux,
-  macOS and Windows runtime smoke and 11-job chemistry workflows. This is
-  package pass/fail evidence; source-only timing does not become package timing.
+- v1.2.1 is the current release. The latest completed hosted package evidence
+  is the v1.2.0 Linux, macOS and Windows runtime smoke and 11-job chemistry
+  workflow until the v1.2.1 tag workflow finishes. Source-only timing does not
+  become package timing.
 - The latest durable checked-in cross-platform row packet is v1.1.3. Hosted
   workflow success does not create missing row-level evidence.
 - The latest indexed public-package speed result is the one-host v1.1.8 Labute
   ASA lane. The broadest published-package RDKit speed packet is v1.0.42.
 - Source and earlier package records are useful development evidence, but they
-  are not relabelled as v1.2.0 package results.
+  are not relabelled as v1.2.1 package results.
 - Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
@@ -50,9 +52,11 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.2.0 public artifacts and retained package evidence
+## v1.2.1 release and retained package evidence
 
-The v1.2.0 public wheels passed their runtime and chemistry workflows. The
+The v1.2.1 release retains v1.2.0 package evidence under its original label
+until its own hosted workflows finish. The v1.2.0 public wheels passed their
+runtime and chemistry workflows. The
 exact v1.1.8 macOS arm64 wheel remains the latest recorded public-package
 performance lane for Labute ASA because v1.2.0 was not timed as a package.
 Neither result supersedes the latest durable cross-platform per-row packet at

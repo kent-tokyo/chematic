@@ -19,7 +19,7 @@
 //!
 //! Usage:
 //!   cargo run -p chematic-chem --release --example descriptor_census_unbound \
-//!       < scripts/descriptor_census_corpus.smi > validation/results/descriptor_census_unbound.jsonl
+//!       < scripts/fixtures/descriptor_census_corpus.smi > validation/results/descriptor_census_unbound.jsonl
 
 use chematic_chem::descriptors::{
     bcut2d, carbon_types, geary_autocorr, information_content, mde_carbon, mmff94_charges,

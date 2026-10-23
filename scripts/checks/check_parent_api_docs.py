@@ -125,7 +125,7 @@ def audit(root, site_dir=None):
             for anchor in checked_anchors:
                 if anchor not in parser.ids:
                     errors.append(f"rendered API anchor missing: {anchor}")
-        if not (site_dir / "standardization-parents/index.html").is_file():
+        if not (site_dir / "reference/standardization-parents/index.html").is_file():
             errors.append("rendered Parent guide missing")
     return {
         "status": "failed" if errors else "passed",

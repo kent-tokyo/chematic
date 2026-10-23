@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.2.0</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.2.1</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 

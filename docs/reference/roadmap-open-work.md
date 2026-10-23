@@ -1,6 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-23 for **v1.2.0** plus Unreleased source changes. Completed
+Updated 2026-10-23 for **v1.2.1**. Completed
 work belongs in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 dated evidence belongs in the
@@ -18,7 +18,7 @@ dated evidence belongs in the
 
 ## Chemistry correctness
 
-- **MCS:** Unreleased source fixes the v1.2.0 ring/chain input-order regression,
+- **MCS:** v1.2.1 fixes the v1.2.0 ring/chain input-order regression,
   equal-atom bond-count ties, complete-ring valid-best selection, and typed
   resource limits. Full FMCS parity, generalized SMARTS output, the explicit-H
   policy difference, and a newly selected independent holdout remain open.

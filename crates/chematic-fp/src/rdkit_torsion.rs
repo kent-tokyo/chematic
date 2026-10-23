@@ -16,7 +16,7 @@
 //! C++ source it mirrors.
 //!
 //! **Status**: 87.2% bit-exact on a 1000-molecule general corpus sample
-//! (`scripts/descriptor_census_corpus.smi`), verified against a live RDKit
+//! (`scripts/fixtures/descriptor_census_corpus.smi`), verified against a live RDKit
 //! oracle (`rdkit.Chem.AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect`).
 //! Two known, documented residual sources account for essentially all
 //! remaining misses -- see [`num_pi_electrons`]'s doc comment (RDKit's

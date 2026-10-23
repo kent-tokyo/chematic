@@ -25,7 +25,7 @@ is the authoritative inventory and schema source.
 ## Install and run over stdio
 
 ```bash
-cargo install chematic-mcp --version 1.2.0 --locked
+cargo install chematic-mcp --version 1.2.1 --locked
 ```
 
 Configure an MCP client to launch the installed binary:

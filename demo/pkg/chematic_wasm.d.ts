@@ -1037,13 +1037,29 @@ export function conformer_ensemble_json(mol: MolHandle, n: number, rmsd_threshol
  *
  * This is the WASM counterpart of Python's `convert_format`. It supports
  * SMILES, MOL/SDF, MOL V3000, MOL2, CML, ChemicalJSON, MolJSON, and CDXML.
- * MOL2-to-MOL2 validates and retains the exact source. Other conversions use
+ * MOL2-to-MOL2, CJSON-to-CJSON, and V3000-to-V3000 validate and retain exact source.
+ * GJF/COM supports only
+ * same-format retention of a bounded single Cartesian job, including opaque
+ * job sections (not a Gaussian job validator).
+ * V3000-to-CJSON also
+ * carries source-order x/y/z values; it does not retain opaque metadata or
+ * verify cross-format stereo.
+ * MOL2-to-CJSON checks
+ * graph/xyz/name/complete declared partial charges on reparse and refuses
+ * incomplete or undeclared charge columns. Other MOL2 metadata and stereo
+ * are not retained or verified; use convert_with_report_json for losses.
+ * NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
+ * Other conversions use
  * the topology-only bridge and do not carry format-specific metadata.
+ * SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
+ * require exactly one CTAB and omit SD fields; SDF output is one framed record.
+ * CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
+ * 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
  */
 export function convert_common_format(text: string, input_format: string, output_format: string): string;
 
 /**
- * Checked MOL2/CJSON conversion using the shared report schema.
+ * Checked MOL2/CJSON/CML conversion using the shared report schema.
  */
 export function convert_with_report_json(text: string, input_format: string, output_format: string, policy: string): string;
 
@@ -1815,14 +1831,16 @@ export function mcs_smiles_json(smiles_json: string): string;
  * (camelCase keys, all optional, defaulting to `McsConfig::default()`):
  * `matchBonds`, `minAtoms`, `timeoutMs`, `ringMatchesRingOnly`,
  * `completeRingsOnly`, `atomCompare` (`"elements"` | `"any_heavy_atom"` |
+ * `"rdkit_any_heavy_atom"` |
  * `"any"`), `bondCompare` (`"order_or_aromatic"` | `"any"`),
- * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`.
+ * `matchChiralTag`, `matchCharge`, `matchIsotope`, `maximizeBonds`, and
+ * `maxSearchNodes`.
  *
- * Returns a JSON object `{"smiles": string|null, "wasTimedOut": bool}` --
- * `smiles` is `null` when there is no common substructure; `wasTimedOut` is
- * `true` if `timeoutMs` was reached before the search finished exhaustively
- * (the returned `smiles`, if any, is then the best result found so far, not
- * proven optimal).
+ * Returns a JSON object with `smiles`, `wasTimedOut`, and
+ * `wasResourceLimited`. `smiles` is `null` when there is no common
+ * substructure; the two status fields distinguish deadline expiry from a
+ * configured input/search limit. A returned partial result is not proven
+ * optimal when either status is true.
  */
 export function mcs_smiles_json_with_config(smiles_json: string, config_json: string): string;
 
@@ -2160,9 +2178,9 @@ export function mol_from_pdb_strict(pdb: string): MolHandle;
 /**
  * Parse an AutoDock PDBQT block into a topology handle.
  *
- * Coordinates and partial charges are intentionally discarded, matching the
- * Python `from_pdbqt` binding; use the Rust parser when those arrays are
- * needed. Invalid records return a JS error instead of a partial molecule.
+ * Coordinates and partial charges are discarded; use `pdbqt_atom_data_json`
+ * when those arrays are needed. No bonds are inferred. Invalid records
+ * return a JS error instead of a partial molecule.
  */
 export function mol_from_pdbqt(pdbqt: string): MolHandle;
 
@@ -2375,11 +2393,20 @@ export function opendx_shape_u32(text: string): Uint32Array;
 export function opendx_values_f64(text: string): Float64Array;
 
 /**
+ * Read ordered Cartesian values and explicit Angstrom/Bohr units; no rescaling.
+ * Refuses ambiguous/unsupported unit or coordinate declarations and %coords.
+ * Atom extras remain opaque; no external geometry resources are opened.
+ */
+export function orca_cartesian_geometry_json(text: string): string;
+
+/**
  * Coordinates + charge + multiplicity from an ORCA input file's embedded
  * `* xyz ... *` block, in the SAME atom order [`mol_from_orca_input`]
  * returns topology for. Returns JSON
  * `{"coords":[[x,y,z],...],"charge":0,"multiplicity":1}`, or a JS error
  * under the same conditions as [`mol_from_orca_input`].
+ * This legacy view returns only Angstrom input. Bohr, conflicting units and
+ * %coords overrides are refused; use [`orca_cartesian_geometry_json`] instead.
  */
 export function orca_input_coords_json(text: string): string;
 
@@ -2441,6 +2468,12 @@ export function parse_cxsmarts_json(s: string): string;
 export function parse_cxsmiles_json(s: string): string;
 
 /**
+ * Inspect every ordered Cartesian job with UTF-8 byte ranges in the original source.
+ * Coordinate units are unchanged; no inferred bonds or external resource reads.
+ */
+export function parse_gjf_document_json(text: string): string;
+
+/**
  * Inspect the bounded HIN record, including literal aromatic bonds and charges.
  */
 export function parse_hin_record_json(text: string): string;
@@ -2475,6 +2508,16 @@ export function pdb_conect_frame_json(input: string, allow_extended_targets: boo
  * `coords_all_finite`'s doc comment), rather than emitting invalid JSON.
  */
 export function pdb_coords_json(pdb: string): string;
+
+/**
+ * Read PDBQT atom data as JSON {atomic_numbers, coords, partial_charges}.
+ * Arrays share source ATOM/HETATM order. Coordinates are in Å and partial
+ * charges in e; parsed finite binary64 values are not rounded/recalculated.
+ * No bonds or formal charges are inferred. Source atom identities, AutoDock
+ * types, remarks and torsion trees are not retained. Throws on invalid atoms
+ * or WASM size limits. Use mol_from_pdbqt separately for an element-only handle.
+ */
+export function pdbqt_atom_data_json(pdbqt: string): string;
 
 /**
  * PEOE_VSA descriptors (14 bins) as a JSON array.
@@ -2874,6 +2917,18 @@ export function ring_families_json(mol: MolHandle): string;
 export function roundtrip_cjson_record(text: string): string;
 
 /**
+ * Retain all explicit Cartesian Link1 jobs as exact source; no job selection.
+ * Budgets are cumulative. Opaque sections and external resources are not interpreted.
+ */
+export function roundtrip_gjf_document(text: string): string;
+
+/**
+ * Retain exact single Cartesian GJF source without regenerating job sections.
+ * Opaque sections are not interpreted; no external files are opened.
+ */
+export function roundtrip_gjf_record(text: string): string;
+
+/**
  * Validate a single HIN record and retain exact source text and line endings.
  */
 export function roundtrip_hin_record(text: string): string;
@@ -2884,15 +2939,22 @@ export function roundtrip_hin_record(text: string): string;
 export function roundtrip_mol2_record(text: string): string;
 
 /**
- * Parse and serialize a V3000 block while preserving V3000 metadata.
+ * Validate one V3000 MOL block and return its exact source.
  *
  * Unlike the topology-only [`mol_from_v3000_block`] + [`to_mol_v3000_block`]
- * pair, this explicit round-trip API retains `SGROUP` logical lines and
- * `COLLECTION` stereo groups. SGROUP polymer/query expansion is still out of
- * scope, but the typed syntax view is available through
+ * pair, this retains 3D coordinate tokens, IDs, source ordering and opaque
+ * fields including SGROUP and COLLECTION. No normalization or opaque chemistry
+ * verification is promised. The typed SGroup view remains available through
  * [`v3000_sgroups_json`].
  */
 export function roundtrip_mol_v3000_block(block: string): string;
+
+/**
+ * Validate every local-profile SDF record and retain exact UTF-8 source.
+ * No partial output on record/limit failure. Opaque metadata/stereo is not
+ * interpreted or edited. Bounds: 1 MB input/record, 10000 records/total atoms.
+ */
+export function roundtrip_sdf_source(text: string): string;
 
 /**
  * Apply a SMIRKS reaction template and return product SMILES as a JSON string.
@@ -3494,6 +3556,13 @@ export function write_orca_input_json(json: string): string;
 export function write_pqr_json(records_json: string): string;
 
 /**
+ * Write explicit PQR atom records without numeric rounding or bond inference.
+ * Strict JSON array: no duplicate/unknown fields, missing required values or
+ * incompatible elements. Non-atom source metadata is not represented.
+ */
+export function write_pqr_json_checked(records_json: string): string;
+
+/**
  * Non-canonical SMILES for `mol`.
  *
  * Unlike `canonical_smiles`, the output depends on the internal atom ordering
@@ -3841,6 +3910,7 @@ export interface InitOutput {
     readonly opendx_grid_json: (a: number, b: number) => [number, number, number, number];
     readonly opendx_shape_u32: (a: number, b: number) => [number, number, number];
     readonly opendx_values_f64: (a: number, b: number) => [number, number, number];
+    readonly orca_cartesian_geometry_json: (a: number, b: number) => [number, number, number, number];
     readonly orca_input_coords_json: (a: number, b: number) => [number, number, number, number];
     readonly orca_input_to_json: (a: number, b: number) => [number, number, number, number];
     readonly orca_output_to_json: (a: number, b: number) => [number, number, number, number];
@@ -3849,11 +3919,13 @@ export interface InitOutput {
     readonly parse_cjson_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmarts_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_cxsmiles_json: (a: number, b: number) => [number, number, number, number];
+    readonly parse_gjf_document_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_hin_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_mol2_record_json: (a: number, b: number) => [number, number, number, number];
     readonly parse_smiles: (a: number, b: number) => [number, number, number];
     readonly pdb_conect_frame_json: (a: number, b: number, c: number) => [number, number, number, number];
     readonly pdb_coords_json: (a: number, b: number) => [number, number];
+    readonly pdbqt_atom_data_json: (a: number, b: number) => [number, number, number, number];
     readonly peoe_vsa_json: (a: number) => [number, number];
     readonly periodic_structure_fingerprint_json: (a: number, b: number, c: number, d: number) => [number, number];
     readonly pharmacophore_features_json: (a: number) => [number, number];
@@ -3908,9 +3980,12 @@ export interface InitOutput {
     readonly rgroup_decompose_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly ring_families_json: (a: number) => [number, number, number, number];
     readonly roundtrip_cjson_record: (a: number, b: number) => [number, number, number, number];
+    readonly roundtrip_gjf_document: (a: number, b: number) => [number, number, number, number];
+    readonly roundtrip_gjf_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_hin_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_mol2_record: (a: number, b: number) => [number, number, number, number];
     readonly roundtrip_mol_v3000_block: (a: number, b: number) => [number, number, number, number];
+    readonly roundtrip_sdf_source: (a: number, b: number) => [number, number, number, number];
     readonly run_reactants: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly run_reactants_checked: (a: number, b: number, c: number, d: number, e: number) => [number, number];
     readonly rxn_document_from_rxn: (a: number, b: number) => [number, number, number, number];
@@ -3995,6 +4070,7 @@ export interface InitOutput {
     readonly write_opendx_lossy_json: (a: number, b: number) => [number, number, number, number];
     readonly write_orca_input_json: (a: number, b: number) => [number, number, number, number];
     readonly write_pqr_json: (a: number, b: number) => [number, number, number, number];
+    readonly write_pqr_json_checked: (a: number, b: number) => [number, number, number, number];
     readonly write_smiles: (a: number) => [number, number];
     readonly xlogp3_json: (a: number) => [number, number];
     readonly xlogp3_per_atom_json: (a: number) => [number, number];

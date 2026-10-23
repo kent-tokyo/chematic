@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CONTRACT = ROOT / "validation" / "cross_binding_contract.json"
 ACCURACY_MANIFEST = ROOT / "validation" / "manifests" / "rdkit_accuracy_v2.json"
 PROFILES = ROOT / "validation" / "compatibility_profiles.json"
-DEFAULT_OUTPUT = ROOT / "docs" / "compatibility-dashboard.md"
+DEFAULT_OUTPUT = ROOT / "docs" / "reference" / "compatibility-dashboard.md"
 
 
 def version_key(version: str) -> tuple[int, int, int]:

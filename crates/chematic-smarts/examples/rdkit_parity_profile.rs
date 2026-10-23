@@ -3,7 +3,7 @@
 //!
 //! ```text
 //! cargo run -p chematic-smarts --release --example rdkit_parity_profile -- \
-//!     scripts/chembl_accuracy_corpus_4999.smi validation/rdkit_rebaseline_smarts_queries.json
+//!     scripts/fixtures/chembl_accuracy_corpus_4999.smi validation/rdkit_rebaseline_smarts_queries.json
 //! ```
 
 use chematic_smarts::{RdkitParityConfig, find_match_atom_sets_rdkit_parity, parse_smarts};

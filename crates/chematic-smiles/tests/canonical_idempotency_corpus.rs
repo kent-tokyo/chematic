@@ -7,7 +7,7 @@
 //! via an external, large-scale (9.47M-compound) real-world corpus scan from
 //! a downstream consumer, not from anything in this repo's own test suite.
 //! This test runs that exact check against the two real-world-derived
-//! corpora already committed to this repo (`scripts/*.smi`, 5,000 lines
+//! corpora already committed to this repo (`scripts/fixtures/*.smi`, 5,000 lines
 //! each) -- no external download needed.
 //!
 //! Mirrors `chembl_roundtrip.rs`'s own established convention (parse ->
@@ -40,9 +40,9 @@
 use chematic_smiles::{canonical_smiles, parse};
 
 const DESCRIPTOR_CENSUS_CORPUS: &str =
-    include_str!("../../../scripts/descriptor_census_corpus.smi");
+    include_str!("../../../scripts/fixtures/descriptor_census_corpus.smi");
 const CHEMBL_ACCURACY_CORPUS: &str =
-    include_str!("../../../scripts/chembl_accuracy_corpus_4999.smi");
+    include_str!("../../../scripts/fixtures/chembl_accuracy_corpus_4999.smi");
 
 /// Known-residual ceiling -- see this file's own doc comment. Issue #395 is
 /// now fully fixed (both corpora measured at 0 failures); kept as named

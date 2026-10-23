@@ -60,9 +60,9 @@
 //!
 //! **Status, measured against a live RDKit oracle (1000-molecule samples,
 //! three corpora with different chemical distributions)**: 100% bit-exact on
-//! `scripts/descriptor_census_corpus.smi`, 100% on
-//! `scripts/chembl_accuracy_corpus_4999.smi`, 99.6% on
-//! `scripts/nci_first_5k_smiles_only.smi`. The 4 remaining NCI mismatches all
+//! `scripts/fixtures/descriptor_census_corpus.smi`, 100% on
+//! `scripts/fixtures/chembl_accuracy_corpus_4999.smi`, 99.6% on
+//! `scripts/fixtures/nci_first_5k_smiles_only.smi`. The 4 remaining NCI mismatches all
 //! come from molecules with *zero* literal `Aromatic`-order bonds anywhere
 //! (pure Kekule-notation input), where [`matched_bond_code`]'s fallback to
 //! [`chematic_perception::aromaticity::assign_aromaticity_ex`] is the only

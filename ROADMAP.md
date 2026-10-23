@@ -1,7 +1,7 @@
 # chematic roadmap
 
-> Updated 2026-10-23. Release line: **v1.2.0**. Later source changes remain
-> **Unreleased** until published and verified.
+> Updated 2026-10-23. Release line: **v1.2.1**. Hosted package evidence keeps
+> its original release label until the tagged workflows finish.
 
 chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
 Node, WebAssembly, and agent workflows. The roadmap favors reliable contracts
@@ -11,12 +11,13 @@ and reproducible evidence over feature-count parity.
 
 - Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
   search, and common MOL/SDF workflows through one Rust core.
-- v1.2.0 public wheels passed the hosted three-platform runtime smoke and the
-  11-job chemistry workflow. Later source results are not package evidence.
+- v1.2.1 is the release line. v1.2.0 public wheels passed the hosted
+  three-platform runtime smoke and 11-job chemistry workflow; those results do
+  not become v1.2.1 package evidence.
 - Current source matches the pinned RDKit standardization corpus on Normalize
   4,069/4,069, Cleanup 4,057/4,069, and Reionize 4,069/4,069 comparable rows.
-- MCS order-dependence and resource-limit fixes are Unreleased. They still need
-  independent holdout and released-artifact verification.
+- v1.2.1 fixes bounded MCS order dependence and resource-limit reporting. Full
+  FMCS breadth and released-artifact holdout verification remain open.
 - 3D/MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer support,
   and rich CDXML editing remain experimental or bounded.
 

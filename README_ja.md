@@ -28,9 +28,9 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
 
-### v1.2.0 の対応範囲
+### v1.2.1 の対応範囲
 
-現在のリリースは **v1.2.0** です。変更内容は[CHANGELOG](CHANGELOG.md)を参照して
+現在のリリースは **v1.2.1** です。変更内容は[CHANGELOG](CHANGELOG.md)を参照して
 ください。精度・性能の主張は、[検証報告](docs/reference/validation.md)と
 [ベンチマーク索引](benchmarks/README.md)に記載した成果物、コーパス、実行環境の
 範囲に限ります。

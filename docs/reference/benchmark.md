@@ -4,9 +4,10 @@ chematic benchmarks are specific to a package or source revision, comparator,
 corpus, host, runtime, options, and timed operation. A speed result counts only
 when the stated work and outputs are equivalent.
 
-The current release is **v1.2.0**. Its three-platform runtime smoke and
-11-job public-wheel chemistry workflow passed, but its performance changes
-remain source evidence until the exact public artifacts are timed. The latest
+The current release is **v1.2.1**. Its source is qualified before publication;
+the latest completed hosted public-wheel chemistry evidence remains v1.2.0
+until the v1.2.1 tag workflow finishes. New performance changes remain source
+evidence until the exact public artifacts are timed. The latest
 exact public-artifact performance record is the one-host macOS arm64 v1.1.8
 Labute ASA comparison. The latest broad, checked-in cross-platform
 public-wheel chemistry packet remains v1.1.3, and the broadest
