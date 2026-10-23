@@ -3314,7 +3314,9 @@ def from_cml_with_3d(cml_str: str | bytes) -> tuple[Mol, list[list[float]] | Non
     Returns source atom order; absent 3D coordinates return None. Requires
     unique nonempty atom IDs and refuses partial triplets/mixed presence.
     Limits: 16 MiB input, 100000 atoms plus native CML line/element/bond caps.
-    Metadata, namespaces/schema and coordinate stereo are not interpreted.
+    Resolves CML namespaces, excluding foreign subtrees and qualified metadata
+    attributes. Forward bond references are resolved by ID. XML schema, opaque
+    metadata and coordinate stereo are not interpreted; source is not retained.
     """
     ...
 

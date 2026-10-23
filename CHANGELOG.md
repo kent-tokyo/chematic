@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Fixed
+
+- The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
+  foreign annotations out of the molecular graph. Forward bond references are
+  resolved after collecting source-order atoms. Malformed XML, missing element
+  or bond-order declarations, and ambiguous/self bond references are refused.
+
 ## [1.2.1] - 2026-10-23
 
 ### Documentation
