@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPT = ROOT / "scripts/changed_public_crates.py"
+SCRIPT = ROOT / "scripts/release/changed_public_crates.py"
 
 
 def load_module():

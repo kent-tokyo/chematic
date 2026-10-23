@@ -1,9 +1,0 @@
-{
-  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-count-capacity-target-20261015",
-  "logical_bytes": 211576900,
-  "retained_measured_binaries_sha256": {
-    "baseline": "c2527bb2ad314df476acfab18eb1b35d73519d2467534cc8db1d050fc835a127",
-    "candidate": "a64bbb000c74f3aece5df8ea0dd5f55cd02e29ff17253b42470a59a45cb2a4c1"
-  },
-  "after_validation_before_timing": true
-}

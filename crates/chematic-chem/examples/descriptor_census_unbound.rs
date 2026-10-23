@@ -1,4 +1,4 @@
-//! Dumps `descriptors.rs` values that `scripts/descriptor_census.py` cannot
+//! Dumps `descriptors.rs` values that `scripts/generators/descriptor_census.py` cannot
 //! cheaply reach from Python for two different reasons:
 //!
 //! 1. No Python/WASM/MCP binding at all (confirmed by grepping chematic-py/

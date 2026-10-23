@@ -40,5 +40,5 @@
         - BondFragmentation
         - FragmentAttachment
 
-See [Parent transformations](../standardization-parents.md) for the native
+See [Parent transformations](../reference/standardization-parents.md) for the native
 chemistry scope, composition order, status handling and executable examples.

@@ -18,8 +18,8 @@ or release claim.
 | Python / host | 3.11.15, Linux x86_64 VM, 2 vCPU "Intel(R) Xeon(R) Processor @ 2.10GHz" |
 | Corpora | `scripts/chembl_accuracy_corpus_4999.smi` (aromatic SMILES), `scripts/nci_first_5k_smiles_only.smi` (mostly Kekulé SMILES), `scripts/descriptor_census_corpus.smi`; SHA-256 in the JSON |
 | Agreement script | [`scripts/check_rdkit_output_agreement.py`](../scripts/check_rdkit_output_agreement.py) |
-| Agreement raw data | [v1.0.22](2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json), [branch](2026-09-24-rdkit-agreement-branch-ea967d47.json) |
-| Timing raw data | [branch matrix](2026-09-24-python-op-matrix-vs-rdkit-branch-ea967d47.json) (script [`bench_python_op_matrix_vs_rdkit.py`](../scripts/bench_python_op_matrix_vs_rdkit.py)) |
+| Agreement raw data | [v1.0.22](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-rdkit-agreement-v1.0.22-297fec4d.json), [branch](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-rdkit-agreement-branch-ea967d47.json) |
+| Timing raw data | [branch matrix](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-09-24-python-op-matrix-vs-rdkit-branch-ea967d47.json) (script [`bench_python_op_matrix_vs_rdkit.py`](../scripts/bench_python_op_matrix_vs_rdkit.py)) |
 
 ## Row-level agreement with RDKit (rows equal / rows compared)
 

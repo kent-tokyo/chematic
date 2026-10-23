@@ -6,7 +6,7 @@ Three buckets, per the user's spec:
   cases are `KNOWN_BRIDGEHEAD_N_FALSE_POSITIVES` in
   crates/chematic-perception/src/aromaticity.rs's `test_known_regressions_
   from_bridgehead_n_fix` (already pinned pre-existing regression corpus --
-  root-caused in SMARTS-A0 / docs/rdkit_compat.md), plus PR #86's minimal
+  root-caused in SMARTS-A0 / docs/reference/rdkit_compat.md), plus PR #86's minimal
   14-atom reproducer.
 - false_negative: chematic fails to mark atoms aromatic that RDKit does.
   azulene + purine (the two #[ignore]d tests) plus the 3

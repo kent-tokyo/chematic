@@ -1,9 +1,0 @@
-{
-  "removed_only_completed_owned_target": "/private/tmp/chematic-ring-scratch-target-20261015",
-  "logical_bytes": 495361166,
-  "retained_measured_wheel_sha256": {
-    "baseline": "47f791336d05907d089eb1fb3c004c6974ff3b86dbe17fd008ce50e29fc43310",
-    "candidate": "fcc7abb795aca3e847bfe13c4b8d10c888044cf05d6166bf73b2d0ca06c54e36"
-  },
-  "before_timing": true
-}

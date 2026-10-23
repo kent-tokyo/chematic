@@ -182,7 +182,7 @@ print(f"{len(hits)} molecules contain a carboxylic acid")
 ## Measure the operation you will deploy
 
 Do not estimate production throughput from an unrelated descriptor or from a
-different package version. The [benchmark method](../benchmark.md) separates
+different package version. The [benchmark method](../reference/benchmark.md) separates
 parsing, first use, prepared reuse, serialization, and memory, while the
 [record index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
 retains dated raw results. Re-run the same operation on your corpus and keep

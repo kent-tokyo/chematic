@@ -122,7 +122,7 @@ def render(
         "",
         "## Shared binding contract",
         "",
-        f"Operation inventory: `{len(contract['operation_manifest']['operations'])}` currently shared operations; validate with `python3 scripts/check_cross_binding_manifest.py`.",
+        f"Operation inventory: `{len(contract['operation_manifest']['operations'])}` currently shared operations; validate with `python3 scripts/checks/check_cross_binding_manifest.py`.",
         "",
         "| Area | Checked-in assertions | Status |",
         "|---|---:|---|",
@@ -176,7 +176,7 @@ def render(
             "",
             "Evidence paths, API names, settings, and exact/numeric/semantic comparison rules live in "
             "`validation/compatibility_profiles.json`; validate them with "
-            "`python3 scripts/check_compatibility_profiles.py`.",
+            "`python3 scripts/checks/check_compatibility_profiles.py`.",
             "",
         ]
     if accuracy_manifest is not None:

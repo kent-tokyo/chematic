@@ -104,7 +104,7 @@ as lossless gzip artifacts listed in the raw report.
 
 - [Final raw timing blocks and artifact hashes](2026-10-14-openbabel-sdf-speed-paired21.json)
 - [Source, compiler, library and corpus manifest](2026-10-14-openbabel-sdf-speed-source.json)
-- [Reconstructable source patch](2026-10-14-openbabel-sdf-speed-candidate.patch)
+- [Reconstructable source patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-sdf-speed-candidate.patch)
 - [Rust native harness](../crates/chematic-mol/examples/openbabel_sdf_throughput.rs)
 - [Open Babel native harness](../tools/openbabel_sdf_throughput.cpp)
 - [Runner](../scripts/bench_openbabel_sdf_throughput.py) and [corpus generator](../scripts/generators/build_openbabel_sdf_speed_corpus.py)

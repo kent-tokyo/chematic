@@ -1,6 +1,8 @@
 """The #635 evidence checker must reject dropped or misclassified SMARTS cells."""
 
-from scripts.check_rdkit_rebaseline_evidence import validate_smarts_cell_correspondence
+from scripts.checks.evidence.check_rdkit_rebaseline_evidence import (
+    validate_smarts_cell_correspondence,
+)
 
 
 def sample():

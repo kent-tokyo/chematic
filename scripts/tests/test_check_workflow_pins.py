@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.check_workflow_pins import reference_error
+from scripts.checks.check_workflow_pins import reference_error
 
 
 class WorkflowPinTests(unittest.TestCase):

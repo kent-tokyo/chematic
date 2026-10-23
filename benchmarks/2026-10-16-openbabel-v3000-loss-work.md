@@ -145,6 +145,11 @@ Initial native checks stopped first on an existing SDF test fixture excluded fro
 
 Only completed owned build/test caches were removed after source/binary/log preservation and process/open-file checks. Unchanged historical benchmark checkout copies were removed through sparse checkout; Git originals and separate raw evidence remain. No broad temporary-directory cleanup or shared active cache deletion was used. The timing wrapper reserves 64MiB and may retry only the same in-memory output write after ENOSPC; it never repeats workers, timers or statistical samples.
 
-The [2026-10-16-openbabel-v3000-loss-work-artifacts](2026-10-16-openbabel-v3000-loss-work-artifacts/README.md) packet retains the complete raw matrices, decisions, source/compiler/corpus/library/binary manifests, frozen plan, patch, preservation proofs, logs and exact launch/verification drivers. Full binaries and full generated snapshots/rewrites remain locally under `/private/tmp/chematic-v3000-loss-work-evidence-20261016` with versioned hashes. Patch reconstruction proves source bytes, not bit-reproducible compiler output.
+The [2026-10-16-openbabel-v3000-loss-work-artifacts](#raw-artifacts-retired) packet retains the complete raw matrices, decisions, source/compiler/corpus/library/binary manifests, frozen plan, patch, preservation proofs, logs and exact launch/verification drivers. Full binaries and full generated snapshots/rewrites remain locally under `/private/tmp/chematic-v3000-loss-work-evidence-20261016` with versioned hashes. Patch reconstruction proves source bytes, not bit-reproducible compiler output.
 
 Additional hosts, held-out chemistry, richer query/SGROUP performance, cold CLI startup, Python/WASM bindings, published artifacts, other formats, force fields and complete Open Babel-wide speed superiority remain outside this packet. Main integration/hosted CI/publication are separate from the named measured source.
+
+
+## Raw artifacts retired
+
+The checked-in wheel, source-tarball, and intermediate-result directory for this historical experiment was removed on 2026-10-23. The summary and conclusions above remain, and the raw files can be recovered from Git history before the benchmark cleanup.

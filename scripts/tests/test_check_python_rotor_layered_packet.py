@@ -6,8 +6,8 @@ from pathlib import Path
 import sys
 import unittest
 
-sys.path.insert(0, str(Path(__file__).parents[1]))
-SPEC = importlib.util.spec_from_file_location('rotor_layered_packet', Path(__file__).parents[1] / 'check_python_rotor_layered_packet.py')
+sys.path.insert(0, str(Path(__file__).parents[1] / 'benchmarks'))
+SPEC = importlib.util.spec_from_file_location('rotor_layered_packet', Path(__file__).parents[1] / 'checks' / 'check_python_rotor_layered_packet.py')
 audit = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(audit)
 

@@ -11,7 +11,7 @@ Usage: python scripts/tests/test_aromaticity_atom_parity.py
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "validation"))
 from aromaticity_atom_parity import per_atom_arom  # noqa: E402
 
 

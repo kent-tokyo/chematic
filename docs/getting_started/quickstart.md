@@ -65,6 +65,6 @@ display(SVG(mol.svg()))
 
 ## Next steps
 
-- [Cookbook](../cookbook.md) — 20 ready-to-run recipes
-- [RDKit migration guide](../rdkit_cheatsheet.md) — coming from RDKit?
+- [Cookbook](../reference/cookbook.md) — 20 ready-to-run recipes
+- [RDKit migration guide](../reference/rdkit_cheatsheet.md) — coming from RDKit?
 - [API Reference](../api/chematic.md) — full API docs

@@ -37,7 +37,7 @@ additional per-molecule cache cells and retained stereo vectors until edit,
 clone or drop; whole-process RSS is not a per-molecule memory claim.
 
 The [source manifest](2026-10-14-python-scalar-stereo-source.json) and
-[follow-up patch](2026-10-14-python-scalar-stereo-candidate.patch) reconstruct
+[follow-up patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-scalar-stereo-candidate.patch) reconstruct
 these changes after the prior patch. Every reconstructed file matches its
 recorded hash. The isolated build excludes unrelated dirty workspace changes,
 including the Open Babel, 3D and compatibility work. Release wheels use Rust
@@ -133,7 +133,7 @@ The [additional source/protocol manifest](2026-10-14-python-scalar-reuse-source.
 records that this protocol was chosen after the short-batch result. Production
 code and wheel artifacts were unchanged. The additional
 [runner](../scripts/bench_python_scalar_reuse.py) and its tests are also retained
-in a [tools patch](2026-10-14-python-scalar-reuse-tools.patch), with its hash in
+in a [tools patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-scalar-reuse-tools.patch), with its hash in
 the parity record. No block is discarded or rerun to obtain an all-block win.
 
 | Operation | RDKit, slice 0 | COSMolKit, slice 0 | RDKit, slice 5000 | COSMolKit, slice 5000 |

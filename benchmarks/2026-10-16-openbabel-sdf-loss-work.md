@@ -10,7 +10,7 @@ Main advanced during the first comparison. PR #924 changes the geometry classifi
 
 The existing SDF file reader copies each physical line into an owned record buffer. The candidate scans complete newline-terminated lines in the bytes already exposed by BufRead. When a complete delimiter-terminated record fits that buffer and all existing limits allow it, the unchanged molecule/SD-field parser borrows that slice directly. The source is consumed by exactly the record and delimiter length after parsing. Complete borrowed records now allocate no owned framing buffer. This removes an unused allocation, without assuming that allocation caused the preceding writer regression. Empty records remain iterative. Trailing incomplete records, missing final newlines and every potential resource-limit case use the original read-until path.
 
-The constructor starts with Vec::new instead of reserving 2,048 bytes. The original line fallback reserves that storage only when needed, after clearing the reused buffer. Removing that single deferred reservation from the fallback makes the remaining line reader and resource-limit validator byte-identical to the pinned baseline. The oracle independently freezes the original line reader and restores its original initial reservation; it does not share the changed fallback storage path. The shared record parser only substitutes a byte slice and diagnostics boolean for access through self. The [preservation proof](2026-10-16-openbabel-sdf-loss-work-artifacts/fallback-preservation.json) checks these boundaries. Chemical interpretation, diagnostics, SD properties, error precedence, failed-record continuation and logical input positions are retained. Interrupted reads use the same retry behavior. There is no new public API, unsafe code or per-record heap wrapper.
+The constructor starts with Vec::new instead of reserving 2,048 bytes. The original line fallback reserves that storage only when needed, after clearing the reused buffer. Removing that single deferred reservation from the fallback makes the remaining line reader and resource-limit validator byte-identical to the pinned baseline. The oracle independently freezes the original line reader and restores its original initial reservation; it does not share the changed fallback storage path. The shared record parser only substitutes a byte slice and diagnostics boolean for access through self. The [preservation proof](#raw-artifacts-retired) checks these boundaries. Chemical interpretation, diagnostics, SD properties, error precedence, failed-record continuation and logical input positions are retained. Interrupted reads use the same retry behavior. There is no new public API, unsafe code or per-record heap wrapper.
 
 The lockfile's existing memchr 2.8.3 becomes a direct dependency for newline scanning; no new package version is introduced. All source hashes, including Cargo manifests/lockfile, are pinned. The default diagnostics path and lightweight SDMolSupplier-compatible path are checked separately. This optimization targets records that fit the caller's available buffer; it does not promise that every streaming input avoids a record copy.
 
@@ -26,7 +26,7 @@ The fifth delta leaves stereo depiction and output construction unchanged, but p
 - Before timing, both source executables have byte-identical complete internal snapshots and rewrites for all 4,064 input records across the five profiles. SDF and MOL profiles overlap in chemistry; this is an API/format coverage count, not 4,064 independent structures.
 - Ten unchanged benchmark-runner gates, release all-target MOL Clippy, workspace formatting and refactor-budget checks pass. An initial test compile compared neighbor iterators directly; the corrected test compares their ordered values. Clippy also rejected an untimed custom enum draft for its large variant; the final helper uses the standard Option/Result return form, with no per-record heap wrapper or lint suppression. Earlier draft checks/failures remain separately retained in the first packet and no timing used them.
 
-The [validation record](2026-10-16-openbabel-sdf-loss-work-artifacts/validation.json), [exact source equality](2026-10-16-openbabel-sdf-loss-work-artifacts/preflight-source-equality.json), [source manifest](2026-10-16-openbabel-sdf-loss-work-artifacts/source-manifest.json) and [reconstructable patch](2026-10-16-openbabel-sdf-loss-work-artifacts/candidate.patch.gz) preserve those claims. The patch was independently reconstructed from its named Git base and every changed-file hash verified. Local checks are separate from hosted CI, main integration and publication.
+The [validation record](#raw-artifacts-retired), [exact source equality](#raw-artifacts-retired), [source manifest](#raw-artifacts-retired) and [reconstructable patch](#raw-artifacts-retired) preserve those claims. The patch was independently reconstructed from its named Git base and every changed-file hash verified. Local checks are separate from hosted CI, main integration and publication.
 
 ## Frozen protocol
 
@@ -38,7 +38,7 @@ Each profile uses 21 sequential rotating three-arm fresh-process blocks and thre
 
 Ratios above 1 favor the candidate. Paired median-ratio intervals use the unchanged runner's 10,000 deterministic bootstrap resamples and three-decimal reporting. Strict Open Babel wins require semantic prerequisites, CI lower >1 and 21/21 faster blocks. Parse comparator eligibility checks canonical internal graphs; rewrite eligibility checks all seven declared observer fields. Semantic mismatches remain unranked without filtering or repairs. SD-field text appending and requested-only loss collection change in the writer; MOL numeric, stereo depiction and graph serialization remain unchanged. The matrix measures the combined reader/writer source, not an isolated causal decomposition of each delta. Source equality and source-relative speed, equivalent-output comparator wins and toolkit-wide superiority are distinct conclusions.
 
-The [predeclared plan](2026-10-16-openbabel-sdf-loss-work-artifacts/measurement-plan.json) requires exact source snapshots/rewrites, positive parse, prepared-write and roundtrip confidence lower bounds on both SDF slices, and every one of all 15 SDF/V3000 source-relative lane medians >=0.99. The prepared-write improvement condition is added before this candidate measurement; every previous adoption condition remains. Every negative interval is disclosed. There are no adaptive timing reruns, pooled samples, substitutions or relaxed gates.
+The [predeclared plan](#raw-artifacts-retired) requires exact source snapshots/rewrites, positive parse, prepared-write and roundtrip confidence lower bounds on both SDF slices, and every one of all 15 SDF/V3000 source-relative lane medians >=0.99. The prepared-write improvement condition is added before this candidate measurement; every previous adoption condition remains. Every negative interval is disclosed. There are no adaptive timing reruns, pooled samples, substitutions or relaxed gates.
 
 ## Complete timing matrix
 
@@ -195,7 +195,7 @@ The [predeclared plan](2026-10-16-openbabel-sdf-loss-work-artifacts/measurement-
 | v3000-chains | write | 9.44 | 9.44 | 39.33 |
 | v3000-chains | roundtrip | 14.02 | 13.91 | 51.45 |
 
-The independent [packet audit](2026-10-16-openbabel-sdf-loss-work-artifacts/packet-audit.json) and [audit script](2026-10-16-openbabel-sdf-loss-work-artifacts/verify_packets.py) reconstruct all five patches and verify all 25 complete matrices against their separate frozen decisions. The first packet passes only at its older baseline; the fifth passes at the named integration baseline. No prior observation is replaced.
+The independent [packet audit](#raw-artifacts-retired) and [audit script](#raw-artifacts-retired) reconstruct all five patches and verify all 25 complete matrices against their separate frozen decisions. The first packet passes only at its older baseline; the fifth passes at the named integration baseline. No prior observation is replaced.
 
 ## Latest-main correctness integration
 
@@ -207,8 +207,8 @@ hashes, and separately passes 1,258 MOL tests plus 271 perception and 394
 SMILES library tests (1,923 passed, zero failed, two existing ignored).
 All-target Clippy for those three crates, formatting, refactor budget and
 the 481-record index also pass. See the
-[integration validation](2026-10-16-openbabel-sdf-loss-work-artifacts/integration-validation.json)
-and [post-integration audit](2026-10-16-openbabel-sdf-loss-work-artifacts/integration-packet-audit.json).
+[integration validation](#raw-artifacts-retired)
+and [post-integration audit](#raw-artifacts-retired).
 
 These later checks establish correctness integration. The timings above
 remain bound to the measured checkpoint; they are not new speed measurements
@@ -222,6 +222,11 @@ Check out the named baseline in an isolated worktree. Decompress/apply the candi
 
 The retained launch scripts check complete source/library/binary/corpus hashes before and after each profile. Their 64 MiB reserve only retries an owned checkpoint write with the same in-memory observation on ENOSPC; workers, timers and statistics are unchanged. Darwin time -l needs OS-statistics access. Adjust local paths when reproducing.
 
-Raw complete [SDF 0](2026-10-16-openbabel-sdf-loss-work-artifacts/paired-sdf-0.json.gz), [SDF 5000](2026-10-16-openbabel-sdf-loss-work-artifacts/paired-sdf-5000.json.gz), [MOL 0](2026-10-16-openbabel-sdf-loss-work-artifacts/paired-v3000-0.json.gz), [MOL 5000](2026-10-16-openbabel-sdf-loss-work-artifacts/paired-v3000-5000.json.gz) and [chains](2026-10-16-openbabel-sdf-loss-work-artifacts/paired-v3000-chains.json.gz) matrices contain every block, mismatch, hash and RSS observation. Build/test/format/refactor/Clippy/timing logs and the exact launch scripts are retained here. Full executables and snapshot/rewrite streams remain locally in /private/tmp/chematic-sdf-loss-work-evidence-20261016; their [hashes](2026-10-16-openbabel-sdf-loss-work-artifacts/local-semantic-streams.json) are versioned without duplicating binaries and generated outputs into Git.
+Raw complete [SDF 0](#raw-artifacts-retired), [SDF 5000](#raw-artifacts-retired), [MOL 0](#raw-artifacts-retired), [MOL 5000](#raw-artifacts-retired) and [chains](#raw-artifacts-retired) matrices contain every block, mismatch, hash and RSS observation. Build/test/format/refactor/Clippy/timing logs and the exact launch scripts are retained here. Full executables and snapshot/rewrite streams remain locally in /private/tmp/chematic-sdf-loss-work-evidence-20261016; their [hashes](#raw-artifacts-retired) are versioned without duplicating binaries and generated outputs into Git.
 
 Other formats, diverse held-out chemistry, rich query/SGROUP performance, buffers smaller than a record, filesystem/CLI/Python overhead, cold startup, multithreading, additional hosts and published artifacts remain separate comparisons. Existing Open Babel semantic disagreements are not resolved by a faster SDF record boundary. This packet does not validate later main commits or published packages.
+
+
+## Raw artifacts retired
+
+The checked-in wheel, source-tarball, and intermediate-result directory for this historical experiment was removed on 2026-10-23. The summary and conclusions above remain, and the raw files can be recovered from Git history before the benchmark cleanup.

@@ -158,7 +158,7 @@ def test_diff_morgan_self_tanimoto():
 #
 # Match sets are compared order-invariantly (set of frozensets). Ring-size
 # queries ([rN]) and aromatic-carbonyl edge cases diverge due to SSSR / aromatic
-# perception differences (see scripts/rdkit_compat_diff.py for the full corpus
+# perception differences (see scripts/validation/rdkit_compat_diff.py for the full corpus
 # breakdown) and are intentionally excluded from this regression guard.
 # ---------------------------------------------------------------------------
 

@@ -13,7 +13,7 @@ import hashlib
 import json
 from pathlib import Path
 
-from scripts.check_interchange_preservation import bounded_run, identity, require, strict_json
+from scripts.checks.check_interchange_preservation import bounded_run, identity, require, strict_json
 from scripts.validation.check_cjson_mol2_formal_charges import mol2_snapshot
 
 

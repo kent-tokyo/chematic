@@ -1,1 +1,0 @@
-Invalid source contrast: shared Cargo target retained baseline tetrahedral code in candidate. All eight original raw epochs are retained; none supply samples to the valid comparison. The same Rust commit and gates were rebuilt/repeated only after independent machine-code proof.

@@ -159,10 +159,10 @@ to the reports do not change raw timing rows.
 - [Additional-slice timing blocks](2026-10-14-openbabel-sdf-read-followup-slice5000-paired21.json)
 - [Source/compiler/library/corpus manifest](2026-10-14-openbabel-sdf-read-followup-source.json)
 - [Artifact hashes, reconstruction and oracle verification](2026-10-14-openbabel-sdf-read-followup-verification.json)
-- [Corrected baseline patch](2026-10-14-openbabel-sdf-read-followup-baseline.patch)
-- [Optimized candidate patch](2026-10-14-openbabel-sdf-read-followup-candidate.patch)
-- [Exact runner dependency patch](2026-10-14-openbabel-sdf-read-followup-runner-dependency.patch)
-- [Prior writer patch](2026-10-14-openbabel-sdf-speed-candidate.patch)
+- [Corrected baseline patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-sdf-read-followup-baseline.patch)
+- [Optimized candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-sdf-read-followup-candidate.patch)
+- [Exact runner dependency patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-sdf-read-followup-runner-dependency.patch)
+- [Prior writer patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-sdf-speed-candidate.patch)
 - [Native Rust harness](../crates/chematic-mol/examples/openbabel_sdf_throughput.rs),
   [native Open Babel harness](../tools/openbabel_sdf_throughput.cpp),
   [runner](../scripts/bench_openbabel_sdf_throughput.py), and

@@ -35,7 +35,7 @@ WebAssembly, without a chematic backend.</p>
 
 RDKit remains the better default for maximum chemistry and ecosystem breadth.
 Open Babel remains a strong choice for broad command-line format conversion.
-Use the [selection guide](choosing-chematic.md) to compare deployment,
+Use the [selection guide](reference/choosing-chematic.md) to compare deployment,
 failure handling, supported chemistry, and evidence before choosing a toolkit.
 
 ## Quick start
@@ -80,27 +80,21 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 | A Python notebook or report | [Python notebook guide](use-cases/python-notebook.md) |
 | A Rust service or CLI | [Rust server guide](use-cases/rust-server.md) |
 | An MCP-enabled agent | [AI-assisted analysis](use-cases/ai-drug-discovery.md) |
-| A reproducible research workflow | [Researcher guide](researchers.md) |
-| A migration from RDKit | [RDKit migration guide](rdkit-migration.md) |
+| A reproducible research workflow | [Researcher guide](reference/researchers.md) |
+| A migration from RDKit | [RDKit migration guide](reference/rdkit-migration.md) |
 
 ## Current evidence boundary
 
-v1.2.0 adds checked XBS and TURBOMOLE/POSCAR paths, typed Pattern
-fingerprints, bounded 3D geometry diagnostics, stronger canonical-SMILES and
-reaction safety, and output-preserving internal refactors. Its exact public
-wheels passed the hosted three-platform runtime smoke and 11-job chemistry
-gates. Source-only timing remains source evidence until the same public
-artifacts are measured. Earlier package and holdout records retain their
-original versions and denominators.
+The v1.2.0 wheels passed the hosted three-platform runtime smoke and 11-job
+chemistry workflow. That establishes package pass/fail evidence, not a general
+speed or accuracy claim. Source experiments and older package measurements keep
+their original versions, denominators, and host scope; typed refusals are not
+counted as matches.
 
-Each result applies only to its named artifact, corpus, options, and failure
-policy. Release availability is not accuracy evidence, source results are not
-package results, and typed refusals are not matches.
-
-See [validation](validation.md) for denominators, [benchmarks](benchmark.md)
-for timed boundaries, and [compatibility scope](compatibility-scope.md) for
-unsupported chemistry. Historical results remain in the
-[record index](https://github.com/kent-tokyo/chematic/tree/main/benchmarks).
+Use [validation](reference/validation.md) for current denominators,
+[benchmark method](reference/benchmark.md) for timing rules, and
+[compatibility scope](reference/compatibility-scope.md) for unsupported or
+bounded chemistry.
 
 ## Stable and bounded areas
 
@@ -119,11 +113,11 @@ not whether every chemical result is correct.
 
 ## Reference
 
-- [Cookbook](cookbook.md)
-- [Format support](format-capabilities.md)
+- [Cookbook](reference/cookbook.md)
+- [Format support](reference/format-capabilities.md)
 - [API reference](api/chematic.md)
-- [Errors and resource limits](error-and-limits.md)
-- [Product naming](product-naming.md)
-- [MCP protocol and transport](mcp-protocol-reference.md)
-- [Benchmark records](https://github.com/kent-tokyo/chematic/tree/main/benchmarks)
+- [Errors and resource limits](reference/error-and-limits.md)
+- [Product naming](reference/product-naming.md)
+- [MCP protocol and transport](reference/mcp-protocol-reference.md)
+- [Benchmark method and evidence](reference/benchmark.md)
 - [GitHub](https://github.com/kent-tokyo/chematic)

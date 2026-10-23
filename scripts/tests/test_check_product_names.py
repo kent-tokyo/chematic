@@ -2,7 +2,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from scripts.check_product_names import scan_paths
+from scripts.checks.check_product_names import scan_paths
 
 
 class ProductNameCheckTests(unittest.TestCase):

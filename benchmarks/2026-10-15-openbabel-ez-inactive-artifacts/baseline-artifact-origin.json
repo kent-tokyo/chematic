@@ -1,9 +1,0 @@
-{
-  "source_run": "/private/tmp/chematic-openbabel-integer-20261015",
-  "source_manifest_sha256": "068a90a6ed55cafe00af4591bb47820ce5ea644909a2bc77a3737919e4d27963",
-  "baseline_binary_from": "accepted source12 candidate-v3000",
-  "baseline_binary_sha256": "2525c191019081d021ebbaaf5dfa7cce07b577a5a92edb785b871719e3df148d",
-  "all_current_baseline_files_verified": 10059,
-  "no_timing_reuse": true,
-  "built_before_current_edit": true
-}

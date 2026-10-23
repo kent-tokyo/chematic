@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.check_rdkit_search_reports import validate
+from scripts.checks.check_rdkit_search_reports import validate
 
 
 ROOT = Path(__file__).parents[2]

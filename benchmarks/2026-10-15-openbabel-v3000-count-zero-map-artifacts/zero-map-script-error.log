@@ -1,4 +1,0 @@
-  File "/private/tmp/chematic-openbabel-count-zero-map-20261015/zero-map.py", line 4
-    p=s/'CHANGELOG.md';p.write_text(p.read_text().replace('  state transitions, errors and diagnostics.','  state transitions, errors and diagnostics. Write absent or zero V3000 2D
-                                                                                                         ^
-SyntaxError: unterminated string literal (detected at line 4)

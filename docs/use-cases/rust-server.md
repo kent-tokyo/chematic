@@ -151,7 +151,7 @@ reported denominator still equals the number of submitted records.
 | Browser companion | Related APIs are exposed from the same Rust core through WebAssembly |
 
 Performance depends on the exact operation and build. Use the
-[benchmark method](../benchmark.md) and remeasure the endpoint, including
+[benchmark method](../reference/benchmark.md) and remeasure the endpoint, including
 parsing, serialization, rejected rows, and peak memory.
 
 ## Related APIs

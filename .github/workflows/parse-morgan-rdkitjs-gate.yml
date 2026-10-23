@@ -8,8 +8,8 @@ on:
       - 'crates/chematic-fp/**'
       - 'crates/chematic-perception/**'
       - 'crates/chematic-wasm/**'
-      - 'scripts/bench_browser_wasm_vs_rdkit_isolated.py'
-      - 'scripts/check_parse_morgan_rdkit_speed_gate.py'
+      - 'scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py'
+      - 'scripts/checks/check_parse_morgan_rdkit_speed_gate.py'
       - '.github/workflows/parse-morgan-rdkitjs-gate.yml'
   workflow_dispatch:
 
@@ -60,13 +60,13 @@ jobs:
             test -n "$chromium_bin"
             browser_arg=(--browser "$chromium_bin")
           fi
-          python3 scripts/bench_browser_wasm_vs_rdkit_isolated.py \
+          python3 scripts/benchmarks/bench_browser_wasm_vs_rdkit_isolated.py \
             --rdkit-package /tmp/rdkit/node_modules/@rdkit/rdkit \
             --schematic-dir /tmp/chematic-wasm \
             --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
             --engine "$BROWSER" "${browser_arg[@]}" --rows 10000 --repetitions 10 \
             --output "/tmp/parse-morgan-${BROWSER}.json"
-          python3 scripts/check_parse_morgan_rdkit_speed_gate.py \
+          python3 scripts/checks/check_parse_morgan_rdkit_speed_gate.py \
             --input "/tmp/parse-morgan-${BROWSER}.json" --min-lower-speedup 1.0
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

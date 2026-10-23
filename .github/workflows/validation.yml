@@ -76,7 +76,7 @@ jobs:
       - name: Append accuracy drift report (veridict)
         if: hashFiles('validation/results/latest.json') != ''
         run: |
-          python3 scripts/veridict_accuracy_report.py \
+          python3 scripts/validation/veridict_accuracy_report.py \
             "${{ steps.fetch_previous.outputs.path }}" validation/results/latest.json
 
       - name: Upload results artifact
@@ -86,5 +86,5 @@ jobs:
           name: validation-results
           path: |
             validation/results/latest.json
-            docs/validation.md
+            docs/reference/validation.md
           retention-days: 90

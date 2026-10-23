@@ -60,14 +60,14 @@ The full matrix retains these costs even though only writer source changes. It d
 ## Evidence and reproduction
 
 - [Frozen source/compiler/library/corpus manifest](2026-10-14-openbabel-v3000-writer-buffer-source.json)
-- [Reconstructable candidate patch including tests](2026-10-14-openbabel-v3000-writer-buffer-candidate.patch)
+- [Reconstructable candidate patch including tests](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-openbabel-v3000-writer-buffer-candidate.patch)
 - [Exact rewrite/snapshot archives and validation hashes](2026-10-14-openbabel-v3000-writer-buffer-verification.json)
 - [Restricted-environment attempt, zero completed blocks](2026-10-14-openbabel-v3000-writer-buffer-sandbox-attempt.json)
 - [Profile 0: all 21 raw blocks](2026-10-14-openbabel-v3000-writer-buffer-0-paired21.json)
 - [Profile 5000: all 21 raw blocks](2026-10-14-openbabel-v3000-writer-buffer-5000-paired21.json)
 - [Profile chains: all 21 raw blocks](2026-10-14-openbabel-v3000-writer-buffer-chains-paired21.json)
 
-For baseline reconstruction, apply the retained [prior relevant-cycle candidate patch](2026-10-14-python-cycle-root-pruning-candidate.patch) to the last verified base; its changed-file hashes match this frozen baseline. Then reconstruct the three changed/added writer files from that baseline plus the new candidate patch (reconstruction was checked byte-for-byte). Build `openbabel_v3000_throughput` with `cargo build --release --locked -p chematic-mol --example openbabel_v3000_throughput` in a dedicated target directory; keep each executable before rebuilding. Use the unchanged native C++ harness and pinned Open Babel library/plugin hashes. Run:
+For baseline reconstruction, apply the retained [prior relevant-cycle candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-cycle-root-pruning-candidate.patch) to the last verified base; its changed-file hashes match this frozen baseline. Then reconstruct the three changed/added writer files from that baseline plus the new candidate patch (reconstruction was checked byte-for-byte). Build `openbabel_v3000_throughput` with `cargo build --release --locked -p chematic-mol --example openbabel_v3000_throughput` in a dedicated target directory; keep each executable before rebuilding. Use the unchanged native C++ harness and pinned Open Babel library/plugin hashes. Run:
 
 ```sh
 python scripts/bench_openbabel_v3000_throughput.py \

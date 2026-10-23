@@ -16,8 +16,9 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'scripts/validation'))
+sys.path.insert(0, str(ROOT))
 from validate_gjf_source import run, serial, source_result
-from check_interchange_preservation import identity, require, strict_json
+from scripts.checks.check_interchange_preservation import identity, require, strict_json
 
 WORKER = '''
 import json,sys

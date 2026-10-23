@@ -213,7 +213,7 @@ archive hashes are independently verified in the parity record.
 - [Original-slice raw blocks](2026-10-14-python-sanitized-view-reuse-slice0-paired20.json)
 - [Additional-slice raw blocks](2026-10-14-python-sanitized-view-reuse-slice5000-paired20.json)
 - [Exact retention, reconstruction and validation](2026-10-14-python-sanitized-view-reuse-parity.json)
-- [Reconstructable candidate patch](2026-10-14-python-sanitized-view-reuse-candidate.patch)
+- [Reconstructable candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-sanitized-view-reuse-candidate.patch)
 - [Unchanged runner](../scripts/bench_python_speed_frontier.py)
 
 Reconstruct from `ffe682c32cb4c76de0d309649427202a7d8e956d`, the three prerequisite

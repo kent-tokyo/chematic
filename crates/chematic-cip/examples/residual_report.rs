@@ -2,7 +2,7 @@
 //! disagrees with the modern RDKit `rdCIPLabeler` oracle), print all three engines'
 //! outputs side by side -- `FastApproximate` (`chematic_chem::assign_cip`),
 //! `AccurateExperimental` (this crate), and the oracle (`modern`, supplied by the input
-//! file, produced by `scripts/cip_ground_truth.py`-style RDKit regeneration since this
+//! file, produced by `scripts/diagnostics/cip_ground_truth.py`-style RDKit regeneration since this
 //! crate has no RDKit binding of its own).
 //!
 //! Deliberately narrow, not a general corpus tool: `scripts/cip_accurate_full_corpus_report.py`

@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 def load_script(name: str):
-    path = ROOT / "scripts" / name
+    path = ROOT / "scripts" / "checks" / name
     spec = importlib.util.spec_from_file_location(path.stem, path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")

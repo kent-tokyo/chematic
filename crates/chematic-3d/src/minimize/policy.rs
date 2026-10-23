@@ -378,7 +378,7 @@ impl From<MinimizerError> for ForceFieldBridgeError {
 
 /// Per-policy energy accounting. `Mmff94` reuses chematic-ff's own
 /// [`EnergyBreakdown`] shape verbatim — the same struct
-/// `scripts/etkdg_vs_rdkit_gap.py`'s "fair energy delta" metric already
+/// `scripts/diagnostics/etkdg_vs_rdkit_gap.py`'s "fair energy delta" metric already
 /// consumes via `Mol.mmff94_energy_breakdown()` — so downstream consumers
 /// never need a second energy-breakdown format.
 #[derive(Debug, Clone)]

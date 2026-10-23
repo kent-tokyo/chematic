@@ -30,24 +30,21 @@ Python wheelはC/C++コンパイラを必要とせず、各バインディング
 
 ### v1.2.0 の対応範囲
 
-v1.2.0では、checked XBS・TURBOMOLE/POSCAR入出力、型付きPattern指紋、
-boundedな3D構造診断、canonical SMILES・反応・R-group・標準化のfail-closed
-処理を強化しました。化学処理、I/O、CLI、検証コードを分割しましたが、公開1.x
-APIを意図的に壊す変更はありません。精度・性能の主張は引き続き、日付と成果物を
-固定した記録に限定し、source上の改善を公開packageの結果として扱いません。
-詳しくは[検証報告](docs/validation.md)、[ベンチマーク](benchmarks/README.md)、
-[CHANGELOG](CHANGELOG.md)を参照してください。
+現在のリリースは **v1.2.0** です。変更内容は[CHANGELOG](CHANGELOG.md)を参照して
+ください。精度・性能の主張は、[検証報告](docs/reference/validation.md)と
+[ベンチマーク索引](benchmarks/README.md)に記載した成果物、コーパス、実行環境の
+範囲に限ります。
 
 ## chematicが向いている場面
 
 - ブラウザ内またはRustアプリ内で化学処理を完結させたい
 - Python・Rust・Node・WebAssemblyで同じ実装を使いたい
-- 入力拒否、resource limit、変換時の情報損失を結果として扱いたい
+- 入力拒否、リソース上限、変換時の情報損失を結果として扱いたい
 - バージョン付きの検証結果を確認してから採用したい
 
 機能範囲とエコシステムの広さを優先するならRDKit、幅広いコマンドライン形式変換を
 優先するならOpen Babelが第一候補です。選定条件と未対応範囲は
-[選定ガイド](docs/choosing-chematic.md)にまとめています。
+[選定ガイド](docs/reference/choosing-chematic.md)にまとめています。
 
 ## 使い方
 
@@ -73,24 +70,25 @@ await init();
 console.log(JSON.parse(get_descriptors_json(parse_smiles("CCO"))));
 ```
 
-`rdkit_compat`は文書化されたsubsetです。未対応オプションは近似せず明示的に失敗します。
+`rdkit_compat`の互換範囲は文書化されています。未対応オプションは近似せず、
+明示的に失敗します。
 
 ## 範囲
 
 SMILES/SMARTS、記述子、フィンガープリント、類似度・部分構造検索、主要なMOL/SDF I/O、
 文書化済みのRust/Python/Node/WASMバインディングが安定対象です。3D、pKa/ADMET、
-IUPAC、Markush/polymer、CDXML編集、RDKit型APIは実験的またはbounded subsetです。
+IUPAC、Markush/polymer、CDXML編集、RDKit型APIは実験的または制限付きです。
 
 `canonical_smiles()`は汎用の同一性キーではありません。必要な場合は、文書化された範囲で
-fail-closedに動作する`canonical_smiles_stable_key()`を使用してください。
+安全側に停止する`canonical_smiles_stable_key()`を使用してください。
 
 ## ガイド
 
-- [選定ガイド](docs/choosing-chematic.md)
+- [選定ガイド](docs/reference/choosing-chematic.md)
 - [導入とCookbook](https://kent-tokyo.github.io/chematic/)
-- [互換性範囲](docs/compatibility-scope.md)・[RDKit移行](docs/rdkit-migration.md)
-- [検証](docs/validation.md)・[ベンチマーク方法](docs/benchmark.md)
-- [形式とバインディング](docs/format-capabilities.md)
+- [互換性範囲](docs/reference/compatibility-scope.md)・[RDKit移行](docs/reference/rdkit-migration.md)
+- [検証](docs/reference/validation.md)・[ベンチマーク方法](docs/reference/benchmark.md)
+- [形式とバインディング](docs/reference/format-capabilities.md)
 - [MCPサーバー](crates/chematic-mcp/README.md)
 
 ## 開発

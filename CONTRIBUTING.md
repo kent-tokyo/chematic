@@ -16,9 +16,9 @@ No C compiler, no Python, no external tools required for the core crates.
 ## Product names
 
 Use the official lowercase names `chematic` and `chematic-draw`. An extra
-leading `s` is a typo. Run `python3 scripts/check_product_names.py` before
+leading `s` is a typo. Run `python3 scripts/checks/check_product_names.py` before
 submitting documentation or package-metadata changes; CI enforces the same
-rule. See [`docs/product-naming.md`](docs/product-naming.md) for the scope and
+rule. See [`docs/reference/product-naming.md`](docs/reference/product-naming.md) for the scope and
 compatibility exclusions.
 
 ## Documentation build
@@ -45,7 +45,7 @@ interface is read-only and returns only scalar, vector, or text values so it
 can be adapted consistently by native, WASM, and binding consumers.
 
 Before adding a fixture or corpus, follow the repository policy in
-[`docs/contributor-corpus-policy.md`](docs/contributor-corpus-policy.md).
+[`docs/reference/contributor-corpus-policy.md`](docs/reference/contributor-corpus-policy.md).
 Fixtures without provenance, redistribution terms, minimization notes, and a
 pinned oracle version are not eligible for checked-in validation.
 

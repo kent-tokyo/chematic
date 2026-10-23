@@ -25,8 +25,8 @@ The v1.0 release requires repository-local fuzz, dependency, binding,
 focused-Miri, and sanitizer procedures. Independent external review, hosted
 CI execution, and external oracle campaigns are supplemental evidence and are
 not represented as completed audit work. See the
-[local release gate](../v1.0-local-release-gate.md) and the
-[compatibility boundary](../compatibility-scope.md).
+[local release gate](../reference/v1.0-local-release-gate.md) and the
+[compatibility boundary](../reference/compatibility-scope.md).
 
 ---
 

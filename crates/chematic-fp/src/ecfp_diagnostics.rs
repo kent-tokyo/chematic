@@ -1,7 +1,7 @@
 //! Morgan/ECFP RDKit environment-parity diagnostic PR: a per-`(atom, radius)`
 //! trace of chematic's real production Morgan expansion, for an atom×radius
 //! comparison against an RDKit oracle (see
-//! `scripts/ecfp_rdkit_environment_parity.py`).
+//! `scripts/validation/ecfp_rdkit_environment_parity.py`).
 //!
 //! This module changes no production behavior — [`morgan_trace`] calls the
 //! exact same `pub(crate)` primitives [`crate::ecfp::initial_atom_id`] and

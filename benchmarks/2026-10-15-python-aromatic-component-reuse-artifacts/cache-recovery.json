@@ -1,7 +1,0 @@
-{
-  "deleted_only_owned_failed_build_target": "/private/tmp/chematic-aromatic-components-target-20261015",
-  "logical_bytes": 696626983,
-  "baseline_wheel_and_source_retained": true,
-  "failed_logs_retained": true,
-  "strategy": "Run native tests and Clippy without the Python/font build cache, then discard that regenerable native target before building the candidate wheel. No measurement retries."
-}

@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location(
-    "morgan_linear", Path(__file__).parents[1] / "bench_python_morgan_linear.py"
+    "morgan_linear", Path(__file__).parents[1] / "benchmarks" / "bench_python_morgan_linear.py"
 )
 bench = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(bench)

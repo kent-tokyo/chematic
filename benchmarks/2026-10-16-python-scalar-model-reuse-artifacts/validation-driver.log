@@ -1,8 +1,0 @@
-baseline-descriptor complete
-baseline-morgan complete
-baseline-maccs complete
-candidate-descriptor complete
-candidate-morgan complete
-candidate-maccs complete
-python-tests complete
-All Python validations passed; no formal timings started

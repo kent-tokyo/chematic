@@ -6,12 +6,9 @@ You want to ship a chemistry tool to users who won't install anything — a web 
 
 ## Solution
 
-The published v1.0.15 npm WASM asset is **4,005,280 bytes raw / 1,460,499 bytes
-gzip**, versus **7,333,095 / 2,379,975 bytes** for
-`@rdkit/rdkit@2026.03.6` under the same file-compression method. See the
-[published-package scorecard](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-09-16-official-rdkit-js-isolated-browser-v1.0.15.md).
-No server is required: descriptor calculation, fingerprint
-generation, and similarity search run entirely in the browser, offline-capable after first load.
+The npm package runs supported parsing, descriptors, fingerprints, search, and
+depiction locally in WebAssembly. No chematic server is required, and the app
+can work offline after its assets are cached.
 
 ## Output / What you get
 
@@ -136,19 +133,14 @@ document.getElementById("file-input").addEventListener("change", async (e) => {
 });
 ```
 
-## Performance
+## Performance evidence
 
-| Task | chematic WASM | RDKit.js |
-|------|--------------|----------|
-| Bundle size | 4.01 MB raw / 1.46 MB gzip | 7.33 MB raw / 2.38 MB gzip |
-
-The table comes from the v1.0.15 published-package scorecard. Gzip is local file
-compression, not observed internet transfer, and the feature surfaces differ.
-Operation timing is reported separately in that scorecard; RDKit.js is faster
-for its parse-inclusive fingerprint lane. The Python/Rust-native throughput
-figures elsewhere in this repository (for example
-[`docs/benchmark.md`](../benchmark.md)) do not
-transfer directly to WASM-in-browser numbers, which have different call overhead.
+Browser results depend on the package version, browser, host, operation, and
+JavaScript boundary. Use the
+[three-browser Morgan packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-03-v1030-published-linux-three-browser-paired20.md)
+for the retained browser comparison. Exact package size is release-specific;
+measure the installed npm artifact rather than reusing an older release's size.
+Native Python/Rust timings do not transfer to browser workflows.
 
 ## Related APIs
 

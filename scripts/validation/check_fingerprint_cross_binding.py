@@ -18,7 +18,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_CORPUS = ROOT / "scripts/chembl_accuracy_corpus_4999.smi"
+DEFAULT_CORPUS = ROOT / "scripts/fixtures/chembl_accuracy_corpus_4999.smi"
 
 
 @dataclass(frozen=True)
@@ -193,7 +193,7 @@ def build_report(profile: Profile, corpus_path: Path, corpus: str, version: str)
     bindings = {
         "rust": external_records(["cargo", "run", "-p", "chematic-chem", "--release", "--offline", "--example", profile.rust_example], corpus),
         "python": python_records(corpus, profile),
-        "node_wasm": external_records(["node", "scripts/binding_dump.mjs", profile.node_mode], corpus),
+        "node_wasm": external_records(["node", "scripts/diagnostics/binding_dump.mjs", profile.node_mode], corpus),
     }
     for lane, rows in bindings.items():
         validate_rows(rows, inputs, profile.field, lane)

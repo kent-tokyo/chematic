@@ -34,7 +34,7 @@ By default the server uses newline-delimited JSON-RPC over stdio.
 loopback-only by default, and it has no authentication layer. There is no
 hosted endpoint and no SLA. See the
 [`chematic-mcp` README](https://github.com/kent-tokyo/chematic/blob/main/crates/chematic-mcp/README.md)
-for setup and the [protocol reference](../mcp-protocol-reference.md) for legacy
+for setup and the [protocol reference](../reference/mcp-protocol-reference.md) for legacy
 and modern envelopes, HTTP headers, limits, and conformance evidence.
 
 ## What an agent can call
@@ -92,9 +92,9 @@ the supplied chemical name to PubChem over HTTPS. Do not use that tool for
 proprietary names. The stdio server currently has bounded request and tool
 inputs, but it does not implement JSON-RPC cancellation; avoid presenting
 long-running work as interruptible. Exact limits and failure behaviour are in
-[Error and resource limits](../error-and-limits.md).
+[Error and resource limits](../reference/error-and-limits.md).
 
 For a Python-created comparison prompt, see
 [`examples/ai_agent_demo.py`](https://github.com/kent-tokyo/chematic/blob/main/examples/ai_agent_demo.py). For
 version-pinned chemistry compatibility and validation scope, start with
-[Validation](../validation.md) and the [RDKit migration guide](../rdkit-migration.md).
+[Validation](../reference/validation.md) and the [RDKit migration guide](../reference/rdkit-migration.md).

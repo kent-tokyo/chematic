@@ -1,8 +1,0 @@
-{
-  "adopt_source": false,
-  "reason": "Reject for adoption: no original-profile parse or roundtrip interval establishes an improvement. Original parse medians are 0.996, 0.995 and 1.005 with intervals including 1; continuation parse is 0.984 [0.964, 1.007]. All outputs and tests match, but avoiding this allocation did not establish faster complete operations. Existing Open Babel chain wins are inherited and do not justify this source change.",
-  "adopted_production_files": [],
-  "all_initial_outcomes_retained": true,
-  "adaptive_selection_profiles": {},
-  "merged_or_published": false
-}

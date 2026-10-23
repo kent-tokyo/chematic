@@ -60,7 +60,7 @@ Other formats, rich query/SGROUP chemistry, general 3D, cold startup, filesystem
 
 ## Evidence and reproduction
 
-- [Frozen source/compiler/library/corpus manifest](2026-10-15-openbabel-v3000-parser-token-reuse-source.json), [reconstructable patch](2026-10-15-openbabel-v3000-parser-token-reuse-candidate.patch), [verification/hashes](2026-10-15-openbabel-v3000-parser-token-reuse-verification.json).
+- [Frozen source/compiler/library/corpus manifest](2026-10-15-openbabel-v3000-parser-token-reuse-source.json), [reconstructable patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-15-openbabel-v3000-parser-token-reuse-candidate.patch), [verification/hashes](2026-10-15-openbabel-v3000-parser-token-reuse-verification.json).
 - [Profile 0](2026-10-15-openbabel-v3000-parser-token-reuse-0-paired21.json), [profile 5000](2026-10-15-openbabel-v3000-parser-token-reuse-5000-paired21.json), [controlled chains](2026-10-15-openbabel-v3000-parser-token-reuse-chains-paired21.json): every raw block, mismatch, native timing, output hash and RSS.
 - [Self-contained tested source and exact input blocks](../validation/results/openbabel-v3000-parser-token-reuse-source-2026-10-15.tar.gz). Extract `candidate/`; reconstruct baseline by restoring the two `baseline-overrides/` files and removing the new token-buffer test file. Verify all baseline hashes. Preceding candidate prerequisites are included.
 - Exact rewrite/snapshot streams and logs: `validation/results/openbabel-v3000-parser-token-reuse-*`. Measured native executable paths and hashes are retained; Open Babel libraries/plugins are pinned separately.

@@ -16,7 +16,7 @@ import platform
 import tempfile
 import xml.etree.ElementTree as ET
 
-from scripts.check_interchange_preservation import bounded_run, identity, require
+from scripts.checks.check_interchange_preservation import bounded_run, identity, require
 
 ABS_TOLERANCE = 1e-10  # angstrom, no relative tolerance or alignment
 COORDINATES = [

@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/private/tmp/chematic-huckel-fifo-20261015/validate.py", line 10, in <module>
-    if 'Traceback' in status:raise RuntimeError('Baseline setup failed')
-                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-RuntimeError: Baseline setup failed

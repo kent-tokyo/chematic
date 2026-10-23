@@ -170,7 +170,7 @@ def main() -> int:
         "repeats_per_process": args.repeats,
         "alternating_process_order": True,
         "timer_boundary": "internal steady-clock loop; process startup excluded",
-        "semantic_prerequisite": "scripts/check_openbabel_file_io_semantics.py",
+        "semantic_prerequisite": "scripts/checks/check_openbabel_file_io_semantics.py",
         "tool_versions": {
             "openbabel": tool_version(["obabel", "-V"]),
             "python": sys.version.split()[0],

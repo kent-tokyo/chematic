@@ -1,3 +1,0 @@
-# 3D V3000 formatting evidence
-
-Read [the report](../2026-10-16-openbabel-v3000-3d-format.md), frozen plan and `decision.json`. All eight complete 21-block matrices and every mismatch/negative interval are retained. Failed startup reports contain zero accepted blocks and are separate from the complete epochs. Source/binary/corpus/library hashes, full validation logs, reconstructable patch and audit are included. Full native executables and saved output streams remain locally at `/private/tmp/chematic-v3000-coordinate-format-evidence-20261016`. The 3D workload is synthetic achiral chains, not physical conformer or toolkit-wide proof.

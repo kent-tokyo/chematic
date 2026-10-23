@@ -1084,7 +1084,7 @@ mod tests {
         assert!(bd.total.is_finite());
     }
 
-    /// Frozen 58-molecule corpus, copied from `scripts/etkdg_vs_rdkit_gap.py::CORPUS`
+    /// Frozen 58-molecule corpus, copied from `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`
     /// (the same corpus PR #169's `mmff94_bridge_coverage_report` example measured
     /// coverage against). Used here to count MMFF94 parameter-lookup *misses*
     /// per term class (bond/angle/torsion) before vs. after the classification

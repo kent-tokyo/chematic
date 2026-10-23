@@ -29,13 +29,9 @@ Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
 ### v1.2.0 范围
 
-v1.2.0 增加了 checked XBS 与 TURBOMOLE/POSCAR 输入输出、类型化 Pattern
-指纹、受限的 3D 几何诊断，并加强了 canonical SMILES、反应、R-group 和标准化
-的 fail-closed 处理。化学、I/O、CLI 和验证模块经过拆分，但没有刻意破坏公开的
-1.x API。精度与性能声明仍只适用于注明日期和构件的记录；源码改进不会被当作
-公开包结果。详情见
-[验证报告](docs/validation.md)、[基准索引](benchmarks/README.md)和
-[CHANGELOG](CHANGELOG.md)。
+当前版本为 **v1.2.0**。版本变化见 [CHANGELOG](CHANGELOG.md)。精度和性能声明
+仅适用于[验证报告](docs/reference/validation.md)与[基准索引](benchmarks/README.md)
+中明确列出的构件、语料和运行环境。
 
 ## 适合选择 chematic 的场景
 
@@ -46,7 +42,7 @@ v1.2.0 增加了 checked XBS 与 TURBOMOLE/POSCAR 输入输出、类型化 Patte
 
 如果优先考虑最广的化学功能和生态系统，请先评估 RDKit；如果优先考虑广泛的命令行
 格式转换，请先评估 Open Babel。详细选择条件见
-[选择指南](docs/choosing-chematic.md)。
+[选择指南](docs/reference/choosing-chematic.md)。
 
 ## 使用
 
@@ -85,11 +81,11 @@ Rust/Python/Node/WASM 绑定属于稳定范围。3D、pKa/ADMET、IUPAC、Markus
 
 ## 指南
 
-- [选择指南](docs/choosing-chematic.md)
+- [选择指南](docs/reference/choosing-chematic.md)
 - [入门与 Cookbook](https://kent-tokyo.github.io/chematic/)
-- [兼容性范围](docs/compatibility-scope.md) 与 [RDKit 迁移](docs/rdkit-migration.md)
-- [验证](docs/validation.md) 与 [基准方法](docs/benchmark.md)
-- [格式和绑定](docs/format-capabilities.md)
+- [兼容性范围](docs/reference/compatibility-scope.md) 与 [RDKit 迁移](docs/reference/rdkit-migration.md)
+- [验证](docs/reference/validation.md) 与 [基准方法](docs/reference/benchmark.md)
+- [格式和绑定](docs/reference/format-capabilities.md)
 - [MCP 服务](crates/chematic-mcp/README.md)
 
 ## 开发

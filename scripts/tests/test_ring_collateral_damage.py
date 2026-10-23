@@ -26,7 +26,7 @@ Usage: python scripts/tests/test_ring_collateral_damage.py
 import os
 import sys
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "diagnostics"))
 from ring_collateral_damage import METRICS, compute  # noqa: E402
 
 

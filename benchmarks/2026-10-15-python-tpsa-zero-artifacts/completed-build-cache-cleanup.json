@@ -1,9 +1,0 @@
-{
-  "removed_only_completed_owned_target": "/private/tmp/chematic-tpsa-zero-target-20261015",
-  "logical_bytes": 752602377,
-  "retained_measured_wheel_sha256": {
-    "baseline": "d770304cff22c772979d713bc787477ecc41cca1fc2282aaaabf65f08b4e5ce0",
-    "candidate": "a64a386c2d0d17bb5810d09afdb6198043fa79deb2f19feec06d0e8979340f25"
-  },
-  "before_timing": true
-}

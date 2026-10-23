@@ -1,6 +1,6 @@
 //! ECFP RDKit-invariant-mode PR: per-atom `EcfpInvariantMode::RdkitMorgan`
 //! invariant dump, for a partition-agreement comparison against RDKit's
-//! `GetConnectivityInvariants` (see `scripts/ecfp_rdkit_invariant_parity.py`).
+//! `GetConnectivityInvariants` (see `scripts/validation/ecfp_rdkit_invariant_parity.py`).
 //!
 //! One row per atom: `smiles\tatom_idx\tinvariant`. Raw invariant values are
 //! NOT meant to be compared cross-implementation directly (chematic uses

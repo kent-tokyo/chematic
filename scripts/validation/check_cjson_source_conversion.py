@@ -16,7 +16,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
-from scripts.check_interchange_preservation import bounded_run, identity, strict_json, require
+from scripts.checks.check_interchange_preservation import bounded_run, identity, strict_json, require
 
 NODE = """
 const fs=require('node:fs'); const wasm=require(process.argv[1]);

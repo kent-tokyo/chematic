@@ -16,7 +16,7 @@
 //!    an experimental-aromaticity result round-trips through canonical
 //!    SMILES without structural loss, and SMARTS matching against it
 //!    completes without panicking, for every query in the same 16-pattern
-//!    set `scripts/rdkit_compat_diff.py` uses for the existing 80,000-pair
+//!    set `scripts/validation/rdkit_compat_diff.py` uses for the existing 80,000-pair
 //!    SMARTS corpus. This does NOT re-run that Python-bound 80k corpus
 //!    itself (Python/WASM exposure of the new engine is explicitly out of
 //!    scope for this PR) -- it's a proportionate Rust-level substitute:

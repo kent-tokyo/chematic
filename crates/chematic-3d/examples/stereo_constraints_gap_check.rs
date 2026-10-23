@@ -4,7 +4,7 @@
 //!
 //! Mirrors the pattern Agent C's `distance_geometry_v2_gap_check.rs` established: a
 //! standalone example binary against the frozen 58-molecule corpus (copied verbatim
-//! from that file, which itself copies `scripts/etkdg_vs_rdkit_gap.py::CORPUS`), with
+//! from that file, which itself copies `scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS`), with
 //! a differential, multi-arm gate rather than one absolute pass/fail number.
 //!
 //! # 3-arm gate
@@ -100,7 +100,7 @@ use chematic_smiles::parse;
 // ---------------------------------------------------------------------------
 // Frozen 58-molecule corpus -- verbatim transcription of
 // crates/chematic-3d/examples/distance_geometry_v2_gap_check.rs::CORPUS, which is
-// itself a verbatim transcription of scripts/etkdg_vs_rdkit_gap.py::CORPUS.
+// itself a verbatim transcription of scripts/diagnostics/etkdg_vs_rdkit_gap.py::CORPUS.
 // ---------------------------------------------------------------------------
 
 const CORPUS: &[(&str, &str, &str)] = &[

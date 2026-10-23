@@ -1,9 +1,0 @@
-from pathlib import Path
-import subprocess,os,shutil,json,hashlib
-s=Path('/private/tmp/chematic-openbabel-lines-source-20261015');r=Path('/private/tmp/chematic-openbabel-lines-20261015');env=os.environ.copy();env['CARGO_TARGET_DIR']='/private/tmp/chematic-openbabel-lines-target-20261015';env['CARGO_BUILD_JOBS']='1';sha=lambda p:hashlib.sha256(p.read_bytes()).hexdigest();m=json.loads((r/'baseline-source.json').read_text());assert all(sha(s/n)==h for n,h in m['sha256'].items())
-bin=Path(env['CARGO_TARGET_DIR'])/'release/examples/openbabel_v3000_throughput';shutil.copyfile(bin,r/'baseline-v3000');(r/'baseline-v3000').chmod(0o755)
-commands=[('optimize.log',['python3',str(r/'optimize.py')]),('format-new.log',['rustfmt','--edition','2024','crates/chematic-mol/src/mol3000/line_stream.rs','crates/chematic-mol/src/mol3000/line_stream_tests.rs']),('format.log',['cargo','fmt','--all','--check']),('refactor.log',['python3','scripts/check_refactor_budget.py']),('native-tests.log',['cargo','test','--release','--locked','-p','chematic-mol']),('clippy.log',['cargo','clippy','--release','--locked','-p','chematic-mol','--all-targets','--','-D','warnings']),('runner-tests.log',['/private/tmp/chematic-cycle-speed-20261014/env/bin/python','-m','pytest','scripts/tests/test_bench_openbabel_v3000_throughput.py','scripts/tests/test_bench_openbabel_sdf_throughput.py','-q','-p','no:cacheprovider']),('candidate-build.log',['cargo','build','--release','--locked','-p','chematic-mol','--example','openbabel_v3000_throughput'])]
-for name,cmd in commands:
- with (r/name).open('w') as f:subprocess.run(cmd,cwd=s,env=env,stdout=f,stderr=subprocess.STDOUT,check=True)
- print(name,'passed',flush=True)
-shutil.copyfile(bin,r/'candidate-v3000');(r/'candidate-v3000').chmod(0o755);print('ALL VALIDATION PASSED',flush=True)

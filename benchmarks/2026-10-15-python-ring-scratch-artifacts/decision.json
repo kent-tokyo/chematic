@@ -1,6 +1,0 @@
-{
-  "adopt_source": false,
-  "reason": "Reject inline SmallVec scratch. Initial first-use ChEMBL TPSA 0.914x [0.909,0.922], ASA 0.917x [0.903,0.928], and ring count 0.939x [0.935,0.953] are slower. Separate predeclared follow-ups retain the TPSA/ASA regressions at 0.912x/0.916x and NCI ring count at 0.937x. Both full initial matrices and all selected follow-ups remain recorded, including new negatives. No source-relative lane is a strict win. Exact corpus parity and all tests pass, but speed does not justify adoption. No production change is delivered.",
-  "merged": false,
-  "published": false
-}

@@ -1,6 +1,6 @@
 # v1.0.36 published reruns, cache, write_mol, RDKit.js 2026.09.1 reactions
 
-Follows [batch 10](2026-10-06-734-754-followups-batch10.md). v1.0.36 is the
+Follows [batch 10](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-10-06-734-754-followups-batch10.md). v1.0.36 is the
 first release with the batch 6–10 fixes; this record reruns their evidence
 on the published artifacts and closes four follow-ups. One Linux x86-64
 host, RDKit 2026.03.6 (CPython 3.11), Node 22. Source lane: code revision

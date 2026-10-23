@@ -1,9 +1,0 @@
-{
-  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-integer-target-20261015",
-  "logical_bytes": 216536328,
-  "retained_measured_binaries_sha256": {
-    "baseline": "9fe61ba72a9c4b75782badb1eb23b29a9491405114cc1b6539158240aba69277",
-    "candidate": "2525c191019081d021ebbaaf5dfa7cce07b577a5a92edb785b871719e3df148d"
-  },
-  "after_validation_before_timing": true
-}

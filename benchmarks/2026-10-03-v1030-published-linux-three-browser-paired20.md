@@ -23,7 +23,7 @@ also checked its aggregate packed fingerprint digest on every run.
 | Firefox | 9.10× (9.00–9.14) | 4.78× (4.65–4.96) | 4.78× (4.61–4.83) |
 | WebKit | 5.79× (4.66–6.08) | 1.65× (1.63–2.03) | 4.00× (3.82–4.51) |
 
-The published [M4 Chromium record](2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md)
+The published [M4 Chromium record](https://github.com/kent-tokyo/chematic/blob/v1.0.41/benchmarks/2026-10-03-v1030-rdkitjs-published-chromium-prepared-split20.md)
 uses different host hardware and browser build; its ratios must not be
 averaged with these Linux results. These are three engine-specific results
 from one CI run, not a population estimate over machines or molecules.
@@ -37,14 +37,17 @@ process RSS record remains separate and does not attribute allocations to a
 library. The comparison therefore cannot support a library-memory or
 million-molecule-memory advantage claim.
 
-The [workflow](../.github/workflows/published-browser-replication.yml)
+The [tagged workflow](https://github.com/kent-tokyo/chematic/blob/v1.0.30/.github/workflows/published-browser-replication.yml)
 reinstalls the published packages and browser runtime; it does not build the
 current source tree as the benchmark candidate. The twelve checked-in raw
 timing, summary, and per-row correctness files are linked from the
 [benchmark index](README.md). Their SHA-256 values, package/corpus identity,
 20-pair protocol, output digests, and 250/250 per-browser row checks are
-verified by `python3 scripts/check_published_linux_browser_replication.py`
-and included in `scripts/check_v1030_artifact_packet.py`.
+verified by the v1.0.30
+[`check_published_linux_browser_replication.py`](https://github.com/kent-tokyo/chematic/blob/v1.0.30/scripts/check_published_linux_browser_replication.py)
+runner and included in its tagged
+[`check_v1030_artifact_packet.py`](https://github.com/kent-tokyo/chematic/blob/v1.0.30/scripts/check_v1030_artifact_packet.py)
+packet.
 
 P0.2 remains open for equivalent-work perception boundaries and the other
 operations/bindings, representative additional corpora, and matched

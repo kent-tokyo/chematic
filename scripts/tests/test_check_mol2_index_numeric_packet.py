@@ -10,7 +10,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 SPEC = importlib.util.spec_from_file_location(
-    "mol2_numeric", ROOT / "scripts/check_mol2_index_numeric_packet.py"
+    "mol2_numeric", ROOT / "scripts/checks/check_mol2_index_numeric_packet.py"
 )
 audit = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(audit)

@@ -88,9 +88,9 @@ pub use rdkit_torsion::{
 };
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit
-/// environment-parity oracle (see `scripts/ecfp_rdkit_environment_parity.py`),
+/// environment-parity oracle (see `scripts/validation/ecfp_rdkit_environment_parity.py`),
 /// and a raw-identifier suppressed-emission dump for sparse-count-shape
-/// validation (see `scripts/ecfp_rdkit_suppression_parity.py`). Gated behind
+/// validation (see `scripts/validation/ecfp_rdkit_suppression_parity.py`). Gated behind
 /// the `diagnostics` feature.
 #[cfg(feature = "diagnostics")]
 #[doc(hidden)]

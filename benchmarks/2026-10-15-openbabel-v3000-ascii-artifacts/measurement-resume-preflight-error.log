@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/private/tmp/chematic-openbabel-ascii-20261015/resume-native.py", line 19, in <module>
-    for k,v in checks.items():assert report[k]==v,k
-                                     ^^^^^^^^^^^^
-AssertionError: rewrite_sha256

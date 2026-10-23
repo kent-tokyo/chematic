@@ -5,7 +5,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 
-SCRIPT = Path(__file__).resolve().parents[1] / "public_package_3d_chematic.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "diagnostics" / "public_package_3d_chematic.py"
 SPEC = importlib.util.spec_from_file_location("public_package_3d_chematic", SCRIPT)
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC)

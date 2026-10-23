@@ -5,7 +5,7 @@ different *strings*. What must hold is **semantic round-trip equivalence**:
 chematic's canonical SMILES, re-parsed by RDKit, canonicalizes to the same
 molecule as RDKit's native canonicalization of the original input.
 
-Full-corpus measurement lives in ``scripts/canonical_diff.py`` (5,000-mol run;
+Full-corpus measurement lives in ``scripts/validation/canonical_diff.py`` (5,000-mol run;
 see docs/rdkit_compat.md for the current agreement rate). This file is a
 portable regression guard on a small curated corpus; the RDKit-dependent
 parts auto-skip when RDKit is absent.

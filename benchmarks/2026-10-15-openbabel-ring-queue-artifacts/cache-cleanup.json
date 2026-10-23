@@ -1,9 +1,0 @@
-{
-  "removed_completed_owned_target": "/private/tmp/chematic-openbabel-ring-queue-target-20261015",
-  "logical_bytes": 444729861,
-  "retained_measured_binaries_sha256": {
-    "baseline": "95f24cf06fd5385710342025965a60e0a06612448237da64e58be75fb8f8cac5",
-    "candidate": "d9ed4a2f24fa06c7b85caa8db4192cd5f711e4bf88593c160f401b2ccd8b66a3"
-  },
-  "after_validation_before_timing": true
-}

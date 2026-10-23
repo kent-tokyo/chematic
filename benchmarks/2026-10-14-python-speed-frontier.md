@@ -5,7 +5,7 @@ The three measured Morgan first-use lanes improve by 1.127–1.144x over the sou
 ## Scope and provenance
 
 - Baseline: clean `ffe682c32cb4c76de0d309649427202a7d8e956d` source, version 1.1.3.
-- Candidate: that commit plus the [archived six-file patch](2026-10-14-python-speed-frontier-candidate.patch). The [source manifest](2026-10-14-python-speed-frontier-source.json) pins every changed source file and build settings.
+- Candidate: that commit plus the [archived six-file patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-speed-frontier-candidate.patch). The [source manifest](2026-10-14-python-speed-frontier-source.json) pins every changed source file and build settings.
 - Both wheels were built with release optimization, LTO, one codegen unit and `native-inchi`, in a fresh target directory dedicated to this comparison. These are source-candidate measurements.
 - Comparators: PyPI RDKit 2026.09.1 and COSMolKit 0.5.0rc22; installed extension hashes and runtime versions are retained in the [raw timing record](2026-10-14-python-speed-frontier-paired20.json).
 - Host: macOS arm64, CPython 3.13.6, 10 logical CPUs. Load averages are recorded. There is no additional-host result.

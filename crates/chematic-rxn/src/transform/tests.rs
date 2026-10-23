@@ -573,7 +573,7 @@ fn biotransformer_corpus_follow_ups_follow_rdkit(/* #734 follow-ups */) {
 }
 
 #[test]
-fn smirks_fuzz_probes_follow_rdkit(/* #754: scripts/smirks_property_fuzz.py */) {
+fn smirks_fuzz_probes_follow_rdkit(/* #754: scripts/validation/smirks_property_fuzz.py */) {
     // An element change takes the template atom's charge, not the
     // matched atom's: RDKit gives a neutral sulfur here, not `[SH+]`.
     assert_eq!(

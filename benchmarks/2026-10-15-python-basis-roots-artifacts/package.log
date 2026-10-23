@@ -1,1 +1,0 @@
-Packaged 83 artifacts; adopted= False validation= {'passed': 1221, 'failed': 0, 'ignored': 2} strict_wins= {'first_use': {'strict_wins': 14, 'eligible': 27, 'suppressed': 1}, 'repeated_use': {'strict_wins': 24, 'eligible': 27, 'suppressed': 1}, 'parse_inclusive': {'strict_wins': 27, 'eligible': 27, 'suppressed': 1}}

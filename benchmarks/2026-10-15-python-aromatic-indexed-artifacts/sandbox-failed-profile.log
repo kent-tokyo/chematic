@@ -1,8 +1,0 @@
-Traceback (most recent call last):
-  File "/private/tmp/chematic-parity-lazy-20261015/profile.py", line 13, in <module>
-    with (r/(label+'-sample.log')).open('w') as out:subprocess.run(['/usr/bin/sample',str(process.pid),'5','1','-mayDie','-file',str(r/(label+'.txt'))],stdout=out,stderr=subprocess.STDOUT,check=True)
-                                                    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/Library/Frameworks/Python.framework/Versions/3.13/lib/python3.13/subprocess.py", line 577, in run
-    raise CalledProcessError(retcode, process.args,
-                             output=stdout, stderr=stderr)
-subprocess.CalledProcessError: Command '['/usr/bin/sample', '96696', '5', '1', '-mayDie', '-file', '/private/tmp/chematic-parity-lazy-20261015/sample-5000-rdkit_tpsa.txt']' returned non-zero exit status 255.

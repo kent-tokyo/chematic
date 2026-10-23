@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[1] / "compare_a6_source_published_rows.py"
+SCRIPT = Path(__file__).resolve().parents[1] / "benchmarks" / "compare_a6_source_published_rows.py"
 SPEC = importlib.util.spec_from_file_location("a6_compare", SCRIPT)
 assert SPEC and SPEC.loader
 module = importlib.util.module_from_spec(SPEC)

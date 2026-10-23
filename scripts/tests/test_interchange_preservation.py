@@ -7,7 +7,7 @@ import sys
 
 import pytest
 
-from scripts.check_interchange_preservation import (
+from scripts.checks.check_interchange_preservation import (
     ContractError, FIELD_NAMES, bounded_run, correspondence, evaluate,
     load_protocol, measure, publish_report, read_cjson, read_mol2, strict_json, summarize,
 )
@@ -232,7 +232,7 @@ def test_engine_artifact_mismatch_is_rejected_before_creating_outputs(tmp_path, 
                                     'artifacts': [{'sha256': 'bad' if mismatch == 'schematic' else digest,
                                                    'size_bytes': len(data)}]}))
     output = tmp_path / 'report.json'
-    command = [sys.executable, str(ROOT.parents[1] / 'scripts/check_interchange_preservation.py'),
+    command = [sys.executable, str(ROOT.parents[1] / 'scripts/checks/check_interchange_preservation.py'),
                '--protocol', str(PROTOCOL), '--chematic', str(binary),
                '--chematic-evidence', str(evidence), '--obabel', str(binary),
                '--expected-obabel-version', '3.2.1',

@@ -19,7 +19,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [features]
 # Diagnostic/reference-only APIs not meant for production use, e.g. the
 # Morgan RDKit-environment-parity trace (see
-# scripts/ecfp_rdkit_environment_parity.py).
+# scripts/validation/ecfp_rdkit_environment_parity.py).
 diagnostics = []
 
 [dependencies]

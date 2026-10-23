@@ -1,4 +1,4 @@
-from scripts.check_smarts_baseline_candidate import validate_pair
+from scripts.checks.check_smarts_baseline_candidate import validate_pair
 
 
 def arm(role: str, *, commit: str, tree: str, binary: str, corpus: str = "a" * 64, query: str = "b" * 64):
@@ -67,7 +67,7 @@ def test_reports_candidate_residual_regression_as_an_adoption_failure(tmp_path):
     output = tmp_path / "result.json"
     baseline_path.write_text(json.dumps(baseline), encoding="utf-8")
     candidate_path.write_text(json.dumps(candidate), encoding="utf-8")
-    script = Path(__file__).parents[1] / "check_smarts_baseline_candidate.py"
+    script = Path(__file__).parents[1] / "checks" / "check_smarts_baseline_candidate.py"
     result = subprocess.run(
         [sys.executable, str(script), str(baseline_path), str(candidate_path), "--output", str(output), "--require-non-regression"],
         capture_output=True,

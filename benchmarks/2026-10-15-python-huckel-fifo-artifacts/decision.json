@@ -1,6 +1,0 @@
-{
-  "adopt_source": false,
-  "reason": "Reject component reuse/fused FIFO for adoption as a cold-descriptor optimization. Initial first-use TPSA/ASA intervals cross 1 on both profiles: ChEMBL medians 1.000x and 1.002x, NCI 0.998x and 1.006x. ChEMBL parse-inclusive TPSA 1.007x [1.003,1.019] (15/20) and ASA 1.015x [1.007,1.035] (17/20) are small non-strict improvements, retained without reclassifying them as cold gains. No source-relative lane wins all20; no initial CI wholly below 1, hence no adaptive selection. Exact 14,072-input outputs, 1,220 native tests and 1,389 Python tests pass. Earlier sampling mixed parsing and getters; getter-ancestry review shows this gate is mostly parsing-side work. Entire experiment archived, not applied to production.",
-  "merged": false,
-  "published": false
-}

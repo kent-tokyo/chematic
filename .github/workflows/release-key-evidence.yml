@@ -40,10 +40,10 @@ jobs:
           published_fingerprint=$(openssl pkey -pubin -in "$published_public_key" -outform DER | sha256sum | awk '{print $1}')
           derived_fingerprint=$(openssl pkey -pubin -in "$derived_public_key" -outform DER | sha256sum | awk '{print $1}')
           test "$published_fingerprint" = "$derived_fingerprint"
-          scripts/sign_provenance.sh \
+          scripts/release/sign_provenance.sh \
             target/sbom/chematic.provenance.json "$private_key" \
             target/sbom/chematic.provenance.sig
-          scripts/verify_release_key.sh \
+          scripts/release/verify_release_key.sh \
             target/sbom/chematic.provenance.json \
             target/sbom/chematic.provenance.sig "$published_public_key" "$published_fingerprint"
           printf '%s  %s\n' "$published_fingerprint" "$published_public_key" > target/sbom/RELEASE-KEY-FINGERPRINT

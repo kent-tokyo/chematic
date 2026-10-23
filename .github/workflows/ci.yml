@@ -36,8 +36,8 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Check source stubs and negative controls
         run: |
-          python scripts/check_python_stubs.py
-          python scripts/check_parent_api_docs.py
+          python scripts/checks/check_python_stubs.py
+          python scripts/checks/check_parent_api_docs.py
           python -m unittest scripts.tests.test_check_python_stubs -v
 
   test:
@@ -71,57 +71,57 @@ jobs:
         run: |
           python3 scripts/checks/ci_integration_shard.py --shards 4
           python3 -m unittest scripts.tests.test_ci_integration_shard scripts.tests.test_check_workflow_pins scripts.tests.test_run_windows_pytest_batches -v
-          python3 scripts/check_workflow_pins.py
+          python3 scripts/checks/check_workflow_pins.py
       - name: Unit tests
         # The Python extension uses PyO3's non-linking extension-module mode.
         # Its Rust unit tests run in the Python job with that feature disabled.
         run: cargo test --workspace --exclude chematic-py --lib --quiet
       - name: Refactor debt ratchet
         run: |
-          python3 scripts/check_refactor_budget.py
+          python3 scripts/checks/check_refactor_budget.py
           python3 -m unittest scripts/tests/test_check_refactor_budget.py
       - name: Shared cross-binding manifest
-        run: python3 scripts/check_cross_binding_manifest.py
+        run: python3 scripts/checks/check_cross_binding_manifest.py
       - name: A0 development packet
-        run: python3 scripts/check_a0_development_packet.py
+        run: python3 scripts/checks/check_a0_development_packet.py
       - name: A0 core-eight sealed acceptance
-        run: python3 scripts/check_a0_core_eight_sealed.py
+        run: python3 scripts/checks/check_a0_core_eight_sealed.py
       - name: Static binding surface inventory
-        run: python3 scripts/check_binding_surface.py > /dev/null
+        run: python3 scripts/checks/check_binding_surface.py > /dev/null
       - name: PQR preservation observer controls
         run: python3 -m unittest discover -s scripts/tests -p 'test_pqr_checked_validation.py' -v
       - name: ORCA coordinate observer controls
         run: python3 -m unittest discover -s scripts/tests -p 'test_orca_cartesian_validation.py' -v
       - name: Release documentation consistency
         run: |
-          python3 scripts/check_product_names.py
+          python3 scripts/checks/check_product_names.py
           python3 -m unittest scripts/tests/test_check_product_names.py
-          python3 scripts/check_release_docs_consistency.py
-          python3 scripts/check_openbabel_file_io_contract.py
+          python3 scripts/checks/check_release_docs_consistency.py
+          python3 scripts/checks/check_openbabel_file_io_contract.py
       - name: Compatibility Contract
         run: |
-          python3 scripts/check_compatibility_profiles.py
-          python3 scripts/check_rdkit_rebaseline_manifest.py
-          python3 scripts/check_rdkit_rebaseline_execution.py
-          python3 scripts/check_rdkit_rebaseline_execution.py --manifest validation/rdkit_rebaseline_python_2026_09_execution.json
-          python3 scripts/check_rdkit_rebaseline_evidence.py
-          python3 scripts/check_rdkit_2026_09_rebaseline_evidence.py
-          python3 scripts/check_rdkit_native_rebaseline_evidence.py
-          python3 -m scripts.check_rdkit_ring_backend_evidence
+          python3 scripts/checks/check_compatibility_profiles.py
+          python3 scripts/checks/check_rdkit_rebaseline_manifest.py
+          python3 scripts/checks/check_rdkit_rebaseline_execution.py
+          python3 scripts/checks/check_rdkit_rebaseline_execution.py --manifest validation/rdkit_rebaseline_python_2026_09_execution.json
+          python3 scripts/checks/evidence/check_rdkit_rebaseline_evidence.py
+          python3 scripts/checks/evidence/check_rdkit_2026_09_rebaseline_evidence.py
+          python3 scripts/checks/evidence/check_rdkit_native_rebaseline_evidence.py
+          python3 -m scripts.checks.evidence.check_rdkit_ring_backend_evidence
           node --test scripts/tests/test_compare_rdkitjs_release_chemistry.cjs scripts/tests/test_check_rdkitjs_cip_parity.cjs scripts/tests/test_check_rdkitjs_smarts_parity.cjs
-          python3 scripts/check_v1029_accuracy_packet.py
+          python3 scripts/checks/check_v1029_accuracy_packet.py
           python3 scripts/generators/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
-          diff -u docs/compatibility-dashboard.md /tmp/compatibility-dashboard.md
+          diff -u docs/reference/compatibility-dashboard.md /tmp/compatibility-dashboard.md
       - name: Release channel verification record
-        run: python3 scripts/check_release_channel_evidence.py
+        run: python3 scripts/checks/evidence/check_release_channel_evidence.py
       - name: Frozen independent holdout contract
-        run: python3 scripts/check_trust_holdouts.py
+        run: python3 scripts/checks/check_trust_holdouts.py
       - name: Current-source standardization evidence
-        run: python3 scripts/check_standardization_source_evidence.py
+        run: python3 scripts/checks/evidence/check_standardization_source_evidence.py
       - name: MMFF94 current-source same-coordinate evidence
-        run: python3 scripts/check_mmff94_current_energy_evidence.py
+        run: python3 scripts/checks/evidence/check_mmff94_current_energy_evidence.py
       - name: MMFF94 published-wheel quality evidence
-        run: python3 scripts/check_mmff94_published_quality_evidence.py
+        run: python3 scripts/checks/evidence/check_mmff94_published_quality_evidence.py
 
   rust-api-compat:
     name: Rust API compatibility (all changed public crates)
@@ -138,7 +138,7 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          packages="$(python3 scripts/changed_public_crates.py --base "$BASE_SHA" --head "$HEAD_SHA")"
+          packages="$(python3 scripts/release/changed_public_crates.py --base "$BASE_SHA" --head "$HEAD_SHA")"
           if [[ -z "$packages" ]]; then
             echo "run=false" >> "$GITHUB_OUTPUT"
           else
@@ -182,31 +182,31 @@ jobs:
         run: cargo build --locked -p chematic-cli
       - name: Verify ordinary V3000 round trip
         run: |
-          python3 scripts/v3000_rdkit_semantic_gate.py --output /tmp/v3000-rdkit-semantic.json
+          python3 scripts/validation/v3000_rdkit_semantic_gate.py --output /tmp/v3000-rdkit-semantic.json
           python3 scripts/diagnostics/tpsa_functional_group_probe.py \
             --cli target/debug/chematic \
             --output /tmp/tpsa-functional-group-probe.json
-          python3 scripts/descriptor_functional_group_classification.py \
+          python3 scripts/diagnostics/descriptor_functional_group_classification.py \
             --cli target/debug/chematic \
             --output /tmp/descriptor-functional-group-classification.json
 
       - name: Verify mapped wildcard attachment labels
         run: |
-          python3 scripts/rdkit_attachment_point_semantic_gate.py \
+          python3 scripts/validation/rdkit_attachment_point_semantic_gate.py \
             --cli target/debug/chematic \
             --output /tmp/rdkit-attachment-point-semantic.json
       - name: Verify Indigo V3000 contracts
         run: |
-          python3 scripts/v3000_indigo_semantic_gate.py --output /tmp/v3000-indigo-semantic.json
-          python3 scripts/v3000_sgroup_external_reader_gate.py --output /tmp/v3000-sgroup-external-reader.json
-          python3 scripts/v3000_relative_stereo_gate.py --output /tmp/v3000-relative-stereo.json
-          python3 scripts/v3000_indigo_ez_query_truth_table.py --output /tmp/v3000-indigo-ez-query.json
+          python3 scripts/validation/v3000_indigo_semantic_gate.py --output /tmp/v3000-indigo-semantic.json
+          python3 scripts/validation/v3000_sgroup_external_reader_gate.py --output /tmp/v3000-sgroup-external-reader.json
+          python3 scripts/validation/v3000_relative_stereo_gate.py --output /tmp/v3000-relative-stereo.json
+          python3 scripts/diagnostics/v3000_indigo_ez_query_truth_table.py --output /tmp/v3000-indigo-ez-query.json
 
       - name: Verify fixed development suite and canonicalization contract
         run: |
           python3 scripts/generators/build_stereo_torture_suite.py --check
-          python3 scripts/stereo_torture_suite_gate.py --output /tmp/stereo-torture-suite.json
-          python3 scripts/stereo_spelling_invariance_gate.py --output /tmp/stereo-spelling-invariance.json
+          python3 scripts/validation/stereo_torture_suite_gate.py --output /tmp/stereo-torture-suite.json
+          python3 scripts/validation/stereo_spelling_invariance_gate.py --output /tmp/stereo-spelling-invariance.json
 
   test-integration:
     name: Integration tests (shard ${{ matrix.shard }})
@@ -307,30 +307,30 @@ jobs:
         run: |
           .venv/bin/pip install 'rdkit==2026.3.6' --quiet
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
-          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
+          .venv/bin/python scripts/checks/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
           .venv/bin/pip install --force-reinstall --no-deps dist/hba-wheel/chematic-*.whl
-          .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
-          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
-          .venv/bin/python scripts/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-linux.json
-          .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
+          .venv/bin/python scripts/checks/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k.json
+          .venv/bin/python scripts/diagnostics/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-linux.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
+          .venv/bin/python scripts/validation/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-linux.json
+          .venv/bin/python scripts/checks/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-linux.json
           .venv/bin/python scripts/diagnostics/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-linux.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
       - name: xsmarts-autoconf SMARTS/SMIRKS flag lane (#754)
         run: |
           .venv/bin/pip install "xsmarts-autoconf @ git+https://github.com/swamidasslab/xsmarts-autoconf@6ce94c945652fa4fc47719387b41be6bf0419402" --quiet
-          .venv/bin/python scripts/xsmarts_autoconf_lane.py --output validation/results/xsmarts-autoconf-lane-linux.json
+          .venv/bin/python scripts/diagnostics/xsmarts_autoconf_lane.py --output validation/results/xsmarts-autoconf-lane-linux.json
       - name: Property-based SMIRKS fuzz lane against RDKit (#754)
-        run: .venv/bin/python scripts/smirks_property_fuzz.py --templates 2000 --seed 754 --expected validation/smirks_property_fuzz_expected.json --output validation/results/smirks-property-fuzz-linux.json --rows validation/results/smirks-property-fuzz-linux-probes.jsonl
+        run: .venv/bin/python scripts/validation/smirks_property_fuzz.py --templates 2000 --seed 754 --expected validation/smirks_property_fuzz_expected.json --output validation/results/smirks-property-fuzz-linux.json --rows validation/results/smirks-property-fuzz-linux-probes.jsonl
       - name: Diagnose A6 optimized source wheel (Linux)
         run: |
           git diff --quiet
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux.jsonl --metadata-output validation/results/a6-source-265-linux.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-          .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux.jsonl --metadata validation/results/a6-source-265-linux.meta.json --output validation/results/a6-source-265-linux.summary.json --build-profile release
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux.jsonl --metadata-output validation/results/a6-source-265-linux.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/bin/python scripts/validation/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux.jsonl --metadata validation/results/a6-source-265-linux.meta.json --output validation/results/a6-source-265-linux.summary.json --build-profile release
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-linux.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-linux.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux.jsonl --scored validation/results/a6-source-265-linux.scored.jsonl --scope source-linux-x86_64 --output validation/results/a6-source-265-linux.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-source-265-linux.jsonl --scored validation/results/a6-source-265-linux.scored.jsonl --scope source-linux-x86_64 --output validation/results/a6-source-265-linux.gate.json
       - name: RDKit 2026.09.1 R-group hydrogen columns from source wheel
         run: |
           .venv/bin/pip install 'rdkit==2026.09.1' --quiet
-          .venv/bin/python scripts/rdkit_rgroup_hydrogen_gate.py --output validation/results/rdkit-rgroup-hydrogen-source-wheel-linux.json
+          .venv/bin/python scripts/validation/rdkit_rgroup_hydrogen_gate.py --output validation/results/rdkit-rgroup-hydrogen-source-wheel-linux.json
       - name: Retain HBA source-wheel parity result
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -370,19 +370,19 @@ jobs:
           python -m venv .venv
           .venv/bin/pip install --index-url https://pypi.org/simple maturin numpy
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/a6-source-wheel
-          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/a6-source-wheel/chematic-*.whl"
+          .venv/bin/python scripts/checks/check_python_stubs.py --wheel "dist/a6-source-wheel/chematic-*.whl"
           .venv/bin/pip install --no-deps dist/a6-source-wheel/chematic-*.whl
           git diff --quiet
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux-cp39.jsonl --metadata-output validation/results/a6-source-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-          .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux-cp39.jsonl --metadata validation/results/a6-source-265-linux-cp39.meta.json --output validation/results/a6-source-265-linux-cp39.summary.json --build-profile release
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/a6-source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-linux-cp39.jsonl --metadata-output validation/results/a6-source-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/bin/python scripts/validation/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-linux-cp39.jsonl --metadata validation/results/a6-source-265-linux-cp39.meta.json --output validation/results/a6-source-265-linux-cp39.summary.json --build-profile release
           .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps "chematic==${A6_PUBLISHED_VERSION}" --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-linux-cp39.jsonl --metadata-output validation/results/a6-published-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
-          .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-linux-cp39.jsonl --source-metadata validation/results/a6-source-265-linux-cp39.meta.json --published-rows validation/results/a6-published-265-linux-cp39.jsonl --published-metadata validation/results/a6-published-265-linux-cp39.meta.json --output validation/results/a6-source-vs-published-265-linux-cp39.json
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-linux-cp39.jsonl --metadata-output validation/results/a6-published-265-linux-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
+          .venv/bin/python scripts/benchmarks/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-linux-cp39.jsonl --source-metadata validation/results/a6-source-265-linux-cp39.meta.json --published-rows validation/results/a6-published-265-linux-cp39.jsonl --published-metadata validation/results/a6-published-265-linux-cp39.meta.json --output validation/results/a6-source-vs-published-265-linux-cp39.json
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-linux-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-linux-cp39.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-linux-cp39.jsonl --scored validation/results/a6-source-265-linux-cp39.scored.jsonl --scope source-linux-x86_64-cp39 --output validation/results/a6-source-265-linux-cp39.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-source-265-linux-cp39.jsonl --scored validation/results/a6-source-265-linux-cp39.scored.jsonl --scope source-linux-x86_64-cp39 --output validation/results/a6-source-265-linux-cp39.gate.json
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-linux-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-linux-cp39.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-linux-cp39.jsonl --scored validation/results/a6-published-265-linux-cp39.scored.jsonl --scope published-linux-x86_64-cp39 --reference-rows validation/results/a6-source-265-linux-cp39.jsonl --output validation/results/a6-published-265-linux-cp39.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-published-265-linux-cp39.jsonl --scored validation/results/a6-published-265-linux-cp39.scored.jsonl --scope published-linux-x86_64-cp39 --reference-rows validation/results/a6-source-265-linux-cp39.jsonl --output validation/results/a6-published-265-linux-cp39.gate.json
       - name: Retain paired Linux A6 outcome
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -416,28 +416,28 @@ jobs:
           python3 -m venv .venv
           .venv/bin/pip install maturin 'rdkit==2026.3.6' numpy --quiet
           .venv/bin/maturin build --release -m crates/chematic-py/Cargo.toml --interpreter .venv/bin/python --out dist/hba-wheel
-          .venv/bin/python scripts/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
+          .venv/bin/python scripts/checks/check_python_stubs.py --wheel "dist/hba-wheel/chematic-*.whl"
           .venv/bin/pip install --no-deps dist/hba-wheel/chematic-*.whl
-          .venv/bin/python scripts/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k-macos.json
-          .venv/bin/python scripts/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
-          .venv/bin/python scripts/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-macos.json
-          .venv/bin/python scripts/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-macos.json
+          .venv/bin/python scripts/checks/check_rdkit_hba_wheel.py --wheel dist/hba-wheel/chematic-*.whl --build-profile release --output validation/results/rdkit-hba-source-wheel-5k-macos.json
+          .venv/bin/python scripts/diagnostics/run_reaction_compatibility_v2.py --artifact dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-macos.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
+          .venv/bin/python scripts/validation/reaction_python_checked_provenance_gate.py --expected-rdkit 2026.03.6 --wheel dist/hba-wheel/chematic-*.whl --output validation/results/reaction-checked-provenance-83-macos.json
+          .venv/bin/python scripts/checks/check_python_smarts_parity_310k.py --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-macos.json
           .venv/bin/python scripts/diagnostics/mmff94_atom_type_census.py --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi --output validation/results/mmff94-type-source-wheel-10k-macos.json --wheel dist/hba-wheel/chematic-*.whl --module-root .venv --type37-context --source-wheel-gate
       - name: Diagnose A6 optimized source wheel (macOS arm64)
         run: |
           git diff --quiet
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-macos.jsonl --metadata-output validation/results/a6-source-265-macos.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-          .venv/bin/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-macos.jsonl --metadata validation/results/a6-source-265-macos.meta.json --output validation/results/a6-source-265-macos.summary.json --build-profile release
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/hba-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-macos.jsonl --metadata-output validation/results/a6-source-265-macos.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/bin/python scripts/validation/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-macos.jsonl --metadata validation/results/a6-source-265-macos.meta.json --output validation/results/a6-source-265-macos.summary.json --build-profile release
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-macos.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-macos.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-macos.jsonl --scored validation/results/a6-source-265-macos.scored.jsonl --scope source-macos-arm64 --output validation/results/a6-source-265-macos.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-source-265-macos.jsonl --scored validation/results/a6-source-265-macos.scored.jsonl --scope source-macos-arm64 --output validation/results/a6-source-265-macos.gate.json
       - name: Compare A6 published wheel on the same macOS host
         run: |
           .venv/bin/pip download --only-binary=:all: --no-deps "chematic==${A6_PUBLISHED_VERSION}" --dest dist/a6-published-wheel
           .venv/bin/pip install --force-reinstall --no-deps dist/a6-published-wheel/chematic-*.whl
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos.jsonl --metadata-output validation/results/a6-published-265-macos.meta.json --wall-budget-seconds 1200 --package-kind published
-          .venv/bin/python scripts/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-macos.jsonl --source-metadata validation/results/a6-source-265-macos.meta.json --published-rows validation/results/a6-published-265-macos.jsonl --published-metadata validation/results/a6-published-265-macos.meta.json --output validation/results/a6-source-vs-published-265-macos.json
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos.jsonl --metadata-output validation/results/a6-published-265-macos.meta.json --wall-budget-seconds 1200 --package-kind published
+          .venv/bin/python scripts/benchmarks/compare_a6_source_published_rows.py --source-rows validation/results/a6-source-265-macos.jsonl --source-metadata validation/results/a6-source-265-macos.meta.json --published-rows validation/results/a6-published-265-macos.jsonl --published-metadata validation/results/a6-published-265-macos.meta.json --output validation/results/a6-source-vs-published-265-macos.json
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-macos.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-macos.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos.jsonl --scored validation/results/a6-published-265-macos.scored.jsonl --scope published-macos-arm64-cp313 --reference-rows validation/results/a6-source-265-macos.jsonl --output validation/results/a6-published-265-macos.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-published-265-macos.jsonl --scored validation/results/a6-published-265-macos.scored.jsonl --scope published-macos-arm64-cp313 --reference-rows validation/results/a6-source-265-macos.jsonl --output validation/results/a6-published-265-macos.gate.json
       - name: Retain macOS HBA wheel result
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -483,7 +483,7 @@ jobs:
           python -m venv .venv
           .venv/Scripts/python -m pip install maturin --quiet
           .venv/Scripts/maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter .venv/Scripts/python.exe --out dist/source-wheel
-          .venv/Scripts/python scripts/check_python_stubs.py --wheel "dist/source-wheel/chematic-*.whl"
+          .venv/Scripts/python scripts/checks/check_python_stubs.py --wheel "dist/source-wheel/chematic-*.whl"
       - name: Share the exact wheel with both Windows qualifications
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
@@ -555,16 +555,16 @@ jobs:
           .venv/Scripts/python -m pip install --no-deps dist/source-wheel/chematic-*.whl
       - name: Reaction 83-row and SMARTS 310k gates
         run: |
-          .venv/Scripts/python scripts/run_reaction_compatibility_v2.py --artifact dist/source-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-windows.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
-          .venv/Scripts/python scripts/check_python_smarts_parity_310k.py --wheel dist/source-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-windows.json
+          .venv/Scripts/python scripts/diagnostics/run_reaction_compatibility_v2.py --artifact dist/source-wheel/chematic-*.whl --output validation/results/reaction-checked-source-wheel-83-windows.json --expected-rdkit 2026.03.6 --checked-rdkit-compat --expected-outcomes '{"semantic_match":80,"joint_invalid_input":3}'
+          .venv/Scripts/python scripts/checks/check_python_smarts_parity_310k.py --wheel dist/source-wheel/chematic-*.whl --module-root .venv --output validation/results/smarts-checked-source-wheel-310k-windows.json
       - name: Diagnose A6 optimized source wheel (Windows)
         run: |
           git status --short
           git diff --quiet
-          .venv/Scripts/python scripts/public_package_3d_chematic.py --wheel dist/source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-windows.jsonl --metadata-output validation/results/a6-source-265-windows.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
-          .venv/Scripts/python scripts/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-windows.jsonl --metadata validation/results/a6-source-265-windows.meta.json --output validation/results/a6-source-265-windows.summary.json --build-profile release
+          .venv/Scripts/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/source-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-source-265-windows.jsonl --metadata-output validation/results/a6-source-265-windows.meta.json --wall-budget-seconds 1200 --package-kind source_candidate --source-revision "$(git rev-parse HEAD)" --source-diff-sha256 e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+          .venv/Scripts/python scripts/validation/summarize_a6_mmff94_termination.py --rows validation/results/a6-source-265-windows.jsonl --metadata validation/results/a6-source-265-windows.meta.json --output validation/results/a6-source-265-windows.summary.json --build-profile release
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-source-265-windows.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-source-265-windows.scored.jsonl
-          .venv/Scripts/python scripts/a6_platform_gate.py --rows validation/results/a6-source-265-windows.jsonl --scored validation/results/a6-source-265-windows.scored.jsonl --scope source-windows-x86_64 --output validation/results/a6-source-265-windows.gate.json
+          .venv/Scripts/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-source-265-windows.jsonl --scored validation/results/a6-source-265-windows.scored.jsonl --scope source-windows-x86_64 --output validation/results/a6-source-265-windows.gate.json
       - name: Retain Windows source-wheel chemistry results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -598,9 +598,9 @@ jobs:
           python -m venv .venv
           .venv/bin/pip download --index-url https://pypi.org/simple --only-binary=:all: --no-deps "chematic==${A6_PUBLISHED_VERSION}" --dest dist/a6-published-wheel
           .venv/bin/pip install --no-deps dist/a6-published-wheel/chematic-*.whl
-          .venv/bin/python scripts/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos-cp39.jsonl --metadata-output validation/results/a6-published-265-macos-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
+          .venv/bin/python scripts/diagnostics/public_package_3d_chematic.py --wheel dist/a6-published-wheel/chematic-*.whl --tiers AB --arms chematic_pipeline_v2_mmff94_strict_stereo_safe --output validation/results/a6-published-265-macos-cp39.jsonl --metadata-output validation/results/a6-published-265-macos-cp39.meta.json --wall-budget-seconds 1200 --package-kind published
           cargo run --release -q -p chematic-3d --example pipeline_v2_vs_rdkit_common_scorer -- --chematic-rows validation/results/a6-published-265-macos-cp39.jsonl --rdkit-rows validation/results/public-package-3d-rdkit-2026.3.6-2026-09-22.jsonl --output validation/results/a6-published-265-macos-cp39.scored.jsonl
-          .venv/bin/python scripts/a6_platform_gate.py --rows validation/results/a6-published-265-macos-cp39.jsonl --scored validation/results/a6-published-265-macos-cp39.scored.jsonl --scope published-macos-arm64-cp39 --output validation/results/a6-published-265-macos-cp39.gate.json
+          .venv/bin/python scripts/validation/a6_platform_gate.py --rows validation/results/a6-published-265-macos-cp39.jsonl --scored validation/results/a6-published-265-macos-cp39.scored.jsonl --scope published-macos-arm64-cp39 --output validation/results/a6-published-265-macos-cp39.gate.json
       - name: Retain macOS Python 3.9 published A6 outcomes
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -644,7 +644,7 @@ jobs:
         run: |
           A=a6-artifacts
           compare() {
-            python scripts/a6_platform_gate.py --report-only --rows "$A/$1.jsonl" --scored "$A/$1.scored.jsonl" \
+            python scripts/validation/a6_platform_gate.py --report-only --rows "$A/$1.jsonl" --scored "$A/$1.scored.jsonl" \
               --reference-rows "$A/$2.jsonl" --scope "$3" --output "a6-cross/$3.json" | tee -a "$GITHUB_STEP_SUMMARY"
           }
           compare rdkit-hba-source-wheel-5k-macos/a6-source-265-macos rdkit-hba-source-wheel-5k/a6-source-265-linux source-macos-vs-linux
@@ -710,11 +710,11 @@ jobs:
       - name: Python and WASM declaration compatibility
         # The published package uses the web target. Node-target glue omits
         # initSync/InitInput declarations by design and is not the npm API.
-        run: python3 scripts/check_binding_api_compat.py --baseline v1.1.9 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
+        run: python3 scripts/checks/check_binding_api_compat.py --baseline v1.1.9 --wasm-dts crates/chematic-wasm/pkg-web/chematic_wasm.d.ts
       - name: Web-target runtime smoke (via Node initSync)
         run: node crates/chematic-wasm/tests/pipeline_v2_web_target.test.mjs
       - name: Web-target package smoke (Node byte initialization)
-        run: node scripts/smoke_npm_package.mjs crates/chematic-wasm/pkg-web
+        run: node scripts/release/smoke_npm_package.mjs crates/chematic-wasm/pkg-web
 
   clippy:
     name: Clippy
@@ -753,53 +753,46 @@ jobs:
         run: |
           pip install -r requirements-docs.txt
           mkdocs build --strict --site-dir _parent_docs_site
-          python scripts/check_parent_api_docs.py --site-dir _parent_docs_site
+          python scripts/checks/check_parent_api_docs.py --site-dir _parent_docs_site
       - name: Validate CITATION.cff
         run: |
           pip install cffconvert --quiet
           cffconvert --validate
       - name: Validate benchmark index
-        run: python3 scripts/check_benchmark_index.py
+        run: python3 scripts/checks/check_benchmark_index.py
       - name: Verify Morgan timing packets and corruption controls
         run: |
-          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
-          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz
-          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-allocation-candidate-numeric.json.gz
-          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz
-          python3 scripts/check_morgan_numeric_packet.py benchmarks/2026-10-18-terminal-tpsa-numeric.json.gz
+          python3 scripts/checks/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-only-numeric.json.gz
+          python3 scripts/checks/check_morgan_numeric_packet.py benchmarks/2026-10-18-morgan-borrowed-view-ring-scratch-numeric.json.gz
+          python3 scripts/checks/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-allocation-candidate-numeric.json.gz
+          python3 scripts/checks/check_morgan_numeric_packet.py benchmarks/2026-10-18-cosmolkit-cold-terms-candidate-numeric.json.gz
+          python3 scripts/checks/check_morgan_numeric_packet.py benchmarks/2026-10-18-terminal-tpsa-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_morgan_numeric_packet -v
       - name: Verify full-corpus Morgan timings and balanced ordering
         run: |
-          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-direct-connectivity-numeric.json.gz
-          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-environments-numeric.json.gz
-          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-python-ring-cache-numeric.json.gz --require-adoption
-          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-hot-scalars-pilot-numeric.json.gz
-          python3 scripts/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-compact-cache-pilot-numeric.json.gz
+          python3 scripts/checks/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-direct-connectivity-numeric.json.gz
+          python3 scripts/checks/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-environments-numeric.json.gz
+          python3 scripts/checks/check_python_speed_frontier_packet.py benchmarks/2026-10-19-python-ring-cache-numeric.json.gz --require-adoption
+          python3 scripts/checks/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-hot-scalars-pilot-numeric.json.gz
+          python3 scripts/checks/check_python_speed_frontier_packet.py benchmarks/2026-10-19-morgan-tpsa-compact-cache-pilot-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_python_speed_frontier_packet scripts.tests.test_bench_python_speed_frontier -v
       - name: Verify rotor and Layered timing evidence
         run: |
-          python3 scripts/check_python_rotor_layered_packet.py benchmarks/2026-10-19-rotor-layered-numeric.json.gz --require-adoption
+          python3 scripts/checks/check_python_rotor_layered_packet.py benchmarks/2026-10-19-rotor-layered-numeric.json.gz --require-adoption
           python3 -m unittest scripts.tests.test_check_python_rotor_layered_packet scripts.tests.test_cosmolkit_bench_corpus -v
       - name: Verify CIP timing evidence and corruption controls
         run: |
-          python3 scripts/check_python_cip_frontier_packet.py benchmarks/2026-10-19-cip-lazy-preparation-numeric.json.gz
+          python3 scripts/checks/check_python_cip_frontier_packet.py benchmarks/2026-10-19-cip-lazy-preparation-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_python_cip_frontier_packet -v
       - name: Verify MOL2 timing packets and corruption controls
         run: |
-          python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz
-          python3 scripts/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-fixed4-numeric.json.gz
+          python3 scripts/checks/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-only-numeric.json.gz
+          python3 scripts/checks/check_mol2_index_numeric_packet.py benchmarks/2026-10-18-mol2-index-fixed4-numeric.json.gz
           python3 -m unittest scripts.tests.test_check_mol2_index_numeric_packet -v
       - name: Verify bounded Open Babel file-I/O evidence
-        run: python3 scripts/check_openbabel_file_io_evidence.py
+        run: python3 scripts/checks/evidence/check_openbabel_file_io_evidence.py
       - name: Verify bounded Indigo workflow evidence
-        run: python3 scripts/check_indigo_workflow_evidence.py
-      - name: Verify published v1.0.29 to v1.0.30 artifact packet
-        run: python3 scripts/check_v1030_artifact_packet.py
-      - name: Verify isolated published-wheel timing and RSS records
-        run: python3 scripts/check_published_python_isolated_paired.py
-      - name: Verify isolated published-Rust timing and RSS records
-        run: python3 scripts/check_published_rust_isolated_paired.py
-
+        run: python3 scripts/checks/evidence/check_indigo_workflow_evidence.py
   ci-gate:
     name: CI gate
     # Keep one stable required check while the implementation jobs evolve.

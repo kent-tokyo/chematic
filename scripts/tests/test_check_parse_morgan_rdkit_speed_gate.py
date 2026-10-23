@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.check_parse_morgan_rdkit_speed_gate import paired_summary
+from scripts.checks.check_parse_morgan_rdkit_speed_gate import paired_summary
 
 
 def measurement(chematic_values, rdkit_values):

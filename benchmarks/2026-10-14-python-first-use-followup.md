@@ -172,7 +172,7 @@ were independently recalculated and every retained artifact hash was verified.
 - [Additional-slice timing blocks](2026-10-14-python-first-use-followup-slice5000-paired20.json)
 - [Source, wheel and comparator manifest](2026-10-14-python-first-use-followup-source.json)
 - [Exact parity, rejected development and validation logs](2026-10-14-python-first-use-followup-parity.json)
-- [Reconstructable candidate patch](2026-10-14-python-first-use-followup-candidate.patch)
+- [Reconstructable candidate patch](https://github.com/kent-tokyo/chematic/blob/0bc130f24a7d163535e0f4ad59eb5a155847cf07/benchmarks/2026-10-14-python-first-use-followup-candidate.patch)
 - [Unchanged benchmark runner](../scripts/bench_python_speed_frontier.py)
 
 ## Reproduce and remaining scope

@@ -1033,11 +1033,11 @@ def main():
             "scripts/generators/gen_pipeline_v2_vs_rdkit_tier_a_manifest.py",
             "scripts/generators/gen_pipeline_v2_vs_rdkit_tier_b_manifest.py",
             "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_dump.rs",
-            "scripts/pipeline_v2_vs_rdkit_oracle.py",
+            "scripts/validation/pipeline_v2_vs_rdkit_oracle.py",
             "crates/chematic-3d/examples/pipeline_v2_vs_rdkit_common_scorer.rs",
-            "scripts/pipeline_v2_vs_rdkit_process_level_perf.sh",
-            "scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py",
-            "scripts/pipeline_v2_vs_rdkit_tfd_227.py",
+            "scripts/diagnostics/pipeline_v2_vs_rdkit_process_level_perf.sh",
+            "scripts/diagnostics/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py",
+            "scripts/diagnostics/pipeline_v2_vs_rdkit_tfd_227.py",
             "scripts/generators/gen_pipeline_v2_vs_rdkit_report.py",
         ],
         "input_file_hashes": {
@@ -1225,7 +1225,7 @@ def write_markdown_report(agg):
     bon = agg["best_of_n_selection"]
     lines.append(
         f"Compares `{bon['chematic_arm']}` (`chematic_3d::embed_ensemble_v2`, A2 core, PR #373) "
-        f"against RDKit's own `{bon['rdkit_arm']}` arm (`scripts/pipeline_v2_vs_rdkit_oracle.py`'s "
+        f"against RDKit's own `{bon['rdkit_arm']}` arm (`scripts/validation/pipeline_v2_vs_rdkit_oracle.py`'s "
         "`run_best_of_n`): both embed 10 conformers (`count=10` / `numConfs=10`), optimize each "
         "with UFF, and keep the lowest-energy one. Config matched deliberately for this "
         "comparison, not chematic's general-purpose default: `ForceFieldPolicy::UffOnly` (RDKit's "
@@ -1277,14 +1277,14 @@ def write_markdown_report(agg):
     lines.append("")
     if bon["tfd_file_present"] and bon["n_paired_tfd"] > 0:
         lines.append(
-            f"**Paired Torsion Fingerprint Deviation** (`scripts/pipeline_v2_vs_rdkit_tfd_227.py`, "
+            f"**Paired Torsion Fingerprint Deviation** (`scripts/diagnostics/pipeline_v2_vs_rdkit_tfd_227.py`, "
             f"RDKit's own `GetTFDBetweenMolecules`), {bon['n_paired_tfd']} molecules successful on "
             f"both sides: median {fmt_num(bon['tfd_median'], 3)}, p90 {fmt_num(bon['tfd_p90'], 3)}."
         )
     else:
         lines.append(
             "**Paired Torsion Fingerprint Deviation**: not available -- "
-            f"`scripts/pipeline_v2_vs_rdkit_tfd_227.py` has not been run for this arm pair "
+            f"`scripts/diagnostics/pipeline_v2_vs_rdkit_tfd_227.py` has not been run for this arm pair "
             f"(expected output: `{TFD_BEST_OF_N_PATH.relative_to(ROOT)}`)."
         )
     lines.append("")
@@ -1425,7 +1425,7 @@ def write_markdown_report(agg):
             "`1bc1b63`-era process-level file would no longer be measuring the same binary and "
             "was deliberately excluded rather than presented as if comparable. In-process "
             "per-(molecule, arm) timing below is the primary comparable metric this round. "
-            "Re-run `scripts/pipeline_v2_vs_rdkit_process_level_perf.sh` in a follow-up if the "
+            "Re-run `scripts/diagnostics/pipeline_v2_vs_rdkit_process_level_perf.sh` in a follow-up if the "
             "whole-corpus process-level figure is needed against the new arm matrix."
         )
         lines.append("")
@@ -1473,7 +1473,7 @@ def write_markdown_report(agg):
             "occurs during `EmbedMolecule` itself (before any force-field stage runs), and only "
             "reproduces for a subset of tested seeds -- **not** a general \"RDKit crashes on "
             "cyclopentane\" finding, and not reproducible under RDKit's own ETKDGv3 defaults in "
-            "this ablation. Minimal repro: `scripts/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py`."
+            "this ablation. Minimal repro: `scripts/diagnostics/pipeline_v2_vs_rdkit_cyclopentane_crash_ablation.py`."
         )
     else:
         lines.append("Ablation data not available this run.")

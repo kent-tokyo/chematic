@@ -7,7 +7,7 @@ on:
       - 'crates/chematic-core/**'
       - 'crates/chematic-chem/**'
       - 'crates/chematic-py/**'
-      - 'scripts/bench_python_speed_frontier.py'
+      - 'scripts/benchmarks/bench_python_speed_frontier.py'
   workflow_dispatch:
 
 permissions:
@@ -60,7 +60,7 @@ jobs:
         run: |
           candidate_wheel="$(find "$RUNNER_TEMP/wheels/candidate" -name '*.whl' -print -quit)"
           baseline_wheel="$(find "$RUNNER_TEMP/wheels/baseline" -name '*.whl' -print -quit)"
-          python scripts/bench_python_speed_frontier.py \
+          python scripts/benchmarks/bench_python_speed_frontier.py \
             --corpus validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi \
             --limit 1000 --blocks 20 \
             --base-revision "${{ github.event.pull_request.base.sha || github.sha }}" \

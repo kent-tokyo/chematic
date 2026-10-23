@@ -1,7 +1,0 @@
-{
-  "initial_waiter_exit_code": 120,
-  "captured_output": "empty",
-  "formal_outputs_before_restart": false,
-  "confirmed_initial_waiter_exited": true,
-  "policy": "Start single actual timing run directly after all validation passes; no timing block has yet run or been discarded."
-}
