@@ -14,6 +14,8 @@
 
 mod checked;
 pub use checked::{PdbqtWriteError, write_pdbqt_checked};
+mod isotopes;
+pub use isotopes::{PdbqtIsotopeLoss, PdbqtIsotopeProjection, project_pdbqt_isotopes};
 
 use chematic_core::{Atom, AtomIdx, Element, Molecule};
 
@@ -160,6 +162,8 @@ pub fn autodock_atom_type(mol: &Molecule, idx: AtomIdx) -> &'static str {
 /// Write a molecule to PDBQT format.
 ///
 /// Use [`write_pdbqt_checked`] to reject missing values and fixed-column overflow.
+/// Isotope labels are omitted by this legacy writer. The checked writer refuses
+/// them; [`project_pdbqt_isotopes`] explicitly records the omitted labels.
 ///
 /// `coords` — 3D coordinates per atom (Å). If shorter than `mol.atom_count()`,
 /// missing atoms receive `(0, 0, 0)`.

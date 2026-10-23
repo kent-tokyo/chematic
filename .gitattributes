@@ -3,6 +3,8 @@ validation/openbabel_issues/pdb-selection/*.pdb text eol=lf whitespace=-blank-at
 validation/results/pdb-hydrogen-names-2026-10-18/*.pdb text eol=lf whitespace=-blank-at-eol
 validation/results/pdb-coordinate-merge-2026-10-18/*.pdb text eol=lf whitespace=-blank-at-eol
 validation/rdkit_issues/pdb-conect/*.pdb text eol=lf whitespace=-blank-at-eol
+# PDBQT atom types occupy two columns, including a trailing space for H/C/A.
+validation/openbabel-3005-2026-10-24/*.pdbqt text eol=lf whitespace=-blank-at-eol
 
 # Archived patches retain Git context-line spaces for reproducibility.
 validation/rdkit_issues/*.patch whitespace=-blank-at-eol

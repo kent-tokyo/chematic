@@ -5861,8 +5861,19 @@ def write_pdbqt_checked(mol: Mol, coords: Sequence[Sequence[float]], charges: Se
     """Rigid PDBQT with exact counts, finite values and checked field widths.
 
     Coordinates are in angstroms, partial charges in e, per graph atom including
-    explicit H. Raises ValueError for unrepresentable input. AutoDock types use
+    explicit H. Raises ValueError for isotope labels or unrepresentable input. AutoDock types use
     the existing heuristic; no charge calculation or ligand preparation.
+    """
+    ...
+
+
+def project_pdbqt_isotopes(mol: Mol, coords: Sequence[Sequence[float]], charges: Sequence[float], name: str = "LIG") -> dict:
+    """Explicit isotope omission: returns rigid pdbqt and isotopes_omitted.
+
+    Each loss has source_atom_index (zero based), pdbqt_serial (one based),
+    atomic_number and mass_number. Every explicit atom is retained. Coordinates
+    and supplied partial charges round to three decimals. The source Mol is
+    unchanged. This is not a lossless graph round trip or ligand preparation.
     """
     ...
 
