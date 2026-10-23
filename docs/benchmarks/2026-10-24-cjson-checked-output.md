@@ -42,6 +42,12 @@ CML writer declares total H counts; CML → CJSON now refuses to omit them.
 Use the legacy `Mol.to_cjson`/`write_cjson` only when accepting their lossy
 projection. Same-format CJSON source retention remains exact.
 
+The V3000 coordinate packet's `four_atom_geometry` record also induces atom
+chirality in the source reader. The checked route refuses its three newline
+variants, while the other 21 variants retain their selected graph and XYZ.
+Those three refusals are not scored as preserved coordinates. Earlier frozen
+coordinate-only reports describe the legacy route, before this output guard.
+
 On eight original CML graph records, Python/WASM each retained all three
 supported graphs/XYZ and explicitly refused all five zero/query records.
 Open Babel 3.2.1, in both default and `-xs` modes, retained the three positives
