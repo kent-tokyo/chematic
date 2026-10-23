@@ -21,7 +21,7 @@ ROOT = Path(__file__).resolve().parents[2]
 PYI = Path("crates/chematic-py/python/chematic/__init__.pyi")
 PYPROJECT = Path("crates/chematic-py/pyproject.toml")
 WASM_BASELINE = ROOT / "demo/pkg/chematic_wasm.d.ts"
-WASM_BASELINE_SHA256 = "2126b9d2184218b53d6fdea37c9234f12895a1e3603df5973ae39a5f5fbcab20"
+WASM_BASELINE_SHA256 = "bca23e85ad3ab1604160ba5cf6e84e39877b2121d0e5c10f4c3b2eacb264928a"
 
 
 def required_arguments(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
