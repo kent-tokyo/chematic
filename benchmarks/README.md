@@ -10,7 +10,7 @@ the [complete inventory](archive-index.md) links every retained record.
 Read the boundary column before using a number. `Published` means the named
 registry artifact was measured. `Source` means a pinned revision was built
 locally. `Historical` means the result remains reproducible evidence but is
-not a statement about v1.1.8.
+not a statement about v1.2.0 or later source.
 
 | Question | Current record | Boundary |
 |---|---|---|

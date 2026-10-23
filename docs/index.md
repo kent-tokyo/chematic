@@ -113,9 +113,9 @@ editing, and the RDKit-style API are experimental or intentionally bounded.
 `canonical_smiles()` is not always a safe identity key; use the fail-closed
 `canonical_smiles_stable_key()` where the documented domain is sufficient.
 
-Rust line coverage is measured separately from chemistry validation. The
-processed Linux Codecov lane reports 96.93%; it shows which code
-executed, not whether every chemical result is correct.
+Rust line coverage is measured separately from chemistry validation. CI
+enforces at least 96.7% for its declared Rust scope; this shows which code ran,
+not whether every chemical result is correct.
 
 ## Reference
 

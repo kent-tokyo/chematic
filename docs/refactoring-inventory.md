@@ -1,7 +1,7 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the active R9-R25 structural
-program.
+This inventory records the R8 cleanup review and the completed R9-R25
+structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
 reducing line count.
