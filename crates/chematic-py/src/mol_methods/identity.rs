@@ -282,6 +282,8 @@ impl Mol {
     /// RDKit 2026.09.1's ``AllChem.EmbedMultipleConfs`` with ETKDGv3
     /// defaults. Bounds and torsion preferences are shared across attempts.
     /// Failed attempts are omitted, as in RDKit's returned conformer-id list.
+    /// Seed zero uses attempts 0, 2, 3, ... (RDKit #9738); the first matches
+    /// single embedding. Positive seeds keep their multiplicative schedule.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         use_exp_torsion_angle_prefs = true, use_basic_knowledge = true,
                         et_version = 2, use_small_ring_torsions = false,

@@ -3,6 +3,39 @@ use crate::stereo_constraints::verify_stereo;
 use chematic_core::{Coords3D, Point3};
 
 #[test]
+fn zero_seed_quality_profile_searches_new_batches() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCCCCO").unwrap());
+    let options = RdkitEmbedOptions {
+        random_seed: 0,
+        ..Default::default()
+    };
+    let prepared = prepare_fragments(&molecule, &options).unwrap();
+    assert!(!corrected_torsion_gradient_can_differ(&prepared));
+    let mut batches = Vec::new();
+    for offset in [0, 3, 6] {
+        let coords = embed_prepared_multiple_confs(&prepared, 3, offset, &options, false).unwrap();
+        batches.push(optimize_mmff_molecule(&molecule, coords, 0).unwrap());
+    }
+    assert_ne!(batches[0][0].coords, batches[1][0].coords);
+    assert_ne!(batches[1][0].coords, batches[2][0].coords);
+    let best_energy = batches
+        .iter()
+        .flatten()
+        .map(|c| c.energy)
+        .min_by(f64::total_cmp)
+        .unwrap();
+    let selected =
+        etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 3, &options, 0).unwrap();
+    assert_eq!(selected.len(), 3);
+    assert_eq!(selected[0].energy, best_energy);
+    assert!(
+        selected
+            .iter()
+            .all(|chosen| batches.iter().flatten().any(|c| chosen.coords == c.coords))
+    );
+}
+
+#[test]
 fn quality_profile_uses_new_seeds_when_gradients_match() {
     let molecule = chematic_chem::add_hydrogens(
         &chematic_smiles::parse("CC(C)Cc1ccc(cc1)C(C)C(=O)O").unwrap(),

@@ -2,6 +2,9 @@
 //! (`DGeomHelpers::EmbedMolecule`, ETKDGv3). The compatibility lane targets
 //! the same fixed-seed behavior while treating platform-dependent final-bit
 //! coordinate drift as a versioned artifact-gate concern.
+//! Multi-conformer seed zero intentionally fixes RDKit #9738: the attempt
+//! seeds are `0, 2, 3, ...`, preserving the first conformer without repeatedly
+//! embedding the same seed. Positive-seed compatibility remains unchanged.
 
 // The port keeps RDKit's index loops, mirrored if/else chains and negated
 // (NaN-propagating) comparisons so it reads side by side with the C++.

@@ -1,0 +1,8 @@
+{
+  "html_url": "https://github.com/rdkit/rdkit/issues/9738",
+  "number": 9738,
+  "state": "open",
+  "title": "EmbedMultipleConfs with randomSeed=0 generates identical conformers",
+  "updated_at": "2026-10-22T11:09:52Z",
+  "issue_body_sha256": "dc7823a38bdb68b6f542c9cfbd4ed36bd6257fbd657d4f584b38eaf9525cad05"
+}
