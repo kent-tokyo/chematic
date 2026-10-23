@@ -193,7 +193,8 @@ fn write_common_format(
         }
         "mol2" => chematic_mol::write_mol2(mol, &[]),
         "cml" => chematic_mol::write_cml(mol, None),
-        "cjson" => chematic_mol::write_cjson(mol, coords),
+        "cjson" => chematic_mol::write_cjson_checked(mol, coords)
+            .map_err(|error| JsValue::from_str(&error.to_string()))?,
         "moljson" => chematic_mol::write_moljson(mol),
         "cdxml" => chematic_mol::write_cdxml(mol, &[]),
         _ => {
@@ -219,7 +220,9 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
             .into_iter()
             .map(|[x, y, z]| (x, y, z))
             .collect::<Vec<_>>();
-        return Ok(Some(chematic_mol::write_cjson(&mol, &points)));
+        return chematic_mol::write_cjson_checked(&mol, &points)
+            .map(Some)
+            .map_err(|error| JsValue::from_str(&error.to_string()));
     }
     if input == "mol2" && output == "cjson" {
         let projected = chematic_mol::project_mol2_to_cjson_with_limits(
@@ -264,6 +267,10 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
 /// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
 /// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
+/// Graph-projected CJSON output refuses in-memory properties not represented by
+/// its local graph profile (including stereo, explicit H counts, aromatic atom
+/// flags and unsupported bonds). This does not detect source fields discarded
+/// during parsing. MOL2 projection and exact CJSON retention keep their own contracts.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,

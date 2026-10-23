@@ -452,6 +452,8 @@ fn float_to_bond_order(v: f64) -> BondOrder {
 ///
 /// `coords` may be empty; if so the `atoms.coords` section is omitted and
 /// Avogadro will open the file without 3D geometry.
+/// This legacy projection can drop atom properties/stereo and coerce bond
+/// orders. Use [`crate::write_cjson_checked`] to refuse these losses.
 pub fn write_cjson(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     use serde_json::{Value, json};
 

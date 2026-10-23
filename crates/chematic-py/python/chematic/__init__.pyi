@@ -871,6 +871,19 @@ class Mol:
         """
         ...
 
+    def to_cjson(self, coords: list[list[float]] = []) -> str:
+        """Legacy lossy graph projection; prefer to_cjson_checked."""
+        ...
+
+    def to_cjson_checked(self, coords: list[list[float]] = []) -> str:
+        """Refuse unsupported in-memory graph properties and malformed XYZ.
+
+        Raises ValueError for stereo, explicit H counts, aromatic atom flags,
+        wildcards, maps, tags, CIP, zero isotope mass, and unsupported bonds.
+        Does not validate metadata or stereo discarded by a source reader.
+        """
+        ...
+
     def to_cml(self, coords: Optional[list[list[float]]] = None) -> str:
         """Serialize this molecule to Chemical Markup Language (CML) XML.
 

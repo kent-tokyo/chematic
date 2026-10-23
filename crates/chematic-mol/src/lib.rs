@@ -34,6 +34,7 @@ pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
 pub mod cjson;
+pub mod cjson_output;
 pub mod cjson_record;
 pub mod cml;
 pub mod cml_named;
@@ -126,6 +127,7 @@ pub use cif::{
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
+pub use cjson_output::{CjsonWriteError, write_cjson_checked};
 pub use cjson_record::{
     CjsonProjection, CjsonRecord, parse_cjson_checked, parse_cjson_checked_with_limits,
     parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
