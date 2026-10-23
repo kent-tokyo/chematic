@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Score the frozen v1 trust holdouts once, without changing their inputs.
+"""Score a frozen trust holdout once, without changing its inputs.
 
 The output keeps success, mismatch, refusal, invalid-input and internal-error
 counts separate for every observable. RDKit is a pinned compatibility oracle,
@@ -44,11 +44,10 @@ def score_mcs(source: list[dict]) -> tuple[dict, list[dict]]:
     for row in source:
         detail = {"id": row["id"]}
         try:
-            left_rd = Chem.MolFromSmiles(row["left"]["smiles"])
-            right_rd = Chem.MolFromSmiles(row["right"]["smiles"])
-            left_cm = chematic.from_smiles(row["left"]["smiles"])
-            right_cm = chematic.from_smiles(row["right"]["smiles"])
-            if left_rd is None or right_rd is None:
+            inputs = row["inputs"] if "inputs" in row else [row["left"], row["right"]]
+            rd_inputs = [Chem.MolFromSmiles(item["smiles"]) for item in inputs]
+            cm_inputs = [chematic.from_smiles(item["smiles"]) for item in inputs]
+            if any(mol is None for mol in rd_inputs):
                 raise ValueError("RDKit rejected a frozen input")
         except (ValueError, TypeError) as error:
             columns["parse"]["invalid_input"] += 1
@@ -66,9 +65,9 @@ def score_mcs(source: list[dict]) -> tuple[dict, list[dict]]:
         atom_cm = "elements" if row["atom_compare"] == "elements" else "any"
         bond_cm = "order_or_aromatic" if row["bond_compare"] == "order" else "any"
         try:
-            rd = rdFMCS.FindMCS([left_rd, right_rd], atomCompare=atom_rd, bondCompare=bond_rd, timeout=10)
+            rd = rdFMCS.FindMCS(rd_inputs, atomCompare=atom_rd, bondCompare=bond_rd, timeout=10)
             cm, cm_timeout = chematic.find_mcs_checked(
-                [left_cm, right_cm], atom_compare=atom_cm, bond_compare=bond_cm, timeout_ms=10_000
+                cm_inputs, atom_compare=atom_cm, bond_compare=bond_cm, timeout_ms=10_000
             )
             if rd.canceled or cm_timeout:
                 columns["completion"]["refusal"] += 1
@@ -160,7 +159,10 @@ def max_distance_delta(left, right) -> float:
 
 
 def score_stereo_3d(source: list[dict]) -> tuple[dict, list[dict]]:
-    columns = {key: status_counter() for key in ("parse", "stereo_graph", "embed_status", "conformer_count", "coordinates")}
+    columns = {key: status_counter() for key in (
+        "parse", "stereo_graph", "rdkit_embed", "chematic_embed", "joint_embed_status",
+        "conformer_count", "coordinates",
+    )}
     details = []
     for row in source:
         detail = {"id": row["id"]}
@@ -180,12 +182,43 @@ def score_stereo_3d(source: list[dict]) -> tuple[dict, list[dict]]:
             detail.update(status="invalid_input", error=str(error))
             details.append(detail)
             continue
+        rd_ids = None
+        cm_confs = None
+        rd_error = None
+        cm_error = None
         try:
             params = AllChem.ETKDGv3()
             params.randomSeed = int(row["random_seed"])
             rd_ids = list(AllChem.EmbedMultipleConfs(rd, numConfs=int(row["conformers"]), params=params))
+            columns["rdkit_embed"]["success"] += 1
+        except (ValueError, TypeError, RuntimeError) as error:
+            rd_error = f"{type(error).__name__}: {error}"
+            columns["rdkit_embed"]["refusal"] += 1
+        except Exception as error:  # pragma: no cover - recorded fail-closed
+            rd_error = f"{type(error).__name__}: {error}"
+            columns["rdkit_embed"]["internal_error"] += 1
+        try:
             cm_confs = cm.rdkit_embed_multiple_confs(int(row["conformers"]), random_seed=int(row["random_seed"]))
-            columns["embed_status"]["success"] += 1
+            columns["chematic_embed"]["success"] += 1
+        except (ValueError, TypeError, RuntimeError) as error:
+            cm_error = f"{type(error).__name__}: {error}"
+            columns["chematic_embed"]["refusal"] += 1
+        except Exception as error:  # pragma: no cover - recorded fail-closed
+            cm_error = f"{type(error).__name__}: {error}"
+            columns["chematic_embed"]["internal_error"] += 1
+
+        if rd_ids is None or cm_confs is None:
+            if rd_ids is None and cm_confs is None:
+                columns["joint_embed_status"]["success"] += 1
+                detail.update(status="refusal", rdkit_error=rd_error, chematic_error=cm_error)
+            else:
+                columns["joint_embed_status"]["mismatch"] += 1
+                detail.update(status="mismatch", rdkit_error=rd_error, chematic_error=cm_error)
+            details.append(detail)
+            continue
+
+        columns["joint_embed_status"]["success"] += 1
+        try:
             same_count = len(rd_ids) == len(cm_confs)
             columns["conformer_count"]["success" if same_count else "mismatch"] += 1
             deltas = []
@@ -203,21 +236,27 @@ def score_stereo_3d(source: list[dict]) -> tuple[dict, list[dict]]:
                 max_pair_distance_delta=max(deltas, default=0.0),
             )
         except (ValueError, TypeError, RuntimeError) as error:
-            columns["embed_status"]["refusal"] += 1
+            columns["coordinates"]["refusal"] += 1
             detail.update(status="refusal", error=str(error))
         except Exception as error:  # pragma: no cover - recorded fail-closed
-            columns["embed_status"]["internal_error"] += 1
+            columns["coordinates"]["internal_error"] += 1
             detail.update(status="internal_error", error=f"{type(error).__name__}: {error}")
         details.append(detail)
     return {key: dict(value) for key, value in columns.items()}, details
 
 
 def main() -> None:
+    global BASE
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--candidate-commit", required=True)
+    parser.add_argument("--holdout-version", default="v1")
+    parser.add_argument("--wheel", type=Path)
     args = parser.parse_args()
+    BASE = ROOT / "validation/trust_holdouts" / args.holdout_version
     manifest = json.loads((BASE / "manifest.json").read_text())
+    if args.candidate_commit != manifest["candidate_frozen_commit"]:
+        raise SystemExit("candidate commit does not match the frozen manifest")
     for name, contract in manifest["lanes"].items():
         if sha(BASE / name) != contract["sha256"]:
             raise SystemExit(f"frozen input hash changed: {name}")
@@ -237,9 +276,14 @@ def main() -> None:
         for path in sorted(module_path.parent.glob("*.so"))
     } if module_path else {}
     payload = {
-        "schema": "chematic.trust-holdout-score.v1",
+        "schema": "chematic.trust-holdout-score.v2",
+        "holdout_version": args.holdout_version,
         "candidate_commit": args.candidate_commit,
         "frozen_manifest_sha256": sha(BASE / "manifest.json"),
+        "wheel": {
+            "path": str(args.wheel) if args.wheel else None,
+            "sha256": sha(args.wheel) if args.wheel else None,
+        },
         "versions": {"chematic": chematic.__version__, "rdkit": rdBase.rdkitVersion, "python": platform.python_version()},
         "module": {
             "path": str(module_path),
@@ -249,6 +293,7 @@ def main() -> None:
         "policy": "One-shot scoring only; no tuning on these rows after inspection.",
         "lanes": lanes,
     }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
     print(json.dumps({lane: data["columns"] for lane, data in lanes.items()}, indent=2, sort_keys=True))
 
