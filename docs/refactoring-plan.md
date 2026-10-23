@@ -90,7 +90,7 @@ not an acceptable completion condition.
 | R21 | Search, SMARTS and reaction internals | Search state and reaction projection stages have explicit owners | Complete |
 | R22 | Compatibility-heavy RDKit tables and adapters | Declarative data separated from control flow; parity fixtures unchanged | Complete |
 | R23 | Python, WASM, CLI and MCP boundaries | Binding registration and transport glue remain thin and cross-checked | Complete |
-| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Ready for review |
+| R24 | Validation scripts, CI and documentation | Shared harnesses replace duplication without weakening gates | Complete |
 | R25 | Final ratchet and release-grade verification | At most 8 file and 50 function allowances; full applicable gates pass | Ready for review |
 
 R18 reduced the checked function allowances from 76 to 74. Its hosted CI,
