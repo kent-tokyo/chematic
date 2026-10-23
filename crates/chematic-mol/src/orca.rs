@@ -96,10 +96,16 @@
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 
 mod cartesian;
+mod checked;
+mod checked_json;
 pub use cartesian::{
     OrcaCartesianError, OrcaCartesianGeometry, OrcaCoordinateUnits, parse_orca_cartesian,
     parse_orca_cartesian_with_limits,
 };
+pub use checked::{
+    OrcaWriteError, OrcaWriteLimits, write_orca_input_checked, write_orca_input_checked_with_limits,
+};
+pub use checked_json::{write_orca_input_json_checked, write_orca_input_json_checked_with_limits};
 
 /// Return type shared by [`OrcaCoords::to_molecule`]:
 /// `(Molecule, coords, charge, multiplicity)` -- same shape as

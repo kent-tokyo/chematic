@@ -4007,6 +4007,15 @@ def parse_orca_cartesian(text: str, *, max_input_bytes: int = 16_777_216, max_at
     """
     ...
 
+def write_orca_input_checked(input: dict[str, Any], *, max_output_bytes: int = 67_108_864) -> str:
+    """Write represented xyz ORCA fields with exact finite coordinate values.
+
+    Preserves unit keywords, charge/spin, freeze flags, extras and opaque blocks;
+    refuses unsupported units, defaults for missing required fields and any
+    represented metadata that would change on reparse. Not source/job validation.
+    """
+    ...
+
 def write_orca_input(input: dict) -> str:
     """Write an ORCA input file from a dict, same shape as
     :func:`parse_orca_input`'s return value.

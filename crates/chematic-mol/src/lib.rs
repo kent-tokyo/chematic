@@ -235,9 +235,11 @@ pub use orca::{
     GeometryFrame, OrcaAtom, OrcaBlock, OrcaCartesianError, OrcaCartesianGeometry,
     OrcaCoordinateUnits, OrcaCoords, OrcaInput, OrcaInputError, OrcaInputParseLimits,
     OrcaOptConvergence, OrcaOutput, OrcaOutputError, OrcaOutputParseLimits, OrcaTermination,
-    parse_orca_cartesian, parse_orca_cartesian_with_limits, parse_orca_input,
-    parse_orca_input_with_limits, parse_orca_output, parse_orca_output_with_limits,
-    write_orca_input,
+    OrcaWriteError, OrcaWriteLimits, parse_orca_cartesian, parse_orca_cartesian_with_limits,
+    parse_orca_input, parse_orca_input_with_limits, parse_orca_output,
+    parse_orca_output_with_limits, write_orca_input, write_orca_input_checked,
+    write_orca_input_checked_with_limits, write_orca_input_json_checked,
+    write_orca_input_json_checked_with_limits,
 };
 pub use pdb_selection::{
     PdbSelectedAtom, PdbSelectionError, PdbSelectionLimits, PdbSelectionLoss, PdbSelectionReport,

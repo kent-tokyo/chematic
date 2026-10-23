@@ -63,9 +63,116 @@ numbers because that enum has no enclosing keyword context.
 This is a parsed geometry contract, not original-document identity. Comments,
 numeric spelling and source bytes are not represented. The existing
 `write_orca_input`/`write_orca_input_json` still round Cartesian coordinates to
-six decimal places and normalize layout; no new lossless writer is added.
+six decimal places and normalize layout. The checked writer below preserves
+represented fields but cannot restore source information already omitted.
 
-## Resource bounds
+## Checked structured output
+
+`write_orca_input_checked` preserves the structured input's comments, ordered
+keywords and opaque blocks, plus total charge/spin, ordered elements, xyz
+values, freeze flags and atom extras. Coordinates use 17 significant decimal
+digits in scientific notation. Every finite binary64 coordinate, including
+signed zero and subnormals, must retain its bits after reparse before output
+is returned. Units are neither converted nor guessed: the existing
+Angs/Bohrs/default-unit Cartesian profile applies.
+
+- Rust: `write_orca_input_checked(&OrcaInput)` and
+  `write_orca_input_checked_with_limits`, with `OrcaWriteLimits` and
+  `OrcaWriteError`. Strict JSON counterparts are
+  `write_orca_input_json_checked[_with_limits]`.
+- Python: `write_orca_input_checked(input, *, max_output_bytes=67_108_864)`.
+- WASM: `write_orca_input_json_checked(input_json)`.
+
+```python
+document = chematic.parse_orca_input(text)
+output = chematic.write_orca_input_checked(document)
+reparsed = chematic.parse_orca_input(output)
+```
+
+Python and JSON require `comments`, `keywords`, `blocks` and `coords`. The
+coordinate object requires `kind: "xyz"` (or WASM's `type` alias), `charge`,
+`multiplicity` and `atoms`. Each atom requires `element`, `x`, `y`, `z` and
+exactly three boolean `frozen` entries. Optional `extra` may be omitted/null.
+Each block requires `name`, `raw` and boolean `has_end`. Unknown fields,
+duplicate JSON keys (including aliases), boolean numeric values and missing
+required fields are refused. Python dictionaries cannot represent duplicate
+keys; they use the same strict adapter after JSON encoding.
+
+The writer requires a nonempty embedded xyz geometry and positive multiplicity.
+It refuses conflicting/unsupported units, any `%coords` block and internal or
+external geometry. It also refuses fields that would change on structured
+reparse: for example, multiline keyword injection, noncanonical extra-token
+spacing, non-comment comment entries or block text the parser would trim.
+Failure returns no partial output. The legacy writer remains available with
+its previous defaults and rounding.
+
+The guarantee covers fields represented in `OrcaInput`. Inline comment
+placement, numeric spelling, original line endings and source bytes are not
+retained. Unknown calculation settings and atom extras remain opaque; preserving
+them does not validate an executable ORCA job or their chemical meaning. No
+connectivity or per-atom formal charges are inferred.
+
+| Checked writer surface | JSON input | Output text | Atom cap |
+| --- | ---: | ---: | ---: |
+| Rust defaults | 64 MiB | 64 MiB | 100,000 |
+| Python | 16 MiB after encoding | 1 byte–64 MiB, configurable | 100,000 |
+| WASM | 1,000,000 bytes | 1,000,000 bytes | 10,000 |
+
+Rust limits are configurable. Native output uses bounded appends and applies
+the structured parser's default line/keyword/block budgets on readback.
+WASM also checks readback against its existing 1,024-physical-line reader
+budget: an otherwise empty two-line wrapper permits 1,022 atom rows. This
+earlier line cap can bind before the atom cap. Python encodes its dictionary
+before checking the transport byte cap; none of these budgets is a process
+memory cap. JavaScript callers should pass raw JSON when signed zero matters;
+`JSON.stringify` can normalize it before the writer receives it.
+
+### Output measurement (2026-10-24)
+
+The authored packet `validation/orca-checked-2026-10-24/cases.json` contains
+24 positive controls: 12 common geometries, six metadata/unit controls and six
+numeric boundaries. Expected fields and coordinate bits come from authored
+inputs, independently of either engine's output.
+
+| Twelve common Angstrom geometries | Checked Python/WASM | Legacy Python/WASM | Open Babel 3.2.1 |
+| --- | ---: | ---: | ---: |
+| All coordinate bits retained | 12/12 | 2/12 | 2/12 |
+| Maximum coordinate absolute error (Å) | 0 | 4.999999999e-7 | 4.567205905914307e-6 |
+
+The common lane supplies identical ordered elements and coordinates, total
+charge zero and multiplicity one. Legacy controls call the old APIs in the
+same candidate runtime; their source sections are verified equal to main
+`38b4c92c`. This is not a separately rebuilt main/release executable.
+Open Babel runs `-ixyz -oorcainp -ab`, so its result measures the complete
+XYZ-to-ORCA pipeline rather than identical internal object state. Source
+comments and calculation keywords are not compared in that pipeline lane.
+
+Both checked bindings retain all represented metadata and coordinate bits in
+all 24 positive controls. Legacy bindings retain the metadata in all 24, but
+their rounding changes numbers in 20. WASM/native refuse 38 invalid or
+unsupported raw-JSON cases; Python refuses the 30 dictionary cases. These
+candidate-only unit/freeze/numeric/refusal controls are not extra Open Babel
+failures. Native tests also run 4,096 deterministic bit-pattern trials,
+skipping nonfinite patterns and explicitly refusing NaN/infinities.
+
+The independent Python observer checks emitted state, units, ordered species,
+flags, extras, comments, keywords, blocks and coordinate bits. Four observer
+tests detect altered metadata, signed zero, rounding, missing/extra atom rows,
+nonfinite/partial output and data after the coordinate block. Results and raw
+worker outputs are retained in `validation/results/orca-checked-2026-10-24.json`
+and its compressed packet, including source/runtime/fixture hashes.
+
+```sh
+python3 scripts/validation/validate_orca_checked.py \
+  --python-root /path/to/candidate-python \
+  --wasm-module /path/to/candidate/chematic_wasm.js
+```
+
+Workers have a 30-second timeout and 1 MiB combined pipe budget, with no process
+memory cap. This is a local development measurement of the declared writer
+profile, not ORCA execution, a published release or toolkit-wide superiority.
+
+## Reader resource bounds
 
 | Surface | Input bytes | Atom cap | Physical line cap | JSON output |
 | --- | ---: | ---: | ---: | ---: |
@@ -81,7 +188,7 @@ atom rows. JSON caps are checked after serialization; these are operation
 budgets, not process memory caps. Python/WASM JSON parsing retains signed zero;
 subsequent JavaScript `JSON.stringify` can normalize it.
 
-## Development measurement
+## Reader development measurement (2026-10-22)
 
 The authored packet `validation/orca-cartesian-2026-10-22/cases.json` contains
 16 positive controls (eight inputs each with LF and CRLF) and 29 refusals.
