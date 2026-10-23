@@ -511,6 +511,8 @@ pub struct RdkitChemistryProblem {
 /// `KekulizeException` with the unkekulized atoms). Problems come in
 /// RDKit's order. Parse SMILES with impossible O/F valences with
 /// [`crate::parse_template`], which [`crate::parse`] rejects.
+/// Strict valence checks additionally refuse aromatic overvalence hidden by
+/// RDKit's aromatic correction (upstream #9735), reporting the affected atom.
 ///
 /// ```
 /// let mol = chematic_smiles::parse("c1cccc1").unwrap();
