@@ -47,7 +47,7 @@ means the operation is not exposed on that binding.
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ does not carry bonds |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
-| ORCA input | R/W | R/W | R/W | Cartesian profile and explicit units |
+| ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |
 | ORCA output | R | R | R | No writer |
 | Gaussian input/log | R/W or R | R/W or R | bounded | Input and output are separate APIs |
 | Gaussian Cube | R/W | R/W | R/W | Volumetric grid profile |

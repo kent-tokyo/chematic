@@ -1,0 +1,1650 @@
+{
+  "schema": "chematic.orca-checked-fixtures.v1",
+  "cases": [
+    {
+      "id": "common-01",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -1.2345678901234567, \"z\": 0.41152263004115225, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -1.2345678901234567,
+              "z": 0.41152263004115225,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "bff3c0ca428c59fb",
+          "3fda56630365cd4f"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-02",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 0.12345678901234568, \"y\": -0.12345678901234568, \"z\": 0.041152263004115223, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 0.12345678901234568,
+              "y": -0.12345678901234568,
+              "z": 0.041152263004115223,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3fbf9add3746f65f",
+          "bfbf9add3746f65f",
+          "3fa511e8cf84a43f"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-03",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 12345678.901234567, \"y\": -12345678.901234567, \"z\": 4115226.3004115224, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 12345678.901234567,
+              "y": -12345678.901234567,
+              "z": 4115226.3004115224,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "41678c29dcd6e9e0",
+          "c1678c29dcd6e9e0",
+          "414f658d2673e280"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-04",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.23456789e-07, \"y\": -1.23456789e-07, \"z\": 4.1152263e-08, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.23456789e-07,
+              "y": -1.23456789e-07,
+              "z": 4.1152263e-08,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3e8091f16677e7af",
+          "be8091f16677e7af",
+          "3e6617ec889fdf94"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-05",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": -9.876543210987654, \"y\": 9.876543210987654, \"z\": -3.292181070329218, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": -9.876543210987654,
+              "y": 9.876543210987654,
+              "z": -3.292181070329218,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "c023c0ca45917213",
+          "4023c0ca45917213",
+          "c00a5663076c9819"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-06",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.23456789e-10, \"y\": -1.23456789e-10, \"z\": 4.1152263e-11, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.23456789e-10,
+              "y": -1.23456789e-10,
+              "z": 4.1152263e-11,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3de0f7bfe5db09eb",
+          "bde0f7bfe5db09eb",
+          "3dc69faa87ceb7e4"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-07",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": -0.0, \"y\": 0.0, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": -0.0,
+              "y": 0.0,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "8000000000000000",
+          "0000000000000000",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-08",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1234.0000000001235, \"y\": -1234.0000000001235, \"z\": 411.33333333337447, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1234.0000000001235,
+              "y": -1234.0000000001235,
+              "z": 411.33333333337447,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "409348000000021f",
+          "c09348000000021f",
+          "4079b55555555829"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-09",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": -4.999999999e-07, \"y\": 4.999999999e-07, \"z\": -1.6666666663333334e-07, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": -4.999999999e-07,
+              "y": 4.999999999e-07,
+              "z": -1.6666666663333334e-07,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "bea0c6f7a0a78434",
+          "3ea0c6f7a0a78434",
+          "be865e9f80df5af0"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-10",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 0.3333333333333333, \"y\": -0.3333333333333333, \"z\": 0.1111111111111111, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 0.3333333333333333,
+              "y": -0.3333333333333333,
+              "z": 0.1111111111111111,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3fd5555555555555",
+          "bfd5555555555555",
+          "3fbc71c71c71c71c"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-11",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.0000000000000002, \"y\": -1.0000000000000002, \"z\": 0.3333333333333334, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.0000000000000002,
+              "y": -1.0000000000000002,
+              "z": 0.3333333333333334,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff0000000000001",
+          "bff0000000000001",
+          "3fd5555555555557"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "common-12",
+      "lane": "common",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 2.5, \"y\": -2.5, \"z\": 0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 2.5,
+              "y": -2.5,
+              "z": 0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "4004000000000000",
+          "c004000000000000",
+          "0000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "default-units",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "bohr",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Bohrs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Bohrs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "mixed-repeated-units",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"bOhRs\", \"bohrs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "bOhRs",
+          "bohrs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "freeze-extras",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [true, false, true], \"extra\": \"NewGTO \\\"opaque\\\" end\"}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, true, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                true,
+                false,
+                true
+              ],
+              "extra": "NewGTO \"opaque\" end"
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                true,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "opaque-blocks",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"maxcore\", \"raw\": \"3000\", \"has_end\": false}, {\"name\": \"geom\", \"raw\": \"Constraints\\n { B 0 1 C }\\n end\", \"has_end\": true}, {\"name\": \"scf\", \"raw\": \"\", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [
+          {
+            "name": "maxcore",
+            "raw": "3000",
+            "has_end": false
+          },
+          {
+            "name": "geom",
+            "raw": "Constraints\n { B 0 1 C }\n end",
+            "has_end": true
+          },
+          {
+            "name": "scf",
+            "raw": "",
+            "has_end": true
+          }
+        ],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "ordered-settings",
+      "lane": "profile",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# ordered comments\", \"# 座標の数値\"], \"keywords\": [\"B3LYP\", \"def2-SVP\", \"Bohrs\", \"TightSCF\"], \"blocks\": [{\"name\": \"opaque\", \"raw\": \"some uninterpreted setting\", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": -1, \"multiplicity\": 2, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# ordered comments",
+          "# 座標の数値"
+        ],
+        "keywords": [
+          "B3LYP",
+          "def2-SVP",
+          "Bohrs",
+          "TightSCF"
+        ],
+        "blocks": [
+          {
+            "name": "opaque",
+            "raw": "some uninterpreted setting",
+            "has_end": true
+          }
+        ],
+        "coords": {
+          "kind": "xyz",
+          "charge": -1,
+          "multiplicity": 2,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.2345678901234567,
+              "y": -0.0,
+              "z": -2.345678901234567,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3ff3c0ca428c59fb",
+          "8000000000000000",
+          "c002c3f34cbdc1e7"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "subnormal",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 5e-324, \"y\": -5e-324, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 5e-324,
+              "y": -5e-324,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "0000000000000001",
+          "8000000000000001",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "negative-subnormal",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": -5e-324, \"y\": 5e-324, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": -5e-324,
+              "y": 5e-324,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "8000000000000001",
+          "0000000000000001",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "maximum",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.7976931348623157e+308, \"y\": -1.7976931348623157e+308, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 1.7976931348623157e+308,
+              "y": -1.7976931348623157e+308,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "7fefffffffffffff",
+          "ffefffffffffffff",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "negative-maximum",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": -1.7976931348623157e+308, \"y\": 1.7976931348623157e+308, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": -1.7976931348623157e+308,
+              "y": 1.7976931348623157e+308,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "ffefffffffffffff",
+          "7fefffffffffffff",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "minimum-normal",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 2.2250738585072014e-308, \"y\": -2.2250738585072014e-308, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 2.2250738585072014e-308,
+              "y": -2.2250738585072014e-308,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "0010000000000000",
+          "8010000000000000",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "near-one",
+      "lane": "numeric",
+      "expected": "accept",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 0.9999999999999999, \"y\": -0.9999999999999999, \"z\": -0.0, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}",
+      "fields": {
+        "comments": [
+          "# authored ORCA geometry"
+        ],
+        "keywords": [
+          "Angs"
+        ],
+        "blocks": [],
+        "coords": {
+          "kind": "xyz",
+          "charge": 0,
+          "multiplicity": 1,
+          "atoms": [
+            {
+              "element": "C",
+              "x": 0.9999999999999999,
+              "y": -0.9999999999999999,
+              "z": -0.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            },
+            {
+              "element": "O",
+              "x": 2.5,
+              "y": 0.0,
+              "z": 3.0,
+              "frozen": [
+                false,
+                false,
+                false
+              ],
+              "extra": null
+            }
+          ]
+        }
+      },
+      "coordinate_bits": [
+        [
+          "3fefffffffffffff",
+          "bfefffffffffffff",
+          "8000000000000000"
+        ],
+        [
+          "4004000000000000",
+          "0000000000000000",
+          "4008000000000000"
+        ]
+      ]
+    },
+    {
+      "id": "empty-atoms",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": []}}"
+    },
+    {
+      "id": "zero-spin",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 0, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "missing-coords",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": []}"
+    },
+    {
+      "id": "external",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyzfile\", \"charge\": 0, \"multiplicity\": 1, \"filename\": \"never-read.xyz\"}}"
+    },
+    {
+      "id": "unit-conflict",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\", \"Bohrs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "unit-unsupported",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angstrom\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "coords-block",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"coords\", \"raw\": \"Units Bohrs\", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "unknown-root",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}, \"job\": \"ignored?\"}"
+    },
+    {
+      "id": "missing-charge",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "missing-spin",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "missing-x",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "bool-x",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": true, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "bool-charge",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": false, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "bool-spin",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": true, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "wrong-freeze-length",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "non-bool-freeze",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [0, 0, 0], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "unknown-element",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"Xx\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "empty-extra",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": \"\"}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "extra-spaces",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": \"opaque  tokens\"}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "extra-newline",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": \"opaque\\n# injected\"}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "bad-comment",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"not a comment\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "keyword-space",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"B3LYP def2-SVP\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "keyword-newline",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\\n! Bohrs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "block-whitespace",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"geom\", \"raw\": \"  keep me  \", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "block-case",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"SCF\", \"raw\": \"MaxIter 3\", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "empty-directive",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"maxcore\", \"raw\": \"\", \"has_end\": false}], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "block-injection",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [{\"name\": \"opaque\", \"raw\": \"* xyz 0 1\\nHe 0 0 0\\n*\", \"has_end\": true}], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "unknown-atom",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null, \"ignored\": 7}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "missing-frozen",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "null-comments",
+      "lane": "invalid",
+      "expected": "refuse",
+      "input_json": "{\"comments\": null, \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "null",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "null"
+    },
+    {
+      "id": "array",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "[]"
+    },
+    {
+      "id": "duplicate-root",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [], \"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "duplicate-null-extra",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null, \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "duplicate-axis-alias",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"\\u0078\": 0, \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "both-kind-type",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"type\": \"xyz\", \"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1.2345678901234567, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "nonfinite-overflow",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": 1e999, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    },
+    {
+      "id": "nan-token",
+      "lane": "transport",
+      "expected": "refuse",
+      "input_json": "{\"comments\": [\"# authored ORCA geometry\"], \"keywords\": [\"Angs\"], \"blocks\": [], \"coords\": {\"kind\": \"xyz\", \"charge\": 0, \"multiplicity\": 1, \"atoms\": [{\"element\": \"C\", \"x\": NaN, \"y\": -0.0, \"z\": -2.345678901234567, \"frozen\": [false, false, false], \"extra\": null}, {\"element\": \"O\", \"x\": 2.5, \"y\": 0.0, \"z\": 3.0, \"frozen\": [false, false, false], \"extra\": null}]}}"
+    }
+  ]
+}

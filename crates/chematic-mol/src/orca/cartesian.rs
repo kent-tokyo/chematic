@@ -81,7 +81,7 @@ impl OrcaCartesianGeometry {
     }
 }
 
-fn coordinate_units(
+pub(super) fn coordinate_units(
     keywords: &[String],
 ) -> Result<(OrcaCoordinateUnits, bool), OrcaCartesianError> {
     let mut declared = None;
