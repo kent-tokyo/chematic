@@ -523,6 +523,17 @@ mod tests {
     use std::collections::HashSet;
 
     #[test]
+    fn partial_correspondence_refit_uses_subset_centroid_for_full_molecule() {
+        let reference = [[0.0, 0.0, 0.0], [2.0, 0.0, 0.0]];
+        let probe = [[1.0, 1.0, 0.0], [3.0, 1.0, 0.0], [30.0, 30.0, 0.0]];
+        let reference_types = [MMFF94Type::C_sp3; 2];
+        let probe_types = [MMFF94Type::C_sp3, MMFF94Type::C_sp3, MMFF94Type::O_Alcohol];
+        let (pairs, score) = refine(&reference, &reference_types, &probe, &probe_types);
+        assert_eq!(pairs, vec![(0, 0), (1, 1)]);
+        assert!((score - 2.0).abs() < 1e-8, "score {score}");
+    }
+
+    #[test]
     fn global_assignment_beats_greedy_competition() {
         let atom_type = MMFF94Type::C_sp3;
         let left = [[0.0, 0.0, 0.0], [0.1, 0.0, 0.0]];
