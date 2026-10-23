@@ -72,7 +72,7 @@ fn torsion_search_recovers_lower_converged_minimum() {
     // ETKDG and BFGS can enter different basins across targets. The measured
     // macOS arm64 regression has a large margin; the portable contract is
     // finite, converged, stereo-checked non-regression.
-    #[cfg(target_os = "macos")]
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
     assert!(after < before - 0.5, "torsion search: {before} -> {after}");
 }
 
