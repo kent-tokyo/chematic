@@ -8,26 +8,44 @@ from __future__ import annotations
 
 import gzip
 import json
+import sys
 from collections import Counter
 from pathlib import Path
 
-try:
-    from scripts.lib.evidence_io import read_json, require, sha256_bytes as sha256
-except ModuleNotFoundError:  # direct execution from the scripts directory
-    from lib.evidence_io import read_json, require, sha256_bytes as sha256
-
-
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.lib.evidence_io import read_json, require, sha256_bytes as sha256
+
 RESULTS = ROOT / "validation" / "results"
 DAY = "2026-10-04"
 CORPUS = ROOT / "validation" / "benchmark_corpora" / "rdkit-js-browser-10k-v1.smi"
 EXECUTION = ROOT / "validation" / "rdkit_rebaseline_execution.json"
 QUERIES = ROOT / "validation" / "rdkit_rebaseline_smarts_queries.json"
 VERSIONS = ("2026.03.6", "2026.09.1")
+RECORDED_EXECUTION_SHA256 = (
+    "c08a362b3e962d5fdabf52632e878d0db62d9982d8648e963413392bfa1f3c68"
+)
+RELOCATED_EXECUTION_SHA256 = (
+    "262ec2ac7aa509fce6e162b9af082b25bbd6554f8b4a2628b95edd945074f166"
+)
 
 
 def load(name: str) -> dict:
     return read_json(RESULTS / name)
+
+
+def require_execution_catalog(recorded_sha256: str) -> None:
+    """Keep historical evidence pinned across the path-only script relocation."""
+    require(
+        recorded_sha256 == RECORDED_EXECUTION_SHA256,
+        "recorded Python baseline command catalog changed",
+    )
+    require(
+        sha256(EXECUTION.read_bytes()) == RELOCATED_EXECUTION_SHA256,
+        "relocated command catalog changed",
+    )
 
 
 def check_python_baseline(corpus_hash: str) -> None:
@@ -48,10 +66,8 @@ def check_python_baseline(corpus_hash: str) -> None:
         provenance["inputs"]["corpora"][0]["sha256"] == corpus_hash,
         "Python baseline corpus changed",
     )
-    require(
+    require_execution_catalog(
         provenance["inputs"]["operation_configurations"][0]["sha256"]
-        == sha256(EXECUTION.read_bytes()),
-        "Python baseline command catalog changed",
     )
     require(len(provenance["lanes"]) == 1, "Python baseline has multiple oracle lanes")
     lane = provenance["lanes"][0]
@@ -230,10 +246,8 @@ def check() -> None:
             provenance["inputs"]["corpora"][0]["sha256"] == corpus_hash,
             "provenance corpus changed",
         )
-        require(
+        require_execution_catalog(
             provenance["inputs"]["operation_configurations"][0]["sha256"]
-            == sha256(EXECUTION.read_bytes()),
-            f"{version}: execution catalog changed",
         )
         require(len(provenance["lanes"]) == 1, "expected one provenance lane")
         lane = provenance["lanes"][0]

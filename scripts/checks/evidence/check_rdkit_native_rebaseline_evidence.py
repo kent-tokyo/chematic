@@ -8,17 +8,16 @@ from pathlib import Path
 import sys
 
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts" / "validation"))
 from summarize_rdkit_native_rebaseline import summarize, verify_python_baseline
 
-try:
-    from scripts.lib.evidence_io import (
-        read_gzip_jsonl_with_sha,
-        require,
-        sha256_bytes as digest,
-    )
-except ModuleNotFoundError:  # direct execution from the scripts directory
-    from lib.evidence_io import read_gzip_jsonl_with_sha, require, sha256_bytes as digest
+from scripts.lib.evidence_io import (
+    read_gzip_jsonl_with_sha,
+    require,
+    sha256_bytes as digest,
+)
 
 
 RESULTS = ROOT / "validation" / "results"

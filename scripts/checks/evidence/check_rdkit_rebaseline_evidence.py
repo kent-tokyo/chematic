@@ -10,13 +10,12 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-try:
-    from scripts.lib.evidence_io import collect_error as require, read_json
-except ModuleNotFoundError:  # direct execution from the scripts directory
-    from lib.evidence_io import collect_error as require, read_json
-
-
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.lib.evidence_io import collect_error as require, read_json
+
 RESULTS = ROOT / "validation" / "results"
 PREFIX = "v1.0.19-vs-2026.03.6-2026-09-22"
 ISSUE632_SUMMARY = RESULTS / (
