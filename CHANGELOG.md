@@ -20,6 +20,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element
   or bond-order declarations, and ambiguous/self bond references are refused.
+- Checked rigid PDBQT output now refuses isotope annotations that the format
+  cannot store (Open Babel #3005). Explicit isotope projection in Rust, Python
+  and WASM returns PDBQT plus a per-atom isotope-loss sidecar, retaining every
+  explicit atom and caller-supplied charge without ligand torsion preparation.
 
 ## [1.2.1] - 2026-10-23
 

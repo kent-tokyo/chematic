@@ -129,6 +129,7 @@ Use these pages when the short matrix is not enough:
 - [PDB atom selection](pdb-atom-selection.md),
   [model splitting](pdb-model-splitting.md), and
   [checked PDBQT output](pdbqt-checked-output.md)
+  and [explicit PDBQT isotope projection](pdbqt-isotope-projection.md)
 - [CML collections](cml-collection.md) and [named atoms](cml-named-atoms.md)
 - [CML namespace-aware projection](cml-namespace-projection.md)
 - [ChemDraw block formats](chemdraw-block.md) and

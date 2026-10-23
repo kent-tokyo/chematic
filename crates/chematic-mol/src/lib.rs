@@ -246,8 +246,9 @@ pub use pdb_selection::{
     select_pdb_atoms, select_pdb_atoms_with_limits,
 };
 pub use pdbqt::{
-    PdbqtError, PdbqtParseLimits, PdbqtWriteError, autodock_atom_type, parse_pdbqt,
-    parse_pdbqt_with_limits, write_pdbqt, write_pdbqt_checked,
+    PdbqtError, PdbqtIsotopeLoss, PdbqtIsotopeProjection, PdbqtParseLimits, PdbqtWriteError,
+    autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits, project_pdbqt_isotopes, write_pdbqt,
+    write_pdbqt_checked,
 };
 pub use pqr::{
     PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, PqrWriteError, PqrWriteLimits,

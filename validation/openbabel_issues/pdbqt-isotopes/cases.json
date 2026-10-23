@@ -1,0 +1,559 @@
+[
+  {
+    "name": "ordinary",
+    "smiles": "CCO",
+    "atomic_numbers": [
+      6,
+      6,
+      8
+    ],
+    "isotopes_omitted": []
+  },
+  {
+    "name": "explicit-H",
+    "smiles": "[H]OC[H]",
+    "atomic_numbers": [
+      1,
+      8,
+      6,
+      1
+    ],
+    "isotopes_omitted": []
+  },
+  {
+    "name": "HDO",
+    "smiles": "[H]O[2H]",
+    "atomic_numbers": [
+      1,
+      8,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 2
+      }
+    ]
+  },
+  {
+    "name": "heavy-water",
+    "smiles": "[2H]O[2H]",
+    "atomic_numbers": [
+      1,
+      8,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 2
+      }
+    ]
+  },
+  {
+    "name": "tritium-water",
+    "smiles": "[3H]O[3H]",
+    "atomic_numbers": [
+      1,
+      8,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 3
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 3
+      }
+    ]
+  },
+  {
+    "name": "mixed-labels",
+    "smiles": "[2H]O[13CH2][3H]",
+    "atomic_numbers": [
+      1,
+      8,
+      6,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 1,
+        "mass_number": 3
+      }
+    ]
+  },
+  {
+    "name": "deuterated-carbon",
+    "smiles": "[2H]C([2H])([2H])[2H]",
+    "atomic_numbers": [
+      1,
+      6,
+      1,
+      1,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 4,
+        "pdbqt_serial": 5,
+        "atomic_number": 1,
+        "mass_number": 2
+      }
+    ]
+  },
+  {
+    "name": "carbon-13",
+    "smiles": "[13CH4]",
+    "atomic_numbers": [
+      6
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 6,
+        "mass_number": 13
+      }
+    ]
+  },
+  {
+    "name": "nitrogen-15",
+    "smiles": "[15NH4+]",
+    "atomic_numbers": [
+      7
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 7,
+        "mass_number": 15
+      }
+    ]
+  },
+  {
+    "name": "oxygen-18",
+    "smiles": "[18OH2]",
+    "atomic_numbers": [
+      8
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 8,
+        "mass_number": 18
+      }
+    ]
+  },
+  {
+    "name": "sulfur-34",
+    "smiles": "[34SH2]",
+    "atomic_numbers": [
+      16
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 16,
+        "mass_number": 34
+      }
+    ]
+  },
+  {
+    "name": "phosphorus-31",
+    "smiles": "[31PH3]",
+    "atomic_numbers": [
+      15
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 15,
+        "mass_number": 31
+      }
+    ]
+  },
+  {
+    "name": "chlorine-37",
+    "smiles": "[37Cl-]",
+    "atomic_numbers": [
+      17
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 17,
+        "mass_number": 37
+      }
+    ]
+  },
+  {
+    "name": "bromine-81",
+    "smiles": "[81Br-]",
+    "atomic_numbers": [
+      35
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 35,
+        "mass_number": 81
+      }
+    ]
+  },
+  {
+    "name": "iron-57",
+    "smiles": "[57Fe+2]",
+    "atomic_numbers": [
+      26
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 26,
+        "mass_number": 57
+      }
+    ]
+  },
+  {
+    "name": "aromatic-carbon-13",
+    "smiles": "[13cH]1ccccc1",
+    "atomic_numbers": [
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 6,
+        "mass_number": 13
+      }
+    ]
+  },
+  {
+    "name": "multiple-fragments",
+    "smiles": "[37Cl-].[15NH4+]",
+    "atomic_numbers": [
+      17,
+      7
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 17,
+        "mass_number": 37
+      },
+      {
+        "source_atom_index": 1,
+        "pdbqt_serial": 2,
+        "atomic_number": 7,
+        "mass_number": 15
+      }
+    ]
+  },
+  {
+    "name": "mixed-donor",
+    "smiles": "[2H][15NH][13CH2][18OH]",
+    "atomic_numbers": [
+      1,
+      7,
+      6,
+      8
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 1,
+        "pdbqt_serial": 2,
+        "atomic_number": 7,
+        "mass_number": 15
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 8,
+        "mass_number": 18
+      }
+    ]
+  },
+  {
+    "name": "atom-maps",
+    "smiles": "[2H:9][O:2][13CH2:99][3H:8]",
+    "atomic_numbers": [
+      1,
+      8,
+      6,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 1,
+        "mass_number": 3
+      }
+    ]
+  },
+  {
+    "name": "labelled-amine",
+    "smiles": "[3H]N([2H])C",
+    "atomic_numbers": [
+      1,
+      7,
+      1,
+      6
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 3
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 2
+      }
+    ]
+  },
+  {
+    "name": "acetophenone",
+    "smiles": "CC(=O)c1ccccc1",
+    "atomic_numbers": [
+      6,
+      6,
+      8,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "isotopes_omitted": []
+  },
+  {
+    "name": "acetophenone-d8",
+    "smiles": "[2H]C([2H])([2H])C(=O)c1c([2H])c([2H])c([2H])c([2H])c1[2H]",
+    "atomic_numbers": [
+      1,
+      6,
+      1,
+      1,
+      6,
+      8,
+      6,
+      6,
+      1,
+      6,
+      1,
+      6,
+      1,
+      6,
+      1,
+      6,
+      1
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 2,
+        "pdbqt_serial": 3,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 8,
+        "pdbqt_serial": 9,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 10,
+        "pdbqt_serial": 11,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 12,
+        "pdbqt_serial": 13,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 14,
+        "pdbqt_serial": 15,
+        "atomic_number": 1,
+        "mass_number": 2
+      },
+      {
+        "source_atom_index": 16,
+        "pdbqt_serial": 17,
+        "atomic_number": 1,
+        "mass_number": 2
+      }
+    ]
+  },
+  {
+    "name": "acetophenone-C13",
+    "smiles": "[13CH3][13C](=O)[13c]1[13cH][13cH][13cH][13cH][13cH]1",
+    "atomic_numbers": [
+      6,
+      6,
+      8,
+      6,
+      6,
+      6,
+      6,
+      6,
+      6
+    ],
+    "isotopes_omitted": [
+      {
+        "source_atom_index": 0,
+        "pdbqt_serial": 1,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 1,
+        "pdbqt_serial": 2,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 3,
+        "pdbqt_serial": 4,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 4,
+        "pdbqt_serial": 5,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 5,
+        "pdbqt_serial": 6,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 6,
+        "pdbqt_serial": 7,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 7,
+        "pdbqt_serial": 8,
+        "atomic_number": 6,
+        "mass_number": 13
+      },
+      {
+        "source_atom_index": 8,
+        "pdbqt_serial": 9,
+        "atomic_number": 6,
+        "mass_number": 13
+      }
+    ]
+  }
+]

@@ -1,0 +1,7 @@
+REMARK  PDBQT written by chematic
+REMARK  NAME = LIG
+ATOM      1  H   LIG A   1       0.000   0.000   0.000  1.00  0.00     0.000 HD
+ATOM      2  O   LIG A   1       1.000   0.000   0.000  1.00  0.00     0.000 OA
+ATOM      3  C   LIG A   1       2.000   0.000   0.000  1.00  0.00     0.000 C 
+ATOM      4  H   LIG A   1       3.000   0.000   0.000  1.00  0.00     0.000 H 
+END

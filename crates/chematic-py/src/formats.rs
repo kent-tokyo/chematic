@@ -1459,6 +1459,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_pqr_checked,
         pqr_to_pdbqt,
         write_pdbqt_checked,
+        project_pdbqt_isotopes,
         infer_element,
     )?;
     registration::register_quantum_formats(m)?;

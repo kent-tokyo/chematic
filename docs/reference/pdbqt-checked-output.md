@@ -58,7 +58,10 @@ atoms in source order, synthetic residue identity `LIG`/`A`/`1`, occupancy 1 and
 B-factor 0. Output is rigid and has no ligand torsion tree. AutoDock types use
 the existing heuristic; this change does **not** establish chemical correctness
 of acceptor/donor typing, protonation or docking preparation. PDBQT output is
-not a lossless molecular graph/isotope/stereochemistry round trip.
+not a lossless molecular graph/stereochemistry round trip. Isotope-labelled
+atoms are now refused, since PDBQT cannot represent their labels. Use the
+explicit [isotope projection with a per-atom sidecar](pdbqt-isotope-projection.md)
+when omission is deliberate. Legacy unchecked output remains unchanged.
 
 WASM additionally applies existing input budgets: 1 MB SMILES, 100 KB per JSON
 string and 10000 parsed atoms. The 1024-byte name cap also applies. JSON rejects
