@@ -3998,6 +3998,15 @@ def parse_orca_input(text: str) -> dict:
     """
     ...
 
+def parse_orca_cartesian(text: str, *, max_input_bytes: int = 16_777_216, max_atoms: int = 100_000) -> dict[str, Any]:
+    """Read ordered Cartesian coordinates with coordinate_units/units_explicit.
+
+    Values are not rescaled; Angs/Bohrs or default Angstrom. Refuses conflicting
+    unit declarations, %coords overrides, internal/external geometry and limits.
+    Opaque extras are not interpreted; JSON output is limited to 16 MiB.
+    """
+    ...
+
 def write_orca_input(input: dict) -> str:
     """Write an ORCA input file from a dict, same shape as
     :func:`parse_orca_input`'s return value.

@@ -1,0 +1,192 @@
+{
+  "schema": "chematic.orca-cartesian-validation.v1",
+  "utc": "2026-10-22T14:11:36.693444+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "node_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "v24.5.0\n",
+    "stderr": ""
+  },
+  "rust_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+    "stderr": ""
+  },
+  "scope": "Single embedded Cartesian geometry with input numeric units. Full structured baseline retains raw unit keywords; only the legacy WASM coordinate-only view lacked a unit tag. No conversion, full job validation or toolkit-wide ranking.",
+  "counts": {
+    "baseline_python.core.accepted": 39,
+    "baseline_python.core.refused": 6,
+    "baseline_wasm.core.accepted": 39,
+    "baseline_wasm.core.refused": 6,
+    "baseline_wasm.legacy_coords.refused": 16,
+    "baseline_wasm.legacy_coords.returned_without_unit_tag": 29,
+    "candidate_python.checked.refused": 29,
+    "candidate_python.checked.verified": 16,
+    "candidate_python.core.accepted": 29,
+    "candidate_python.core.refused": 16,
+    "candidate_wasm.checked.refused": 29,
+    "candidate_wasm.checked.verified": 16,
+    "candidate_wasm.core.accepted": 29,
+    "candidate_wasm.core.refused": 16,
+    "candidate_wasm.legacy_coords.refused": 39,
+    "candidate_wasm.legacy_coords.returned_without_unit_tag": 6
+  },
+  "new_core_refusals": {
+    "python": [
+      "duplicate-xyz",
+      "xyz-then-file",
+      "file-then-xyz",
+      "duplicate-file",
+      "int-then-xyz",
+      "xyz-then-int",
+      "zero-spin-xyz",
+      "zero-spin-file",
+      "zero-spin-int",
+      "empty-xyz"
+    ],
+    "wasm": [
+      "duplicate-xyz",
+      "xyz-then-file",
+      "file-then-xyz",
+      "duplicate-file",
+      "int-then-xyz",
+      "xyz-then-int",
+      "zero-spin-xyz",
+      "zero-spin-file",
+      "zero-spin-int",
+      "empty-xyz"
+    ]
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/orca-cartesian-2026-10-22/cases.json",
+    "sha256": "dd04784a220637fe415d329b21daf8259a5d92381d9506d60dcd57d3264f1b8c",
+    "size_bytes": 23194
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/orca-cartesian-2026-10-22.packet.json.gz",
+    "sha256": "0d59c74a553f5af72b180aacf12d134ac9e01db7c4e2eff59d2f53ec91bf3e47",
+    "size_bytes": 7776
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "0231180e5d1c885bb6ccf6555a17064b57ff5e4d69b1aca573c209eb0433d502",
+      "size_bytes": 63558
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca.rs",
+      "sha256": "68e9ad037122227719989ae3f21a795d59b4d3a9d259d6869a98c5bafbf6f6c3",
+      "size_bytes": 50451
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/orca/cartesian.rs",
+      "sha256": "e094fe15bb1093dac3cd26a7410875a599d91c5c516c651512398b90bf06547b",
+      "size_bytes": 5317
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-mol/src/lib.rs",
+      "sha256": "44043edb0ca33c369eab82ca0edd13d66e569f067c52ebacc63e781f6cf535ed",
+      "size_bytes": 14247
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/orca_cartesian.rs",
+      "sha256": "36f9a4aee12e94d421f17bf6f3353d730ac335cd348d760b268662c4e5b35fa6",
+      "size_bytes": 1180
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats/materials.rs",
+      "sha256": "c5d1c32bf1c4b1cef08be3652511a59e69a8a786ec6ff5f5353d97125387bd7b",
+      "size_bytes": 43898
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/formats.rs",
+      "sha256": "872e19a7582fae597b657e650f783f24a309f49865ea1d7248d654ab1ae24996",
+      "size_bytes": 53626
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/format_io.rs",
+      "sha256": "15fa1f0f7c34bc97778e2481e51467d0de89f0380ab9945f86983de0164c45d1",
+      "size_bytes": 58006
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_orca_cartesian.py",
+      "sha256": "5d5449ed1a073884308a3434a36fb209ab43b461f09b3ba8477adba3ce3078e6",
+      "size_bytes": 9509
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_orca_cartesian_node.mjs",
+      "sha256": "d98f4955becb0f43ad37c81bf81814055bab1a82c71d94824d83233e387db974",
+      "size_bytes": 724
+    }
+  ],
+  "candidate": {
+    "base_commit": "978669e4264683bb73f5a7a3389a945b5fdf2b87",
+    "state": "working tree at measurement time, not a published release"
+  },
+  "artifacts": {
+    "python_extension": {
+      "path": "/private/tmp/chematic-orca-cartesian-python-20261022/chematic/chematic.cpython-313-darwin.so",
+      "sha256": "ca930efdcaeefee5ce0f73fb5dbbfe5709166dd267c7e7774da24e11664d1207",
+      "size_bytes": 44938880
+    },
+    "python_wrapper": {
+      "path": "/private/tmp/chematic-orca-cartesian-python-20261022/chematic/__init__.py",
+      "sha256": "fa171425f542041f4449489cfb87c2752e73b613840d7f5d26e1a4b09749f384",
+      "size_bytes": 25696
+    },
+    "wasm_js": {
+      "path": "/private/tmp/chematic-orca-cartesian-wasm-20261022/chematic_wasm.js",
+      "sha256": "771015b5f09d11c24247160f443bad371bc7cf8d53ae1b7fe8600da13673db89",
+      "size_bytes": 369000
+    },
+    "wasm_binary": {
+      "path": "/private/tmp/chematic-orca-cartesian-wasm-20261022/chematic_wasm_bg.wasm",
+      "sha256": "76967b04ffebe84034f7bc313e41b991b130480bc46cfe60501069d3666cc684",
+      "size_bytes": 45464613
+    },
+    "openbabel": {
+      "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+      "size_bytes": 75728
+    }
+  },
+  "baseline": {
+    "commit": "891bb83fe2966b374ba6d8537d9a429d20ca07d7",
+    "scope": "Retained previous PR candidate, not a main/release rebuild; entire ORCA source verified equal to pinned main. Dependency/runtime identity remains separate.",
+    "artifacts": {
+      "python_extension": {
+        "path": "/private/tmp/chematic-pqr-checked-python-20261022/chematic/chematic.cpython-313-darwin.so",
+        "sha256": "60ab09fef0d61a16ee08c37b48f3479ee56b0558c6e5130cc9e1ee0f40a5af43",
+        "size_bytes": 44905584
+      },
+      "wasm_js": {
+        "path": "/private/tmp/chematic-pqr-checked-wasm-20261022/chematic_wasm.js",
+        "sha256": "ba2d4272561c76c9f4b0f2e6668805430114f597095f2de024c1a95b76e4c7b4",
+        "size_bytes": 367835
+      },
+      "wasm_binary": {
+        "path": "/private/tmp/chematic-pqr-checked-wasm-20261022/chematic_wasm_bg.wasm",
+        "sha256": "04e354f46c58ed8d81097f76d228661c08cfc7b4e7e43e14f88cf93f46bc726e",
+        "size_bytes": 45392248
+      }
+    },
+    "attestation": "891bb83fe2966b374ba6d8537d9a429d20ca07d7:validation/results/pqr-checked-2026-10-22.json"
+  },
+  "openbabel": {
+    "version": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    },
+    "scope": "ORCA input unsupported: coverage only, not per-field loss or malformed-input quality."
+  },
+  "process_limits": {
+    "seconds": 30,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  }
+}

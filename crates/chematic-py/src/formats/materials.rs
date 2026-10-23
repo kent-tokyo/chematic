@@ -664,6 +664,9 @@ pub(super) fn pydict_to_orca_coords(d: &Bound<PyDict>) -> PyResult<chematic_mol:
 }
 
 /// Parse an ORCA input file (`.inp`).
+/// Cartesian numbers retain input units; keywords retain their unit context.
+/// Use :func:`parse_orca_cartesian` for explicit Angstrom/Bohr metadata.
+/// Duplicate coordinate specifications, empty xyz and zero spin are refused.
 ///
 /// Returns:
 ///     dict: ``{"comments": list[str], "keywords": list[str], "blocks":

@@ -1,0 +1,1060 @@
+{
+  "schema": "chematic.orca-cartesian-cases.v1",
+  "scope": "Original development controls; no ORCA job execution or independent chemistry holdout",
+  "cases": [
+    {
+      "id": "default-LF",
+      "source": "! HF STO-3G\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": false,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "default-CRLF",
+      "source": "! HF STO-3G\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": false,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "explicit-angs-LF",
+      "source": "! HF STO-3G Angs\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "explicit-angs-CRLF",
+      "source": "! HF STO-3G Angs\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "explicit-bohrs-LF",
+      "source": "! HF STO-3G Bohrs\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "explicit-bohrs-CRLF",
+      "source": "! HF STO-3G Bohrs\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "case-insensitive-LF",
+      "source": "! hf sto-3g bOhRs\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "case-insensitive-CRLF",
+      "source": "! hf sto-3g bOhRs\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "split-keywords-LF",
+      "source": "! HF\n! STO-3G Bohrs\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "split-keywords-CRLF",
+      "source": "! HF\r\n! STO-3G Bohrs\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "same-unit-repeated-LF",
+      "source": "! Angs\n! HF aNgS\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "same-unit-repeated-CRLF",
+      "source": "! Angs\r\n! HF aNgS\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "angstrom",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "inline-comment-LF",
+      "source": "! HF Bohrs # Angs is a comment\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "inline-comment-CRLF",
+      "source": "! HF Bohrs # Angs is a comment\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          null,
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "opaque-atom-extra-LF",
+      "source": "! HF Bohrs\n* xyz -1 2\nC -0.0$ 1.2345678901234567 5e-324$ NewGTO \"opaque\" end\nO 2.5 0.0 -2.345678901234567\n*\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          "NewGTO \"opaque\" end",
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "opaque-atom-extra-CRLF",
+      "source": "! HF Bohrs\r\n* xyz -1 2\r\nC -0.0$ 1.2345678901234567 5e-324$ NewGTO \"opaque\" end\r\nO 2.5 0.0 -2.345678901234567\r\n*\r\n",
+      "expected": "accept",
+      "fields": {
+        "elements": [
+          "C",
+          "O"
+        ],
+        "coords": [
+          [
+            -0.0,
+            1.2345678901234567,
+            5e-324
+          ],
+          [
+            2.5,
+            0.0,
+            -2.345678901234567
+          ]
+        ],
+        "frozen": [
+          [
+            true,
+            false,
+            true
+          ],
+          [
+            false,
+            false,
+            false
+          ]
+        ],
+        "atom_extras": [
+          "NewGTO \"opaque\" end",
+          null
+        ],
+        "charge": -1,
+        "multiplicity": 2,
+        "coordinate_units": "bohr",
+        "units_explicit": true,
+        "coordinate_bits": [
+          [
+            "8000000000000000",
+            "3ff3c0ca428c59fb",
+            "0000000000000001"
+          ],
+          [
+            "4004000000000000",
+            "0000000000000000",
+            "c002c3f34cbdc1e7"
+          ]
+        ]
+      }
+    },
+    {
+      "id": "duplicate-xyz",
+      "source": "* xyz 0 1\nHe 1 2 3\n*\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "xyz-then-file",
+      "source": "* xyz 0 1\nHe 1 2 3\n*\n* xyzfile 0 1 missing.xyz\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "file-then-xyz",
+      "source": "* xyzfile 0 1 missing.xyz\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "duplicate-file",
+      "source": "* xyzfile 0 1 missing.xyz\n* xyzfile 0 1 missing.xyz\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "int-then-xyz",
+      "source": "* int 0 1\nHe 0 0 0 0 0 0\n*\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "xyz-then-int",
+      "source": "* xyz 0 1\nHe 1 2 3\n*\n* int 0 1\nHe 0 0 0 0 0 0\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "zero-spin-xyz",
+      "source": "* xyz 0 0\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "zero-spin-file",
+      "source": "* xyzfile 0 0 missing.xyz\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "zero-spin-int",
+      "source": "* int 0 0\nHe 0 0 0 0 0 0\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "empty-xyz",
+      "source": "* xyz 0 1\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "short-row",
+      "source": "* xyz 0 1\nHe 1 2\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "nonfinite",
+      "source": "* xyz 0 1\nHe NaN 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "unterminated",
+      "source": "* xyz 0 1\nHe 1 2 3\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "unknown-element",
+      "source": "* xyz 0 1\nXxx 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "ghost-atom",
+      "source": "* xyz 0 1\nHe: 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    },
+    {
+      "id": "conflicting-units",
+      "source": "! Angs Bohrs\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "reverse-conflict",
+      "source": "! Bohrs Angs\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "split-conflict",
+      "source": "! Angs\n! Bohrs\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "unsupported-bohr",
+      "source": "! Bohr\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "unsupported-angstrom",
+      "source": "! Angstrom\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "unsupported-unit-assignment",
+      "source": "! Units=AU\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "unit-lookalike",
+      "source": "! AngsFoo\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "coords-override",
+      "source": "%coords\nUnits Bohrs\nend\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "coords-block-only",
+      "source": "%coords\nCTyp xyz\nUnits Angs\ncoords\nHe 1 2 3\nend\nend\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "external-file",
+      "source": "* xyzfile 0 1 missing.xyz\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "external-gzmt",
+      "source": "* gzmtfile 0 1 missing.gzmt\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "internal",
+      "source": "* int 0 1\nHe 0 0 0 0 0 0\n*\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "absent-geometry",
+      "source": "! HF STO-3G\n",
+      "expected": "refuse",
+      "core_refuse": false
+    },
+    {
+      "id": "multi-job",
+      "source": "* xyz 0 1\nHe 1 2 3\n*\n$new_job\n* xyz 0 1\nHe 1 2 3\n*\n",
+      "expected": "refuse",
+      "core_refuse": true
+    }
+  ]
+}

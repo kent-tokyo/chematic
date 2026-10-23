@@ -1291,26 +1291,34 @@ pub fn mol_from_orca_input(text: &str) -> Result<MolHandle, JsValue> {
 /// returns topology for. Returns JSON
 /// `{"coords":[[x,y,z],...],"charge":0,"multiplicity":1}`, or a JS error
 /// under the same conditions as [`mol_from_orca_input`].
+/// This legacy view returns only Angstrom input. Bohr, conflicting units and
+/// %coords overrides are refused; use [`orca_cartesian_geometry_json`] instead.
 #[wasm_bindgen]
 pub fn orca_input_coords_json(text: &str) -> Result<String, JsValue> {
     check_input_len("ORCA input", text)?;
-    let input = chematic_mol::parse_orca_input_with_limits(text, &wasm_orca_input_limits())
+    let input = chematic_mol::parse_orca_cartesian_with_limits(text, &wasm_orca_input_limits())
         .map_err(|e| JsValue::from_str(&e.to_string()))?;
-    let (_mol, coords, charge, multiplicity) = input
-        .coords
-        .as_ref()
-        .and_then(|c| c.to_molecule())
-        .ok_or_else(|| {
-            JsValue::from_str(
-                "ORCA input has no embedded '* xyz ... *' coordinate block (xyzfile/gzmtfile/int/absent)",
-            )
-        })?;
+    if input.coordinate_units != chematic_mol::OrcaCoordinateUnits::Angstrom {
+        return Err(JsValue::from_str(
+            "Bohr coordinates require orca_cartesian_geometry_json with explicit units",
+        ));
+    }
     let out = serde_json::json!({
-        "coords": coords_tuples_to_json(&coords),
-        "charge": charge,
-        "multiplicity": multiplicity,
+        "coords": input.atoms.iter().map(|a| [a.x,a.y,a.z]).collect::<Vec<_>>(),
+        "charge": input.charge,
+        "multiplicity": input.multiplicity,
     });
     to_json_string(&out)
+}
+
+/// Read ordered Cartesian values and explicit Angstrom/Bohr units; no rescaling.
+/// Refuses ambiguous/unsupported unit or coordinate declarations and %coords.
+/// Atom extras remain opaque; no external geometry resources are opened.
+#[wasm_bindgen]
+pub fn orca_cartesian_geometry_json(text: &str) -> Result<String, JsValue> {
+    let input = chematic_mol::parse_orca_cartesian_with_limits(text, &wasm_orca_input_limits())
+        .map_err(|error| JsValue::from_str(&error.to_string()))?;
+    to_json_string(&input.to_json())
 }
 
 /// Parse an ORCA input file and return every field as JSON:

@@ -96,6 +96,7 @@ nav:
     - Bounded MOL Titles: mol-title-width.md
     - Format Capability Matrix: format-capabilities.md
     - PQR Atom-field Integrity: pqr-numeric-integrity.md
+    - ORCA Cartesian Integrity: orca-cartesian-integrity.md
     - CDXML Stereo Options: cdxml-stereo-options.md
     - Named CML Atoms: cml-named-atoms.md
     - Hydrogen Count Accounting: hydrogen-count-accounting.md

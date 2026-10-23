@@ -12,6 +12,7 @@ pub(super) fn register_quantum_formats(m: &Bound<'_, PyModule>) -> PyResult<()> 
         parse_gaussian_log,
         write_gjf,
         parse_orca_input,
+        parse_orca_cartesian,
         write_orca_input,
         parse_orca_output,
         parse_qcschema_molecule,

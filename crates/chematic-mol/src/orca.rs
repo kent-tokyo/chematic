@@ -95,6 +95,12 @@
 
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 
+mod cartesian;
+pub use cartesian::{
+    OrcaCartesianError, OrcaCartesianGeometry, OrcaCoordinateUnits, parse_orca_cartesian,
+    parse_orca_cartesian_with_limits,
+};
+
 /// Return type shared by [`OrcaCoords::to_molecule`]:
 /// `(Molecule, coords, charge, multiplicity)` -- same shape as
 /// `gaussian.rs`'s `GjfResult`.
@@ -270,6 +276,8 @@ impl OrcaCoords {
     /// (atoms only -- no bonds, ORCA input carries no bond table) plus its
     /// Cartesian coordinates, charge, and multiplicity. Returns `None` for
     /// every other variant (no atom list to convert).
+    /// Numeric values retain input units; this enum alone cannot resolve unit
+    /// keywords. Use [`parse_orca_cartesian`] for explicit coordinate units.
     pub fn to_molecule(&self) -> Option<OrcaXyzMolecule> {
         match self {
             OrcaCoords::Xyz {
@@ -339,7 +347,10 @@ pub struct OrcaInput {
 // Input: parser
 // ===========================================================================
 
-/// Parse an ORCA input file (`.inp`).
+/// Parse an ORCA input file (`.inp`). Multiple coordinate specifications,
+/// empty xyz blocks and zero multiplicity are refused rather than selecting or
+/// returning a partial/invalid geometry. Numeric coordinate units are unchanged;
+/// use [`parse_orca_cartesian`] for an explicit Angstrom/Bohr geometry view.
 pub fn parse_orca_input(input: &str) -> Result<OrcaInput, OrcaInputError> {
     parse_orca_input_with_limits(input, &OrcaInputParseLimits::default())
 }
@@ -421,16 +432,10 @@ pub fn parse_orca_input_with_limits(
             continue;
         }
         if trimmed.starts_with('*') {
-            let (coords, next_i) = parse_coords(&lines, i)?;
-            if let OrcaCoords::Xyz { atoms, .. } = &coords
-                && atoms.len() > limits.max_atoms
-            {
-                return Err(OrcaInputError::ResourceLimit {
-                    resource: "atoms",
-                    actual: atoms.len(),
-                    limit: limits.max_atoms,
-                });
+            if out.coords.is_some() {
+                return Err(OrcaInputError::MalformedCoordHeader { line: i + 1 });
             }
+            let (coords, next_i) = parse_coords(&lines, i, limits.max_atoms)?;
             out.coords = Some(coords);
             i = next_i;
             continue;
@@ -563,11 +568,17 @@ fn parse_charge_mult(
         .map_err(|_| OrcaInputError::MalformedCoordHeader { line })?;
     let multiplicity: u32 = mult_tok
         .parse()
-        .map_err(|_| OrcaInputError::MalformedCoordHeader { line })?;
+        .ok()
+        .filter(|&value| value > 0)
+        .ok_or(OrcaInputError::MalformedCoordHeader { line })?;
     Ok((charge, multiplicity))
 }
 
-fn parse_coords(lines: &[&str], start: usize) -> Result<(OrcaCoords, usize), OrcaInputError> {
+fn parse_coords(
+    lines: &[&str],
+    start: usize,
+    max_atoms: usize,
+) -> Result<(OrcaCoords, usize), OrcaInputError> {
     let trimmed = lines[start].trim();
     let after_star = trimmed[1..].trim_start();
     let mut tokens = after_star.split_whitespace();
@@ -587,12 +598,25 @@ fn parse_coords(lines: &[&str], start: usize) -> Result<(OrcaCoords, usize), Orc
                 }
                 let t = lines[i].trim();
                 if t == "*" {
+                    if atoms.is_empty() {
+                        return Err(OrcaInputError::InvalidAtomLine {
+                            line: start + 1,
+                            detail: "xyz block requires at least one atom".into(),
+                        });
+                    }
                     i += 1;
                     break;
                 }
                 if t.is_empty() {
                     i += 1;
                     continue;
+                }
+                if atoms.len() >= max_atoms {
+                    return Err(OrcaInputError::ResourceLimit {
+                        resource: "atoms",
+                        actual: atoms.len() + 1,
+                        limit: max_atoms,
+                    });
                 }
                 atoms.push(parse_atom_line(t, i + 1)?);
                 i += 1;
