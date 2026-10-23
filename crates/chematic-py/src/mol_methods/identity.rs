@@ -404,8 +404,9 @@ impl Mol {
     /// Compare two ETKDG/MMFF94 ensembles and retain the lowest finite-energy
     /// candidate plus converged candidates from both runs. The second uses the
     /// corrected gradient when relevant; otherwise two additional runs use
-    /// new seeds. This spends roughly twice or three times the candidate work,
-    /// with up to one or two optional MMFF retries respectively.
+    /// new seeds. A fourth seed batch runs only when the third lowers the
+    /// best energy by more than 0.01 kcal/mol. This spends roughly twice to
+    /// four times the candidate work, with up to three optional MMFF retries.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         max_mmff_iters = 200))]
     fn etkdg_embed_multiple_confs_mmff_best_gradient(
