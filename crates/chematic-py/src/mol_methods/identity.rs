@@ -729,6 +729,14 @@ impl Mol {
         chematic_chem::calc_mol_formula(&self.inner)
     }
 
+    /// Total formula with explicit isotope labels, hydrogens and net charge.
+    /// Example: ``C[13C]H3O2-``. D/T use ``[2H]``/``[3H]``; maps/stereo and
+    /// isotope positions are omitted. Uses the existing formula hydrogen model.
+    #[getter]
+    fn formula_with_isotopes(&self) -> String {
+        chematic_chem::calc_mol_formula_with_isotopes(&self.inner)
+    }
+
     /// Number of heavy atoms (non-hydrogen atoms, including isotopic H like [3H]).
     #[getter]
     fn heavy_atoms(&self) -> usize {

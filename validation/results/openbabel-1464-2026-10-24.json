@@ -1,0 +1,169 @@
+{
+  "schema": "chematic.isotope-formula-validation.v1",
+  "utc": "2026-10-23T18:19:30.552817+00:00",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "candidate_base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "candidate_state": "working tree, not a published release",
+  "scope": "Isotope-resolved totals plus hydrogen and net charge. No isotope abundance, validity, positions, radical-state or structural-identity claim.",
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/openbabel-1464-2026-10-24/cases.json",
+    "sha256": "452fbb5cd427e181bdb467872bf34e646097ea8d16d174be1cef28abd5ac7ddc",
+    "size_bytes": 21040
+  },
+  "upstream": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/openbabel-1464-2026-10-24/upstream.json",
+    "sha256": "ed2c7f9930eb94c923c7e9ffc98b7ad6f18092895bce1ae1366a8cb37ea3bb29",
+    "size_bytes": 202
+  },
+  "packet": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/validation/results/openbabel-1464-2026-10-24.packet.json.gz",
+    "sha256": "6b1670abc4f7f762c18315679a341cf65610866ef19c0daf181934ddebdd4400",
+    "size_bytes": 5021
+  },
+  "counts": {
+    "openbabel.common.changed": 26,
+    "openbabel.common.composition_match": 16,
+    "openbabel.common.isotope_difference_only": 23,
+    "python.labelled.composition_match": 47,
+    "python.legacy.changed": 35,
+    "python.legacy.composition_match": 12,
+    "rdkit.labelled.composition_match": 46,
+    "rdkit.labelled.refused": 1,
+    "rdkit.labelled.spelling_difference": 1,
+    "wasm.labelled.composition_match": 47,
+    "wasm.legacy.changed": 35,
+    "wasm.legacy.composition_match": 12
+  },
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/Cargo.lock",
+      "sha256": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+      "size_bytes": 63572
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem/src/isotope_formula.rs",
+      "sha256": "4e48bdb1b20cd9b48158c478cf9cef1dfafd29679a1a256a6c1949c4cd1707e2",
+      "size_bytes": 2930
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem/src/lib.rs",
+      "sha256": "6effacebebc7db013e9b88186413f5f06f151808bba2a519128b861e061321c4",
+      "size_bytes": 9806
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-chem/src/descriptors/composition.rs",
+      "sha256": "ac671197a6f3a1e67d2eea9bea5c5e31d53c4ec2c0b2fcd5391579c574827c6a",
+      "size_bytes": 9306
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/src/mol_methods/identity.rs",
+      "sha256": "8d562ef9bac0806000e7d221d215b671d139f8a71b9b28525032de7d4b8173ed",
+      "size_bytes": 59944
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-py/python/chematic/__init__.pyi",
+      "sha256": "7e9ea13fa107df66bccc36c5b10f660c2403e83780e9680e5d231708aa6651ae",
+      "size_bytes": 219145
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/crates/chematic-wasm/src/lib.rs",
+      "sha256": "fec025f0283ee0ec5cd7960bbceb3e41c6f5967fe629a5adc4ff1b33db432f93",
+      "size_bytes": 32709
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_isotope_formula.py",
+      "sha256": "6d55f987f2a1d935f1eccccc921e38c527f83b986aacdb0cd837900c0a7c9ed3",
+      "size_bytes": 7635
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/validate_isotope_formula_node.mjs",
+      "sha256": "a0f5c341470adee1bdc67833a53a15a9d0340d82e4aaf06f9248fa548b0826bb",
+      "size_bytes": 565
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/scripts/validation/isotope_formula_observer.py",
+      "sha256": "ca1b207e4b758dabae1dde61fe0799cfd87787d05146c18b850f27758e909a27",
+      "size_bytes": 2404
+    }
+  ],
+  "artifacts": {
+    "python": [
+      {
+        "path": "/private/tmp/chematic-openbabel-1464-python-20261024/chematic/chematic.cpython-313-darwin.so",
+        "sha256": "13044f8026687f6fde402993c7609bacc26b45d47590418b37d5cf23fb985642",
+        "size_bytes": 45321056
+      },
+      {
+        "path": "/private/tmp/chematic-openbabel-1464-python-20261024/chematic/__init__.py",
+        "sha256": "1ba8d816053a6208767f8f4fda0eb34b1adf0f09165a1aa5b2d9cc6bdc158a14",
+        "size_bytes": 30089
+      }
+    ],
+    "wasm": [],
+    "rdkit": [
+      {
+        "path": "/private/tmp/chematic-rdkit-202609-venv/lib/python3.13/site-packages/rdkit/Chem/rdchem.so",
+        "sha256": "2fc3606e02f28a03d9e017cbc4e43923e704a8b7b77600de6e817536b9675a5a",
+        "size_bytes": 2844864
+      },
+      {
+        "path": "/private/tmp/chematic-rdkit-202609-venv/lib/python3.13/site-packages/rdkit/rdBase.so",
+        "sha256": "2fb1e7377e7441fcc3c9ae813803adb288fdb710b2b0de66aecbfc1f4b5919ff",
+        "size_bytes": 1438592
+      }
+    ]
+  },
+  "wasm_artifacts": [
+    {
+      "path": "/private/tmp/chematic-openbabel-1464-wasm-20261024/chematic_wasm.js",
+      "sha256": "ec5508891c2e1758d51a6659684aae3ae043eaa327478cbd576ff2ed7c2075ad",
+      "size_bytes": 375462
+    },
+    {
+      "path": "/private/tmp/chematic-openbabel-1464-wasm-20261024/chematic_wasm_bg.wasm",
+      "sha256": "a44387d8019d102b29a8163ee4aaafe7e0563be7c4db9f51d9a69773c1688088",
+      "size_bytes": 46084200
+    }
+  ],
+  "openbabel_artifact": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "versions": {
+    "rdkit": "2026.09.1",
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "rust": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "rustc 1.97.0 (2d8144b78 2026-07-07)\n",
+      "stderr": ""
+    },
+    "node": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "v24.5.0\n",
+      "stderr": ""
+    },
+    "openbabel": {
+      "resource_status": "completed",
+      "exit_code": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "legacy_control": {
+    "scope": "Existing isotope-blind formula in the same candidate runtime; complete composition implementation equals pinned main. Not a separate main/release executable.",
+    "source_commit": "38b4c92c430d9b3bfe70e47e97293b9017ced990"
+  },
+  "comparison_notes": [
+    "Expected counts/charge/formula are authored before execution; RDKit is a cross-check, not the oracle.",
+    "Open Babel common lane contains 42 same-SMILES molreport pipelines; D/T and repeated-sign charge aliases normalize to equivalent composition. Existing charge behavior is not scored as a new implementation gap.",
+    "Five wildcard/mass-label boundary controls are candidate-only; they are not extra Open Babel failures."
+  ],
+  "process_limits": {
+    "seconds": 30,
+    "combined_pipe_bytes": 1048576,
+    "memory": "not imposed"
+  }
+}
