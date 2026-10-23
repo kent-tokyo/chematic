@@ -1,0 +1,858 @@
+{
+  "scope": "Original synthetic namespace/scoping inputs; no full CML schema or stereo claim",
+  "valid": [
+    {
+      "id": "default",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "prefix-c",
+      "input": "<c:molecule xmlns:c=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><c:atomArray><c:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><c:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></c:atomArray><c:bondArray><c:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></c:bondArray></c:molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "prefix-chemistry",
+      "input": "<chemistry:molecule xmlns:chemistry=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><chemistry:atomArray><chemistry:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><chemistry:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></chemistry:atomArray><chemistry:bondArray><chemistry:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></chemistry:bondArray></chemistry:molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "unicode-prefix",
+      "input": "<化学:molecule xmlns:化学=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><化学:atomArray><化学:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><化学:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></化学:atomArray><化学:bondArray><化学:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></化学:bondArray></化学:molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "legacy-no-namespace",
+      "input": "<molecule xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "prefixed-wrapper",
+      "input": "<c:cml xmlns:c=\"http://www.xml-cml.org/schema\"><c:molecule xmlns:c=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><c:atomArray><c:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><c:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></c:atomArray><c:bondArray><c:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></c:bondArray></c:molecule></c:cml>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "legacy-wrapper",
+      "input": "<cml><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule></cml>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "foreign-atom",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/><atom xmlns=\"urn:metadata\" id=\"fake\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "foreign-bond",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/><bond xmlns=\"urn:metadata\" atomRefs2=\"fake missing\" order=\"BAD\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "foreign-attributes",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" m:elementType=\"N\" m:x3=\"NaN\" m:id=\"a2\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "foreign-ancestor",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><m:annotation><atomArray><atom id=\"shadow\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></atomArray></m:annotation></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "namespace-reset-note",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><note xmlns=\"\"><molecule><atom id=\"shadow\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></molecule></note></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "rebound-prefix",
+      "input": "<c:molecule xmlns:c=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><c:atomArray><c:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><c:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/><c:atom xmlns:c=\"urn:metadata\" id=\"shadow\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></c:atomArray><c:bondArray><c:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></c:bondArray></c:molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "empty-namespace-atom",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/><atom xmlns=\"\" id=\"shadow\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "formula-is-not-graph",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><formula><atomArray><atom id=\"composition\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></atomArray></formula></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "comment-cdata",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><!-- <atom id=\"shadow\"/> --><m:annotation><![CDATA[<atom id=\"shadow\"/>]]></m:annotation></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "forward-bond-reference",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "character-reference",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a&#49;\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1&#32;a2\" order=\"1\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "legacy-direct-records",
+      "input": "<molecule><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "formal_charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    },
+    {
+      "id": "labelled-ions",
+      "input": "<c:molecule xmlns:c=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><c:atomArray><c:atom id=\"a1\" elementType=\"N\" isotopeNumber=\"15\" formalCharge=\"1\" hydrogenCount=\"4\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><c:atom id=\"a2\" elementType=\"Cl\" isotopeNumber=\"37\" formalCharge=\"-1\" hydrogenCount=\"0\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></c:atomArray><c:bondArray></c:bondArray></c:molecule>",
+      "expected": {
+        "numbers": [
+          7,
+          17
+        ],
+        "formal_charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          15,
+          37
+        ],
+        "bonds": [],
+        "coordinates": [
+          [
+            -0.0,
+            1.25,
+            2.5
+          ],
+          [
+            3.75,
+            -4.125,
+            5.5
+          ]
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "foreign-root",
+      "input": "<molecule xmlns=\"urn:other\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "unbound-prefix",
+      "input": "<c:molecule xmlns:m=\"urn:metadata\"><c:atomArray><c:atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><c:atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></c:atomArray><c:bondArray><c:bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></c:bondArray></c:molecule>"
+    },
+    {
+      "id": "duplicate-attribute",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" x3=\"9\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "duplicate-expanded-attribute",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\" xmlns:n=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" m:k=\"1\" n:k=\"2\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "undefined-entity",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a&bad;\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "malformed-entity",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a&#xZZ;\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "internal-dtd",
+      "input": "<!DOCTYPE molecule [<!ENTITY label \"a1\">]><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"&label;\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "external-dtd",
+      "input": "<!DOCTYPE molecule SYSTEM \"file:///should-not-be-read\"><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "raw-less-than",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a<1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "duplicate-decoded-id",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a&#49;\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "dangling-bond",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 missing\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "three-endpoints",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2 a1\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "self-bond",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a1\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "duplicate-bond",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/><bond id=\"b2\" atomRefs2=\"a2 a1\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "missing-element",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "missing-order",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\"/></bondArray></molecule>"
+    },
+    {
+      "id": "multiple-molecules",
+      "input": "<cml><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule></cml>"
+    },
+    {
+      "id": "nested-molecule",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><molecule/></molecule>"
+    },
+    {
+      "id": "partial-triplet",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "mixed-coordinates",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" /><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "nonfinite",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"NaN\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "unknown-order",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"BAD\"/></bondArray></molecule>"
+    },
+    {
+      "id": "fractional",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" xFract=\"0.1\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "foreign-attribute-only",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" m:elementType=\"N\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "bond-to-foreign-atom",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/><atom xmlns=\"urn:metadata\" id=\"fake\" elementType=\"N\" x3=\"9\" y3=\"8\" z3=\"7\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 fake\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "molecule-outside-scope",
+      "input": "<cml><property><molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray></molecule></property></cml>"
+    },
+    {
+      "id": "unclosed-xml",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray>"
+    },
+    {
+      "id": "depth-limit",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\" xmlns:m=\"urn:metadata\"><atomArray><atom id=\"a1\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.25\" z3=\"2.5\"/><atom id=\"a2\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"5.5\"/></atomArray><bondArray><bond id=\"b1\" atomRefs2=\"a1 a2\" order=\"1\"/></bondArray><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note><m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></m:note></molecule>"
+    }
+  ],
+  "variants": [
+    "compact",
+    "lf",
+    "crlf"
+  ]
+}

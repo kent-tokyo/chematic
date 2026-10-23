@@ -192,7 +192,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     batch conversion. SDF output from other formats is one framed record.
     CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
     stays missing; partial/malformed 3D and multiple molecules are refused.
-    This route requires unique atom IDs; 2D layout and metadata are omitted.
+    This route resolves CML namespace prefixes and forward bond references,
+    requires unique atom IDs, and excludes foreign subtrees/attributes from the
+    graph. 2D layout and metadata are omitted.
     CJSON inputs use the checked record profile: malformed known arrays,
     duplicate keys/bonds and unsupported bond-order tokens are refused.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
