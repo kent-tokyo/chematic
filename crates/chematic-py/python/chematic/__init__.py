@@ -198,6 +198,11 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     graph. 2D layout and metadata are omitted.
     CJSON inputs use the checked record profile: malformed known arrays,
     duplicate keys/bonds and unsupported bond-order tokens are refused.
+    Graph-projected CJSON output uses Mol.to_cjson_checked: unsupported
+    in-memory properties (including stereo, explicit H counts, aromatic atom
+    flags and nonstandard bonds) raise ValueError. This does not detect fields
+    already discarded by a source reader. MOL2 projection and exact CJSON
+    retention keep their separate contracts.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
     complete declared partial charges on reparse. Incomplete/undeclared charge
     columns and overrides are rejected. Other MOL2 metadata and stereo are
@@ -317,7 +322,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if target == "cml":
         return mol.to_cml()
     if target == "cjson":
-        return mol.to_cjson(coords or [])
+        return mol.to_cjson_checked(coords if coords is not None else [])
     if target == "moljson":
         return mol.to_moljson()
     if target == "cdxml":
