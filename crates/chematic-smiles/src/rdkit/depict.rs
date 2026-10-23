@@ -19,6 +19,8 @@ use std::f64::consts::PI;
 use super::RdkitSmilesError;
 use super::mol::{BondStereo, BondType, ChiralTag, Hybridization, Mol};
 
+mod merge_helpers;
+
 const BOND_LEN: f64 = 1.5;
 const COLLISION_THRES: f64 = 0.70;
 const BOND_THRES: f64 = 0.50;
@@ -1249,26 +1251,7 @@ impl EFrag {
                 self.reflect_if_necessary_third_pt(emb, comm[0], comm[1], comm[2])?;
             }
         }
-        for (&aid, oa) in &emb.ea {
-            if !comm.contains(&aid) {
-                assign_eatom(self.at(aid), oa);
-                if !oa.neighs.is_empty() && !self.attach.contains(&aid) {
-                    self.attach.push(aid);
-                }
-            } else {
-                let a = self.at(aid);
-                if oa.cis_trans_nbr >= 0 {
-                    a.cis_trans_nbr = oa.cis_trans_nbr;
-                    a.normal = oa.normal;
-                    a.ccw = oa.ccw;
-                }
-                if oa.angle > 0.0 {
-                    a.angle = oa.angle;
-                    a.nbr1 = oa.nbr1;
-                    a.nbr2 = oa.nbr2;
-                }
-            }
-        }
+        self.merge_embedded_atoms(emb, comm);
         for &c in comm.iter() {
             self.update_new_neighs(ctx, c)?;
         }
@@ -1555,34 +1538,7 @@ impl EFrag {
         let v2 = self.loc(aid1)?.sub(self.loc(aid_a)?);
         let v1 = self.loc(aid_b)?.sub(self.loc(aid_a)?);
         let cross = v1.x * v2.y - v1.y * v2.x;
-        match typ {
-            1 => {
-                let mut angle = ANGLE_OPEN;
-                if cross < 0.0 {
-                    angle *= -1.0;
-                }
-                let t1 = T2::rotation_about(self.at(aid_a).loc, angle);
-                let t2 = T2::rotation_about(self.at(aid_b).loc, -angle);
-                t1.apply(&mut self.at(aid1).loc);
-                t2.apply(&mut self.at(aid2).loc);
-            }
-            2 => {
-                let mut angle = 2.0 * ANGLE_OPEN;
-                if cross < 0.0 {
-                    angle *= -1.0;
-                }
-                let t1 = T2::rotation_about(self.at(aid_a).loc, angle);
-                t1.apply(&mut self.at(aid1).loc);
-            }
-            _ => {
-                let mut angle = -2.0 * ANGLE_OPEN;
-                if cross < 0.0 {
-                    angle *= -1.0;
-                }
-                let t2 = T2::rotation_about(self.at(aid_b).loc, angle);
-                t2.apply(&mut self.at(aid2).loc);
-            }
-        }
+        self.apply_open_angle_rotation(aid1, aid2, aid_a, aid_b, typ, cross);
         Ok(())
     }
 

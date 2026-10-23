@@ -1,7 +1,7 @@
 //! MMFF94 torsion parameters (Halgren 1996 Table VI).
 
 use super::TorsionEnergyParams;
-use crate::mmff94_numeric_type_registry::mmff94_numeric_type_info;
+use crate::mmff94_numeric_type_registry::{Mmff94NumericTypeInfo, mmff94_numeric_type_info};
 use chematic_core::BondOrder;
 
 /// 926 torsion entries (Halgren 1996 Table VI). Sorted by (tors_type, type_i, type_j, type_k, type_l).
@@ -1009,37 +1009,48 @@ fn torsion_empirical(tj: u8, tk: u8, order: BondOrder) -> Option<TorsionEnergyPa
     if j.linear || k.linear {
         return None;
     }
-    // Empirical constants are defined for these six elements. Unknown types,
-    // terminal atoms, and unsupported bond kinds must not manufacture a hit.
-    let constants = |z| match z {
-        6 => Some((2.0_f64, 2.12_f64, 0.0_f64)),
+    let (uj, vj, wj) = empirical_constants(j.atomic_number)?;
+    let (uk, vk, wk) = empirical_constants(k.atomic_number)?;
+    if j.coordination < 2 || k.coordination < 2 || !empirical_bond_order(order) {
+        return None;
+    }
+    let n = f64::from(j.coordination - 1) * f64::from(k.coordination - 1);
+    let uv = (uj * uk).sqrt();
+    let vv = (vj * vk).sqrt() / n;
+    let (v2, v3) = empirical_barriers(j, k, order, uv, vv, wj, wk);
+    Some(TorsionEnergyParams { v1: 0.0, v2, v3 })
+}
+
+fn empirical_constants(atomic_number: u8) -> Option<(f64, f64, f64)> {
+    match atomic_number {
+        6 => Some((2.0, 2.12, 0.0)),
         7 => Some((2.0, 1.5, 0.0)),
         8 => Some((2.0, 0.2, 2.0)),
         14 => Some((1.25, 1.22, 0.0)),
         15 => Some((1.25, 2.40, 0.0)),
         16 => Some((1.25, 0.49, 8.0)),
         _ => None,
-    };
-    let (uj, vj, wj) = constants(j.atomic_number)?;
-    let (uk, vk, wk) = constants(k.atomic_number)?;
-    if j.coordination < 2
-        || k.coordination < 2
-        || !matches!(
-            order,
-            BondOrder::Single
-                | BondOrder::Up
-                | BondOrder::Down
-                | BondOrder::Double
-                | BondOrder::Aromatic
-        )
-    {
-        return None;
     }
-    let n = f64::from(j.coordination - 1) * f64::from(k.coordination - 1);
-    let uv = (uj * uk).sqrt();
-    let vv = (vj * vk).sqrt() / n;
-    let (v2, v3) = if j.aromatic && k.aromatic && order == BondOrder::Aromatic {
-        // (b): aromatic central bond; mixed valence reduces beta.
+}
+
+fn empirical_bond_order(order: BondOrder) -> bool {
+    matches!(
+        order,
+        BondOrder::Single
+            | BondOrder::Up
+            | BondOrder::Down
+            | BondOrder::Double
+            | BondOrder::Aromatic
+    )
+}
+
+fn multiple_bond_barrier(
+    j: &Mmff94NumericTypeInfo,
+    k: &Mmff94NumericTypeInfo,
+    order: BondOrder,
+    uv: f64,
+) -> Option<f64> {
+    if j.aromatic && k.aromatic && order == BondOrder::Aromatic {
         let beta = if matches!((j.valence, k.valence), (3, 4) | (4, 3)) {
             3.0
         } else {
@@ -1050,58 +1061,91 @@ fn torsion_empirical(tj: u8, tk: u8, order: BondOrder) -> Option<TorsionEnergyPa
         } else {
             0.3
         };
-        (beta * pi * uv, 0.0)
+        Some(beta * pi * uv)
     } else if order == BondOrder::Double {
-        // (c): double central bond.
         let pi = if j.multiple_bond_count == 2 && k.multiple_bond_count == 2 {
             1.0
         } else {
             0.4
         };
-        (6.0 * pi * uv, 0.0)
-    } else if j.coordination == 4 && k.coordination == 4 {
-        // (d): two tetrahedral centers.
-        (0.0, vv)
-    } else if j.coordination == 4 || k.coordination == 4 {
-        // (e-f): one tetrahedral center; conjugation can suppress the barrier.
-        let other = if j.coordination == 4 { k } else { j };
-        let suppressed = (other.coordination == 3
-            && (matches!(other.valence, 4 | 34) || other.multiple_bond_count != 0))
-            || (other.coordination == 2 && (other.valence == 3 || other.multiple_bond_count != 0));
-        (0.0, if suppressed { 0.0 } else { vv })
-    } else if (matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
+        Some(6.0 * pi * uv)
+    } else {
+        None
+    }
+}
+
+fn tetrahedral_barrier(
+    j: &Mmff94NumericTypeInfo,
+    k: &Mmff94NumericTypeInfo,
+    vv: f64,
+) -> Option<f64> {
+    if j.coordination == 4 && k.coordination == 4 {
+        return Some(vv);
+    }
+    if j.coordination != 4 && k.coordination != 4 {
+        return None;
+    }
+    let other = if j.coordination == 4 { k } else { j };
+    let suppressed = (other.coordination == 3
+        && (matches!(other.valence, 4 | 34) || other.multiple_bond_count != 0))
+        || (other.coordination == 2 && (other.valence == 3 || other.multiple_bond_count != 0));
+    Some(if suppressed { 0.0 } else { vv })
+}
+
+fn is_conjugated(j: &Mmff94NumericTypeInfo, k: &Mmff94NumericTypeInfo, order: BondOrder) -> bool {
+    (matches!(order, BondOrder::Single | BondOrder::Up | BondOrder::Down)
         && j.multiple_bond_count != 0
         && k.multiple_bond_count != 0)
         || (j.multiple_bond_count != 0 && k.has_pi_lone_pair)
         || (j.has_pi_lone_pair && k.multiple_bond_count != 0)
-    {
-        // (g): conjugated central bond. Preserve the ordering of cases 1-5.
-        let pi = if j.has_pi_lone_pair && k.has_pi_lone_pair {
-            0.0
-        } else if j.has_pi_lone_pair || k.has_pi_lone_pair {
-            let donor = if j.has_pi_lone_pair { j } else { k };
-            if donor.multiple_bond_count == 1 {
-                0.5
-            } else if (11..=18).contains(&j.atomic_number) && (11..=18).contains(&k.atomic_number) {
-                0.3
-            } else {
-                0.15
-            }
-        } else if (j.multiple_bond_count == 1 || k.multiple_bond_count == 1)
-            && (j.atomic_number != 6 || k.atomic_number != 6)
-        {
-            0.4
+}
+
+fn conjugated_pi(j: &Mmff94NumericTypeInfo, k: &Mmff94NumericTypeInfo) -> f64 {
+    if j.has_pi_lone_pair && k.has_pi_lone_pair {
+        return 0.0;
+    }
+    if j.has_pi_lone_pair || k.has_pi_lone_pair {
+        let donor = if j.has_pi_lone_pair { j } else { k };
+        if donor.multiple_bond_count == 1 {
+            return 0.5;
+        }
+        return if (11..=18).contains(&j.atomic_number) && (11..=18).contains(&k.atomic_number) {
+            0.3
         } else {
             0.15
         };
-        (6.0 * pi * uv, 0.0)
-    } else if matches!(j.atomic_number, 8 | 16) && matches!(k.atomic_number, 8 | 16) {
-        // (h): O/S pairs have a negative twofold barrier.
-        (-(wj * wk).sqrt(), 0.0)
+    }
+    if (j.multiple_bond_count == 1 || k.multiple_bond_count == 1)
+        && (j.atomic_number != 6 || k.atomic_number != 6)
+    {
+        0.4
     } else {
-        (0.0, vv)
-    };
-    Some(TorsionEnergyParams { v1: 0.0, v2, v3 })
+        0.15
+    }
+}
+
+fn empirical_barriers(
+    j: &Mmff94NumericTypeInfo,
+    k: &Mmff94NumericTypeInfo,
+    order: BondOrder,
+    uv: f64,
+    vv: f64,
+    wj: f64,
+    wk: f64,
+) -> (f64, f64) {
+    if let Some(v2) = multiple_bond_barrier(j, k, order, uv) {
+        return (v2, 0.0);
+    }
+    if let Some(v3) = tetrahedral_barrier(j, k, vv) {
+        return (0.0, v3);
+    }
+    if is_conjugated(j, k, order) {
+        return (6.0 * conjugated_pi(j, k) * uv, 0.0);
+    }
+    if matches!(j.atomic_number, 8 | 16) && matches!(k.atomic_number, 8 | 16) {
+        return (-(wj * wk).sqrt(), 0.0);
+    }
+    (0.0, vv)
 }
 
 #[cfg(test)]

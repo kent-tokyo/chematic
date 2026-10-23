@@ -371,6 +371,77 @@ pub(crate) struct Mol {
     pub rings: Option<RingInfo>,
 }
 
+fn hydrogen_implicit_valence(
+    atom_index: usize,
+    atomic_number: u32,
+    explicit_valence: i32,
+    radicals: i32,
+    charge: i32,
+    strict: bool,
+) -> Option<Result<i32, RdkitSmilesError>> {
+    if atomic_number != 1 || explicit_valence != 0 || radicals != 0 {
+        return None;
+    }
+    Some(match charge {
+        -1 | 1 => Ok(0),
+        0 => Ok(1),
+        _ if strict => Err(RdkitSmilesError::Sanitization(format!(
+            "Unreasonable formal charge on atom # {atom_index}."
+        ))),
+        _ => Ok(0),
+    })
+}
+
+fn aromatic_implicit_valence(
+    atom_index: usize,
+    explicit_plus_radicals: i32,
+    default_valence: i32,
+    valences: &[i8],
+    strict: bool,
+) -> Result<i32, RdkitSmilesError> {
+    if explicit_plus_radicals <= default_valence {
+        return Ok(default_valence - explicit_plus_radicals);
+    }
+    let accepted = valences
+        .iter()
+        .take_while(|&&valence| valence > 0)
+        .any(|&valence| explicit_plus_radicals == i32::from(valence));
+    if !accepted && strict {
+        return Err(RdkitSmilesError::Sanitization(format!(
+            "Explicit valence for aromatic atom # {atom_index} not equal to any accepted valence"
+        )));
+    }
+    Ok(0)
+}
+
+fn aliphatic_implicit_valence(
+    atom_index: usize,
+    atomic_number: u32,
+    explicit_plus_radicals: i32,
+    valences: &[i8],
+    original_valences: &[i8],
+    strict: bool,
+) -> Result<i32, RdkitSmilesError> {
+    if let Some(total) = valences
+        .iter()
+        .take_while(|&&valence| valence >= 0)
+        .map(|&valence| i32::from(valence))
+        .find(|&total| explicit_plus_radicals <= total)
+    {
+        return Ok(total - explicit_plus_radicals);
+    }
+    if strict
+        && *valences.last().unwrap_or(&-1) != -1
+        && *original_valences.last().unwrap_or(&-1) > 0
+    {
+        return Err(RdkitSmilesError::Sanitization(format!(
+            "Explicit valence for atom # {atom_index} {} greater than permitted",
+            periodic::symbol(atomic_number)
+        )));
+    }
+    Ok(0)
+}
+
 impl Mol {
     pub(crate) fn add_atom(&mut self, atom: Atom) -> usize {
         self.atoms.push(atom);
@@ -573,18 +644,10 @@ impl Mol {
         }
         let charge = atom.charge;
         let radicals = atom.radicals as i32;
-        if explicit_valence == 0 && radicals == 0 && anum == 1 {
-            if charge == 1 || charge == -1 {
-                return Ok(0);
-            } else if charge == 0 {
-                return Ok(1);
-            } else if strict {
-                return Err(RdkitSmilesError::Sanitization(format!(
-                    "Unreasonable formal charge on atom # {a}."
-                )));
-            } else {
-                return Ok(0);
-            }
+        if let Some(result) =
+            hydrogen_implicit_valence(a, anum, explicit_valence, radicals, charge, strict)
+        {
+            return result;
         }
         // RDKit reads the stored explicit valence here.
         let mut explicit_plus_rad = atom.explicit_valence + radicals;
@@ -605,54 +668,11 @@ impl Mol {
             explicit_plus_rad -= charge;
         }
         let valens = periodic::valence_list(eff);
-        let mut res;
         if self.is_aromatic_atom(a) {
-            if explicit_plus_rad <= dv {
-                res = dv - explicit_plus_rad;
-            } else {
-                let mut satis = false;
-                for &v in valens {
-                    if v <= 0 {
-                        break;
-                    }
-                    if explicit_plus_rad == i32::from(v) {
-                        satis = true;
-                        break;
-                    }
-                }
-                if !satis && strict {
-                    return Err(RdkitSmilesError::Sanitization(format!(
-                        "Explicit valence for aromatic atom # {a} not equal to any accepted valence"
-                    )));
-                }
-                res = 0;
-            }
+            aromatic_implicit_valence(a, explicit_plus_rad, dv, valens, strict)
         } else {
-            res = -1;
-            for &v in valens {
-                if v < 0 {
-                    break;
-                }
-                let tot = i32::from(v);
-                if explicit_plus_rad <= tot {
-                    res = tot - explicit_plus_rad;
-                    break;
-                }
-            }
-            if res < 0 {
-                if strict
-                    && *valens.last().unwrap_or(&-1) != -1
-                    && *ovalens.last().unwrap_or(&-1) > 0
-                {
-                    return Err(RdkitSmilesError::Sanitization(format!(
-                        "Explicit valence for atom # {a} {} greater than permitted",
-                        periodic::symbol(anum)
-                    )));
-                }
-                res = 0;
-            }
+            aliphatic_implicit_valence(a, anum, explicit_plus_rad, valens, ovalens, strict)
         }
-        Ok(res)
     }
 
     /// `Atom::calcImplicitValence(strict)`.
