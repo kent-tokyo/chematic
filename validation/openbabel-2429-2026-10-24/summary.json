@@ -1,0 +1,53 @@
+{
+  "schema": "chematic.v3000-either-summary.v1",
+  "utc": "2026-10-23T18:48:23.805529+00:00",
+  "base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "candidate_state": "unpublished candidate",
+  "baseline": "Previously built c7e348f6 runtime (main 38b4c92c plus the unrelated 3D zero-seed fix); not a separate rebuilt main/release.",
+  "scope": "18 authored C4 alkene cases: expected defined/unknown state before and after V3000 rewriting; no literal cross-engine SMILES, SVG, broad stereochemistry, timing or coordinate-retention claim.",
+  "results": {
+    "before": {
+      "total": 18,
+      "read_and_roundtrip_matches": 1,
+      "read_matches": 2,
+      "reread_matches": 1
+    },
+    "candidate": {
+      "total": 18,
+      "read_and_roundtrip_matches": 18,
+      "read_matches": 18,
+      "reread_matches": 18
+    },
+    "rdkit": {
+      "total": 18,
+      "read_and_roundtrip_matches": 18,
+      "read_matches": 18,
+      "reread_matches": 18
+    },
+    "openbabel": {
+      "total": 18,
+      "read_and_roundtrip_matches": 1,
+      "read_matches": 1,
+      "reread_matches": 1
+    }
+  },
+  "source_and_packet_sha256": {
+    "Cargo.lock": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+    "crates/chematic-mol/src/mol3000.rs": "48e8c7f6e2c86b1756114ba453b9c7411615aa97602866d37116a1c4d371cee3",
+    "crates/chematic-mol/src/mol3000/either_bonds.rs": "dcad81d96c33bf8a5cbaf78d37550aafcd45b788bfac519f4c0357b4aceda8f1",
+    "crates/chematic-mol/src/mol3000/writer.rs": "665ab0d8b5cbdc719e7b6421f4a1795e4ad615a88e79157ddcd7d29b49f95707",
+    "scripts/validation/validate_v3000_either_single.py": "7078f278bed0a84e94725fce08add013f585f00bdc17336d8377ffbaf98564e1",
+    "validation/openbabel-2429-2026-10-24/before.json.gz": "b5170292972b63cf47ab42ff89603d02b41a7980da474f1401e34521eabc39d6",
+    "validation/openbabel-2429-2026-10-24/candidate.json.gz": "37a9f15d1a42dcdd746e8919186e76ced2f0786d5ec49730321ddc80b1e831d9",
+    "validation/openbabel-2429-2026-10-24/cases.json": "5974de14021aa61a72f5a7c461316832f30b861793fd0832190c93f8ace5f5c1",
+    "validation/openbabel-2429-2026-10-24/either-single.mol": "a63e683ba894dd3a0756b03fe47003afcf48a8087fd340ab20b885211dd02812",
+    "validation/openbabel-2429-2026-10-24/openbabel.json.gz": "76db22bbe6c25856280f664decfc3eef7680adfbee84ea5c8553ea4778fb4f4b",
+    "validation/openbabel-2429-2026-10-24/rdkit.json.gz": "873c7b44a7af15df36e90434e68ff3d1d729c339e30477e3baae7e5e0b312f8b",
+    "validation/openbabel-2429-2026-10-24/regression-before.json": "23c9809e84d124f75385ddc8317c66b00ab965cf28d63648c5e6cab3a8b786b1",
+    "validation/openbabel-2429-2026-10-24/upstream.json": "f03166631495794ab1a66c74a4bd8fa31c24e709ca6291b66db0d4b02c0c2009"
+  },
+  "wasm_artifact_sha256": {
+    "/private/tmp/chematic-openbabel-2429-wasm-20261024/chematic_wasm.js": "5ee9a4c4327cdda1a821d7fcc71f8468fda53eae5828f0e6b9629d284081978f",
+    "/private/tmp/chematic-openbabel-2429-wasm-20261024/chematic_wasm_bg.wasm": "8326c9a964485a3a42bc2650b5fff94d6d28e0406debe02d65484974e2b62dcc"
+  }
+}

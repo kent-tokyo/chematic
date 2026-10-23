@@ -25,6 +25,7 @@ use crate::mol2000::{
 const V30_PREFIX: &str = "M  V30 ";
 
 mod coordinates;
+mod either_bonds;
 pub use coordinates::parse_mol_v3000_with_coords_3d;
 mod source;
 pub use source::{
@@ -474,13 +475,16 @@ fn parse_v3000_bond_line(
         explicitly_unspecified_ez.insert(bidx);
     }
     // Preserve richer V3000 bond attributes without pretending to interpret
-    // them. Wedge CFG is regenerated from BondOrder; double-bond CFG=2
-    // has no core tag, so retain it explicitly for lossless rewriting. ENDPTS is the one supported reference-bearing attribute: its
+    // them. Wedge CFG is regenerated from BondOrder; single/double CFG=2
+    // has no core tag, so retain it explicitly for rewriting (Open Babel #2429).
+    // ENDPTS is the one supported reference-bearing attribute: its
     // atom ids must follow the normalized output order when source ids are
     // non-contiguous. ATTACH and future keys remain opaque.
     let opaque_properties = kv_tokens
         .iter()
-        .filter(|token| !token.starts_with("CFG=") || (btype_raw == 2 && token.trim() == "CFG=2"))
+        .filter(|token| {
+            !token.starts_with("CFG=") || (matches!(btype_raw, 1 | 2) && token.trim() == "CFG=2")
+        })
         .copied()
         .collect::<Vec<_>>()
         .join(" ");
@@ -1004,7 +1008,7 @@ fn apply_v3000_radical_hydrogens(mol: &mut Molecule, properties: &[(u32, String)
 }
 
 fn finish_v3000_report(
-    parser: V3000Parser,
+    mut parser: V3000Parser,
     mut metadata: MolMetadata,
     line2: &str,
 ) -> Result<(MolReadReport, Vec<f64>), MolParseError> {
@@ -1016,6 +1020,9 @@ fn finish_v3000_report(
     metadata.v3000_sgroups = parser.sgroups;
     metadata.v3000_bond_properties = parser.bond_properties;
     metadata.v3000_atom_properties = parser.atom_properties;
+    parser
+        .unspecified_ez
+        .extend(either_bonds::adjacent_unknown_double_bonds(&mol, &metadata));
     if !parser.stereo_groups.is_empty() {
         mol.set_stereo_groups_with_bonds(
             parser
