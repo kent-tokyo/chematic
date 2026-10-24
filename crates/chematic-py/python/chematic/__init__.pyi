@@ -3915,7 +3915,11 @@ def from_extxyz(text: str) -> dict:
 
     Returns:
         dict: ``{"mol": Mol, "coords": list[list[float]],
-        "lattice": list[float] | None, "properties": dict, "info": dict}``.
+        "lattice": list[float] | None, "properties": dict, "info": dict,
+        "comment": str, "property_schema": dict[str, tuple[str, int]]}``.
+        Schema entries retain R/I/S/L kinds and widths, even with no atoms.
+        Info stays raw strings; comment is the original second line. Pass the
+        complete dict to ``to_extxyz(**result)`` to retain supported typed data.
 
     Raises:
         ValueError: on malformed input.
@@ -3943,17 +3947,28 @@ def to_extxyz(
     lattice: Optional[list[float]] = None,
     properties: Optional[dict] = None,
     info: Optional[dict] = None,
+    *,
+    property_schema: Optional[dict[str, tuple[str, int]]] = None,
+    comment: str = "",
 ) -> str:
-    """Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+    """Write geometry with optional typed Extended XYZ atom columns.
 
-    ``properties`` is ``dict[str, list[list[float]]]`` (real-valued per-atom
-    columns only, e.g. ``{"forces": [[fx, fy, fz], ...]}``). ``info`` is
-    ``dict[str, str]`` of extra frame metadata (e.g. ``{"energy": "-76.4"}``).
+    ``property_schema`` maps each property name to (kind, positive width):
+    R = finite binary64, I = signed 64-bit int, S = checked single-token str,
+    L = bool. Its names must exactly match ``properties``. Omitting it keeps
+    the existing real-column API with widths inferred from nonempty rows.
+    Integers not exactly representable as R are refused; declare I instead.
+    Python bool is accepted only in L columns. Empty frames need an explicit
+    schema for extra properties, since their widths cannot be inferred.
+
+    ``to_extxyz(**from_extxyz(text))`` retains supported types, widths, values,
+    atom order, cell, raw info and plain XYZ comments. With structured fields,
+    the header is rebuilt and the comment is superseded. Spelling/spacing may
+    change. Bonds, formal charges, isotope identity and stereo are not projected.
 
     Raises:
-        ValueError: on invalid shapes, nonfinite values or unrepresentable names.
-        Reserved atom/position aliases and duplicate semantic columns are refused.
-        Molecular bonds, charge/isotope/stereo fields are not projected.
+        ValueError: on invalid schemas, shapes, types, nonfinite values,
+        unsafe tokens/names, reserved aliases or duplicate semantic columns.
     """
     ...
 

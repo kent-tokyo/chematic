@@ -1,0 +1,1533 @@
+{
+  "schema": "chematic.extxyz-python-types-observation.v1",
+  "baseline": false,
+  "scope": "Synthetic typed Python read/write packet with an independent bounded text observer; Open Babel is measured through plain XYZ, not claimed ASE ExtXYZ support; no speed, chemical graph or general format ranking",
+  "parent_commit": "6f0691195fd2a774f9720df3794dbeea63422981",
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/validation/extxyz_python_types/cases.json",
+    "sha256": "33b5099e6f109a874c75a44a8deae1f1cc80d71aab73f835bbd73e5bc563da02",
+    "size_bytes": 1963
+  },
+  "python_runtime": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/extxyz-types-candidate-python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "22a80836b900156170e697e6876412a52cb18b6c1b2142e2b8b2f48c7fa3ed9b",
+    "size_bytes": 45902784
+  },
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "openbabel": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "binding_sources": {
+    "reference": "working tree",
+    "files": [
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-py/src/formats/xyz.rs",
+        "sha256": "a064d57e3eb2c83f7e0ef036b72fa19819cdf4169453c77cd7a11ffec2f582ba",
+        "size_bytes": 9900
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/xyz.rs",
+        "sha256": "14b77705d1ebc9b515c5b0721da77b307ffa4e10f6c8bc6939ef97fdfa6130eb",
+        "size_bytes": 39974
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/xyz/extxyz.rs",
+        "sha256": "b5258ef62693048e2741ce2c374fd8141af0b62c14afd9c41d2156654871d815",
+        "size_bytes": 23443
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/xyz/extxyz_validation.rs",
+        "sha256": "4575012efa43e9f233059673aae8e382e2f29828586f827dd031f4dc8c0c525d",
+        "size_bytes": 4019
+      },
+      {
+        "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-py/src/formats/xyz/properties.rs",
+        "sha256": "ce351017cf3fc6a62e24d31c0f16516324f45d7da7aa771569375b92ad227195",
+        "size_bytes": 5314
+      }
+    ]
+  },
+  "harness_sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_extxyz_python_types.py",
+      "sha256": "8fb14290f69bd4663ba516cc93826ca1bbaa7d713f243f3b6b56b8716304c14b",
+      "size_bytes": 7791
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
+      "sha256": "83870c344f0195cd5f502e06c23379fb50bb7a07a40e7420e89ce997981ef5b5",
+      "size_bytes": 28676
+    }
+  ],
+  "records": [
+    {
+      "id": "real_control",
+      "text": "1\nProperties=species:S:1:pos:R:3:weight:R:1\nC 0 1.25 2.5 0.125\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "weight",
+            "R",
+            1
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "3ff4000000000000",
+              "4004000000000000"
+            ],
+            [
+              "3fc0000000000000"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "1\nProperties=species:S:1:pos:R:3:weight:R:1\nC 0 1.25 2.5 0.125\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "weight",
+              "R",
+              1
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "3ff4000000000000",
+                "4004000000000000"
+              ],
+              [
+                "3fc0000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nProperties=species:S:1:pos:R:3:weight:R:1\nC          0.00000        1.25000        2.50000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "wide_signed_integers",
+      "text": "3\nProperties=species:S:1:pos:R:3:id:I:1\nC 0 0 0 9007199254740993\nO 1 0 0 -9223372036854775808\nH 2 0 0 9223372036854775807\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "id",
+            "I",
+            1
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              9007199254740993
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              -9223372036854775808
+            ]
+          ],
+          [
+            [
+              "H"
+            ],
+            [
+              "4000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              9223372036854775807
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "3\nProperties=species:S:1:pos:R:3:id:I:1\nC 0 0 0 9007199254740993\nO 1 0 0 -9223372036854775808\nH 2 0 0 9223372036854775807\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "id",
+              "I",
+              1
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                9007199254740993
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                -9223372036854775808
+              ]
+            ],
+            [
+              [
+                "H"
+              ],
+              [
+                "4000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                9223372036854775807
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "3\nProperties=species:S:1:pos:R:3:id:I:1\nC          0.00000        0.00000        0.00000\nO          1.00000        0.00000        0.00000\nH          2.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "strings",
+      "text": "2\nProperties=species:S:1:pos:R:3:label:S:2\nC 0 0 0 alpha 甲\nO 1 0 0 beta_2 42\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "label",
+            "S",
+            2
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "alpha",
+              "甲"
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "beta_2",
+              "42"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "2\nProperties=species:S:1:pos:R:3:label:S:2\nC 0 0 0 alpha 甲\nO 1 0 0 beta_2 42\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "label",
+              "S",
+              2
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "alpha",
+                "甲"
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "beta_2",
+                "42"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "2\nProperties=species:S:1:pos:R:3:label:S:2\nC          0.00000        0.00000        0.00000\nO          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "logical_vectors",
+      "text": "2\nProperties=species:S:1:pos:R:3:mask:L:3\nC 0 0 0 T false 1\nO 1 0 0 F true 0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "mask",
+            "L",
+            3
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              true,
+              false,
+              true
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              false,
+              true,
+              false
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "2\nProperties=species:S:1:pos:R:3:mask:L:3\nC 0 0 0 T F T\nO 1 0 0 F T F\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "mask",
+              "L",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                true,
+                false,
+                true
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                false,
+                true,
+                false
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "2\nProperties=species:S:1:pos:R:3:mask:L:3\nC          0.00000        0.00000        0.00000\nO          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "mixed_types_cell_info",
+      "text": "2\nLattice=\"3 0.25 0 0 4 0.5 0 0 5\" Properties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:2:vec:R:2 note=\"two atoms\" step=17\nC -0.0 0.12345678901234566 2.5 9007199254740993 -5 donor T F 1e-150 -0.0\nO 1 0 0 7 42 acceptor F T -1e150 0.25\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "id",
+            "I",
+            2
+          ],
+          [
+            "tag",
+            "S",
+            1
+          ],
+          [
+            "mask",
+            "L",
+            2
+          ],
+          [
+            "vec",
+            "R",
+            2
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "8000000000000000",
+              "3fbf9add3746f65e",
+              "4004000000000000"
+            ],
+            [
+              9007199254740993,
+              -5
+            ],
+            [
+              "donor"
+            ],
+            [
+              true,
+              false
+            ],
+            [
+              "20ca2fe76a3f9475",
+              "8000000000000000"
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              7,
+              42
+            ],
+            [
+              "acceptor"
+            ],
+            [
+              false,
+              true
+            ],
+            [
+              "df138d352e5096af",
+              "3fd0000000000000"
+            ]
+          ]
+        ],
+        "lattice": [
+          "4008000000000000",
+          "3fd0000000000000",
+          "0000000000000000",
+          "0000000000000000",
+          "4010000000000000",
+          "3fe0000000000000",
+          "0000000000000000",
+          "0000000000000000",
+          "4014000000000000"
+        ],
+        "info": [
+          [
+            "note",
+            "two atoms"
+          ],
+          [
+            "step",
+            "17"
+          ]
+        ],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "2\nLattice=\"3 0.25 0 0 4 0.5 0 0 5\" Properties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:2:vec:R:2 note=\"two atoms\" step=17\nC -0 0.12345678901234566 2.5 9007199254740993 -5 donor T F 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 -0\nO 1 0 0 7 42 acceptor F T -1000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 0.25\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "id",
+              "I",
+              2
+            ],
+            [
+              "tag",
+              "S",
+              1
+            ],
+            [
+              "mask",
+              "L",
+              2
+            ],
+            [
+              "vec",
+              "R",
+              2
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "8000000000000000",
+                "3fbf9add3746f65e",
+                "4004000000000000"
+              ],
+              [
+                9007199254740993,
+                -5
+              ],
+              [
+                "donor"
+              ],
+              [
+                true,
+                false
+              ],
+              [
+                "20ca2fe76a3f9475",
+                "8000000000000000"
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                7,
+                42
+              ],
+              [
+                "acceptor"
+              ],
+              [
+                false,
+                true
+              ],
+              [
+                "df138d352e5096af",
+                "3fd0000000000000"
+              ]
+            ]
+          ],
+          "lattice": [
+            "4008000000000000",
+            "3fd0000000000000",
+            "0000000000000000",
+            "0000000000000000",
+            "4010000000000000",
+            "3fe0000000000000",
+            "0000000000000000",
+            "0000000000000000",
+            "4014000000000000"
+          ],
+          "info": [
+            [
+              "note",
+              "two atoms"
+            ],
+            [
+              "step",
+              "17"
+            ]
+          ],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "2\nLattice=\"3 0.25 0 0 4 0.5 0 0 5\" Properties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:2:vec:R:2 note=\"two atoms\" step=17\nC         -0.00000        0.12346        2.50000\nO          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "empty_typed_frame",
+      "text": "0\nProperties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:3:vec:R:4\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "id",
+            "I",
+            2
+          ],
+          [
+            "tag",
+            "S",
+            1
+          ],
+          [
+            "mask",
+            "L",
+            3
+          ],
+          [
+            "vec",
+            "R",
+            4
+          ]
+        ],
+        "rows": [],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "0\nProperties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:3:vec:R:4\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "id",
+              "I",
+              2
+            ],
+            [
+              "tag",
+              "S",
+              1
+            ],
+            [
+              "mask",
+              "L",
+              3
+            ],
+            [
+              "vec",
+              "R",
+              4
+            ]
+          ],
+          "rows": [],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "skipped": "empty frame excluded from OB workflow"
+      }
+    },
+    {
+      "id": "plain_comment",
+      "text": "1\nenergy in external file; sample 甲\nHe 0 0 0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "He"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": "energy in external file; sample 甲"
+      },
+      "python": {
+        "output": "1\nenergy in external file; sample 甲\nHe 0 0 0\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "He"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": "energy in external file; sample 甲"
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nenergy in external file; sample 甲\nHe         0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "He"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": "energy in external file; sample 甲"
+        }
+      }
+    },
+    {
+      "id": "empty_comment_frame",
+      "text": "0\nempty sample\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ]
+        ],
+        "rows": [],
+        "lattice": null,
+        "info": [],
+        "plain_comment": "empty sample"
+      },
+      "python": {
+        "output": "0\nempty sample\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ]
+          ],
+          "rows": [],
+          "lattice": null,
+          "info": [],
+          "plain_comment": "empty sample"
+        }
+      },
+      "openbabel_xyz": {
+        "skipped": "empty frame excluded from OB workflow"
+      }
+    },
+    {
+      "id": "species_position_header",
+      "text": "1\nProperties=species:S:1:pos:R:3\nNe 0 0 0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "Ne"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": "Properties=species:S:1:pos:R:3"
+      },
+      "python": {
+        "output": "1\nProperties=species:S:1:pos:R:3\nNe 0 0 0\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "Ne"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": "Properties=species:S:1:pos:R:3"
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nProperties=species:S:1:pos:R:3\nNe         0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "Ne"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": "Properties=species:S:1:pos:R:3"
+        }
+      }
+    },
+    {
+      "id": "real_extremes",
+      "text": "1\nProperties=species:S:1:pos:R:3:weights:R:3\nC -0.0 5e-324 1.7976931348623157e308 5e-324 -1.7976931348623157e308 -0.0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "weights",
+            "R",
+            3
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "8000000000000000",
+              "0000000000000001",
+              "7fefffffffffffff"
+            ],
+            [
+              "0000000000000001",
+              "ffefffffffffffff",
+              "8000000000000000"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "1\nProperties=species:S:1:pos:R:3:weights:R:3\nC -0 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005 179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005 -179769313486231570000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 -0\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "weights",
+              "R",
+              3
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "8000000000000000",
+                "0000000000000001",
+                "7fefffffffffffff"
+              ],
+              [
+                "0000000000000001",
+                "ffefffffffffffff",
+                "8000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nProperties=species:S:1:pos:R:3:weights:R:3\nC         -0.00000        0.00000179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "integral_reals",
+      "text": "2\nProperties=species:S:1:pos:R:3:value:R:1\nC 0 0 0 1.0\nO 1 0 0 0.0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "value",
+            "R",
+            1
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "3ff0000000000000"
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "0000000000000000"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "2\nProperties=species:S:1:pos:R:3:value:R:1\nC 0 0 0 1\nO 1 0 0 0\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "value",
+              "R",
+              1
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "3ff0000000000000"
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "0000000000000000"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "2\nProperties=species:S:1:pos:R:3:value:R:1\nC          0.00000        0.00000        0.00000\nO          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    },
+    {
+      "id": "numeric_strings",
+      "text": "2\nProperties=species:S:1:pos:R:3:tag:S:2\nC 0 0 0 T 9007199254740993\nO 1 0 0 NaN -0.0\n",
+      "expected": {
+        "schema": [
+          [
+            "species",
+            "S",
+            1
+          ],
+          [
+            "pos",
+            "R",
+            3
+          ],
+          [
+            "tag",
+            "S",
+            2
+          ]
+        ],
+        "rows": [
+          [
+            [
+              "C"
+            ],
+            [
+              "0000000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "T",
+              "9007199254740993"
+            ]
+          ],
+          [
+            [
+              "O"
+            ],
+            [
+              "3ff0000000000000",
+              "0000000000000000",
+              "0000000000000000"
+            ],
+            [
+              "NaN",
+              "-0.0"
+            ]
+          ]
+        ],
+        "lattice": null,
+        "info": [],
+        "plain_comment": null
+      },
+      "python": {
+        "output": "2\nProperties=species:S:1:pos:R:3:tag:S:2\nC 0 0 0 T 9007199254740993\nO 1 0 0 NaN -0.0\n",
+        "preserved": true,
+        "snapshot": {
+          "schema": [
+            [
+              "species",
+              "S",
+              1
+            ],
+            [
+              "pos",
+              "R",
+              3
+            ],
+            [
+              "tag",
+              "S",
+              2
+            ]
+          ],
+          "rows": [
+            [
+              [
+                "C"
+              ],
+              [
+                "0000000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "T",
+                "9007199254740993"
+              ]
+            ],
+            [
+              [
+                "O"
+              ],
+              [
+                "3ff0000000000000",
+                "0000000000000000",
+                "0000000000000000"
+              ],
+              [
+                "NaN",
+                "-0.0"
+              ]
+            ]
+          ],
+          "lattice": null,
+          "info": [],
+          "plain_comment": null
+        }
+      },
+      "openbabel_xyz": {
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "2\nProperties=species:S:1:pos:R:3:tag:S:2\nC          0.00000        0.00000        0.00000\nO          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "preserved": false,
+        "error": "ContractError: atom row width"
+      }
+    }
+  ],
+  "summary": {
+    "python": {
+      "preserved": 12,
+      "total": 12
+    },
+    "openbabel_xyz": {
+      "preserved": 2,
+      "total": 10
+    }
+  }
+}
