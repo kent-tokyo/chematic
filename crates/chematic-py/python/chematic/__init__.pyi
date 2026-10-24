@@ -5967,6 +5967,18 @@ def lpmd_positions_angstrom(record: dict[str, Any], *, max_input_bytes: Optional
     """Explicit Cartesian positions grouped by frame, without wrapping or bonds."""
     ...
 
+def parse_gromos96(text: str | bytes, *, length_unit: str = "unspecified", max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> dict[str, Any]:
+    """Read bounded GROMOS96 blocks, retaining source labels/comments/fields and external unit context."""
+    ...
+
+def write_gromos96(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> str:
+    """Validate and write current blocks. Unit context is external to the unmarked text format."""
+    ...
+
+def gromos96_geometry_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> list[dict[str, Any]]:
+    """Project every frame's positions and BOX together, refusing unspecified units or overflow."""
+    ...
+
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""

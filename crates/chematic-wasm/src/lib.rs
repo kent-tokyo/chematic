@@ -36,6 +36,8 @@ mod ensemble_v2;
 mod format_io;
 mod fract;
 pub use fract::*;
+mod gromos96;
+pub use gromos96::*;
 mod gpr;
 pub use gpr::*;
 mod unixyz;

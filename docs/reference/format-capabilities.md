@@ -68,6 +68,7 @@ means the operation is not exposed on that binding.
 | ViewMol (`vmol`) | bounded R/W | bounded R/W | bounded R/W | [Raw unit factor, fixed axes, title and explicit Angstrom projection](viewmol-preservation.md); CLI also available |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |
 | [LPMD 2.0 L](lpmd-preservation.md) | bounded R/W | bounded R/W | bounded R/W | All frames, oriented cells, raw columns; explicit Cartesian projection |
+| [GROMOS96](gromos96-preservation.md) | bounded R/W | bounded R/W | bounded R/W | All supported blocks/frames and labels; caller-owned units |
 
 ## Checked conversion reports (initial adapter)
 
@@ -141,6 +142,7 @@ Use these pages when the short matrix is not enough:
   [Kekulé output](mol2-kekule-bond-output.md)
 - [Free Form Fractional precision and uncertainty](fract-preservation.md)
 - [Ghemical GPR records](gpr-preservation.md)
+- [GROMOS96 records and explicit units](gromos96-preservation.md)
 - [UniChem XYZ record preservation](unixyz-preservation.md)
 - [ViewMol geometry, units and fixed axes](viewmol-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and

@@ -49,6 +49,8 @@ mod fract;
 use fract::*;
 mod gpr;
 use gpr::*;
+mod gromos96;
+use gromos96::*;
 mod unixyz;
 use unixyz::*;
 mod viewmol;
@@ -1475,6 +1477,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_fract,
         parse_gpr,
         write_gpr,
+        parse_gromos96,
+        write_gromos96,
+        gromos96_geometry_angstrom,
         parse_unixyz,
         write_unixyz,
         parse_viewmol,

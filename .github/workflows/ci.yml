@@ -53,7 +53,7 @@ jobs:
         run: |
           python3 tools/check_script_layout.py
           python3 tools/check_python_fixture_encodings.py
-          python3 -m unittest scripts.tests.test_python_fixture_encodings scripts.tests.test_lpmd_observer
+          python3 -m unittest scripts.tests.test_python_fixture_encodings scripts.tests.test_lpmd_observer scripts.tests.test_gromos96_observer
           python3 -m unittest scripts.tests.test_sdf_data_item_framing
           python3 -m unittest scripts.tests.test_cml_source_conversion
           python3 -m unittest scripts.tests.test_cml_coordinate_precision
