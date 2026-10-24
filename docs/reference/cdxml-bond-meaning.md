@@ -15,9 +15,13 @@ explicit dative edge. The native writer emits `Order="4"` and
 
 Fractional orders other than `1.5`, orders five/six and ionic, hydrogen or
 three-center declarations are outside this graph profile. They return
-`CdxmlError::UnsupportedBondOrder` in Rust and an error in Python, WASM and CLI
-common-format conversion. An empty or unrecognized declaration also refuses;
-only absence invokes the single-bond default. This is not full CDXML validation.
+the existing `CdxmlError::InvalidDocument` variant in Rust; callers can classify
+it and recover the authored token with `CdxmlError::unsupported_bond_order()`.
+Python, WASM and CLI common-format conversion return an error with the same
+stable message. An empty or unrecognized declaration also refuses; only absence
+invokes the single-bond default. This is not full CDXML validation. Reusing the
+existing variant preserves source compatibility for exhaustive matches written
+against earlier 1.x releases.
 
 ## Bounded development comparison
 

@@ -13,8 +13,9 @@
 //! `<b>` (bond): `B` (begin atom id), `E` (end atom id), `Order` (1/2/3,
 //!               defaults to 1; also 4, 1.5/aromatic and directed dative)
 //! A dative bond retains B -> E regardless of wedge/hash display decoration.
-//! Other declared orders return [`CdxmlError::UnsupportedBondOrder`]; only an
-//! absent order defaults to single. This is a bounded graph profile.
+//! Other declared orders return an [`CdxmlError::InvalidDocument`] classified
+//! by [`CdxmlError::unsupported_bond_order`]; only an absent order defaults to
+//! single. This is a bounded graph profile.
 //!
 //! # Limitations
 //!
@@ -103,9 +104,6 @@ pub enum CdxmlError {
     InvalidCoords(String),
     /// A generic nickname is outside the lossless `*`/`R`/`R<n>` contract.
     UnsupportedPseudoatomLabel(String),
-    /// A declared bond order cannot be represented by this reader's profile.
-    /// Absence defaults to single; an unsupported declaration never does.
-    UnsupportedBondOrder(String),
     /// The document contains more atoms than the parser's safety limit.
     TooManyAtoms(usize),
     /// The document exceeded a configured resource limit.
@@ -119,6 +117,9 @@ pub enum CdxmlError {
 impl std::fmt::Display for CdxmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            CdxmlError::InvalidDocument(s) if s.starts_with(UNSUPPORTED_BOND_ORDER_PREFIX) => {
+                f.write_str(s)
+            }
             CdxmlError::InvalidDocument(s) => write!(f, "invalid CDXML document: {s}"),
             CdxmlError::UnknownAtomicNumber(n) => write!(f, "unknown atomic number: {n}"),
             CdxmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
@@ -127,9 +128,6 @@ impl std::fmt::Display for CdxmlError {
             CdxmlError::InvalidCoords(s) => write!(f, "invalid p coords: {s}"),
             CdxmlError::UnsupportedPseudoatomLabel(label) => {
                 write!(f, "unsupported CDXML pseudoatom label: {label}")
-            }
-            CdxmlError::UnsupportedBondOrder(order) => {
-                write!(f, "unsupported CDXML bond order: {order}")
             }
             CdxmlError::TooManyAtoms(n) => write!(f, "CDXML document exceeds atom limit ({n})"),
             CdxmlError::ResourceLimit {
@@ -145,6 +143,23 @@ impl std::fmt::Display for CdxmlError {
 }
 
 impl std::error::Error for CdxmlError {}
+
+const UNSUPPORTED_BOND_ORDER_PREFIX: &str = "unsupported CDXML bond order: ";
+
+impl CdxmlError {
+    /// Returns the authored bond-order token when this error is the bounded
+    /// CDXML profile's unsupported-order refusal.
+    ///
+    /// This classifier keeps the public error enum source-compatible with
+    /// earlier 1.x releases while allowing callers to distinguish this refusal
+    /// without parsing [`std::fmt::Display`] output.
+    pub fn unsupported_bond_order(&self) -> Option<&str> {
+        match self {
+            Self::InvalidDocument(message) => message.strip_prefix(UNSUPPORTED_BOND_ORDER_PREFIX),
+            _ => None,
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Parser
@@ -631,7 +646,11 @@ fn cdxml_bond_order(attrs: &HashMap<String, String>) -> Result<BondOrder, CdxmlE
         Some("4") => BondOrder::Quadruple,
         Some("1.5") => BondOrder::Aromatic,
         Some("dative") => BondOrder::Dative,
-        Some(order) => return Err(CdxmlError::UnsupportedBondOrder(order.into())),
+        Some(order) => {
+            return Err(CdxmlError::InvalidDocument(format!(
+                "{UNSUPPORTED_BOND_ORDER_PREFIX}{order}"
+            )));
+        }
     };
     if base != BondOrder::Single {
         return Ok(base);

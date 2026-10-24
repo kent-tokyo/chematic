@@ -117,14 +117,29 @@ fn declared_unsupported_orders_refuse_instead_of_becoming_single() {
     {
         let input = c["input"].as_str().unwrap();
         for infer_nondirectional_stereo in [false, true] {
-            assert!(
-                matches!(parse_cdxml_with_options(input,&CdxmlParseOptions {infer_nondirectional_stereo}),
-                Err(CdxmlError::UnsupportedBondOrder(value)) if value==c["declared_order"].as_str().unwrap())
+            let error = match parse_cdxml_with_options(
+                input,
+                &CdxmlParseOptions {
+                    infer_nondirectional_stereo,
+                },
+            ) {
+                Err(error) => error,
+                Ok(_) => panic!("unsupported order was accepted"),
+            };
+            assert!(matches!(error, CdxmlError::InvalidDocument(_)));
+            assert_eq!(error.unsupported_bond_order(), c["declared_order"].as_str());
+            assert_eq!(
+                error.to_string(),
+                format!(
+                    "unsupported CDXML bond order: {}",
+                    c["declared_order"].as_str().unwrap()
+                )
             );
         }
-        assert!(matches!(
-            parse_cdxml_all(input),
-            Err(CdxmlError::UnsupportedBondOrder(_))
-        ));
+        let error = match parse_cdxml_all(input) {
+            Err(error) => error,
+            Ok(_) => panic!("unsupported order was accepted"),
+        };
+        assert_eq!(error.unsupported_bond_order(), c["declared_order"].as_str());
     }
 }
