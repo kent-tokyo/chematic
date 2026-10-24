@@ -123,7 +123,7 @@ fn explicit_aromaticity_is_consistent(mol: &Molecule) -> bool {
     any
 }
 
-fn has_aromatic_macrocycle_bridge_donor(mol: &Molecule) -> bool {
+pub(super) fn has_aromatic_macrocycle_bridge_donor(mol: &Molecule) -> bool {
     let candidates: Vec<_> = mol
         .atoms()
         .filter_map(|(idx, atom)| {

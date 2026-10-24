@@ -54,12 +54,24 @@ pub fn rdkit_model_may_disagree(mol: &Molecule) -> bool {
 
 fn rdkit_model_may_disagree_uncached(mol: &Molecule) -> bool {
     let mut has_aromatic_atom = false;
+    let mut has_aromatic_oxygen_or_sulfur = false;
     for raw in 0..mol.atom_count() {
-        let (aromatic, may_disagree) = atom_may_disagree(mol, AtomIdx(raw as u32));
+        let idx = AtomIdx(raw as u32);
+        let atom = mol.atom(idx);
+        has_aromatic_oxygen_or_sulfur |=
+            atom.aromatic && matches!(atom.element, Element::O | Element::S);
+        let (aromatic, may_disagree) = atom_may_disagree(mol, idx);
         if may_disagree {
             return true;
         }
         has_aromatic_atom |= aromatic;
+    }
+    // RDKit 2026.09 Kekulizes neutral O/S bridges in large aromatic-written
+    // rings. Fingerprints and other model consumers need those bond orders.
+    if has_aromatic_oxygen_or_sulfur
+        && crate::rdkit_parity::has_aromatic_macrocycle_bridge_donor(mol)
+    {
+        return true;
     }
     // A ring triple bond (`C1=CSC#C1`): RDKit may flag it aromatic while
     // keeping its type, which the parity view does not model.
