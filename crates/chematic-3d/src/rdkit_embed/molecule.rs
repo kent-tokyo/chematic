@@ -5,7 +5,7 @@ use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
 mod quality_retry;
-use quality_retry::refine_unfinished_quality_minimum;
+use quality_retry::{refine_unfinished_quality_minimum, stereo_safe_retry};
 mod torsion_search;
 use torsion_search::refine_best_with_torsion_moves;
 #[path = "molecule/ensemble_seed.rs"]
@@ -745,8 +745,9 @@ pub fn rdkit_embed_multiple_confs_mmff_diagnostics(
 /// most `retry_candidates` finite, non-converged conformers are ordered by
 /// `(energy, candidate index)` and continued from their current coordinates
 /// for `retry_max_iters` more iterations. A retry is retained only when its
-/// energy is finite and no higher than the initial result, so refinement
-/// cannot make the returned ensemble worse. Candidate order remains stable.
+/// energy is finite and no higher than the initial result, and every declared
+/// stereochemical constraint remains evaluable and satisfied. Candidate order
+/// remains stable.
 pub fn rdkit_embed_multiple_confs_mmff_adaptive(
     mh: &Molecule,
     num_confs: usize,
@@ -771,7 +772,7 @@ pub fn rdkit_embed_multiple_confs_mmff_adaptive(
 ///
 /// This quality-oriented rescue avoids paying the additional MMFF94 budget
 /// for molecules that already have at least one converged candidate. The
-/// retry ordering and replacement rules are otherwise identical to
+/// retry ordering and stereo-safe replacement rules are otherwise identical to
 /// [`rdkit_embed_multiple_confs_mmff_adaptive`].
 pub fn rdkit_embed_multiple_confs_mmff_rescue(
     mh: &Molecule,
@@ -799,7 +800,7 @@ pub fn rdkit_embed_multiple_confs_mmff_rescue(
 /// BFGS gradient test to avoid spending extra work on candidates that are
 /// already close to a stationary point. Candidate ranking remains
 /// `(energy, candidate index)`, and a retry is retained only if its energy is
-/// finite and no higher than the initial result.
+/// finite and no higher than the initial result and declared stereo remains valid.
 #[allow(clippy::too_many_arguments)]
 pub fn rdkit_embed_multiple_confs_mmff_gradient_rescue(
     mh: &Molecule,
@@ -885,7 +886,10 @@ pub fn rdkit_embed_multiple_confs_mmff_gradient_rescue(
         .collect();
 
     for (index, retry) in retries {
-        if retry.energy.is_finite() && retry.energy <= detailed[index].conformer.energy {
+        if retry.energy.is_finite()
+            && retry.energy <= detailed[index].conformer.energy
+            && stereo_safe_retry(mh, &retry.coords)
+        {
             detailed[index].conformer = retry;
         }
     }
@@ -957,7 +961,10 @@ fn rdkit_embed_multiple_confs_mmff_retry_policy(
         .collect();
 
     for (index, retry) in retries {
-        if retry.energy.is_finite() && retry.energy <= optimized[index].energy {
+        if retry.energy.is_finite()
+            && retry.energy <= optimized[index].energy
+            && stereo_safe_retry(mh, &retry.coords)
+        {
             optimized[index] = retry;
         }
     }

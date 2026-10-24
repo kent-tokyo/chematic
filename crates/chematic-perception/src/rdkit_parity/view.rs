@@ -410,6 +410,94 @@ impl ComponentInfo {
     }
 }
 
+/// RDKit 2026.09.1 keeps an explicit aromatic six-carbon ring aromatic when
+/// one of its cyclic bonds is triple (for example `c1cc#ccc1`). Its bond
+/// remains triple; the other five cyclic bonds remain aromatic. The ordinary
+/// re-perception path Kekulizes that unusual representation and loses the
+/// aromatic flags. Restrict the shortcut to a single, isolated six-cycle with
+/// neutral aromatic carbons and no other multiple bonds.
+fn explicit_aromatic_six_ring_triple(
+    mol: &Molecule,
+    info: &ComponentInfo,
+    root: usize,
+) -> bool {
+    let n = info.atom_count;
+    let components = info.kind.len();
+    if info.facts[n + root] != 6 || info.facts[n + components + root] != 6 {
+        return false;
+    }
+    for (idx, atom) in mol.atoms() {
+        if info.facts[idx.0 as usize] == root as u32
+            && (!atom.aromatic || atom.element.atomic_number() != 6 || atom.charge != 0)
+        {
+            return false;
+        }
+    }
+    let mut triples = 0;
+    for (idx, bond) in mol.bonds() {
+        let a = info.facts[bond.atom1.0 as usize] == root as u32;
+        let b = info.facts[bond.atom2.0 as usize] == root as u32;
+        if !a && !b {
+            continue;
+        }
+        if info.cyclic[idx.0 as usize] {
+            match bond.order {
+                BondOrder::Aromatic if a && b => {}
+                BondOrder::Triple if a && b => triples += 1,
+                _ => return false,
+            }
+        } else if !matches!(bond.order, BondOrder::Single | BondOrder::Up | BondOrder::Down) {
+            return false;
+        }
+    }
+    triples == 1
+}
+
+/// A different aromatic component may require full re-perception, so the
+/// shortcut above alone cannot protect an explicit aromatic triple ring in
+/// that molecule. Merge only that ring's original aromatic atom and bond
+/// flags into the computed model; keep its triple bond order unchanged.
+fn preserve_explicit_aromatic_six_ring_triples(
+    source: &Molecule,
+    model: AromaticityModel,
+) -> AromaticityModel {
+    if !source.bonds().any(|(_, bond)| {
+        bond.order == BondOrder::Triple
+            && source.atom(bond.atom1).aromatic
+            && source.atom(bond.atom2).aromatic
+    }) {
+        return model;
+    }
+    let info = ComponentInfo::new(source);
+    let protected: FxHashSet<u32> = info
+        .roots()
+        .filter(|&root| explicit_aromatic_six_ring_triple(source, &info, root))
+        .map(|root| root as u32)
+        .collect();
+    if protected.is_empty() {
+        return model;
+    }
+    let atoms = source
+        .atoms()
+        .filter_map(|(idx, _)| {
+            (model.is_atom_aromatic(idx) || protected.contains(&info.facts[idx.0 as usize]))
+                .then_some(idx)
+        })
+        .collect();
+    let bonds = source
+        .bonds()
+        .filter_map(|(idx, bond)| {
+            let root = info.facts[bond.atom1.0 as usize];
+            (model.is_bond_aromatic(idx)
+                || (bond.order == BondOrder::Aromatic
+                    && protected.contains(&root)
+                    && info.facts[bond.atom2.0 as usize] == root))
+                .then_some(idx)
+        })
+        .collect();
+    AromaticityModel::from_atom_bond_sets(atoms, bonds)
+}
+
 fn preperceived_kind_with(mol: &Molecule, info: &ComponentInfo) -> Option<ParityShortcut> {
     if info.has_aromatic_bond && !info.explicit {
         return None;
@@ -422,7 +510,9 @@ fn preperceived_kind_with(mol: &Molecule, info: &ComponentInfo) -> Option<Parity
     for r in info.roots() {
         let f = info.kind[r];
         let aromatic = f & COMP_AROMATIC != 0;
-        if (aromatic && f & COMP_NON_AROMATIC != 0)
+        if (aromatic
+            && f & COMP_NON_AROMATIC != 0
+            && !explicit_aromatic_six_ring_triple(mol, info, r))
             || (!aromatic && f & COMP_NON_AROMATIC_MULTIPLE != 0)
         {
             return None;
@@ -1006,10 +1096,11 @@ pub fn assign_aromaticity_rdkit_parity_experimental(
     {
         return Ok(model_from_explicit_aromaticity(&kekulized));
     }
-    match verdict {
-        Some(v) => assign_from_verdict(&kekulized, v),
-        None => assign_from_kekulized(&kekulized),
-    }
+    let model = match verdict {
+        Some(v) => assign_from_verdict(&kekulized, v)?,
+        None => assign_from_kekulized(&kekulized)?,
+    };
+    Ok(preserve_explicit_aromatic_six_ring_triples(mol, model))
 }
 
 /// Apply aromaticity using the RDKit-parity reference engine, returning a
@@ -1130,6 +1221,7 @@ fn apply_aromaticity_rdkit_parity_unseeded(mol: &Molecule) -> Result<Molecule, A
         Some(v) => assign_from_verdict(&kekulized, v)?,
         None => assign_from_kekulized(&kekulized)?,
     };
+    let model = preserve_explicit_aromatic_six_ring_triples(mol, model);
     Ok(crate::aromaticity::build_molecule_from_model(
         &kekulized, &model,
     ))
