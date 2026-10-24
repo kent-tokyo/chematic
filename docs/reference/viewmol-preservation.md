@@ -126,7 +126,9 @@ token-order variants, source atom order, heavy elements, high/scientific/long
 precision, subnormals, signed zero and layout variations.
 
 The [raw observations](https://github.com/kent-tokyo/chematic/blob/main/validation/viewmol_preservation/observed.json)
-include source/runtime hashes, commands and outputs. Python, actual WASM under
+include source/runtime hashes, commands, outputs and the validated base commit.
+The current receipt was refreshed after incorporating main `b2d6d3a4` (USR and
+aromatic-fingerprint updates); those parent features remain present. Python, actual WASM under
 Node and native CLI each retain all 28 records through three read/write cycles,
 with the initial and three subsequent Angstrom projections matching nominal
 binary64 bits. All 53 refusals and both projection refusals are explicit. The
@@ -164,6 +166,10 @@ This is a small authored local-source packet, not a production corpus or proof
 of all ViewMol semantics, isolated parser/writer accuracy, speed, released-package
 behavior or broad toolkit superiority. Unobservable external outputs remain in
 the raw receipts and are excluded from preservation denominators.
+
+The runner records the HEAD/origin-main merge base by default;
+`--candidate-base <full-sha>` can specify the tested base for a pending merge or
+a source archive. This labels the base, not a clean tested commit.
 
 ```sh
 python3 scripts/validation/check_viewmol_preservation.py \

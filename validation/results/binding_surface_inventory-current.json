@@ -7,9 +7,9 @@
   "scope": "Rust source declarations only; this is not semantic parity evidence",
   "results": {
     "wasm_export_count": 333,
-    "python_pyfunction_count": 248,
-    "python_registered_count": 248,
+    "python_pyfunction_count": 249,
+    "python_registered_count": 249,
     "python_declared_without_registration": [],
-    "surface_sha256": "76e545767fe0df69e32340098fd340e6210a74cb61241f28e357cd4d6f8daa0d"
+    "surface_sha256": "62da34156d6b81d3130a84f6aa9f42e2dc07b3df42de5bc3963e242e779d103c"
   }
 }

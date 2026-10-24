@@ -199,4 +199,7 @@ pub(crate) fn rdkit_atomic_num(mol: &chematic_core::Molecule, idx: chematic_core
 #[cfg(test)]
 mod avalon_boundary_contract_tests;
 
+#[cfg(test)]
+mod rdkit_aromatic_triple_contract_tests;
+
 pub use sparse_matrix::{SparseMatrixError, SparseTanimotoMetric, sparse_tanimoto_matrix_checked};

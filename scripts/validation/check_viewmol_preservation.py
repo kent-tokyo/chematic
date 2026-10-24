@@ -153,7 +153,14 @@ def unit_probe(binary):
 def main():
  parser=argparse.ArgumentParser(description=__doc__)
  for name in ['python-path','wasm-module','cli','output']:parser.add_argument('--'+name,type=Path,required=True)
+ parser.add_argument('--candidate-base',help='Validated base commit; defaults to HEAD/origin-main merge base')
  parser.add_argument('--openbabel',default='/opt/homebrew/bin/obabel');a=parser.parse_args();p=json.loads(PACKET.read_text())
+ base=a.candidate_base
+ if base is None:
+  result=run(['git','-C',str(ROOT),'merge-base','HEAD','origin/main'])
+  if result['returncode']:raise RuntimeError(result)
+  base=result['stdout'].strip()
+ if len(base)!=40 or any(c not in '0123456789abcdef' for c in base):parser.error('--candidate-base must be a full lowercase commit SHA')
  sys.path.insert(0,str(a.python_path.resolve()));m=importlib.import_module('chematic')
  node=run(['node','-e',NODE,str(a.wasm_module.resolve())],json.dumps(p))
  if node['returncode']:raise RuntimeError(node)
@@ -164,7 +171,7 @@ def main():
  ob.update({k:{'exact':sum(r['comparisons'][k] for r in observable),'total':len(observable)} for k in keys})
  emitted={'valid':[dict(c,text=m.write_viewmol(c['expected'])) for c in p['valid']]};rewrites=openbabel_lane(emitted,a.openbabel)
  sources=['crates/chematic-mol/src/viewmol.rs','crates/chematic-mol/src/viewmol/reader.rs','crates/chematic-mol/src/viewmol/writer.rs','crates/chematic-py/src/formats/viewmol.rs','crates/chematic-wasm/src/viewmol.rs','crates/chematic-cli/src/viewmol.rs','scripts/validation/check_viewmol_preservation.py']
- report={'schema_version':1,'scope':__doc__,'candidate_base':'7704ee2030dda8f9ca54a07eb3fc22e94623fb49','packet_sha256':sha(PACKET),
+ report={'schema_version':1,'scope':__doc__,'candidate_base':base,'packet_sha256':sha(PACKET),
          'source_sha256':{s:sha(ROOT/s) for s in sources},'runtime_sha256':{'python_extension':sha(m.chematic.__file__),'wasm':sha(a.wasm_module.with_name('chematic_wasm_bg.wasm')),'cli':sha(a.cli)},
          'versions':{'python':sys.version,'node':run(['node','--version']),'openbabel':run([a.openbabel,'-V'])},
          'openbabel_inventory':run([a.openbabel,'-L','vmol']),'unit_probe':unit_probe(a.openbabel),
