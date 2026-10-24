@@ -56,6 +56,11 @@ geometry. The opt-in CLI route removes non-stereogenic atom tags and rejects
 non-stereogenic double-bond markers using the RDKit-compatible legacy
 perception port. An unsupported perception input is
 reported as an error instead of being silently counted as a nonmatch.
+Directional markers on a closing ring digit are interpreted from the closing
+atom back to the opening atom, including in stereo-sensitive SMARTS searches.
+The reproducible CLI regression gate is
+`scripts/validation/rdkit_cli_stereo_fingerprint_gate.py`; its optional
+`--stereo-self-corpus` argument also checks stereo-bearing corpus entries.
 
 ## Chemistry boundaries to check first
 

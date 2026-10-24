@@ -2,6 +2,32 @@ use super::*;
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
 
 #[test]
+fn closing_ring_direction_is_normalized_to_opening_atom_order() {
+    let ring_bond = |smarts: &str| {
+        let query = parse_smarts(smarts).unwrap();
+        query
+            .bonds
+            .iter()
+            .find(|bond| bond.atom1 == 0 && bond.atom2 == query.atoms.len() - 1)
+            .unwrap()
+            .query
+            .clone()
+    };
+    assert_eq!(
+        ring_bond("C1CCCCC/C=C/1"),
+        BondQuery::Primitive(BondPrimitive::Down)
+    );
+    assert_eq!(
+        ring_bond("C1CCCCC/C=C\\1"),
+        BondQuery::Primitive(BondPrimitive::Up)
+    );
+    assert_eq!(
+        ring_bond("C/1CCCCC/C=C1"),
+        BondQuery::Primitive(BondPrimitive::Up)
+    );
+}
+
+#[test]
 fn compound_bond_expressions_follow_daylight_precedence() {
     use BondPrimitive::*;
     let p = |x| BondQuery::Primitive(x);

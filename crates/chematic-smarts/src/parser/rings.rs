@@ -14,6 +14,10 @@ impl Parser<'_> {
         open_rings: &mut HashMap<u8, (usize, Option<BondQuery>, usize)>,
     ) -> Result<(), SmartsError> {
         if let Some((open_atom, open_bond, open_position)) = open_rings.remove(&ring_num) {
+            // The closing digit reads the bond from current -> open_atom, but
+            // add_bond stores it from open_atom -> current. Normalize its
+            // directional query before comparing the two ring annotations.
+            let ring_bond = ring_bond.map(reverse_bond_direction);
             // Resolve the bond type.
             let bond = match (open_bond, ring_bond) {
                 (Some(a), Some(b)) if a == b => a,
@@ -52,5 +56,28 @@ impl Parser<'_> {
             );
         }
         Ok(())
+    }
+}
+
+fn reverse_bond_direction(query: BondQuery) -> BondQuery {
+    match query {
+        BondQuery::Primitive(BondPrimitive::Up) => BondQuery::Primitive(BondPrimitive::Down),
+        BondQuery::Primitive(BondPrimitive::Down) => BondQuery::Primitive(BondPrimitive::Up),
+        BondQuery::Primitive(BondPrimitive::DativeForward) => {
+            BondQuery::Primitive(BondPrimitive::DativeBackward)
+        }
+        BondQuery::Primitive(BondPrimitive::DativeBackward) => {
+            BondQuery::Primitive(BondPrimitive::DativeForward)
+        }
+        BondQuery::And(left, right) => BondQuery::And(
+            Box::new(reverse_bond_direction(*left)),
+            Box::new(reverse_bond_direction(*right)),
+        ),
+        BondQuery::Or(left, right) => BondQuery::Or(
+            Box::new(reverse_bond_direction(*left)),
+            Box::new(reverse_bond_direction(*right)),
+        ),
+        BondQuery::Not(inner) => BondQuery::Not(Box::new(reverse_bond_direction(*inner))),
+        other => other,
     }
 }
