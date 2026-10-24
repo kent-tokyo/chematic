@@ -92,16 +92,10 @@ fn parse_lattice(raw: &str, lineno: usize) -> Result<[f64; 9], XyzError> {
     }
     let mut out = [0.0; 9];
     for (i, p) in parts.iter().enumerate() {
-        let v: f64 = p.parse().map_err(|_| XyzError::InvalidLattice {
+        let v = parse_xyz_real(p).map_err(|error| XyzError::InvalidLattice {
             line: lineno,
-            detail: format!("cannot parse '{p}' as a number"),
+            detail: format!("lattice value '{p}': {error}"),
         })?;
-        if !v.is_finite() {
-            return Err(XyzError::InvalidLattice {
-                line: lineno,
-                detail: format!("non-finite value '{p}'"),
-            });
-        }
         out[i] = v;
     }
     Ok(out)
@@ -206,13 +200,9 @@ fn parse_property_value(
         raw: raw.to_string(),
     };
     match kind {
-        XyzPropertyKind::Real => {
-            let value: f64 = raw.parse().map_err(|_| invalid())?;
-            value
-                .is_finite()
-                .then_some(XyzValue::Real(value))
-                .ok_or_else(invalid)
-        }
+        XyzPropertyKind::Real => parse_xyz_real(raw)
+            .map(XyzValue::Real)
+            .map_err(|_| invalid()),
         XyzPropertyKind::Integer => raw.parse().map(XyzValue::Integer).map_err(|_| invalid()),
         XyzPropertyKind::String => Ok(XyzValue::Str(raw.to_string())),
         XyzPropertyKind::Logical => match raw {
@@ -242,25 +232,11 @@ fn parse_extxyz_atom_line(
         symbol: tokens[0].to_string(),
         line: lineno,
     })?;
-    let parse_coord = |raw: &str, axis| {
-        let value: f64 = raw.parse().map_err(|_| XyzError::InvalidAtomLine {
-            line: lineno,
-            detail: format!("cannot parse {axis} coordinate '{raw}'"),
-        })?;
-        value
-            .is_finite()
-            .then_some(value)
-            .ok_or_else(|| XyzError::NonFiniteCoordinate {
-                line: lineno,
-                axis,
-                raw: raw.to_string(),
-            })
-    };
     let atom = XyzAtom {
         element,
-        x: parse_coord(tokens[1], "x")?,
-        y: parse_coord(tokens[2], "y")?,
-        z: parse_coord(tokens[3], "z")?,
+        x: parse_coordinate(tokens[1], "x", lineno)?,
+        y: parse_coordinate(tokens[2], "y", lineno)?,
+        z: parse_coordinate(tokens[3], "z", lineno)?,
     };
 
     let mut token_index = 4;
@@ -352,7 +328,8 @@ pub(super) fn parse_one_frame_ext(text: &str) -> Result<(XyzFrame, &str), XyzErr
 /// Trailing content is ignored, same as [`parse_xyz`] -- use
 /// [`ExtxyzReader`] to iterate every frame in a multi-frame file. See the
 /// module-level "Extended XYZ" docs for what `Lattice=`/`Properties=`
-/// support covers.
+/// support covers. Coordinates, lattice entries and R atom values must be
+/// finite; nonzero decimals that round to zero are refused.
 pub fn parse_extxyz(text: &str) -> Result<XyzFrame, XyzError> {
     parse_extxyz_with_limits(text, &XyzParseLimits::default())
 }

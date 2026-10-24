@@ -901,7 +901,9 @@ pub fn sdf_from_records_json(
 
 /// Parse an XYZ file and return a `MolHandle` (topology only; coordinates are discarded).
 ///
-/// Returns a JS error on parse failure.
+/// Returns a JS error on parse failure, nonfinite coordinates or a nonzero
+/// decimal coordinate that rounds to binary64 zero. Literal signed zero and
+/// finite subnormals remain valid.
 #[wasm_bindgen]
 pub fn mol_from_xyz(xyz: &str) -> Result<MolHandle, JsValue> {
     if xyz.len() > WASM_MAX_INPUT_BYTES {
@@ -979,7 +981,8 @@ fn extxyz_frame_to_json_value(frame: &chematic_mol::XyzFrame) -> serde_json::Val
 /// too. Only the first frame of a multi-frame file is read.
 ///
 /// Returns a JS error on parse failure or if the frame exceeds the WASM
-/// atom-count limit.
+/// atom-count limit. Coordinates, cell entries and R atom data must be finite;
+/// nonzero decimals that round to binary64 zero are refused.
 #[wasm_bindgen]
 pub fn mol_from_extxyz(text: &str) -> Result<MolHandle, JsValue> {
     if text.len() > WASM_MAX_INPUT_BYTES {
@@ -1008,7 +1011,8 @@ pub fn mol_from_extxyz(text: &str) -> Result<MolHandle, JsValue> {
 /// "info":{"key":"value", ...}}`.
 ///
 /// Returns a JS error on parse failure or if the frame exceeds the WASM
-/// atom-count limit.
+/// atom-count limit. Coordinates, cell entries and R atom data must be finite;
+/// nonzero decimals that round to binary64 zero are refused.
 #[wasm_bindgen]
 pub fn extxyz_frame_json(text: &str) -> Result<String, JsValue> {
     if text.len() > WASM_MAX_INPUT_BYTES {

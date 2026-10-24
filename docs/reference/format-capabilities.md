@@ -143,6 +143,7 @@ Use these pages when the short matrix is not enough:
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),
   [MOPAC Cartesian](openbabel-mopac-cartesian.md),
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)
+- [XYZ numeric reads](xyz-numeric-read.md),
 - [XYZ precision](xyz-output-precision.md),
   [per-atom data](xyz-atom-data.md), and [GRO/LAMMPS units](gro-lammps-units.md)
 - [V2000 source coordinate projection](v2000-coordinate-projection.md)

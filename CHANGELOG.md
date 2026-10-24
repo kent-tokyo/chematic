@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- XYZ and ASE-style ExtXYZ real reads now share finite binary64 validation
+  across Rust, Python and WASM. Nonzero decimal coordinates, cell entries and
+  real atom data that round to zero are refused; literal signed zero and finite
+  subnormals remain readable. The 3D XYZ path also refuses NaN, infinities and
+  overflow. String columns/raw info and existing writer precision are unchanged.
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element

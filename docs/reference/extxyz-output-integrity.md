@@ -66,7 +66,9 @@ unknown fields and duplicate decoded keys now fail instead of being ignored.
 `null` optional fields still mean absence. Existing public signatures are unchanged.
 
 These are deliberate producer-side refusals of previously accepted unsafe data.
-Readers are unchanged and can accept a wider profile than the writer. Molecular
+The reader can accept a wider token/metadata profile than this writer. The later
+[XYZ numeric read contract](xyz-numeric-read.md) additionally refuses nonzero
+real decimals that round to binary64 zero. Molecular
 bonds, formal charges, isotope identity and stereo are not transferred by these
 geometry writers. Supply an atom-data column explicitly when it is needed;
 plain XYZ output remains a separate API. Output materialization is still governed

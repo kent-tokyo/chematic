@@ -9,6 +9,49 @@ use chematic_core::{Atom, AtomIdx, Element, Molecule, MoleculeBuilder};
 
 use crate::coords::{Coords3D, Point3};
 
+/// Why a real-valued XYZ/ExtXYZ token cannot be represented as a finite scalar.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum XyzRealError {
+    Invalid,
+    NonFinite,
+    Underflow,
+}
+
+impl core::fmt::Display for XyzRealError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.write_str(match self {
+            Self::Invalid => "invalid decimal real",
+            Self::NonFinite => "non-finite real",
+            Self::Underflow => "nonzero real underflows to binary64 zero",
+        })
+    }
+}
+
+impl std::error::Error for XyzRealError {}
+
+/// Parse an XYZ/ExtXYZ real using Rust's decimal f64 grammar and rounding.
+///
+/// Rejects nonfinite values and nonzero decimals that round to zero. Finite
+/// subnormals and literal signed zero (even with extreme exponents) are kept.
+/// Other decimal-to-binary64 rounding is unchanged; source spelling is not kept.
+pub fn parse_xyz_real(raw: &str) -> Result<f64, XyzRealError> {
+    let value: f64 = raw.parse().map_err(|_| XyzRealError::Invalid)?;
+    if !value.is_finite() {
+        return Err(XyzRealError::NonFinite);
+    }
+    if value == 0.0
+        && raw
+            .split(['e', 'E'])
+            .next()
+            .unwrap_or("")
+            .bytes()
+            .any(|b| matches!(b, b'1'..=b'9'))
+    {
+        return Err(XyzRealError::Underflow);
+    }
+    Ok(value)
+}
+
 /// Errors that can occur when parsing XYZ format.
 #[derive(Debug, Clone, PartialEq)]
 pub enum XyzError {
@@ -66,6 +109,7 @@ impl Default for XyzParseLimits {
 /// Every listed atom, including explicit H, is retained with no bonds.
 /// XYZ files do not encode connectivity. Canonical element symbols and
 /// uppercase two-letter aliases (e.g. `CL`) are accepted.
+/// Coordinates must be finite; nonzero decimals that round to zero are refused.
 pub fn parse_xyz(input: &str) -> Result<(Molecule, Coords3D), XyzError> {
     parse_xyz_with_limits(input, XyzParseLimits::default())
 }
@@ -130,9 +174,9 @@ pub fn parse_xyz_with_limits(
         }
 
         let symbol = parts[0];
-        let x: f64 = parts[1].parse().map_err(|_| XyzError::InvalidLine(i + 3))?;
-        let y: f64 = parts[2].parse().map_err(|_| XyzError::InvalidLine(i + 3))?;
-        let z: f64 = parts[3].parse().map_err(|_| XyzError::InvalidLine(i + 3))?;
+        let x = parse_xyz_real(parts[1]).map_err(|_| XyzError::InvalidLine(i + 3))?;
+        let y = parse_xyz_real(parts[2]).map_err(|_| XyzError::InvalidLine(i + 3))?;
+        let z = parse_xyz_real(parts[3]).map_err(|_| XyzError::InvalidLine(i + 3))?;
 
         let element = element_from_xyz_symbol(symbol)
             .ok_or_else(|| XyzError::UnknownElement(symbol.to_string()))?;

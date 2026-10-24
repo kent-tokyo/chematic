@@ -3896,10 +3896,12 @@ def write_xyz_checked(elements: Iterable[str], positions_angstrom: Iterable[Iter
 def from_xyz(xyz_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse an XYZ string and return ``(Mol, coords)``.
 
-    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per heavy atom.
+    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per listed atom (including H).
 
     Raises:
-        ValueError: on parse failure.
+        ValueError: on parse failure, nonfinite coordinates or a nonzero
+        decimal that rounds to binary64 zero. Literal signed zero and finite
+        subnormals remain valid.
 
     Example::
 
@@ -3918,7 +3920,9 @@ def from_extxyz(text: str) -> dict:
         "lattice": list[float] | None, "properties": dict, "info": dict}``.
 
     Raises:
-        ValueError: on malformed input.
+        ValueError: on malformed input, nonfinite numeric data or nonzero
+        coordinates/cell/R atom values that round to binary64 zero. Literal
+        signed zero and finite subnormals remain valid.
 
     Example::
 
