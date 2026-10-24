@@ -112,12 +112,10 @@ impl Mol {
     ///
     /// A from-scratch Rust port of RDKit's
     /// ``rdkit.Chem.AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect(mol, nBits=2048)``.
-    /// Measured 87.2% bit-exact on a 1000-molecule general corpus sample against a live
-    /// RDKit oracle. Two known, documented residual sources remain (see
-    /// ``chematic_fp::rdkit_torsion``'s own module doc comment for detail): RDKit's
-    /// hybridization-gated pi-electron count for hypervalent atoms (e.g. P/S) is not yet
-    /// replicated, and asymmetrically-substituted 3-membered rings can need more closure
-    /// entries than this implementation generates. A separate, opt-in function from
+    /// Against RDKit 2026.09.1, the pinned CLI comparison is 4,071/4,072 exact on
+    /// ``stress-v1.smi`` and exact on separate 10,000- and 5,000-molecule corpora.
+    /// The remaining stress input has an overvalent aromatic carbon; unusual
+    /// three-membered rings retain a documented closure limit. A separate function from
     /// :meth:`torsion_fp` (chematic's own native, similarity-preserving scheme, unchanged);
     /// neither affects the other's output. Does not support chirality (``includeChirality=True``
     /// is not implemented).
@@ -136,12 +134,10 @@ impl Mol {
     ///
     /// A from-scratch Rust port of RDKit's
     /// ``rdkit.Chem.AllChem.GetHashedAtomPairFingerprintAsBitVect(mol, nBits=2048)``.
-    /// Measured 87.2% bit-exact on a 1000-molecule general corpus sample against a live
-    /// RDKit oracle -- every mismatching molecule in that sample contains a hypervalent
-    /// S or P atom, confirming the *only* residual is the one already documented for
-    /// :meth:`rdkit_torsion_fp` (RDKit's hybridization-gated pi-electron count for
-    /// hypervalent atoms is not yet replicated; see ``chematic_fp::rdkit_torsion``'s
-    /// module doc comment). A separate, opt-in function from :meth:`atom_pair_fp`
+    /// Against RDKit 2026.09.1, the pinned CLI comparison is 4,071/4,072 exact on
+    /// ``stress-v1.smi`` and exact on separate 10,000- and 5,000-molecule corpora.
+    /// The remaining stress input has an overvalent aromatic carbon.
+    /// A separate function from :meth:`atom_pair_fp`
     /// (chematic's own native scheme, unchanged); neither affects the other's output.
     /// Does not support chirality (``includeChirality=True`` is not implemented).
     fn rdkit_atom_pair_fp(&self) -> Vec<u8> {
@@ -203,12 +199,10 @@ impl Mol {
     /// ``rdkit.Chem.PatternFingerprint(mol, fpSize=2048)``. Unlike
     /// :meth:`rdkit_torsion_fp`/:meth:`rdkit_atom_pair_fp`, this uses SMARTS
     /// substructure matching against 13 fixed patterns rather than a path/pair
-    /// enumeration. Measured against a live RDKit oracle on three corpora with
-    /// different chemical distributions: 100% bit-exact on a general and a
-    /// ChEMBL sample, 99.6% on an NCI sample -- the residual traces entirely to
-    /// chematic's own aromaticity-perception model disagreeing with RDKit's on
-    /// specific ring systems (see ``chematic_fp::rdkit_pattern``'s module doc
-    /// comment for detail), not a defect in this port's own logic. A separate,
+    /// enumeration. Against RDKit 2026.09.1, the pinned CLI comparison is
+    /// 4,071/4,072 exact on ``stress-v1.smi`` and exact on separate 10,000-
+    /// and 5,000-molecule corpora. The remaining stress input has an
+    /// overvalent aromatic carbon. A separate,
     /// opt-in function from :meth:`pattern_fp` (chematic's own native scheme,
     /// unchanged); neither affects the other's output. Does not support
     /// ``tautomericFingerprint=True``.

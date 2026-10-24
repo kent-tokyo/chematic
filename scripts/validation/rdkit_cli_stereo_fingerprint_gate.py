@@ -6,7 +6,8 @@ Usage: python scripts/validation/rdkit_cli_stereo_fingerprint_gate.py \
     --fingerprint-corpus validation/cosmolkit_comparison/corpora/stress-v1.smi
 
 The optional corpus checks stereo-bearing SMILES against themselves as SMARTS.
-Repeat --fingerprint-corpus to compare Pattern and RDK on other fixed corpora.
+Repeat --fingerprint-corpus to compare Morgan, Pattern, RDK, Topological
+Torsion, and Atom Pair on other fixed corpora.
 This is a regression gate, not a toolkit-wide accuracy measurement. Run after
 building the current CLI binary.
 """
@@ -78,9 +79,15 @@ def compare_fingerprint_corpus(binary: Path, path: Path) -> dict:
     molecules = [Chem.MolFromSmiles(value) for value in smiles]
     rdkit_rejected = sum(molecule is None for molecule in molecules)
     algorithms = {}
+    morgan = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
+    torsion = rdFingerprintGenerator.GetTopologicalTorsionGenerator(fpSize=2048)
+    atom_pair = rdFingerprintGenerator.GetAtomPairGenerator(fpSize=2048)
     for algorithm, fingerprint in (
+        ("rdkit_morgan", morgan.GetFingerprint),
         ("rdkit_pattern", lambda molecule: Chem.PatternFingerprint(molecule, fpSize=2048)),
         ("rdkit_rdk", lambda molecule: Chem.RDKFingerprint(molecule, fpSize=2048)),
+        ("rdkit_torsion", torsion.GetFingerprint),
+        ("rdkit_atom_pair", atom_pair.GetFingerprint),
     ):
         rows = cli_json(
             binary,
@@ -146,7 +153,16 @@ def run(
 
     fp_mismatches = []
     morgan = rdFingerprintGenerator.GetMorganGenerator(radius=2, fpSize=2048)
-    for algorithm in ("rdkit_morgan", "rdkit_pattern"):
+    torsion = rdFingerprintGenerator.GetTopologicalTorsionGenerator(fpSize=2048)
+    atom_pair = rdFingerprintGenerator.GetAtomPairGenerator(fpSize=2048)
+    fingerprint = {
+        "rdkit_morgan": morgan.GetFingerprint,
+        "rdkit_pattern": lambda molecule: Chem.PatternFingerprint(molecule, fpSize=2048),
+        "rdkit_rdk": lambda molecule: Chem.RDKFingerprint(molecule, fpSize=2048),
+        "rdkit_torsion": torsion.GetFingerprint,
+        "rdkit_atom_pair": atom_pair.GetFingerprint,
+    }
+    for algorithm, oracle in fingerprint.items():
         rows = cli_json(
             binary,
             ["batch-fingerprints", "--algorithm", algorithm],
@@ -154,10 +170,7 @@ def run(
         )["records"]
         for smiles, row in zip(FINGERPRINT_SMILES, rows, strict=True):
             molecule = Chem.MolFromSmiles(smiles)
-            expected = list(
-                (morgan.GetFingerprint(molecule) if algorithm == "rdkit_morgan"
-                 else Chem.PatternFingerprint(molecule, fpSize=2048)).GetOnBits()
-            )
+            expected = list(oracle(molecule).GetOnBits())
             actual = (
                 row["fingerprint"]["set_bits"] if row["fingerprint"] is not None else None
             )
@@ -203,7 +216,7 @@ def run(
         "rdkit_version": rdBase.rdkitVersion,
         "stereo_search_pairs": len(stereo_pairs),
         "stereo_search_mismatches": stereo_mismatches,
-        "fingerprint_cases": len(FINGERPRINT_SMILES) * 2,
+        "fingerprint_cases": len(FINGERPRINT_SMILES) * len(fingerprint),
         "fingerprint_mismatches": fp_mismatches,
         "stereo_self_corpus_sha256": corpus_sha256,
         "stereo_self_cases": len(self_cases),

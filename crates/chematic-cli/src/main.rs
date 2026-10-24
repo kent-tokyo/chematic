@@ -120,7 +120,7 @@ enum Command {
     Fingerprint {
         /// SMILES to analyze.
         smiles: String,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, rdkit_torsion, or rdkit_atom_pair.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -130,7 +130,7 @@ enum Command {
         smiles_a: String,
         /// Second SMILES to analyze.
         smiles_b: String,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, rdkit_torsion, or rdkit_atom_pair.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -221,7 +221,7 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, rdkit_torsion, or rdkit_atom_pair.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -243,7 +243,7 @@ enum Command {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, rdkit_torsion, or rdkit_atom_pair.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -653,6 +653,7 @@ fn fingerprint_for(
         "rdkit_pattern" => Ok(chematic_fp::rdkit_pattern_fp(mol)),
         "rdkit_rdk" => Ok(chematic_fp::rdkit_rdk_fp(mol)),
         "rdkit_torsion" => Ok(chematic_fp::rdkit_torsion_fp(mol)),
+        "rdkit_atom_pair" => Ok(chematic_fp::rdkit_atom_pair_fp(mol)),
         other => Err(format!("unsupported fingerprint algorithm: {other}")),
     }
 }

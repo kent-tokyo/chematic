@@ -45,8 +45,9 @@ errors and ownership. The [format matrix](format-capabilities.md) lists
 read/write coverage rather than assuming every RDKit format is supported.
 
 For CLI comparisons, select `fingerprint SMILES --algorithm rdkit_morgan`
-for RDKit's radius-2, 2048-bit Morgan profile or `--algorithm rdkit_pattern`
-for its 2048-bit Pattern profile. These names also work with `similarity`,
+for RDKit's radius-2, 2048-bit Morgan profile. The other 2048-bit profiles
+are `rdkit_pattern`, `rdkit_rdk`, `rdkit_torsion`, and `rdkit_atom_pair`.
+These names also work with `similarity`,
 `batch-fingerprints`, and `batch-similarity`. The CLI's default `ecfp4` is
 the native profile and has different bit positions. Use
 `substructure SMILES SMARTS --use-chirality` (or
