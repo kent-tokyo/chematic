@@ -19,7 +19,7 @@ pub(super) fn format_name(format: &str) -> Option<String> {
     }
 }
 
-/// Handle checked source projections before entering the generic graph bridge.
+/// Handle source retention and checked projections before the graph bridge.
 pub(super) fn source_format_conversion(
     text: &str,
     input: &str,
@@ -43,6 +43,21 @@ pub(super) fn source_format_conversion(
     if input == "cjson" && output == "cml" {
         return Some(
             chematic_mol::project_cjson_to_cml_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
+    if input == "cml" && output == "cjson" {
+        return Some(
+            chematic_mol::project_cml_to_cjson_with_limits(
                 text,
                 &chematic_mol::ConversionLimits {
                     mol2: chematic_mol::Mol2ParseLimits {

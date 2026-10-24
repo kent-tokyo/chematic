@@ -3624,6 +3624,10 @@ def project_cjson_to_cml(text: str | bytes) -> str:
     """
     ...
 
+def project_cml_to_cjson(text: str | bytes) -> str:
+    """Checked graph/XYZ/name profile; refuse unrepresented CML payload."""
+    ...
+
 def project_mol2_to_cjson(text: str | bytes) -> str:
     """Project selected MOL2 fields to CJSON with mapped reparse checks.
 

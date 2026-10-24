@@ -1415,6 +1415,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         single_sdf_mol_block,
         project_mol2_to_cjson,
         project_cjson_to_cml,
+        project_cml_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
         from_pdbqt_with_data,

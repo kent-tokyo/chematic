@@ -1,5 +1,11 @@
 # CML namespace-aware molecular projection
 
+The graph/3D reader contract below remains available. Ordinary CML-to-CJSON
+conversion now uses the narrower [checked projection](cml-cjson-projection.md):
+unrepresented metadata and 2D fields are refused instead of omitted. Dated
+measurements below describe their recorded builds; they are not current-route
+acceptance claims.
+
 The Cartesian reader and CML→CJSON bridge select chemistry by XML namespace
 and molecular scope. Changing a CML prefix does not change the graph. A foreign
 element named `atom` does not add an atom, and a foreign attribute named `x3`
