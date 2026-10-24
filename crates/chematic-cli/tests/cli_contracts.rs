@@ -114,6 +114,20 @@ fn rdkit_parity_search_perceives_aromaticity_in_single_and_batch_modes() {
 }
 
 #[test]
+fn rdkit_parity_search_uses_2026_09_relevant_cycle_ring_counts() {
+    // RDKit 2026.09.1 has no atom in two relevant cycles in this bridged
+    // hydrocarbon. The earlier symmetrized-SSSR profile reports an [R2] hit.
+    let smiles = "c1cc2ccc1CCc1ccc(cc1)CC2";
+    let single = json_output(&["substructure", smiles, "[R2]", "--rdkit-parity"], "");
+    assert_eq!(single["match_count"], 0);
+    let batch = json_output(
+        &["batch-substructure", "--rdkit-parity"],
+        &format!("{smiles}\t[R2]\n"),
+    );
+    assert_eq!(batch["records"][0]["substructure"]["match_count"], 0);
+}
+
+#[test]
 fn conversion_round_trips_all_advertised_molecular_formats() {
     for format in ["v3000", "cml", "cjson", "moljson", "cdxml"] {
         let out = invoke(
