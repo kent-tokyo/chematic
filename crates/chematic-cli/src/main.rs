@@ -143,6 +143,9 @@ enum Command {
         /// Enforce atom and bond stereochemistry in the SMARTS query.
         #[arg(long)]
         use_chirality: bool,
+        /// Use the experimental RDKit-aligned aromaticity and ring-query model.
+        #[arg(long)]
+        rdkit_parity: bool,
     },
     /// Standardize a SMILES molecule and emit an auditable JSON report.
     Standardize {
@@ -254,6 +257,9 @@ enum Command {
         /// Enforce atom and bond stereochemistry in each SMARTS query.
         #[arg(long)]
         use_chirality: bool,
+        /// Use the experimental RDKit-aligned aromaticity and ring-query model.
+        #[arg(long)]
+        rdkit_parity: bool,
         #[command(flatten)]
         limits: BatchLimits,
     },
@@ -666,8 +672,21 @@ fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<St
     .to_string())
 }
 
-fn substructure_json(smiles: &str, smarts: &str, use_chirality: bool) -> Result<String, String> {
-    let mut mol = parse_cli_smiles(smiles)?;
+fn substructure_json(
+    smiles: &str,
+    smarts: &str,
+    use_chirality: bool,
+    rdkit_parity: bool,
+) -> Result<String, String> {
+    let parsed = parse_cli_smiles(smiles)?;
+    // MolFromSmiles removes ordinary explicit H graph atoms before matching.
+    // The parity matcher must see that same target graph: keeping the H atoms
+    // changes degree queries and the indices in returned mappings.
+    let mut mol = if rdkit_parity {
+        chematic_smiles::rdkit_hydrogen_suppressed(&parsed).unwrap_or(parsed)
+    } else {
+        parsed
+    };
     let has_stereo_markers = mol
         .atoms()
         .any(|(_, atom)| atom.chirality != chematic_core::Chirality::None)
@@ -700,7 +719,22 @@ fn substructure_json(smiles: &str, smarts: &str, use_chirality: bool) -> Result<
         use_chirality,
         ..Default::default()
     };
-    let mut matches = chematic_smarts::find_matches_with_config(&query, &mol, &config);
+    let mut matches = if rdkit_parity {
+        let parity_config = chematic_smarts::RdkitParityConfig {
+            base: config,
+            use_rdkit_parity_aromaticity: true,
+            ..Default::default()
+        };
+        let (matches, budget_exhausted) =
+            chematic_smarts::find_matches_rdkit_parity(&query, &mol, &parity_config)
+                .map_err(|e| e.to_string())?;
+        if budget_exhausted {
+            return Err("RDKit-parity matcher visit budget exhausted".to_string());
+        }
+        matches
+    } else {
+        chematic_smarts::find_matches_with_config(&query, &mol, &config)
+    };
     if let Some(stereo) = &stereo {
         // A slash-written bond is not always stereogenic (e.g. identical
         // substituents at an alkene end). The matcher checks marker parity;
@@ -750,6 +784,7 @@ fn substructure_json(smiles: &str, smarts: &str, use_chirality: bool) -> Result<
         "smiles": chematic_smiles::canonical_smiles(&mol),
         "smarts": smarts,
         "use_chirality": use_chirality,
+        "rdkit_parity": rdkit_parity,
         "match_count": matches.len(),
         "matches": matches,
     })
@@ -1149,6 +1184,7 @@ fn batch_substructure_json(
     text: &str,
     limits: &BatchLimits,
     use_chirality: bool,
+    rdkit_parity: bool,
 ) -> Result<String, String> {
     let lines = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(lines.len());
@@ -1158,7 +1194,7 @@ fn batch_substructure_json(
             .split_once('\t')
             .ok_or_else(|| "expected SMILES<TAB>SMARTS".to_string())
             .and_then(|(smiles, smarts)| {
-                substructure_json(smiles.trim(), smarts.trim(), use_chirality)
+                substructure_json(smiles.trim(), smarts.trim(), use_chirality, rdkit_parity)
             })
             .and_then(|json| {
                 serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())

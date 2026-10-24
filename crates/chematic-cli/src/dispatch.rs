@@ -109,7 +109,13 @@ fn run_molecule(command: Command) -> Result<(), String> {
             smiles,
             smarts,
             use_chirality,
-        } => emit_json(substructure_json(&smiles, &smarts, use_chirality)?),
+            rdkit_parity,
+        } => emit_json(substructure_json(
+            &smiles,
+            &smarts,
+            use_chirality,
+            rdkit_parity,
+        )?),
         Command::Standardize {
             smiles,
             largest_fragment_only,
@@ -190,10 +196,16 @@ fn run_batch(command: Command) -> Result<(), String> {
         Command::BatchSubstructure {
             input,
             use_chirality,
+            rdkit_parity,
             limits,
         } => {
             let text = read_batch(input.as_ref(), &limits)?;
-            emit_json(batch_substructure_json(&text, &limits, use_chirality)?)
+            emit_json(batch_substructure_json(
+                &text,
+                &limits,
+                use_chirality,
+                rdkit_parity,
+            )?)
         }
         Command::BatchReactions { input, limits } => {
             let text = read_batch(input.as_ref(), &limits)?;

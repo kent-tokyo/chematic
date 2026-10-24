@@ -954,6 +954,9 @@ impl<'a> Parser<'a> {
             }
             Some(b'$') => self.parse_recursive_primitive(pos),
             // Keep aromatic/aliphatic primitives before element parsing.
+            Some(b'a') if self.src.get(self.pos + 1) == Some(&b's') => {
+                self.parse_element_primitive()
+            }
             Some(b'a') => {
                 self.advance();
                 Ok(AtomQuery::Primitive(AtomPrimitive::Aromatic(true)))

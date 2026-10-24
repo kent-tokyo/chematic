@@ -33,3 +33,9 @@ new evidence.
 
 `compare_rdkitjs_reaction_runs.py` compares two pinned RDKit.js reaction runs.
 Its existing differential report remains under `validation/results/`.
+
+`rdkit_cli_search_differential.py` compares the CLI's native and optional
+`--rdkit-parity` substructure booleans with an installed RDKit on 25 fixed
+SMARTS queries and a chosen SMILES corpus. Build the CLI first, then run the
+script from the repository root. Its JSON names the RDKit version and corpus
+hash; it does not assess arbitrary SMARTS or match mappings.

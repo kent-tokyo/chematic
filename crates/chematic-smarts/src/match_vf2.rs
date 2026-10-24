@@ -1150,12 +1150,21 @@ pub(crate) fn hetero_neighbor_count(
 
 /// Total H count (explicit H neighbors + implicit H) for HCount primitive.
 fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    let explicit_h = ctx
-        .mol
+    smarts_total_hcount(ctx.mol, idx) == h
+}
+
+pub(crate) fn smarts_total_hcount(mol: &Molecule, idx: AtomIdx) -> u8 {
+    let explicit_h = mol
         .neighbors(idx)
-        .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
+        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 1)
         .count() as u8;
-    explicit_h + implicit_hcount(ctx.mol, idx) == h
+    let atom = mol.atom(idx);
+    let bracket_h = if atom.wildcard {
+        atom.hydrogen_count.unwrap_or(0)
+    } else {
+        implicit_hcount(mol, idx)
+    };
+    explicit_h + bracket_h
 }
 
 /// Total valence (bond order sum + implicit H) for Valence primitive.

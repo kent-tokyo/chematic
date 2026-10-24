@@ -904,12 +904,7 @@ fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bo
 }
 
 fn eval_hcount(idx: AtomIdx, ctx: &EvalCtx<'_>, h: u8) -> bool {
-    let explicit_h = ctx
-        .mol
-        .neighbors(idx)
-        .filter(|(nb, _)| ctx.mol.atom(*nb).element.atomic_number() == 1)
-        .count() as u8;
-    explicit_h + implicit_hcount(ctx.mol, idx) == h
+    crate::match_vf2::smarts_total_hcount(ctx.mol, idx) == h
 }
 
 fn eval_valence(idx: AtomIdx, ctx: &EvalCtx<'_>, v: u8) -> bool {
