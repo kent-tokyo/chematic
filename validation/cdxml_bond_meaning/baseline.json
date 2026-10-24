@@ -1,0 +1,5955 @@
+{
+  "schema": "chematic.cdxml-bond-meaning-report.v1",
+  "baseline": true,
+  "baseline_runtime_commit": "342d1d5f9ad09aa6ade4e3079a902cba856209e2",
+  "reader_comparison_base": "08c2da7100b9eb9ef0f50403e1900ec8a298d722",
+  "head": "08c2da7100b9eb9ef0f50403e1900ec8a298d722",
+  "scope": "two-atom authored development packet; bond class/dative direction and graph scalars; independent XML output observer and RDKit SMILES observer; no source/layout/coordinate comparison, schema/physical/stereo/aromaticity/general ranking/speed claim",
+  "sources": [],
+  "baseline_sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cdxml.rs",
+      "sha256": "31c5883acd70ce83a3edcf1c0cf58ad9e5536e84b891b10a2d21f168400caad0",
+      "size_bytes": 31108
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml/attributes.rs",
+      "sha256": "b8007f1ed7a3ddfaefd2964e2f6ba0141aac874343f58f6f2321bdc080c4f03e",
+      "size_bytes": 5466
+    }
+  ],
+  "runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_cdxml_bond_meaning.py",
+    "sha256": "8d854646bbe31344d75f645e8ec98a8dfd46aa4d8cf719607026f063aecb378f",
+    "size_bytes": 7546
+  },
+  "observer": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/cdxml_bond_observer.py",
+    "sha256": "12ad18ca8a8de8095bea0ae07a129a49ad81c0ef5728c6a1e55682d89e5b6d7a",
+    "size_bytes": 4581
+  },
+  "process_bounds": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
+    "sha256": "83870c344f0195cd5f502e06c23379fb50bb7a07a40e7420e89ce997981ef5b5",
+    "size_bytes": 28676
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/validation/cdxml_bond_meaning/cases.json",
+    "sha256": "94b0690e9f6cf212bf68f1e6d0c9046cf69ff63fc1301e1337a6ea5676a77b06",
+    "size_bytes": 16526
+  },
+  "python_package": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-python/chematic/__init__.py",
+    "sha256": "8d3b3eefb018b54adb3a8fbdb10ec686a2c4eb76cc16a31da33b7fa98a690d81",
+    "size_bytes": 30215
+  },
+  "python_extension": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "b42bbc04a9f9c327e5ab8e21d58dffd2cd5849462bbc8ec9a6f5882115cbf6ba",
+    "size_bytes": 45487360
+  },
+  "wasm_module": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-wasm/chematic_wasm.js",
+    "sha256": "43f17606a67b04ecb1aefbb4ac5e463d3c6703c0e4c6cf2b9fb1cdacbe91f1e3",
+    "size_bytes": 376697
+  },
+  "wasm_binary": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-wasm/chematic_wasm_bg.wasm",
+    "sha256": "ee90f6fee21bbf468a6f4665879a1c08e80533a361b1e1c6afc6ec5a57ca7518",
+    "size_bytes": 46299595
+  },
+  "openbabel_binary": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_command": [
+    "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "-icdxml",
+    "-osmi",
+    "-xn",
+    "-xa",
+    "-l1"
+  ],
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "rdkit_observer_version": "2025.09.3",
+  "process_limits": {
+    "seconds_per_process": 10,
+    "combined_output_bytes": 1048576
+  },
+  "summary": {
+    "python_direct_false": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "python_direct_true": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "wasm_direct_false": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "wasm_direct_true": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "python_common": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "python_roundtrip": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "python_writer": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 0,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      }
+    },
+    "wasm_common": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "wasm_roundtrip": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    },
+    "wasm_writer": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 0,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      }
+    },
+    "openbabel": {
+      "control": {
+        "count": 4,
+        "preserved": 4,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "quadruple": {
+        "count": 3,
+        "preserved": 3,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "dative": {
+        "count": 5,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 0
+      },
+      "refusal": {
+        "count": 12,
+        "preserved": 0,
+        "profile_refused": 0,
+        "output_outside_profile": 12
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "default_single",
+      "group": "control",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 6,
+            "isotope": 13,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 8,
+            "isotope": 18,
+            "charge": 0,
+            "hydrogens": 1
+          }
+        ],
+        "bond": {
+          "kind": "single",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[13CH3][18OH]"
+      },
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "explicit_single",
+      "group": "control",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 6,
+            "isotope": 13,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 8,
+            "isotope": 18,
+            "charge": 0,
+            "hydrogens": 1
+          }
+        ],
+        "bond": {
+          "kind": "single",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[13CH3][18OH]"
+      },
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 1
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "double",
+      "group": "control",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"2\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 6,
+            "isotope": 13,
+            "charge": 0,
+            "hydrogens": 2
+          },
+          {
+            "number": 8,
+            "isotope": 18,
+            "charge": 0,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "double",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[13CH2]=[18O]"
+      },
+      "wasm_direct_false": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"2\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"2\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_false": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_true": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"2\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"2\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"0\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"2\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH2]=[18O]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH2]=[18O]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 2
+            },
+            {
+              "number": 8,
+              "isotope": 18,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "double",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "triple",
+      "group": "control",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"1\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 6,
+            "isotope": 13,
+            "charge": 0,
+            "hydrogens": 1
+          },
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "triple",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[13CH]#[15N]"
+      },
+      "wasm_direct_false": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_common": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"1\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\" Isotope=\"15\"/>\n<b B=\"1\" E=\"2\" Order=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"1\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\" Isotope=\"15\"/>\n<b B=\"1\" E=\"2\" Order=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_false": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_direct_true": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_common": {
+        "output": "[13CH]#[15N]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"1\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\" Isotope=\"15\"/>\n<b B=\"1\" E=\"2\" Order=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"1\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"0\" Isotope=\"15\"/>\n<b B=\"1\" E=\"2\" Order=\"3\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH]#[15N]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH]#[15N]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 6,
+              "isotope": 13,
+              "charge": 0,
+              "hydrogens": 1
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "triple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "quadruple",
+      "group": "quadruple",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"42\" Isotope=\"96\" Charge=\"0\" NumHydrogens=\"0\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"74\" Isotope=\"184\" Charge=\"0\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"4\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 42,
+            "isotope": 96,
+            "charge": 0,
+            "hydrogens": 0
+          },
+          {
+            "number": 74,
+            "isotope": 184,
+            "charge": 0,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "quadruple",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[96Mo]$[184W]"
+      },
+      "wasm_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[96Mo]$[184W]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[96Mo]$[184W]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "quadruple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "quadruple_reversed",
+      "group": "quadruple",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"42\" Isotope=\"96\" Charge=\"0\" NumHydrogens=\"0\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"74\" Isotope=\"184\" Charge=\"0\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"2\" E=\"1\" Order=\"4\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 42,
+            "isotope": 96,
+            "charge": 0,
+            "hydrogens": 0
+          },
+          {
+            "number": 74,
+            "isotope": 184,
+            "charge": 0,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "quadruple",
+          "begin": 1,
+          "end": 0
+        },
+        "smiles": "[96Mo]$[184W]"
+      },
+      "wasm_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[96Mo]$[184W]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[96Mo]$[184W]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "quadruple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "quadruple_end_display",
+      "group": "quadruple",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"42\" Isotope=\"96\" Charge=\"0\" NumHydrogens=\"0\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"74\" Isotope=\"184\" Charge=\"0\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"4\" Display=\"WedgeEnd\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 42,
+            "isotope": 96,
+            "charge": 0,
+            "hydrogens": 0
+          },
+          {
+            "number": 74,
+            "isotope": 184,
+            "charge": 0,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "quadruple",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[96Mo]$[184W]"
+      },
+      "wasm_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"WedgeBegin\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[96Mo][184W]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"WedgeBegin\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"42\" NumHydrogens=\"0\" Isotope=\"96\"/>\n<n id=\"2\" p=\"0 0\" Element=\"74\" NumHydrogens=\"0\" Isotope=\"184\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[96Mo]$[184W]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[96Mo]$[184W]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": true,
+            "endpoints": true,
+            "dative_direction": null
+          },
+          "actual_atoms": [
+            {
+              "number": 42,
+              "isotope": 96,
+              "charge": 0,
+              "hydrogens": 0
+            },
+            {
+              "number": 74,
+              "isotope": 184,
+              "charge": 0,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "quadruple",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": true
+        }
+      }
+    },
+    {
+      "id": "dative_forward",
+      "group": "dative",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"26\" Isotope=\"56\" Charge=\"2\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"dative\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 26,
+            "isotope": 56,
+            "charge": 2,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "dative",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[15NH3]->[56Fe+2]"
+      },
+      "wasm_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH3][56Fe+2]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH3][56Fe+2]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      }
+    },
+    {
+      "id": "dative_reverse",
+      "group": "dative",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"26\" Isotope=\"56\" Charge=\"2\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"2\" E=\"1\" Order=\"dative\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 26,
+            "isotope": 56,
+            "charge": 2,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "dative",
+          "begin": 1,
+          "end": 0
+        },
+        "smiles": "[15NH3]<-[56Fe+2]"
+      },
+      "wasm_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH3][56Fe+2]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH3][56Fe+2]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      }
+    },
+    {
+      "id": "dative_reordered_nodes",
+      "group": "dative",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"2\" Element=\"26\" Isotope=\"56\" Charge=\"2\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<n id=\"1\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<b B=\"1\" E=\"2\" Order=\"dative\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 26,
+            "isotope": 56,
+            "charge": 2,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "dative",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[15NH3]->[56Fe+2]"
+      },
+      "wasm_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<n id=\"2\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<b B=\"2\" E=\"1\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[56Fe+2][15NH3]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[56Fe+2][15NH3]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            },
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      }
+    },
+    {
+      "id": "dative_wedge_end",
+      "group": "dative",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"26\" Isotope=\"56\" Charge=\"2\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"dative\" Display=\"WedgeEnd\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 26,
+            "isotope": 56,
+            "charge": 2,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "dative",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[15NH3]->[56Fe+2]"
+      },
+      "wasm_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"WedgeBegin\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"WedgeBegin\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH3][56Fe+2]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH3][56Fe+2]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      }
+    },
+    {
+      "id": "dative_hash_end",
+      "group": "dative",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"7\" Isotope=\"15\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"26\" Isotope=\"56\" Charge=\"2\" NumHydrogens=\"0\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"dative\" Display=\"WedgedHashEnd\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": {
+        "atoms": [
+          {
+            "number": 7,
+            "isotope": 15,
+            "charge": 0,
+            "hydrogens": 3
+          },
+          {
+            "number": 26,
+            "isotope": 56,
+            "charge": 2,
+            "hydrogens": 0
+          }
+        ],
+        "bond": {
+          "kind": "dative",
+          "begin": 0,
+          "end": 1
+        },
+        "smiles": "[15NH3]->[56Fe+2]"
+      },
+      "wasm_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"Hash\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "wasm_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_common": {
+        "output": "[15NH3][56Fe+2]",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"2\" E=\"1\" Order=\"1\" Display=\"Hash\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 1,
+            "end": 0
+          },
+          "preserved": false
+        }
+      },
+      "python_writer": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"7\" NumHydrogens=\"3\" Isotope=\"15\"/>\n<n id=\"2\" p=\"0 0\" Element=\"26\" NumHydrogens=\"0\" Charge=\"2\" Isotope=\"56\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH3][56Fe+2]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH3][56Fe+2]\n",
+        "observation": {
+          "outcome": "graph_output",
+          "fields": {
+            "atoms": true,
+            "bond_class": false,
+            "endpoints": true,
+            "dative_direction": false
+          },
+          "actual_atoms": [
+            {
+              "number": 7,
+              "isotope": 15,
+              "charge": 0,
+              "hydrogens": 3
+            },
+            {
+              "number": 26,
+              "isotope": 56,
+              "charge": 2,
+              "hydrogens": 0
+            }
+          ],
+          "actual_bond": {
+            "kind": "single",
+            "begin": 0,
+            "end": 1
+          },
+          "preserved": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_1",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"0.5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_2",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"2.5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3]=[18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3]=[18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_3",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"3.5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3]#[18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3]#[18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_4",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"4.5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3]$[18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3]$[18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_5",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"5.5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_6",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"5\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_7",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"6\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_8",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"ionic\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_9",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"hydrogen\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_10",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"threecenter\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_11",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    },
+    {
+      "id": "unsupported_12",
+      "group": "refusal",
+      "input": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page id=\"10\">\n<fragment id=\"20\">\n<n id=\"1\" Element=\"6\" Isotope=\"13\" Charge=\"0\" NumHydrogens=\"3\" p=\"0.0 0.0\"/>\n<n id=\"2\" Element=\"8\" Isotope=\"18\" Charge=\"0\" NumHydrogens=\"1\" p=\"1.5 0.25\"/>\n<b B=\"1\" E=\"2\" Order=\"unrecognized\"/>\n</fragment>\n</page>\n</CDXML>\n",
+      "expected": null,
+      "wasm_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "wasm_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_false": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_direct_true": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_common": {
+        "output": "[18OH][13CH3]",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "python_roundtrip": {
+        "output": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<CDXML>\n<page>\n<fragment>\n<n id=\"1\" p=\"0 0\" Element=\"6\" NumHydrogens=\"3\" Isotope=\"13\"/>\n<n id=\"2\" p=\"0 0\" Element=\"8\" NumHydrogens=\"1\" Isotope=\"18\"/>\n<b B=\"1\" E=\"2\" Order=\"1\"/>\n</fragment>\n</page>\n</CDXML>\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH3][18OH]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH3][18OH]\n",
+        "observation": {
+          "outcome": "output_outside_profile",
+          "preserved": false,
+          "profile_refused": false
+        }
+      }
+    }
+  ]
+}

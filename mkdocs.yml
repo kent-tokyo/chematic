@@ -93,6 +93,7 @@ nav:
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
     - mmCIF Numeric Preservation: reference/mmcif-numeric-preservation.md
+    - CDXML Bond Meaning: reference/cdxml-bond-meaning.md
     - Open Babel File I/O: reference/openbabel-file-io.md
     - V3000 Atom Scalar Integrity: reference/v3000-atom-scalar-integrity.md
     - V2000 Isotope Output: reference/v2000-isotope-output.md
