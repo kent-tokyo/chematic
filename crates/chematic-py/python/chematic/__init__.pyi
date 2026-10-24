@@ -6144,3 +6144,12 @@ def parse_gjf_document_json(
     converted and no bonds are inferred. JSON output is capped at 16 MiB.
     """
     ...
+
+
+def parse_unixyz(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read one UniChem XYZ record: exact title, atomic numbers and coordinate decimal strings."""
+    ...
+
+def write_unixyz(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current validated fields in Angstrom; unknown fields refuse."""
+    ...

@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 mod conversion_format;
 mod dispatch;
+mod unixyz;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -51,6 +52,19 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Read/write one UniChem XYZ record, retaining title and coordinate decimals.
+    Unixyz {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
     GjfDocument {
         #[arg(short, long)]

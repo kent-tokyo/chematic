@@ -1,0 +1,5705 @@
+{
+  "schema_version": 1,
+  "scope": "Original single-record UniChem XYZ same-format rewrite; local source candidate. No timing, parser isolation or toolkit-wide claim.",
+  "source_sha256": {
+    "crates/chematic-mol/src/unixyz.rs": "dfeddf5970d3a597275ed06333c1a2da0f9cc24526f82d087cbe9f0653c78fd2",
+    "crates/chematic-mol/src/unixyz/reader.rs": "f471e48dda9c760c2ef0b87edf12dbebf1d4aa402c56c2594914c7904967ba99",
+    "crates/chematic-py/src/formats/unixyz.rs": "b55671df85a42849a9d3246325eb2fa5dc6ec3e972a03d5924a90218f6fe373c",
+    "crates/chematic-wasm/src/unixyz.rs": "c9971d34fc7507461dfd4bafd7c8b7a1bc06a16c6cc45198c7f3e27e3007b56e",
+    "crates/chematic-cli/src/unixyz.rs": "5bfaa7b425abfcc89393df1af214cdc05cf897e7e82ef5de10ab673e35903c36",
+    "scripts/validation/check_unixyz_preservation.py": "4f2b35de7a64f8724451ee7a4e0a3c1c9e686f5603b3c968e60fd955b55305f8"
+  },
+  "packet_sha256": "cf08565efa7c67f0f4aaac37305d1ee64764ca9250534dd91b028ae6af15a752",
+  "candidate_base": "7704ee2030dda8f9ca54a07eb3fc22e94623fb49",
+  "runtime_sha256": {
+    "python_extension": "f5b58ad728eb77c82671569534dc14b2d688a6db82b418d6501c769d2b3f1260",
+    "wasm": "258b1b1e320373ae027181ab2fe2cbdb2498cd74b2ad51965449715b2fb6c06b",
+    "cli": "5437282d9468e64aae7a71248e53f5471c6cd0d73a5640d052c8267df3567cec"
+  },
+  "versions": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "node": {
+      "argv": [
+        "node",
+        "--version"
+      ],
+      "returncode": 0,
+      "stdout": "v24.5.0\n",
+      "stderr": ""
+    },
+    "openbabel": {
+      "argv": [
+        "/opt/homebrew/bin/obabel",
+        "-V"
+      ],
+      "returncode": 0,
+      "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+      "stderr": ""
+    }
+  },
+  "summary": {
+    "candidate": {
+      "python": {
+        "valid_total": 15,
+        "exact_all_four_states": 15,
+        "refusal_total": 41,
+        "typed_refused": 41
+      },
+      "wasm_node": {
+        "valid_total": 15,
+        "exact_all_four_states": 15,
+        "refusal_total": 41,
+        "typed_refused": 41
+      },
+      "cli": {
+        "valid_total": 15,
+        "exact_all_four_states": 15,
+        "refusal_total": 41,
+        "typed_refused": 41
+      }
+    },
+    "openbabel": {
+      "total": 15,
+      "observed": 14,
+      "declared_state_exact": {
+        "exact": 0,
+        "total": 14
+      },
+      "full_token_record_exact": {
+        "exact": 0,
+        "total": 14
+      },
+      "coordinate_bits_exact": {
+        "exact": 10,
+        "total": 14
+      },
+      "title_exact": {
+        "exact": 0,
+        "total": 14
+      },
+      "atomic_numbers_order_exact": {
+        "exact": 14,
+        "total": 14
+      }
+    }
+  },
+  "candidate_receipts": {
+    "python": {
+      "valid": [
+        {
+          "id": "ordinary",
+          "states": [
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty-title",
+          "states": [
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "space-title",
+          "states": [
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unicode-title",
+          "states": [
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "numeric-title",
+          "states": [
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "precision",
+          "states": [
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "scientific",
+          "states": [
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "signed-zero",
+          "states": [
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "subnormal",
+          "states": [
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "long-decimal",
+          "states": [
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "large-finite",
+          "states": [
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "heavy-elements",
+          "states": [
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "source-order",
+          "states": [
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "no-final-newline",
+          "states": [
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tabs",
+          "states": [
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "refused": [
+        {
+          "id": "empty",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 1: missing title line')"
+        },
+        {
+          "id": "missing-count",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: missing atom-count line')"
+        },
+        {
+          "id": "normal-xyz-order",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: expected positive decimal atom count')"
+        },
+        {
+          "id": "zero-atoms",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: atom count outside limits')"
+        },
+        {
+          "id": "negative-count",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: expected positive decimal atom count')"
+        },
+        {
+          "id": "count-suffix",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: expected positive decimal atom count')"
+        },
+        {
+          "id": "count-float",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: expected positive decimal atom count')"
+        },
+        {
+          "id": "count-limit",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: atom count outside limits')"
+        },
+        {
+          "id": "count-overflow",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: atom count outside usize range')"
+        },
+        {
+          "id": "truncated",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 4: truncated atom section')"
+        },
+        {
+          "id": "blank-atom",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected atomic number and exactly three coordinates')"
+        },
+        {
+          "id": "extra-atom",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 4: trailing record or extra line')"
+        },
+        {
+          "id": "second-record",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 4: trailing record or extra line')"
+        },
+        {
+          "id": "trailing-blank",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 4: trailing record or extra line')"
+        },
+        {
+          "id": "extra-property",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected atomic number and exactly three coordinates')"
+        },
+        {
+          "id": "short-atom",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected atomic number and exactly three coordinates')"
+        },
+        {
+          "id": "symbol-instead-of-number",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected decimal atomic number')"
+        },
+        {
+          "id": "dummy",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: atomic number must be 1..118')"
+        },
+        {
+          "id": "above-table",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: atomic number must be 1..118')"
+        },
+        {
+          "id": "negative-number",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected decimal atomic number')"
+        },
+        {
+          "id": "fractional-number",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: expected decimal atomic number')"
+        },
+        {
+          "id": "atomic-number-overflow",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid atomic number')"
+        },
+        {
+          "id": "title-nul",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 1: line limit exceeded or control character')"
+        },
+        {
+          "id": "bare-cr",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 1: line limit exceeded or control character')"
+        },
+        {
+          "id": "line-limit",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 1: line limit exceeded or control character')"
+        },
+        {
+          "id": "comment-extension",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 4: trailing record or extra line')"
+        },
+        {
+          "id": "count-extra-column",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 2: expected positive decimal atom count')"
+        },
+        {
+          "id": "numeric-27",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-28",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-29",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-30",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: non-finite or underflowed coordinate')"
+        },
+        {
+          "id": "numeric-31",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: non-finite or underflowed coordinate')"
+        },
+        {
+          "id": "numeric-32",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: non-finite or underflowed coordinate')"
+        },
+        {
+          "id": "numeric-33",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-34",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-35",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-36",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-37",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-38",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-39",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        },
+        {
+          "id": "numeric-40",
+          "status": "refused",
+          "error": "ValueError('UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes')"
+        }
+      ]
+    },
+    "wasm_node": {
+      "valid": [
+        {
+          "id": "ordinary",
+          "states": [
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty-title",
+          "states": [
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "space-title",
+          "states": [
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unicode-title",
+          "states": [
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "numeric-title",
+          "states": [
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "precision",
+          "states": [
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "scientific",
+          "states": [
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "signed-zero",
+          "states": [
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "subnormal",
+          "states": [
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "long-decimal",
+          "states": [
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "large-finite",
+          "states": [
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "heavy-elements",
+          "states": [
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "source-order",
+          "states": [
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "no-final-newline",
+          "states": [
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tabs",
+          "states": [
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "refused": [
+        {
+          "id": "empty",
+          "status": "refused",
+          "error": "UniChem XYZ line 1: missing title line"
+        },
+        {
+          "id": "missing-count",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: missing atom-count line"
+        },
+        {
+          "id": "normal-xyz-order",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: expected positive decimal atom count"
+        },
+        {
+          "id": "zero-atoms",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: atom count outside limits"
+        },
+        {
+          "id": "negative-count",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: expected positive decimal atom count"
+        },
+        {
+          "id": "count-suffix",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: expected positive decimal atom count"
+        },
+        {
+          "id": "count-float",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: expected positive decimal atom count"
+        },
+        {
+          "id": "count-limit",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: atom count outside limits"
+        },
+        {
+          "id": "count-overflow",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: atom count outside usize range"
+        },
+        {
+          "id": "truncated",
+          "status": "refused",
+          "error": "UniChem XYZ line 4: truncated atom section"
+        },
+        {
+          "id": "blank-atom",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected atomic number and exactly three coordinates"
+        },
+        {
+          "id": "extra-atom",
+          "status": "refused",
+          "error": "UniChem XYZ line 4: trailing record or extra line"
+        },
+        {
+          "id": "second-record",
+          "status": "refused",
+          "error": "UniChem XYZ line 4: trailing record or extra line"
+        },
+        {
+          "id": "trailing-blank",
+          "status": "refused",
+          "error": "UniChem XYZ line 4: trailing record or extra line"
+        },
+        {
+          "id": "extra-property",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected atomic number and exactly three coordinates"
+        },
+        {
+          "id": "short-atom",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected atomic number and exactly three coordinates"
+        },
+        {
+          "id": "symbol-instead-of-number",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected decimal atomic number"
+        },
+        {
+          "id": "dummy",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: atomic number must be 1..118"
+        },
+        {
+          "id": "above-table",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: atomic number must be 1..118"
+        },
+        {
+          "id": "negative-number",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected decimal atomic number"
+        },
+        {
+          "id": "fractional-number",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: expected decimal atomic number"
+        },
+        {
+          "id": "atomic-number-overflow",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid atomic number"
+        },
+        {
+          "id": "title-nul",
+          "status": "refused",
+          "error": "UniChem XYZ line 1: line limit exceeded or control character"
+        },
+        {
+          "id": "bare-cr",
+          "status": "refused",
+          "error": "UniChem XYZ line 1: line limit exceeded or control character"
+        },
+        {
+          "id": "line-limit",
+          "status": "refused",
+          "error": "UniChem XYZ line 1: line limit exceeded or control character"
+        },
+        {
+          "id": "comment-extension",
+          "status": "refused",
+          "error": "UniChem XYZ line 4: trailing record or extra line"
+        },
+        {
+          "id": "count-extra-column",
+          "status": "refused",
+          "error": "UniChem XYZ line 2: expected positive decimal atom count"
+        },
+        {
+          "id": "numeric-27",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-28",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-29",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-30",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: non-finite or underflowed coordinate"
+        },
+        {
+          "id": "numeric-31",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: non-finite or underflowed coordinate"
+        },
+        {
+          "id": "numeric-32",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: non-finite or underflowed coordinate"
+        },
+        {
+          "id": "numeric-33",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-34",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-35",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-36",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-37",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-38",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-39",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        },
+        {
+          "id": "numeric-40",
+          "status": "refused",
+          "error": "UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes"
+        }
+      ]
+    },
+    "cli": {
+      "valid": [
+        {
+          "id": "ordinary",
+          "states": [
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "example",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    ".125",
+                    ".25"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".5",
+                    ".75",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "empty-title",
+          "states": [
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "0",
+                    ".5",
+                    "1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "space-title",
+          "states": [
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "  exact title  ",
+              "atoms": [
+                {
+                  "atomic_number": 10,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "unicode-title",
+          "states": [
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "分子 α Å",
+              "atoms": [
+                {
+                  "atomic_number": 26,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "numeric-title",
+          "states": [
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "123",
+              "atoms": [
+                {
+                  "atomic_number": 1,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "precision",
+          "states": [
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "precision",
+              "atoms": [
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0.12345678901234567",
+                    "-0.23456789012345678",
+                    "0.34567890123456789"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "scientific",
+          "states": [
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "scientific",
+              "atoms": [
+                {
+                  "atomic_number": 7,
+                  "position_angstrom": [
+                    "+1.2345678901234567e-1",
+                    "2.5E-1",
+                    "3.75e-1"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "signed-zero",
+          "states": [
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "zeros",
+              "atoms": [
+                {
+                  "atomic_number": 18,
+                  "position_angstrom": [
+                    "-0",
+                    "-0.000",
+                    "+0E-9999"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "subnormal",
+          "states": [
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "subnormal",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "4.9406564584124654e-324",
+                    "-4.9406564584124654e-324",
+                    "2.2250738585072014e-308"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "long-decimal",
+          "states": [
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "lexeme",
+              "atoms": [
+                {
+                  "atomic_number": 36,
+                  "position_angstrom": [
+                    "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+                    "0.000000000000000000000000001",
+                    "1.0000000000000000000000001"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "large-finite",
+          "states": [
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "finite",
+              "atoms": [
+                {
+                  "atomic_number": 2,
+                  "position_angstrom": [
+                    "1.7976931348623157e308",
+                    "-1.7976931348623157e308",
+                    "1e100"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "heavy-elements",
+          "states": [
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "elements",
+              "atoms": [
+                {
+                  "atomic_number": 118,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 92,
+                  "position_angstrom": [
+                    ".25",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "source-order",
+          "states": [
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "O C O",
+              "atoms": [
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    "-.125",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 6,
+                  "position_angstrom": [
+                    "0",
+                    "0",
+                    "0"
+                  ]
+                },
+                {
+                  "atomic_number": 8,
+                  "position_angstrom": [
+                    ".125",
+                    "0",
+                    "0"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "no-final-newline",
+          "states": [
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "no newline",
+              "atoms": [
+                {
+                  "atomic_number": 17,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "tabs",
+          "states": [
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            },
+            {
+              "title": "\ttitle\t",
+              "atoms": [
+                {
+                  "atomic_number": 54,
+                  "position_angstrom": [
+                    ".125",
+                    ".25",
+                    ".5"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "refused": [
+        {
+          "id": "empty",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 1: missing title line\n"
+          }
+        },
+        {
+          "id": "missing-count",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: missing atom-count line\n"
+          }
+        },
+        {
+          "id": "normal-xyz-order",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: expected positive decimal atom count\n"
+          }
+        },
+        {
+          "id": "zero-atoms",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: atom count outside limits\n"
+          }
+        },
+        {
+          "id": "negative-count",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: expected positive decimal atom count\n"
+          }
+        },
+        {
+          "id": "count-suffix",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: expected positive decimal atom count\n"
+          }
+        },
+        {
+          "id": "count-float",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: expected positive decimal atom count\n"
+          }
+        },
+        {
+          "id": "count-limit",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: atom count outside limits\n"
+          }
+        },
+        {
+          "id": "count-overflow",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: atom count outside usize range\n"
+          }
+        },
+        {
+          "id": "truncated",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 4: truncated atom section\n"
+          }
+        },
+        {
+          "id": "blank-atom",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected atomic number and exactly three coordinates\n"
+          }
+        },
+        {
+          "id": "extra-atom",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 4: trailing record or extra line\n"
+          }
+        },
+        {
+          "id": "second-record",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 4: trailing record or extra line\n"
+          }
+        },
+        {
+          "id": "trailing-blank",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 4: trailing record or extra line\n"
+          }
+        },
+        {
+          "id": "extra-property",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected atomic number and exactly three coordinates\n"
+          }
+        },
+        {
+          "id": "short-atom",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected atomic number and exactly three coordinates\n"
+          }
+        },
+        {
+          "id": "symbol-instead-of-number",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected decimal atomic number\n"
+          }
+        },
+        {
+          "id": "dummy",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: atomic number must be 1..118\n"
+          }
+        },
+        {
+          "id": "above-table",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: atomic number must be 1..118\n"
+          }
+        },
+        {
+          "id": "negative-number",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected decimal atomic number\n"
+          }
+        },
+        {
+          "id": "fractional-number",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: expected decimal atomic number\n"
+          }
+        },
+        {
+          "id": "atomic-number-overflow",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid atomic number\n"
+          }
+        },
+        {
+          "id": "title-nul",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 1: line limit exceeded or control character\n"
+          }
+        },
+        {
+          "id": "bare-cr",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 1: line limit exceeded or control character\n"
+          }
+        },
+        {
+          "id": "line-limit",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 1: line limit exceeded or control character\n"
+          }
+        },
+        {
+          "id": "comment-extension",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 4: trailing record or extra line\n"
+          }
+        },
+        {
+          "id": "count-extra-column",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 2: expected positive decimal atom count\n"
+          }
+        },
+        {
+          "id": "numeric-27",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-28",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-29",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-30",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: non-finite or underflowed coordinate\n"
+          }
+        },
+        {
+          "id": "numeric-31",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: non-finite or underflowed coordinate\n"
+          }
+        },
+        {
+          "id": "numeric-32",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: non-finite or underflowed coordinate\n"
+          }
+        },
+        {
+          "id": "numeric-33",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-34",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-35",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-36",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-37",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-38",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-39",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        },
+        {
+          "id": "numeric-40",
+          "status": "refused",
+          "receipt": {
+            "argv": [
+              "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/unixyz-candidate-cli",
+              "unixyz"
+            ],
+            "returncode": 2,
+            "stdout": "",
+            "stderr": "chematic: UniChem XYZ line 3: invalid decimal or token exceeds 256 bytes\n"
+          }
+        }
+      ]
+    }
+  },
+  "openbabel_receipts": [
+    {
+      "id": "ordinary",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/ordinary.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/ordinary.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/ordinary.unixyz\n2\n  6        0.00000        0.12500        0.25000\n  8        0.50000        0.75000        1.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/ordinary.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0.00000",
+              "0.12500",
+              "0.25000"
+            ]
+          },
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              "0.50000",
+              "0.75000",
+              "1.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "empty-title",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/empty-title.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/empty-title.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/empty-title.unixyz\n1\n  2        0.00000        0.50000        1.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/empty-title.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 2,
+            "position_angstrom": [
+              "0.00000",
+              "0.50000",
+              "1.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "space-title",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/space-title.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/space-title.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/space-title.unixyz\n1\n 10        0.12500        0.25000        0.50000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/space-title.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 10,
+            "position_angstrom": [
+              "0.12500",
+              "0.25000",
+              "0.50000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "unicode-title",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/unicode-title.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/unicode-title.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/unicode-title.unixyz\n1\n 26        0.12500        0.25000        0.50000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/unicode-title.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 26,
+            "position_angstrom": [
+              "0.12500",
+              "0.25000",
+              "0.50000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "numeric-title",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/numeric-title.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/numeric-title.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/numeric-title.unixyz\n1\n  1        0.12500        0.25000        0.50000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/numeric-title.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 1,
+            "position_angstrom": [
+              "0.12500",
+              "0.25000",
+              "0.50000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "precision",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/precision.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/precision.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/precision.unixyz\n1\n  6        0.12346       -0.23457        0.34568\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/precision.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0.12346",
+              "-0.23457",
+              "0.34568"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": false,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "scientific",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/scientific.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/scientific.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/scientific.unixyz\n1\n  7        0.12346        0.25000        0.37500\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/scientific.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 7,
+            "position_angstrom": [
+              "0.12346",
+              "0.25000",
+              "0.37500"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": false,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "signed-zero",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/signed-zero.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/signed-zero.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/signed-zero.unixyz\n1\n 18       -0.00000       -0.00000        0.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/signed-zero.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 18,
+            "position_angstrom": [
+              "-0.00000",
+              "-0.00000",
+              "0.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "subnormal",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/subnormal.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/subnormal.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/subnormal.unixyz\n1\n  2        0.00000       -0.00000        0.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/subnormal.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 2,
+            "position_angstrom": [
+              "0.00000",
+              "-0.00000",
+              "0.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": false,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "long-decimal",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/long-decimal.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/long-decimal.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/long-decimal.unixyz\n1\n 36        0.12346        0.00000        1.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/long-decimal.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 36,
+            "position_angstrom": [
+              "0.12346",
+              "0.00000",
+              "1.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": false,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "large-finite",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/large-finite.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/large-finite.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/large-finite.unixyz\n1\n  2179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00000-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.0000010000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104.00000\n",
+      "status": "unobservable",
+      "error": "incomplete/unexpected external atom section"
+    },
+    {
+      "id": "heavy-elements",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/heavy-elements.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/heavy-elements.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/heavy-elements.unixyz\n2\n118        0.12500        0.00000        0.00000\n 92        0.25000        0.00000        0.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/heavy-elements.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 118,
+            "position_angstrom": [
+              "0.12500",
+              "0.00000",
+              "0.00000"
+            ]
+          },
+          {
+            "atomic_number": 92,
+            "position_angstrom": [
+              "0.25000",
+              "0.00000",
+              "0.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "source-order",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/source-order.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/source-order.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/source-order.unixyz\n3\n  8       -0.12500        0.00000        0.00000\n  6        0.00000        0.00000        0.00000\n  8        0.12500        0.00000        0.00000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/source-order.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              "-0.12500",
+              "0.00000",
+              "0.00000"
+            ]
+          },
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0.00000",
+              "0.00000",
+              "0.00000"
+            ]
+          },
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              "0.12500",
+              "0.00000",
+              "0.00000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "no-final-newline",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/no-final-newline.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/no-final-newline.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/no-final-newline.unixyz\n1\n 17        0.12500        0.25000        0.50000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/no-final-newline.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 17,
+            "position_angstrom": [
+              "0.12500",
+              "0.25000",
+              "0.50000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    },
+    {
+      "id": "tabs",
+      "receipt": {
+        "argv": [
+          "/opt/homebrew/bin/obabel",
+          "-iunixyz",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/tabs.unixyz",
+          "-ounixyz",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/tabs.out.unixyz",
+          "-ab"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "1 molecule converted\n"
+      },
+      "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/tabs.unixyz\n1\n 54        0.12500        0.25000        0.50000\n",
+      "status": "observed",
+      "state": {
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ow45url_/tabs.unixyz",
+        "atoms": [
+          {
+            "atomic_number": 54,
+            "position_angstrom": [
+              "0.12500",
+              "0.25000",
+              "0.50000"
+            ]
+          }
+        ]
+      },
+      "comparisons": {
+        "full_token_record_exact": false,
+        "coordinate_bits_exact": true,
+        "title_exact": false,
+        "atomic_numbers_order_exact": true,
+        "declared_state_exact": false
+      }
+    }
+  ],
+  "openbabel_unixyz_inventory": {
+    "argv": [
+      "/opt/homebrew/bin/obabel",
+      "-L",
+      "unixyz"
+    ],
+    "returncode": 0,
+    "stdout": "One of the formats\nunixyz -- UniChem XYZ format\nRead Options e.g. -as\n s  Output single bonds only\n b  Disable bonding entirely\n\n\n\n",
+    "stderr": ""
+  },
+  "unit_probe": {
+    "source": "units\n1\n6 .125 .25 .5\n",
+    "receipt": {
+      "argv": [
+        "/opt/homebrew/bin/obabel",
+        "-iunixyz",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-unit-0606nkso/units.unixyz",
+        "-oxyz",
+        "-ab"
+      ],
+      "returncode": 0,
+      "stdout": "1\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-unit-0606nkso/units.unixyz\nC          0.12500        0.25000        0.50000\n",
+      "stderr": "1 molecule converted\n"
+    },
+    "expected_cartesian_angstrom": [
+      0.125,
+      0.25,
+      0.5
+    ],
+    "observed": [
+      0.125,
+      0.25,
+      0.5
+    ],
+    "layout_source_xyz": "1\nlayout title\nC .125 .25 .5\n",
+    "layout_receipt": {
+      "argv": [
+        "/opt/homebrew/bin/obabel",
+        "-ixyz",
+        "-ounixyz",
+        "-ab"
+      ],
+      "returncode": 0,
+      "stdout": "layout title\n1\n  6        0.12500        0.25000        0.50000\n",
+      "stderr": "1 molecule converted\n"
+    },
+    "expected_layout": {
+      "title": "layout title",
+      "atoms": [
+        {
+          "atomic_number": 6,
+          "position_angstrom": [
+            "0.12500",
+            "0.25000",
+            "0.50000"
+          ]
+        }
+      ]
+    },
+    "layout_observed": {
+      "title": "layout title",
+      "atoms": [
+        {
+          "atomic_number": 6,
+          "position_angstrom": [
+            "0.12500",
+            "0.25000",
+            "0.50000"
+          ]
+        }
+      ]
+    },
+    "exact": true
+  },
+  "candidate_read_probe": {
+    "scope": "Regenerated text read and CJSON output. Atom count/order and finite coordinate shape only; not isolated parser accuracy or coordinate-precision proof.",
+    "observed": 15,
+    "total": 15,
+    "receipts": [
+      {
+        "id": "ordinary",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/ordinary.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/ordinary.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.125,\n        0.25,\n        0.5,\n        0.75,\n        1.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/ordinary.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          6,
+          8
+        ],
+        "coordinates": [
+          0.0,
+          0.125,
+          0.25,
+          0.5,
+          0.75,
+          1.0
+        ]
+      },
+      {
+        "id": "empty-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/empty-title.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/empty-title.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.5,\n        1.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        2\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/empty-title.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          2
+        ],
+        "coordinates": [
+          0.0,
+          0.5,
+          1.0
+        ]
+      },
+      {
+        "id": "space-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/space-title.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/space-title.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.25,\n        0.5\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        10\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/space-title.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          10
+        ],
+        "coordinates": [
+          0.125,
+          0.25,
+          0.5
+        ]
+      },
+      {
+        "id": "unicode-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/unicode-title.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/unicode-title.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.25,\n        0.5\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        26\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/unicode-title.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          26
+        ],
+        "coordinates": [
+          0.125,
+          0.25,
+          0.5
+        ]
+      },
+      {
+        "id": "numeric-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/numeric-title.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/numeric-title.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.25,\n        0.5\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        1\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/numeric-title.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 2,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          1
+        ],
+        "coordinates": [
+          0.125,
+          0.25,
+          0.5
+        ]
+      },
+      {
+        "id": "precision",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/precision.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/precision.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.12345678901234567,\n        -0.23456789012345678,\n        0.3456789012345679\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/precision.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          6
+        ],
+        "coordinates": [
+          0.12345678901234566,
+          -0.23456789012345677,
+          0.3456789012345679
+        ]
+      },
+      {
+        "id": "scientific",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/scientific.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/scientific.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.12345678901234567,\n        0.25,\n        0.375\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        7\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/scientific.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 2,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          7
+        ],
+        "coordinates": [
+          0.12345678901234566,
+          0.25,
+          0.375
+        ]
+      },
+      {
+        "id": "signed-zero",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/signed-zero.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/signed-zero.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -0.0,\n        -0.0,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        18\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/signed-zero.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          18
+        ],
+        "coordinates": [
+          -0.0,
+          -0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "subnormal",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/subnormal.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/subnormal.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        5e-324,\n        -5e-324,\n        2.2250738585072014e-308\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        2\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/subnormal.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          2
+        ],
+        "coordinates": [
+          5e-324,
+          -5e-324,
+          2.2250738585072014e-308
+        ]
+      },
+      {
+        "id": "long-decimal",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/long-decimal.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/long-decimal.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.12345678901234568,\n        1e-27,\n        1.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        36\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/long-decimal.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          36
+        ],
+        "coordinates": [
+          0.12345678901234568,
+          1e-27,
+          1.0
+        ]
+      },
+      {
+        "id": "large-finite",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/large-finite.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/large-finite.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        1.7976931348623157e308,\n        -1.7976931348623157e308,\n        1e100\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        2\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/large-finite.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          2
+        ],
+        "coordinates": [
+          1.7976931348623157e+308,
+          -1.7976931348623157e+308,
+          1e+100
+        ]
+      },
+      {
+        "id": "heavy-elements",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/heavy-elements.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/heavy-elements.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.0,\n        0.0,\n        0.25,\n        0.0,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        118,\n        92\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/heavy-elements.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          118,
+          92
+        ],
+        "coordinates": [
+          0.125,
+          0.0,
+          0.0,
+          0.25,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "source-order",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/source-order.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/source-order.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        -0.125,\n        0.0,\n        0.0,\n        0.0,\n        0.0,\n        0.0,\n        0.125,\n        0.0,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        8,\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/source-order.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          8,
+          6,
+          8
+        ],
+        "coordinates": [
+          -0.125,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.125,
+          0.0,
+          0.0
+        ]
+      },
+      {
+        "id": "no-final-newline",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/no-final-newline.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/no-final-newline.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.25,\n        0.5\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        17\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/no-final-newline.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 2,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          17
+        ],
+        "coordinates": [
+          0.125,
+          0.25,
+          0.5
+        ]
+      },
+      {
+        "id": "tabs",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/tabs.unixyz",
+            "-ocjson",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/tabs.cjson",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.125,\n        0.25,\n        0.5\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        54\n      ]\n    },\n    \"formalCharges\": [\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-read-5tx7fq13/tabs.unixyz\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}",
+        "status": "observed",
+        "atomic_numbers": [
+          54
+        ],
+        "coordinates": [
+          0.125,
+          0.25,
+          0.5
+        ]
+      }
+    ]
+  },
+  "openbabel_candidate_text_rewrite": {
+    "scope": "Regenerated candidate text rewritten through OB unixyz. Counts describe external output observability, not isolated reader acceptance.",
+    "observed": 14,
+    "total": 15,
+    "receipts": [
+      {
+        "id": "ordinary",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/ordinary.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/ordinary.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/ordinary.unixyz\n2\n  6        0.00000        0.12500        0.25000\n  8        0.50000        0.75000        1.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/ordinary.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 6,
+              "position_angstrom": [
+                "0.00000",
+                "0.12500",
+                "0.25000"
+              ]
+            },
+            {
+              "atomic_number": 8,
+              "position_angstrom": [
+                "0.50000",
+                "0.75000",
+                "1.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "empty-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/empty-title.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/empty-title.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/empty-title.unixyz\n1\n  2        0.00000        0.50000        1.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/empty-title.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 2,
+              "position_angstrom": [
+                "0.00000",
+                "0.50000",
+                "1.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "space-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/space-title.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/space-title.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/space-title.unixyz\n1\n 10        0.12500        0.25000        0.50000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/space-title.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 10,
+              "position_angstrom": [
+                "0.12500",
+                "0.25000",
+                "0.50000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "unicode-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/unicode-title.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/unicode-title.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/unicode-title.unixyz\n1\n 26        0.12500        0.25000        0.50000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/unicode-title.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 26,
+              "position_angstrom": [
+                "0.12500",
+                "0.25000",
+                "0.50000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "numeric-title",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/numeric-title.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/numeric-title.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/numeric-title.unixyz\n1\n  1        0.12500        0.25000        0.50000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/numeric-title.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 1,
+              "position_angstrom": [
+                "0.12500",
+                "0.25000",
+                "0.50000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "precision",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/precision.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/precision.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/precision.unixyz\n1\n  6        0.12346       -0.23457        0.34568\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/precision.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 6,
+              "position_angstrom": [
+                "0.12346",
+                "-0.23457",
+                "0.34568"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": false,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "scientific",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/scientific.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/scientific.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/scientific.unixyz\n1\n  7        0.12346        0.25000        0.37500\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/scientific.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 7,
+              "position_angstrom": [
+                "0.12346",
+                "0.25000",
+                "0.37500"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": false,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "signed-zero",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/signed-zero.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/signed-zero.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/signed-zero.unixyz\n1\n 18       -0.00000       -0.00000        0.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/signed-zero.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 18,
+              "position_angstrom": [
+                "-0.00000",
+                "-0.00000",
+                "0.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "subnormal",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/subnormal.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/subnormal.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/subnormal.unixyz\n1\n  2        0.00000       -0.00000        0.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/subnormal.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 2,
+              "position_angstrom": [
+                "0.00000",
+                "-0.00000",
+                "0.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": false,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "long-decimal",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/long-decimal.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/long-decimal.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/long-decimal.unixyz\n1\n 36        0.12346        0.00000        1.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/long-decimal.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 36,
+              "position_angstrom": [
+                "0.12346",
+                "0.00000",
+                "1.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": false,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "large-finite",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/large-finite.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/large-finite.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/large-finite.unixyz\n1\n  2179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00000-179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.0000010000000000000000159028911097599180468360808563945281389781327557747838772170381060813469985856815104.00000\n",
+        "status": "unobservable",
+        "error": "incomplete/unexpected external atom section"
+      },
+      {
+        "id": "heavy-elements",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/heavy-elements.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/heavy-elements.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/heavy-elements.unixyz\n2\n118        0.12500        0.00000        0.00000\n 92        0.25000        0.00000        0.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/heavy-elements.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 118,
+              "position_angstrom": [
+                "0.12500",
+                "0.00000",
+                "0.00000"
+              ]
+            },
+            {
+              "atomic_number": 92,
+              "position_angstrom": [
+                "0.25000",
+                "0.00000",
+                "0.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "source-order",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/source-order.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/source-order.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/source-order.unixyz\n3\n  8       -0.12500        0.00000        0.00000\n  6        0.00000        0.00000        0.00000\n  8        0.12500        0.00000        0.00000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/source-order.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 8,
+              "position_angstrom": [
+                "-0.12500",
+                "0.00000",
+                "0.00000"
+              ]
+            },
+            {
+              "atomic_number": 6,
+              "position_angstrom": [
+                "0.00000",
+                "0.00000",
+                "0.00000"
+              ]
+            },
+            {
+              "atomic_number": 8,
+              "position_angstrom": [
+                "0.12500",
+                "0.00000",
+                "0.00000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "no-final-newline",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/no-final-newline.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/no-final-newline.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/no-final-newline.unixyz\n1\n 17        0.12500        0.25000        0.50000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/no-final-newline.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 17,
+              "position_angstrom": [
+                "0.12500",
+                "0.25000",
+                "0.50000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      },
+      {
+        "id": "tabs",
+        "receipt": {
+          "argv": [
+            "/opt/homebrew/bin/obabel",
+            "-iunixyz",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/tabs.unixyz",
+            "-ounixyz",
+            "-O",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/tabs.out.unixyz",
+            "-ab"
+          ],
+          "returncode": 0,
+          "stdout": "",
+          "stderr": "1 molecule converted\n"
+        },
+        "output": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/tabs.unixyz\n1\n 54        0.12500        0.25000        0.50000\n",
+        "status": "observed",
+        "state": {
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-unixyz-ozybvjaz/tabs.unixyz",
+          "atoms": [
+            {
+              "atomic_number": 54,
+              "position_angstrom": [
+                "0.12500",
+                "0.25000",
+                "0.50000"
+              ]
+            }
+          ]
+        },
+        "comparisons": {
+          "full_token_record_exact": false,
+          "coordinate_bits_exact": true,
+          "title_exact": false,
+          "atomic_numbers_order_exact": true,
+          "declared_state_exact": false
+        }
+      }
+    ]
+  }
+}
