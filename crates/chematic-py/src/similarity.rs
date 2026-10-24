@@ -51,6 +51,18 @@ fn shape_screen(query: &Mol, smiles_list: Vec<String>) -> Vec<(usize, f64)> {
     )
 }
 
+/// RDKit-compatible 12-value USR descriptor for supplied 3D coordinates.
+///
+/// Include explicit hydrogens in ``coords`` when comparing with an RDKit
+/// conformer that contains them. Missing or nonfinite coordinates raise
+/// ``ValueError``.
+#[pyfunction]
+fn rdkit_usr_descriptors(coords: Vec<[f64; 3]>) -> PyResult<Vec<f64>> {
+    chematic_3d::rdkit_usr_descriptors(&coords)
+        .map(|values| values.to_vec())
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Estimate MAP4 Tanimoto similarity between two MAP4 fingerprints.
 ///
 /// ``a`` and ``b`` must be lists of 1024 integers as returned by :meth:`Mol.map4`.
@@ -476,6 +488,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         tanimoto,
         enrichment_factors,
         shape_screen,
+        rdkit_usr_descriptors,
         tanimoto_map4,
         butina_cluster,
         maxmin_picks,

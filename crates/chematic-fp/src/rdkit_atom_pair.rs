@@ -37,11 +37,9 @@
 //! [`crate::rdkit_torsion_fp`]'s.
 //!
 //! Against RDKit 2026.09.1's generator, the pinned CLI comparison is
-//! 4,071/4,072 exact on `stress-v1.smi`, 10,000/10,000 on the browser corpus,
-//! and 5,000/5,000 on `descriptor_census_corpus.smi`. The remaining stress
-//! row contains an aromatic carbon whose bond-order lower bound is five;
-//! CheMatic's strict sanitizer refuses that RDKit-accepted graph. These
-//! corpus results do not establish universal bit-exactness.
+//! 4,072/4,072 exact on `stress-v1.smi`, 10,000/10,000 on the browser corpus,
+//! and 5,000/5,000 on `descriptor_census_corpus.smi`. These fixed-corpus
+//! results do not establish universal bit-exactness.
 
 use std::collections::VecDeque;
 
