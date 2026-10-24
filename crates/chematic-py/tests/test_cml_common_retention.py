@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).resolve().parents[3]/'validation/cml_source_preservation/cases.json').read_text())['cases']
+PACKET = json.loads((Path(__file__).resolve().parents[3]/'validation/cml_source_preservation/cases.json').read_text(encoding="utf-8"))['cases']
 NS = 'http://www.xml-cml.org/schema'
 OPAQUE = [f'<molecule xmlns="{NS}"/>',
           f'<molecule xmlns="{NS}"><bondArray><bond atomRefs2="missing other" order="uninterpreted"/></bondArray></molecule>',

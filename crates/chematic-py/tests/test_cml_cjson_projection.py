@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-P=json.loads((Path(__file__).parents[3]/'validation/cml_cjson_projection/cases.json').read_text())
+P=json.loads((Path(__file__).parents[3]/'validation/cml_cjson_projection/cases.json').read_text(encoding="utf-8"))
 def variants(s):return [s,s.replace('><','>\n<'),s.replace('><','>\r\n<')]
 @pytest.mark.parametrize('c',P['valid'],ids=lambda c:c['id'])
 def test_direct_and_common_outputs_match(c):

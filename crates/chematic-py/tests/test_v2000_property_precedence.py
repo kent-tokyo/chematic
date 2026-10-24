@@ -7,7 +7,7 @@ import re
 import chematic
 import pytest
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/v2000_property_precedence/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/v2000_property_precedence/cases.json').read_text(encoding="utf-8"))
 NUMBERS = dict(C=6, N=7, O=8)
 
 

@@ -6,7 +6,7 @@ import re
 import chematic
 import pytest
 
-PACKET = json.loads((Path(__file__).parents[3] / 'validation/v2000_isotope_output/cases.json').read_text())
+PACKET = json.loads((Path(__file__).parents[3] / 'validation/v2000_isotope_output/cases.json').read_text(encoding="utf-8"))
 NUMBERS = dict(H=1, C=6, N=7, O=8, Cl=17, Br=35, U=92)
 
 

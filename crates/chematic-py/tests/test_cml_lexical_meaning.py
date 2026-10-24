@@ -6,7 +6,7 @@ import chematic
 import pytest
 
 PACKET = json.loads((Path(__file__).parents[3] /
-                     "validation/cml_lexical_meaning/cases.json").read_text())
+                     "validation/cml_lexical_meaning/cases.json").read_text(encoding="utf-8"))
 
 
 def fields(mol):

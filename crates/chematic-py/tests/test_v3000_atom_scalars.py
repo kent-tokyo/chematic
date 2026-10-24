@@ -4,7 +4,7 @@ from pathlib import Path
 import chematic
 import pytest
 
-PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/v3000_atom_scalars/cases.json').read_text())
+PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/v3000_atom_scalars/cases.json').read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize('case',PACKET['cases'],ids=lambda c:c['id'])
