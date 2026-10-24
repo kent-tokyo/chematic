@@ -18,6 +18,7 @@ def bits(rows):return [struct.pack(">d",float(v)) for row in rows for v in row]
 @pytest.mark.parametrize("variant",PACKET["variants"])
 def test_projection_selects_cml_graph_by_namespace_and_scope(case,variant):
     text=layout(case["input"],variant)
+    assert text.encode("utf-8").decode("utf-8")==text
     mol,xyz=chematic.from_cml_with_3d(text.encode())
     expected=case["expected"]
     assert mol.atom_count==len(expected["numbers"])
@@ -36,6 +37,14 @@ def test_projection_selects_cml_graph_by_namespace_and_scope(case,variant):
     assert a.get("formalCharges",[0]*mol.atom_count)==expected["formal_charges"]
     assert a.get("isotopes",[0]*mol.atom_count)==expected["isotopes"]
     assert [[b["connections"]["index"][2*i],b["connections"]["index"][2*i+1],o] for i,o in enumerate(b["order"])]==expected["bonds"]
+
+def test_unicode_namespace_prefix_has_identical_str_and_bytes_projection():
+    case=next(c for c in PACKET["valid"] if c["id"]=="unicode-prefix")
+    text=case["input"]
+    from_text=chematic.from_cml_with_3d(text)
+    from_bytes=chematic.from_cml_with_3d(text.encode("utf-8"))
+    assert from_text[0].smiles==from_bytes[0].smiles
+    assert bits(from_text[1])==bits(from_bytes[1])
 
 @pytest.mark.parametrize("case",PACKET["invalid"],ids=lambda c:c["id"])
 @pytest.mark.parametrize("variant",PACKET["variants"])
