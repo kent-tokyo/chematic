@@ -306,6 +306,8 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_sdf_source_document -q
       - name: CML Cartesian preservation observer
         run: .venv/bin/python -m unittest scripts.tests.test_cml_3d_observer -q
+      - name: CML lexical meaning observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cml_lexical_meaning -q
       - name: CJSON checked-input observer
         run: .venv/bin/python -m unittest scripts.tests.test_cjson_checked_observer -q
       - name: MOL2 CJSON projection observer

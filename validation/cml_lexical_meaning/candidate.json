@@ -1,0 +1,6653 @@
+{
+  "schema": "chematic.cml-lexical-meaning-report.v1",
+  "baseline": false,
+  "baseline_runtime_commit": null,
+  "baseline_reader_sources": [],
+  "scope": "synthetic development packet; graph/H observation only; native tests cover 2D coordinates separately; no schema/stereo/aromaticity/query/speed claim",
+  "head": "fcbf6d0a8c901dee5220cca965cf119c0a3b7b46",
+  "sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml.rs",
+      "sha256": "eb6d794ff030020631228626136e60f6a613719abbd2431b5d2ef76b24afb508",
+      "size_bytes": 33823
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml/attributes.rs",
+      "sha256": "b8007f1ed7a3ddfaefd2964e2f6ba0141aac874343f58f6f2321bdc080c4f03e",
+      "size_bytes": 5466
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml/lexical.rs",
+      "sha256": "9f169e97a1ba270f938d7e92be234a4f510f5a37f6f0924cefbfcdbae85aad2b",
+      "size_bytes": 2517
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml/geometry.rs",
+      "sha256": "85ab35d9e9fd514ab53311aec225e470ce866438b82a8d33b67f258cd3a2ea3c",
+      "size_bytes": 4746
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml/geometry_xml.rs",
+      "sha256": "bdd9ea9e5b07b37e2bf649ae91c7e4fbadeca8249b1410d250e80f25d33b43f3",
+      "size_bytes": 4791
+    }
+  ],
+  "runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_cml_lexical_meaning.py",
+    "sha256": "80f927e0afa23fc6be03d7d8eccd8acd91681a3ba18e206b5f31907c25f9f8e2",
+    "size_bytes": 10515
+  },
+  "observer": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
+    "sha256": "83870c344f0195cd5f502e06c23379fb50bb7a07a40e7420e89ce997981ef5b5",
+    "size_bytes": 28676
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/validation/cml_lexical_meaning/cases.json",
+    "sha256": "cc377bc23f1be9363d70b52191e0447faf40f7d02997b5567d5362c67702c7e0",
+    "size_bytes": 13815
+  },
+  "python_package": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/cml-lexical-candidate-python/chematic/__init__.py",
+    "sha256": "8d3b3eefb018b54adb3a8fbdb10ec686a2c4eb76cc16a31da33b7fa98a690d81",
+    "size_bytes": 30215
+  },
+  "python_extension": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/cml-lexical-candidate-python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "6478b68318a36dd6e8f8133a14ba40c260b447aa0e3478f3926b72832fadb083",
+    "size_bytes": 45503888
+  },
+  "wasm_module": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/cml-lexical-candidate-wasm/chematic_wasm.js",
+    "sha256": "43f17606a67b04ecb1aefbb4ac5e463d3c6703c0e4c6cf2b9fb1cdacbe91f1e3",
+    "size_bytes": 376697
+  },
+  "wasm_binary": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/cml-lexical-candidate-wasm/chematic_wasm_bg.wasm",
+    "sha256": "a57e5664f3498bf4332320fb0e2babe23cbf940396eb264cd9201db826ae5c95",
+    "size_bytes": 46328732
+  },
+  "openbabel_binary": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_command": [
+    "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "-icml",
+    "-osmi",
+    "-xn",
+    "-xa"
+  ],
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "rdkit_observer_version": "2025.09.3",
+  "summary": {
+    "python_default": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "python_strict": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "python_default_bytes": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "python_strict_bytes": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "python_common": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "python_3d": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "wasm_default": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "wasm_strict": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "wasm_common": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    },
+    "openbabel": {
+      "control": {
+        "count": 3,
+        "preserved": 3,
+        "no_output": 0
+      },
+      "reproduction": {
+        "count": 13,
+        "preserved": 13,
+        "no_output": 0
+      }
+    }
+  },
+  "exact_source_bytes": {
+    "python_source": 16,
+    "wasm_source": 16
+  },
+  "cases": [
+    {
+      "id": "ammonium_pretty",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "carbonyl_pretty",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH2]=[18O]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH2]=[18O]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              6,
+              8
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              13,
+              18
+            ],
+            "hydrogens": [
+              2,
+              0
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "quoted_gt_and_references",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo > quoted\" elementType=\"N\" formalCharge=\"&#x31;\" isotopeNumber=\"&#49;&#53;\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo > quoted\" elementType=\"N\" formalCharge=\"&#x31;\" isotopeNumber=\"&#49;&#53;\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo > quoted\" elementType=\"N\" formalCharge=\"&#x31;\" isotopeNumber=\"&#49;&#53;\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_atom_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom\n id=\"a1\"\n elementType=\"N\"\n formalCharge=\"1\"\n isotopeNumber=\"15\"\n hydrogenCount=\"4\"\n x2=\"0.125\"\n y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom\n id=\"a1\"\n elementType=\"N\"\n formalCharge=\"1\"\n isotopeNumber=\"15\"\n hydrogenCount=\"4\"\n x2=\"0.125\"\n y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom\n id=\"a1\"\n elementType=\"N\"\n formalCharge=\"1\"\n isotopeNumber=\"15\"\n hydrogenCount=\"4\"\n x2=\"0.125\"\n y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "split_identity_and_scalars",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\"\n elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\"\n elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\"\n elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_bond_order",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\"\n order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\"\n order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\"\n order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH2]=[18O]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH2]=[18O]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              6,
+              8
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              13,
+              18
+            ],
+            "hydrogens": [
+              2,
+              0
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_quoted_bond_refs",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1\n a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1\n a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1\n a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH2]=[18O]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH2]=[18O]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              6,
+              8
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              13,
+              18
+            ],
+            "hydrogens": [
+              2,
+              0
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "compact_carbonyl",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/><atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/></atomArray><bondArray><bond atomRefs2=\"a1 a2\" order=\"2\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/><atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/></atomArray><bondArray><bond atomRefs2=\"a1 a2\" order=\"2\"/></bondArray></molecule>",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[18O]=[13CH2]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              8,
+              6
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              18,
+              13
+            ],
+            "hydrogens": [
+              0,
+              2
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/><atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/></atomArray><bondArray><bond atomRefs2=\"a1 a2\" order=\"2\"/></bondArray></molecule>",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[13CH2]=[18O]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[13CH2]=[18O]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              6,
+              8
+            ],
+            "charges": [
+              0,
+              0
+            ],
+            "isotopes": [
+              13,
+              18
+            ],
+            "hydrogens": [
+              2,
+              0
+            ],
+            "atom_maps": [
+              0,
+              0
+            ],
+            "bonds": [
+              [
+                0,
+                1,
+                2.0
+              ]
+            ]
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "crlf_tab_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r\n<atomArray>\r\n<atom\r\n\tid=\"a1\"\r\n\telementType=\"N\"\r\n\tformalCharge=\"1\"\r\n\tisotopeNumber=\"15\"\r\n\thydrogenCount=\"4\"\r\n\tx2=\"0.125\"\r\n\ty2=\"-0.25\"/>\r\n</atomArray>\r\n<bondArray>\n\r\n</bondArray>\n\r\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r\n<atomArray>\r\n<atom\r\n\tid=\"a1\"\r\n\telementType=\"N\"\r\n\tformalCharge=\"1\"\r\n\tisotopeNumber=\"15\"\r\n\thydrogenCount=\"4\"\r\n\tx2=\"0.125\"\r\n\ty2=\"-0.25\"/>\r\n</atomArray>\r\n<bondArray>\n\r\n</bondArray>\n\r\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r\n<atomArray>\r\n<atom\r\n\tid=\"a1\"\r\n\telementType=\"N\"\r\n\tformalCharge=\"1\"\r\n\tisotopeNumber=\"15\"\r\n\thydrogenCount=\"4\"\r\n\tx2=\"0.125\"\r\n\ty2=\"-0.25\"/>\r\n</atomArray>\r\n<bondArray>\n\r\n</bondArray>\n\r\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "cr_only_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r<atomArray>\r<atom\r id=\"a1\"\r elementType=\"N\"\r formalCharge=\"1\"\r isotopeNumber=\"15\"\r hydrogenCount=\"4\"\r x2=\"0.125\"\r y2=\"-0.25\"/>\r</atomArray>\r<bondArray>\r\r</bondArray>\r\r</molecule>\r",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r<atomArray>\r<atom\r id=\"a1\"\r elementType=\"N\"\r formalCharge=\"1\"\r isotopeNumber=\"15\"\r hydrogenCount=\"4\"\r x2=\"0.125\"\r y2=\"-0.25\"/>\r</atomArray>\r<bondArray>\r\r</bondArray>\r\r</molecule>\r",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r<atomArray>\r<atom\r id=\"a1\"\r elementType=\"N\"\r formalCharge=\"1\"\r isotopeNumber=\"15\"\r hydrogenCount=\"4\"\r x2=\"0.125\"\r y2=\"-0.25\"/>\r</atomArray>\r<bondArray>\r\r</bondArray>\r\r</molecule>\r",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "quoted_literal_linebreak",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo >\n fields\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo >\n fields\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo >\n fields\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_comment",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<!-- opaque example\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n-->\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<!-- opaque example\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n-->\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<!-- opaque example\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n-->\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_cdata",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n]]></scalar></property></propertyList>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n]]></scalar></property></propertyList>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n]]></scalar></property></propertyList>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "multiline_processing_instruction",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<?fixture\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n?>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<?fixture\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n?>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<?fixture\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n?>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "adjacent_comment_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/><!-- <atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/> -->\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/><!-- <atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/> -->\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/><!-- <atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/> -->\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    },
+    {
+      "id": "unicode_opaque",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[λ 漢字\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n🙂]]></scalar></property></propertyList>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      },
+      "wasm_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "wasm_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[λ 漢字\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n🙂]]></scalar></property></propertyList>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "python_default": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_default_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_strict_bytes": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_common": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_3d": {
+        "output": "[15NH4+]",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      },
+      "python_source": {
+        "output": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[λ 漢字\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n🙂]]></scalar></property></propertyList>\n</molecule>\n",
+        "exact_source_bytes": true
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "[15NH4+]\n",
+        "stderr": "1 molecule converted\n",
+        "output": "[15NH4+]\n",
+        "observation": {
+          "outcome": "smiles_output",
+          "preserved": true,
+          "actual": {
+            "numbers": [
+              7
+            ],
+            "charges": [
+              1
+            ],
+            "isotopes": [
+              15
+            ],
+            "hydrogens": [
+              4
+            ],
+            "atom_maps": [
+              0
+            ],
+            "bonds": []
+          },
+          "fields": {
+            "numbers": true,
+            "charges": true,
+            "isotopes": true,
+            "hydrogens": true,
+            "atom_maps": true,
+            "bonds": true
+          }
+        }
+      }
+    }
+  ]
+}
