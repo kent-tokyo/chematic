@@ -1,5 +1,23 @@
 use super::*;
 
+/// Checked local CJSON graph/Cartesian/name projection; throws on opaque
+/// fields, partial charges or conflicting names. No source chemistry validation.
+#[wasm_bindgen]
+pub fn project_cjson_to_cml(text: &str) -> Result<String, JsValue> {
+    chematic_mol::project_cjson_to_cml_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 /// Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
 /// Retains atom types and every other source byte; errors throw, no partial text.
 #[wasm_bindgen]
@@ -206,6 +224,9 @@ fn write_common_format(
 }
 
 fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option<String>, JsValue> {
+    if input == "cjson" && output == "cml" {
+        return project_cjson_to_cml(text).map(Some);
+    }
     if input == "cml" && output == "cjson" {
         let limits = chematic_mol::CmlParseLimits {
             max_input_bytes: WASM_MAX_INPUT_BYTES,
@@ -250,6 +271,9 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// GJF/COM supports only
 /// same-format retention of a bounded single Cartesian job, including opaque
 /// job sections (not a Gaussian job validator).
+/// CJSON-to-CML retains the local indexed graph, source XYZ and name after reparse;
+/// opaque fields/stereo/unit cells, partial charges and conflicting names throw.
+/// Source chemistry and coordinate-derived stereo are not validated.
 /// V3000-to-CJSON also
 /// carries source-order x/y/z values; it does not retain opaque metadata or
 /// verify cross-format stereo.

@@ -96,7 +96,8 @@ pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
-    project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
+    project_cjson_to_cml, project_cjson_to_cml_with_limits, project_mol2_to_cjson,
+    project_mol2_to_cjson_with_limits,
 };
 pub use error::MolParseError;
 pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
