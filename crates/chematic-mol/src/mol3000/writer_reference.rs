@@ -60,7 +60,7 @@ fn append_atom_properties(
     if atom.charge != 0 {
         line.push_str(&format!(" CHG={}", atom.charge));
     }
-    if let Some(isotope) = atom.isotope {
+    if let Some(isotope) = atom.isotope.filter(|&mass| mass != 0) {
         line.push_str(&format!(" MASS={isotope}"));
     }
     if let Some(hydrogens) = atom.hydrogen_count {

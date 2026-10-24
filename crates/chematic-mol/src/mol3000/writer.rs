@@ -28,7 +28,7 @@ fn v3000_atom_symbol(mol: &Molecule, idx: AtomIdx, atom: &Atom) -> &'static str 
         // RDKit's V3000 reader drops MASS, CHG, and explicit H from `*`.
         // Its `R` atom preserves those decorated wildcard identities. CTfile
         // readers may also label that spelling as an unnumbered R group.
-        None if atom.isotope.is_some()
+        None if atom.isotope.is_some_and(|mass| mass != 0)
             || atom.charge != 0
             || atom.hydrogen_count.is_some_and(|count| count > 0) =>
         {
@@ -285,7 +285,7 @@ fn append_atom_properties(
     if atom.charge != 0 {
         write!(line, " CHG={}", atom.charge).expect("writing to String cannot fail");
     }
-    if let Some(isotope) = atom.isotope {
+    if let Some(isotope) = atom.isotope.filter(|&mass| mass != 0) {
         write!(line, " MASS={isotope}").expect("writing to String cannot fail");
     }
     append_explicit_hcount(line, mol, idx, atom);
