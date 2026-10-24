@@ -1,0 +1,384 @@
+{
+  "schema": "chematic.v2000-property-precedence.v1",
+  "provenance": "Original synthetic MIT CTfile controls authored for chematic on 2026-10-24. Spec-authored charge/isotope precedence oracle, not a physical-validity or holdout corpus; no M RAD, aliases or query attributes.",
+  "cases": [
+    {
+      "id": "unspecified_control",
+      "scope": "control",
+      "input": "unspecified_control\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 N   0  0  0  0  0  0  0  0  0  0  0\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "inline_channels_control",
+      "scope": "control",
+      "input": "inline_channels_control\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "all_listed_control",
+      "scope": "control",
+      "input": "all_listed_control\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  CHG  2   1   1   2  -1\nM  ISO  2   1  15   2  18\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "charge_only_preserves_isotopes_control",
+      "scope": "control",
+      "input": "charge_only_preserves_isotopes_control\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  0  0  0  0  0  0  0  0  0  0\nM  CHG  1   2  -1\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "isotope_only_preserves_charges_control",
+      "scope": "control",
+      "input": "isotope_only_preserves_charges_control\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  ISO  2   1  15   2  18\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "charge_sparse_reset",
+      "scope": "precedence",
+      "input": "charge_sparse_reset\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  CHG  1   2  -1\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "charge_unlisted_both_signs",
+      "scope": "precedence",
+      "input": "charge_unlisted_both_signs\n  fixture           2D\n\n  3  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  3  0  0  0  0  0  0  0  7  0\n    1.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  9  0\n    2.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0 11  0\nM  CHG  1   2   1\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          1,
+          0
+        ],
+        "isotopes": [
+          13,
+          15,
+          18
+        ],
+        "atom_maps": [
+          7,
+          9,
+          11
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "charge_multiple_lines_cumulative",
+      "scope": "precedence",
+      "input": "charge_multiple_lines_cumulative\n  fixture           2D\n\n  3  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  3  0  0  0  0  0  0  0  7  0\n    1.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  9  0\n    2.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0 11  0\nM  CHG  1   1   1\nM  CHG  1   3  -1\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          0,
+          -1
+        ],
+        "isotopes": [
+          13,
+          15,
+          18
+        ],
+        "atom_maps": [
+          7,
+          9,
+          11
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "isotope_sparse_reset",
+      "scope": "precedence",
+      "input": "isotope_sparse_reset\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  0  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 N   1  0  0  0  0  0  0  0  0  0  0\nM  ISO  1   1  14\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          14,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "isotope_multiple_lines_cumulative",
+      "scope": "precedence",
+      "input": "isotope_multiple_lines_cumulative\n  fixture           2D\n\n  3  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  3  0  0  0  0  0  0  0  7  0\n    1.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  9  0\n    2.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0 11  0\nM  ISO  1   1  12\nM  ISO  1   3  18\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          1,
+          -1
+        ],
+        "isotopes": [
+          12,
+          0,
+          18
+        ],
+        "atom_maps": [
+          7,
+          9,
+          11
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "charge_channel_independence",
+      "scope": "precedence",
+      "input": "charge_channel_independence\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  CHG  1   2  -1\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          -1
+        ],
+        "isotopes": [
+          15,
+          18
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "isotope_channel_independence",
+      "scope": "precedence",
+      "input": "isotope_channel_independence\n  fixture           2D\n\n  2  0  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  0  0\n    1.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0  0  0\nM  ISO  1   2  17\nM  END\n",
+      "expected": {
+        "numbers": [
+          7,
+          8
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          0,
+          17
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "both_channels_connected",
+      "scope": "precedence",
+      "input": "both_channels_connected\n  fixture           2D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  3  0  0  0  0  0  0  0  7  0\n    1.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  9  0\n    2.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0 11  0\n  1  2  1  0  0  0  0\n  2  3  2  0  0  0  0\nM  CHG  1   2   1\nM  ISO  1   3  18\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          1,
+          0
+        ],
+        "isotopes": [
+          0,
+          0,
+          18
+        ],
+        "atom_maps": [
+          7,
+          9,
+          11
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            2
+          ]
+        ]
+      }
+    },
+    {
+      "id": "both_channels_reversed",
+      "scope": "precedence",
+      "input": "both_channels_reversed\n  fixture           2D\n\n  3  2  0  0  0  0  0  0  0  0999 V2000\n    0.0000    0.0000    0.0000 C   1  3  0  0  0  0  0  0  0  7  0\n    1.0000    0.0000    0.0000 N   1  3  0  0  0  0  0  0  0  9  0\n    2.0000    0.0000    0.0000 O   2  5  0  0  0  0  0  0  0 11  0\n  1  2  1  0  0  0  0\n  2  3  2  0  0  0  0\nM  ISO  1   3  18\nM  CHG  1   2   1\nM  END\n",
+      "expected": {
+        "numbers": [
+          6,
+          7,
+          8
+        ],
+        "charges": [
+          0,
+          1,
+          0
+        ],
+        "isotopes": [
+          0,
+          0,
+          18
+        ],
+        "atom_maps": [
+          7,
+          9,
+          11
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            2
+          ]
+        ]
+      }
+    }
+  ]
+}
