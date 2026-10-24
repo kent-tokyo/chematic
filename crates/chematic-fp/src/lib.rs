@@ -160,6 +160,32 @@ pub(crate) fn rdkit_fp_view(
     std::borrow::Cow::Owned(out)
 }
 
+/// A Kekule-written ring can become aromatic during RDKit sanitization even
+/// when the rest of the molecule already contains literal aromatic bonds.
+/// Bond-typed fingerprints must match and hash the sanitized graph in that
+/// case, not the parser's original single/double bond representation.
+pub(crate) fn rdkit_fp_needs_aromatic_view(mol: &chematic_core::Molecule) -> bool {
+    use chematic_core::BondOrder;
+    if chematic_perception::rdkit_model_may_disagree(mol) {
+        return true;
+    }
+    if !mol.bonds().any(|(_, bond)| bond.order == BondOrder::Double) {
+        return false;
+    }
+    let ring_bonds = chematic_perception::ring_bond_flags_shared(mol);
+    mol.bonds()
+        .any(|(idx, bond)| ring_bonds[idx.0 as usize] && bond.order == BondOrder::Double)
+}
+
+#[cfg(test)]
+pub(crate) fn fingerprint_test_digest(fp: &bitvec::BitVec2048) -> u64 {
+    fp.to_le_bytes()
+        .iter()
+        .fold(0xcbf29ce484222325, |hash, byte| {
+            (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+        })
+}
+
 /// RDKit's atomic number of an atom: 0 for a dummy atom, which chematic
 /// stores with a placeholder element.
 pub(crate) fn rdkit_atomic_num(mol: &chematic_core::Molecule, idx: chematic_core::AtomIdx) -> u32 {

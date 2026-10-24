@@ -58,27 +58,12 @@
 //! molecules parsed from SMILES, which never carry query atoms/bonds, so that
 //! branch is unreachable dead code for this scope, not a gap).
 //!
-//! **Status, measured against a live RDKit oracle (1000-molecule samples,
-//! three corpora with different chemical distributions)**: 100% bit-exact on
-//! `scripts/fixtures/descriptor_census_corpus.smi`, 100% on
-//! `scripts/fixtures/chembl_accuracy_corpus_4999.smi`, 99.6% on
-//! `scripts/fixtures/nci_first_5k_smiles_only.smi`. The 4 remaining NCI mismatches all
-//! come from molecules with *zero* literal `Aromatic`-order bonds anywhere
-//! (pure Kekule-notation input), where [`matched_bond_code`]'s fallback to
-//! [`chematic_perception::aromaticity::assign_aromaticity_ex`] is the only
-//! available aromaticity signal and that model itself disagrees with RDKit's
-//! own perception for these specific ring systems (a brominated
-//! anthraquinone/xanthone core, an S/N-containing bicyclic heterocycle, a
-//! ketone-fused tetralone-like system, a Zn coordination complex) -- a
-//! pre-existing, already partially-tracked gap in chematic's own aromaticity
-//! model (see `AromaticityAlgorithm::RdkitLike`'s own doc comment for its
-//! known P/keto-lactam gaps), not a defect in this module's own
-//! match-enumeration or hashing logic (independently confirmed correct:
-//! per-pattern match *counts* were verified identical to RDKit's own
-//! `GetSubstructMatches(..., uniquify=False)` across all 13 patterns on a
-//! repro molecule before either bond-aromaticity bug was even found). Full
-//! aromaticity-perception parity with RDKit is a separate, much larger
-//! undertaking, out of scope for this round.
+//! **Measured against local RDKit 2025.09.3**, default 2048-bit options:
+//! exact on-bit agreement on the descriptor census (5000/5000), ChEMBL
+//! fixture (5000/5000), NCI fixture (4991/4991 molecules parsed by both),
+//! and special-chemistry stress fixture (4072/4072). The NCI file has eight
+//! SMILES rejected by RDKit. This is corpus agreement, not a general
+//! guarantee for all chemical structures or RDKit versions.
 
 use std::sync::LazyLock;
 
@@ -164,17 +149,11 @@ fn rdkit_bond_type_code(order: BondOrder) -> u32 {
 ///    `C1=C(c2ccccc2)N2CCCN=C2c2ccccc21` (two lowercase, literally-aromatic
 ///    pendant phenyls attached to a Kekule-written, genuinely non-aromatic
 ///    central ring), re-perceiving the whole molecule wrongly classified the
-///    central ring as aromatic too -- a real disagreement between
-///    chematic's own aromaticity model and RDKit's for that ring shape, not
-///    fixable by tweaking this function further. The caller
-///    ([`rdkit_pattern_fp`]) now only invokes `assign_aromaticity_ex` at all
-///    for molecules with *zero* literal `Aromatic` bonds anywhere (pure
-///    Kekule input, where it's the only available signal); molecules that
-///    already carry any literal `Aromatic` bond trust every bond's own
-///    stored order throughout instead of re-perceiving, since such
-///    molecules already went through *some* aromaticity-aware writer. This
-///    fixed the ChEMBL regression back to 100% without reintroducing the
-///    NCI failure (verified together, not just individually).
+///    central ring as aromatic too. The fallback below therefore runs only
+///    for molecules with zero literal aromatic bonds. Ring double bonds now
+///    use the separate RDKit-parity graph view before query matching, which
+///    also handles mixed aromatic/Kekule input without applying this older
+///    fallback to the entire molecule.
 fn matched_bond_code_slice(
     mol: &Molecule,
     model: Option<&AromaticityModel>,
@@ -202,10 +181,10 @@ pub fn rdkit_pattern_fp(mol: &Molecule) -> BitVec2048 {
 }
 
 fn rdkit_pattern_fp_impl(mol: &Molecule) -> BitVec2048 {
-    // Where chematic's own aromaticity may disagree with RDKit's, read the
-    // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
-    // sanitizes them) instead of re-perceiving.
-    if chematic_perception::rdkit_model_may_disagree(mol)
+    // Query matching and bond hashing must use the same sanitized graph.
+    // A Kekule-written ring may become aromatic even when another part of
+    // the input already has literal aromatic bonds.
+    if crate::rdkit_fp_needs_aromatic_view(mol)
         && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
     {
         return rdkit_pattern_fp_input(&crate::rdkit_fp_view(view), true);
@@ -291,6 +270,25 @@ mod tests {
     fn deterministic() {
         let m = mol("CCO");
         assert_eq!(rdkit_pattern_fp(&m), rdkit_pattern_fp(&m));
+    }
+
+    #[test]
+    fn kekule_ring_matches_rdkit_2025_09_3_pattern_oracle() {
+        // The first case lost two ring-query embeddings when matching on the
+        // raw double bond; the others hashed only part of an aromatized ring.
+        for (smiles, expected_popcount, expected_digest) in [
+            ("O=C1C=CC1=O", 83, 0x786c45703f671547),
+            ("c1ccc2c(c1)C=Cc1ccccc1-2", 227, 0x2472463997c24a0a),
+            ("C1=Cc2ccccc2N1", 139, 0x052c2ed58fa1f240),
+        ] {
+            let fp = rdkit_pattern_fp(&mol(smiles));
+            assert_eq!(fp.popcount(), expected_popcount, "{smiles}");
+            assert_eq!(
+                crate::fingerprint_test_digest(&fp),
+                expected_digest,
+                "{smiles}"
+            );
+        }
     }
 
     #[test]

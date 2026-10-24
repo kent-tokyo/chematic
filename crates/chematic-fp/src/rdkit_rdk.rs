@@ -49,34 +49,18 @@
 //! `AROMATIC` and sets `atom->getIsAromatic()`, regardless of whether the input
 //! SMILES used Kekulé or lowercase-aromatic notation. chematic's SMILES parser
 //! instead preserves a Kekulized input's literal bond orders verbatim (round-trip
-//! fidelity). Reusing the exact fix already proven for `rdkit_pattern_fp` (see
-//! that module's own doc comment): if a molecule has *any* literal
-//! `BondOrder::Aromatic` bond, every bond's own literal order/every atom's own
-//! literal `aromatic` flag is trusted as-is; only when a molecule has *zero*
-//! literal aromatic bonds anywhere does this fall back to re-perceiving
-//! aromaticity via [`chematic_perception::aromaticity::assign_aromaticity_ex`].
-//! Re-perceiving unconditionally regressed a Kekulé-written, genuinely
-//! non-aromatic ring that coexisted with a lowercase-aromatic ring elsewhere in
-//! the same molecule; this hybrid rule avoids that without losing the fix for
-//! molecules parsed entirely from Kekulé notation.
+//! fidelity). Ring double bonds trigger the RDKit-compatible aromaticity
+//! view before paths are hashed, including Kekulé-written rings adjacent to
+//! explicitly aromatic fragments. Other inputs retain the literal graph or
+//! use the existing fallback perception for wholly Kekulé notation.
 //!
 //! # Verified
 //!
-//! Bit-exact (identical on-bit sets, not just popcount) against a live RDKit
-//! oracle (`Chem.RDKFingerprint(mol, minPath=1, maxPath=7, fpSize=2048)`):
-//! 100% on the full `descriptor_census_corpus.smi` (5000/5000) and
-//! `chembl_accuracy_corpus_4999.smi` (5000/5000), 99.44% on
-//! `nci_first_5k_smiles_only.smi` (4963/4991). Every one of the 28 NCI
-//! mismatches is a fused polyheteroaromatic dye (xanthene/anthraquinone with
-//! halogen substituents, phenothiazine/phenoxazinium, purine/xanthine-fused
-//! rings), an exotic charged aromatic heterocycle (pyrylium/thiopyrylium-like
-//! N+/O+/S+ ring atoms), or a metal-coordination complex (ferrocene-like
-//! sandwich structures, ring-N-to-metal dative bonding) where chematic's own
-//! `chematic-perception` Hückel aromaticity model does not (yet) recognize the
-//! same aromatic system RDKit's does — the same pre-existing, out-of-scope
-//! dependency gap already documented for `rdkit_torsion_fp`/`rdkit_atom_pair_fp`
-//! (hypervalent-atom hybridization) and `rdkit_pattern_fp` (their own NCI
-//! residuals), not a defect introduced by this port.
+//! Identical on-bit sets against local RDKit 2025.09.3 with default
+//! 2048-bit options: descriptor census 5000/5000, ChEMBL fixture 5000/5000,
+//! NCI fixture 4991/4991 molecules parsed by both (eight RDKit parse
+//! failures), and special-chemistry stress fixture 4072/4072. These fixed
+//! corpora do not establish parity on arbitrary molecules or other versions.
 
 use crate::bitvec::BitVec2048;
 use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
@@ -465,10 +449,9 @@ pub fn rdkit_rdk_fp_ignoring_atoms(
 }
 
 fn rdkit_rdk_fp_impl_ignoring_atoms(mol: &Molecule, ignored_atoms: &[AtomIdx]) -> BitVec2048 {
-    // Where chematic's own aromaticity may disagree with RDKit's, read the
-    // RDKit-corrected parity view (aromatic flags and bond orders as RDKit
-    // sanitizes them) instead of re-perceiving.
-    if chematic_perception::rdkit_model_may_disagree(mol)
+    // Ring paths are hashed after RDKit's aromaticity pass, including a
+    // Kekule-written ring attached to an already aromatic fragment.
+    if crate::rdkit_fp_needs_aromatic_view(mol)
         && let Ok(view) = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol).as_ref()
     {
         return rdkit_rdk_fp_input(&crate::rdkit_fp_view(view), true, ignored_atoms);
@@ -893,6 +876,22 @@ mod tests {
         for &(smiles, expected) in cases {
             let fp = rdkit_rdk_fp(&mol(smiles));
             assert_eq!(fp.popcount(), expected, "popcount mismatch for {smiles:?}");
+        }
+    }
+
+    #[test]
+    fn kekule_fused_rings_match_rdkit_2025_09_3_rdk_oracle() {
+        for (smiles, expected_popcount, expected_digest) in [
+            ("c1ccc2c(c1)C=Cc1ccccc1-2", 54, 0x6dc6714b5e3d32e9),
+            ("C1=Cc2ccccc2N1", 145, 0xcff1866fbde5c63e),
+        ] {
+            let fp = rdkit_rdk_fp(&mol(smiles));
+            assert_eq!(fp.popcount(), expected_popcount, "{smiles}");
+            assert_eq!(
+                crate::fingerprint_test_digest(&fp),
+                expected_digest,
+                "{smiles}"
+            );
         }
     }
 }
