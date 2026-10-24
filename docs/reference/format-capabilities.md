@@ -46,6 +46,7 @@ means the operation is not exposed on that binding.
 | CIF, small molecule | R/W | R | — | No Python writer or WASM surface |
 | PQR | R/W | R/W | R/W | Numeric atom fields are checked |
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ has no bonds; Python typed ExtXYZ R/I/S/L columns; WASM writes R only |
+| [Tinker XYZ (`txyz`)](tinker-xyz.md) | bounded R/W | bounded R/W | bounded R/W | Single typed frame with explicit connectivity and optional cell; no bond-order perception |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
 | ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |

@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Tinker XYZ (`txyz`) single-frame read/write in Rust, Python, WASM/Node and
+  the CLI. Editable records retain opaque atom names, force-field type numbers,
+  declared connectivity, Cartesian coordinates and optional periodic cells.
+  Invalid topology, extra frames and unrepresentable JSON fields are refused.
+
 ### Fixed
 
 - XYZ and ASE-style ExtXYZ real reads now share finite binary64 validation

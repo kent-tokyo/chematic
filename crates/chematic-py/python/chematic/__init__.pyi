@@ -5878,6 +5878,14 @@ def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[f
     ...
 
 
+def parse_tinker_xyz(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read one Tinker XYZ frame with names, types, neighbors and optional cell."""
+    ...
+
+def write_tinker_xyz(record: dict[str, Any]) -> str:
+    """Write an edited Tinker record; refuse invalid or unknown fields."""
+    ...
+
 def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
     ...

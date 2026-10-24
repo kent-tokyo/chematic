@@ -43,6 +43,11 @@ pub mod cube;
 pub mod dmol3;
 pub mod error;
 pub mod exyz;
+pub mod tinker;
+pub use tinker::{
+    TinkerAtom, TinkerCell, TinkerError, TinkerParseLimits, TinkerXyz, parse_tinker_xyz,
+    parse_tinker_xyz_with_limits, tinker_xyz_from_json, write_tinker_xyz,
+};
 pub mod fhiaims;
 pub mod gamess_zmat;
 pub mod gaussian;
