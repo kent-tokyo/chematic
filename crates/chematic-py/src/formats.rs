@@ -31,6 +31,9 @@ use bgf::{parse_bgf, write_bgf};
 mod hin;
 use hin::*;
 
+mod lpmd;
+use lpmd::*;
+
 mod ccd;
 use ccd::*;
 
@@ -1494,6 +1497,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_molden,
         write_molden,
         write_exyz,
+        parse_lpmd,
+        write_lpmd,
+        lpmd_positions_angstrom,
         parse_turbomole,
         write_turbomole,
         parse_mmcif_residues,

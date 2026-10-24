@@ -11,6 +11,7 @@ mod conversion_format;
 mod dispatch;
 mod fract;
 mod gpr;
+mod lpmd;
 mod unixyz;
 mod viewmol;
 
@@ -55,6 +56,22 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Read/write all frames of a checked LPMD 2.0 text trajectory.
+    Lpmd {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["from_json", "angstrom"])]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        /// Explicit Cartesian positions (angstroms), grouped by frame.
+        #[arg(long)]
+        angstrom: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain ViewMol raw units/fixed axes or explicitly inspect/project geometry.
     Viewmol {
         #[arg(short, long)]

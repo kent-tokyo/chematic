@@ -10,6 +10,7 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [LPMD trajectories](lpmd-preservation.md) | All-frame source fields and checked projection; independent observation of an Open Babel 3.2.1 default writer header defect | Full LPMD engine compatibility, all output options, speed or toolkit-wide superiority |
 | [ViewMol geometry](viewmol-preservation.md) | New bounded vmol R/W across Rust/Python/WASM/CLI, raw scale/precision/constraints and checked Angstrom projection on 28 authored records | All project/data-group semantics, external ViewMol execution, isolated parser accuracy, released-package or broad toolkit superiority |
 | [UniChem XYZ records](unixyz-preservation.md) | New bounded unixyz R/W across Rust/Python/WASM/CLI; title/order/coordinate-token retention on 15 authored records | Every dialect, multiple records, isolated parser accuracy, released-package or broad toolkit superiority |
 | [Ghemical GPR records](gpr-preservation.md) | New bounded gpr 100 R/W across Rust/Python/WASM/CLI; graph, raw nm precision and optional partial-charge records on 16 authored inputs | All Ghemical project/dialect support, isolated parser accuracy, released-package or broad toolkit superiority |
