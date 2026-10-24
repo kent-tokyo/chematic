@@ -1,6 +1,6 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the completed R9-R27
+This inventory records the R8 cleanup review and the completed R9-R31
 structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
@@ -9,16 +9,12 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The completed R27 program contains 3 file allowances and 50 function
+The completed R31 program contains 0 file allowances and 47 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
-The retained large files fall into three reviewed groups:
-
-- ordered chemistry rules and perception engines: Avalon `fingerprint.rs`;
-- compatibility ports whose branch and accumulation order is observable:
-  RDKit depiction;
-- native compatibility infrastructure: InChI deduplication.
+No handwritten production Rust file remains above the checked 1,500-line
+limit.
 
 The retained function allowances use the same classification: ordered or
 generated chemistry, bounded graph/search algorithms, format state machines,
@@ -49,6 +45,21 @@ from the runtime matcher. Catalog order remains unchanged and observable;
 the PAINS table is split into two ordered declaration modules, so no new
 scanner exclusion is needed and the runtime module falls below the file-size
 budget.
+R28 separates typed indexed-graph relation evidence from InChI candidate
+grouping and moves dedup tests behind the existing module facade. Public names
+remain available at the same path, while native-InChI policy and graph
+comparison now have distinct internal owners.
+R29 physically separates RDKit depiction geometry and embedded-fragment state
+without creating new Rust module visibility boundaries. The include-based
+layout preserves source order and floating-point accumulation while reducing
+the orchestration file below the scanner limit.
+R30 physically separates Avalon's ordered pattern-counting function from its
+hash, valence and walk helpers. The include-based layout preserves the port's
+source order and wrapping arithmetic while closing the last file allowance.
+R31 removes three more function allowances by isolating path-emission policy,
+one-ring aromaticity evaluation and terminal-bond shortening. The retained 47
+functions were re-reviewed against their domain fixtures and remain explicit
+ratchet entries rather than targets for mechanical splitting.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 

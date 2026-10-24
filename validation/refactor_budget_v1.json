@@ -9,11 +9,7 @@
     "crates/chematic-smiles/src/rdkit/crippen_params.rs",
     "crates/chematic-smiles/src/rdkit/periodic.rs"
   ],
-  "file_allowances": {
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
-    "crates/chematic-inchi/src/dedup.rs": 2079,
-    "crates/chematic-smiles/src/rdkit/depict.rs": 2303
-  },
+  "file_allowances": {},
   "function_allowances": {
     "crates/chematic-3d/src/etkdg_knowledge.rs::get_torsion_preference#1": {
       "decisions": 211,
@@ -71,17 +67,9 @@
       "decisions": 58,
       "lines": 277
     },
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
+    "crates/chematic-fp/src/rdkit_avalon/fingerprint/count_patterns.rs::count_fingerprint_patterns#1": {
       "decisions": 375,
       "lines": 1485
-    },
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::path_bits#1": {
-      "decisions": 29,
-      "lines": 107
-    },
-    "crates/chematic-fp/src/rdkit_avalon/rings.rs::perceive_aromatic_bonds#1": {
-      "decisions": 26,
-      "lines": 76
     },
     "crates/chematic-fp/src/rdkit_avalon/rings.rs::perceive_dy_aromaticity#1": {
       "decisions": 58,
@@ -142,10 +130,6 @@
     "crates/chematic-smiles/src/rdkit/depict.rs::embed_nontetrahedral_stereo#1": {
       "decisions": 29,
       "lines": 134
-    },
-    "crates/chematic-smiles/src/rdkit/depict.rs::remove_collisions_shorten_bonds#1": {
-      "decisions": 28,
-      "lines": 83
     },
     "crates/chematic-smiles/src/rdkit/inchi_read.rs::rdkit_molecule_from_inchi_output#1": {
       "decisions": 52,

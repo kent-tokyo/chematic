@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R27 structural-debt program is complete. Implementation history and
+The R0-R31 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -32,9 +32,13 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R25 | Final orchestration splits and release-grade verification | Complete |
 | R26 | Low-risk test extraction and bounded parser/CIP ownership | Complete |
 | R27 | Structural-alert catalog and test ownership | Complete |
+| R28 | InChI dedup and indexed-graph ownership | Complete |
+| R29 | RDKit depiction geometry and fragment ownership | Complete |
+| R30 | Avalon fingerprint orchestration ownership | Complete |
+| R31 | Final function-debt audit and closeout | Complete |
 
-R17-R27 reduced the checked debt baseline from 14 file and 76 function
-allowances to **3 file and 50 function allowances**. The program separated:
+R17-R31 reduced the checked debt baseline from 14 file and 76 function
+allowances to **0 file and 47 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -54,17 +58,41 @@ budgets, public APIs, and fail-safe behavior are unchanged. This closes the
 `alerts.rs` file allowance without treating ordered chemistry data as runtime
 logic.
 
-R0-R26 passed the full release-grade verification stack before merge. R27 was
-validated with the affected crate's complete library-test suite,
-warnings-as-errors clippy, formatting, catalog-preservation checks, the budget
+R28 moved typed indexed-graph relation comparison and the dedup test suite out
+of the InChI candidate-grouping module. Existing public names are re-exported
+from the same `dedup` path; graph strictness, atom-map policy, diagnostic
+ordering, native-InChI evidence and feature-gated behavior are unchanged. This
+closes the `dedup.rs` file allowance.
+
+R29 moved RDKit-compatible 2D geometry primitives and embedded-fragment state
+into physical include files under the existing depiction module. This keeps
+floating-point operation order, private visibility, and the public facade
+unchanged while closing the `depict.rs` file allowance.
+
+R30 moved Avalon's operation-order-sensitive pattern-counting function into a
+bounded physical include file. Hash insertion order, wrapping arithmetic,
+branch order, public flags and fingerprint output remain unchanged. This
+closes the final production-file allowance.
+
+R31 extracted three bounded decisions from Avalon path emission, Avalon ring
+aromaticity and RDKit-compatible collision repair. The original traversal,
+mutation and floating-point order are retained, while all three orchestration
+functions now satisfy the normal function budget. The remaining 47 entries
+were re-reviewed and retained because they are ordered chemistry ports,
+bounded searches, format state machines or generated-table dispatch.
+
+R0-R30 passed their affected suites and PR gates before merge. R31 was
+validated with the affected crates' complete test suites, warnings-as-errors
+clippy, formatting, frozen fingerprint and coordinate fixtures, the budget
 scanner, and diff checks; repository-wide release and binding gates remain the
 responsibility of the PR CI before merge.
 
 ## Retained debt
 
-The remaining allowances are ordered chemistry data, bounded graph/search
-algorithms, format state machines, or compatibility ports whose branch and
-accumulation order is observable. They are reviewed debt, not exemptions.
+The remaining function allowances are ordered chemistry data, bounded
+graph/search algorithms, format state machines, or compatibility ports whose
+branch and accumulation order is observable. They are reviewed debt, not
+exemptions. No production Rust file exceeds the checked limit.
 
 Remove one bounded stage at a time with its domain corpus. Do not split tables
 or reorder chemistry merely to reduce line count. A new phase is warranted
