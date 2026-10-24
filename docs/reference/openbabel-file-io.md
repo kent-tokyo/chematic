@@ -12,6 +12,7 @@ verified.
 |---|---|---|
 | [V3000 atom scalar integrity](v3000-atom-scalar-integrity.md) | Checked charge/isotope/map parsing, quoted-text controls and explicit malformed-input errors | General CTfile/query validity or broad-format superiority |
 | [V2000 isotope output](v2000-isotope-output.md) | Explicit isotope labels in regenerated MOL/SDF, checked through Python/WASM and an external reader | Superiority over Open Babel with atom-class output enabled, or general CTfile validity |
+| [V2000 property precedence](v2000-property-precedence.md) | Sparse CHG/ISO records replace their complete atom-block channels across ordinary/fast readers | Full CTfile/spin-state support or superiority over Open Babel |
 | [v1.0.42 same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md) | Historical bounded parse/write/round-trip latency on four checked fixtures | Current-release or broad-format performance |
 | [SDF read follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-sdf-read-followup.md) | Two unfiltered 1,000-record source slices with semantic and timing gates | Published-package, second-host, or all-SDF superiority |
 | [V3000 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-v3000-speed.md) | Bounded native-block and controlled-profile source measurements | A rank for diverse rows whose outputs differ |

@@ -298,6 +298,8 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_atom_scalars -q
       - name: V2000 isotope output observer
         run: .venv/bin/python -m unittest scripts.tests.test_v2000_isotope_output -q
+      - name: V2000 property precedence observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v2000_property_precedence -q
       - name: V3000 source coordinate observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_source_roundtrip -q
       - name: SDF document framing observer

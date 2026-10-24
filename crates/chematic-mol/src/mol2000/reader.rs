@@ -343,6 +343,8 @@ struct PropertyUpdates {
     charges: Vec<(AtomIdx, i8)>,
     isotopes: Vec<(AtomIdx, u16)>,
     r_groups: Vec<(AtomIdx, RGroupLabel)>,
+    charges_explicit: bool,
+    isotopes_explicit: bool,
 }
 
 fn property_pairs<'a>(
@@ -482,7 +484,8 @@ fn parse_property_block(
         let fields: Vec<&str> = line.split_whitespace().collect();
         match fields.get(0..2) {
             Some(["M", "CHG"]) => {
-                parse_charge_properties(&fields, line_number, atom_count, &mut updates)?
+                parse_charge_properties(&fields, line_number, atom_count, &mut updates)?;
+                updates.charges_explicit = true;
             }
             Some(["M", "ISO"]) => {
                 let fixed = fixed_isotope_fields(line);
@@ -491,7 +494,8 @@ fn parse_property_block(
                     line_number,
                     atom_count,
                     &mut updates,
-                )?
+                )?;
+                updates.isotopes_explicit = true;
             }
             Some(["M", "RGP"]) => {
                 parse_rgroup_properties(&fields, line_number, atom_count, &mut updates)?
@@ -524,6 +528,21 @@ fn apply_atom_updates(
     updates: PropertyUpdates,
 ) {
     flag_aromatic_bond_atoms(mol);
+    // CTfile property records replace the entire corresponding atom-block
+    // channel, not just the listed atoms. Reset once, then apply all lines.
+    // Keep charge and isotope presence independent; absent channels retain
+    // their legacy atom-block values.
+    if updates.charges_explicit || updates.isotopes_explicit {
+        for index in 0..mol.atom_count() {
+            let atom = AtomIdx(index as u32);
+            if updates.charges_explicit {
+                mol.set_charge(atom, 0);
+            }
+            if updates.isotopes_explicit {
+                mol.set_isotope(atom, None);
+            }
+        }
+    }
     for (atom, charge) in updates.charges {
         mol.set_charge(atom, charge);
     }

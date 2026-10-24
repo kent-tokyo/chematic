@@ -81,6 +81,12 @@ or linkage semantics are not implemented.
 `chematic.rdkit_compat` is a selected 2D compatibility layer. Matching names
 do not imply identical defaults or every RDKit option.
 
+MOL/SDF readers follow the [MDL property precedence](v2000-property-precedence.md)
+for sparse `M  CHG`/`M  ISO` records. In the bounded mixed atom-block/property
+packet, RDKit 2025.09.3 retains some old isotope labels that chematic and
+Open Babel treat as unspecified. This difference also applies to Python's
+`SDMolSupplier`; it is not full RDKit input-interpretation parity.
+
 - Native ECFP/Morgan uses a different hash and must not be mixed with RDKit
   bit positions. Use the named RDKit-compatible Morgan API when bit identity is
   required under its documented options.
