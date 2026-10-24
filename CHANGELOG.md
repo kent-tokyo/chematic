@@ -20,6 +20,10 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   the CLI. Editable records retain opaque atom names, force-field type numbers,
   declared connectivity, Cartesian coordinates and optional periodic cells.
   Invalid topology, extra frames and unrepresentable JSON fields are refused.
+- DL-POLY CONFIG/REVCON single-record read/write in Rust, Python, WASM/Node
+  and the CLI, retaining source-unit positions, velocities, forces, cell vectors,
+  opaque names/suffixes and optional IDs/counts. Unsupported boundary modes,
+  inconsistent levels, unknown JSON fields and precision-losing output are refused.
 
 ### Fixed
 

@@ -5886,6 +5886,14 @@ def write_tinker_xyz(record: dict[str, Any]) -> str:
     """Write an edited Tinker record; refuse invalid or unknown fields."""
     ...
 
+def parse_dlpoly_config(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read CONFIG/REVCON retaining source-unit vectors, names, IDs and cell."""
+    ...
+
+def write_dlpoly_config(record: dict[str, Any]) -> str:
+    """Write an edited CONFIG record; refuse unknown or inconsistent data."""
+    ...
+
 def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
     ...

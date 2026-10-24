@@ -33,6 +33,35 @@ pub(super) fn run(cli: Cli) -> Result<(), String> {
             };
             write_output(output.as_ref(), &result)
         }
+        Command::DlpolyConfig {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::dlpoly_config_from_json(&text)
+            } else {
+                chematic_mol::parse_dlpoly_config_with_limits(
+                    &text,
+                    &chematic_mol::DlpolyConfigLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string(&record)
+                    .map(|s| format!("{s}\n"))
+                    .map_err(|e| e.to_string())?
+            } else {
+                chematic_mol::write_dlpoly_config(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
         Command::GjfDocument {
             input,
             output,

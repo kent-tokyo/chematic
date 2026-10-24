@@ -37,8 +37,10 @@ mod fhiaims;
 use fhiaims::*;
 mod dmol3;
 use dmol3::*;
+mod dlpoly;
 mod exyz;
 mod tinker;
+use dlpoly::{parse_dlpoly_config, write_dlpoly_config};
 use tinker::{parse_tinker_xyz, write_tinker_xyz};
 mod mopac;
 use exyz::*;
@@ -1456,6 +1458,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_exyz,
         parse_tinker_xyz,
         write_tinker_xyz,
+        parse_dlpoly_config,
+        write_dlpoly_config,
         write_exyz,
         parse_turbomole,
         write_turbomole,
