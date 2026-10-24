@@ -216,6 +216,95 @@ fn native_canonical_smiles_is_unchanged() {
 }
 
 #[test]
+fn uncommon_models_keep_checked_rdkit_contracts() {
+    let cases = [
+        "[H][C@](F)(Cl)Br",
+        "F/C=C(/Cl)Br",
+        "N->[Pt](<-N)(Cl)Cl",
+        "F[Pt@SP1](Cl)(Br)I",
+        "C=C=C",
+        "[13CH3][2H]",
+        "[Na+].[O-]C(=O)C",
+        "[H]O[H]",
+        "c1cc[nH]c1",
+        "C1CCC2(CC1)CC2",
+    ];
+    for text in cases {
+        let mol = crate::parse(text).unwrap_or_else(|error| panic!("{text}: {error}"));
+        let canonical = rdkit_canonical_smiles(&mol)
+            .unwrap_or_else(|error| panic!("canonical {text}: {error}"));
+        assert!(!canonical.is_empty());
+        let model = super::rdkit_sanitized_model(&mol)
+            .unwrap_or_else(|error| panic!("model {text}: {error}"));
+        assert_eq!(model.atoms.len(), mol.atom_count());
+        assert_eq!(model.bonds.len(), mol.bond_count());
+        let _ = super::rdkit_cleanup_canonical_smiles(&mol);
+        let _ = super::rdkit_atom_stereocenter_counts(&mol);
+        let _ = super::rdkit_cleanup_edits(&mol);
+        let _ = super::rdkit_legacy_stereo(&mol);
+        let _ = super::rdkit_stereoisomer_smiles(&mol, 64);
+        let _ = super::rdkit_pdb_block(&mol, None);
+        let _ = super::rdkit_smarts(&mol, true, None);
+        let _ = super::rdkit_cx_smiles(&mol, &Default::default());
+        let _ = super::rdkit_fragment_smiles(&mol, &[0], None, &Default::default());
+        let _ = super::rdkit_num_atoms(&mol);
+        let _ = super::rdkit_detect_chemistry_problems(&mol);
+        let _ = super::rdkit_detect_chemistry_problems_sanitized(&mol);
+        assert_eq!(
+            super::rdkit_random_smiles(&mol, 2, 17, &Default::default())
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(
+            super::rdkit_random_smiles(&mol, 1, 0, &Default::default())
+                .unwrap()
+                .len(),
+            1
+        );
+        let _ = super::rdkit_cx_smarts(&mol);
+        let _ = super::rdkit_murcko_scaffold(&mol);
+        let _ = super::rdkit_2d_coords(&mol);
+        let _ = super::rdkit_mol_block_2d(&mol);
+        let _ = super::rdkit_canonical_tautomer(&mol);
+        let _ = super::rdkit_tautomer_score(&mol);
+        let _ = super::rdkit_hydrogen_suppressed(&mol);
+        let _ = super::rdkit_hybridizations(&mol);
+        let _ = super::rdkit_crippen_contribs(&mol);
+        let _ = super::rdkit_crippen_contribs_no_hs(&mol);
+        let _ = super::rdkit_crippen_logp_mr(&mol);
+        let _ = super::rdkit_chiral_centers(&mol, true)
+            .unwrap_or_else(|error| panic!("centres {text}: {error}"));
+        let _ = super::rdkit_stereoisomer_count(&mol);
+        let _ = super::rdkit_num_pi_electrons(&mol);
+        let _ = super::rdkit_parsed_molecule(&mol);
+        let _ = super::rdkit_added_hs_molecule(&mol);
+        let _ = super::rdkit_hydrogen_suppressed_with_map(&mol);
+    }
+
+    let explicit_h = crate::parse("[H][C@](F)(Cl)Br").unwrap();
+    let (suppressed, kept) = super::rdkit_hydrogen_suppressed_with_map(&explicit_h)
+        .expect("an explicit removable hydrogen has a source map");
+    assert_eq!(suppressed.atom_count(), kept.len());
+
+    let ordinary = crate::parse("CCO").unwrap();
+    assert!(super::rdkit_hydrogen_suppressed_with_map(&ordinary).is_none());
+    let added = super::rdkit_added_hs_molecule(&ordinary).unwrap();
+    assert!(super::rdkit_parsed_molecule(&added).is_none());
+
+    let bad_ring = crate::parse_template("c1cccc1").unwrap();
+    assert!(
+        !super::rdkit_detect_chemistry_problems(&bad_ring)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(super::rdkit_detect_chemistry_problems_sanitized(&bad_ring).is_err());
+
+    assert!(super::rdkit_smarts_to_smarts("[CX3](=O)[OX2H1]").is_ok());
+    assert!(super::rdkit_reaction_to_smarts("[C:1]=[O:2]>>[C:1][O:2]").is_ok());
+}
+
+#[test]
 fn long_chain() {
     let chain = "C".repeat(2000);
     assert_eq!(rd(&chain).as_deref(), Ok(chain.as_str()));
