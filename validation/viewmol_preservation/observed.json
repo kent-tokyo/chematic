@@ -10,7 +10,7 @@
     "crates/chematic-py/src/formats/viewmol.rs": "d2fe04d4157be2f984fbdc0fcde4f648bf76ab90f8e20dcd68f570426a1faa20",
     "crates/chematic-wasm/src/viewmol.rs": "5a22f4363463b7a225964aad57bff60c06278c287de24f1d71a3b7e3c9a6eff6",
     "crates/chematic-cli/src/viewmol.rs": "792195b7f612e7c92f8c8a78cab8b98088ccee8fc318cd925cf40c6f81159b00",
-    "scripts/validation/check_viewmol_preservation.py": "c6176e0286877c57d515028a3a11647eec76d486724d080b981da4af8cc4304d"
+    "scripts/validation/check_viewmol_preservation.py": "f818dd1bd06705c360478d19328156dbce945958f4833eee95dce3b1539ec12d"
   },
   "runtime_sha256": {
     "python_extension": "d44545e65c6473a1bfa8c809620cdf7050a51dfff9dff1055cdaf8106d7a073a",
@@ -54,7 +54,7 @@
       "argv": [
         "/opt/homebrew/bin/obabel",
         "-ivmol",
-        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-unit-xk4zuypr/units.vmol",
+        "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-unit-z1plt3te/units.vmol",
         "-oxyz",
         "-ab"
       ],
@@ -9432,10 +9432,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/identity.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/identity.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/identity.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/identity.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9476,10 +9476,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scaled-two.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scaled-two.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scaled-two.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scaled-two.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9520,10 +9520,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scaled-half.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scaled-half.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scaled-half.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scaled-half.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9564,10 +9564,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/bohr-factor.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/bohr-factor.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/bohr-factor.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/bohr-factor.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9608,21 +9608,21 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/absent-title.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/absent-title.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/absent-title.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/absent-title.out.vmol",
           "-ab"
         ],
         "returncode": 0,
         "stdout": "",
         "stderr": "1 molecule converted\n"
       },
-      "output": "$title\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/absent-title.vmol\n$coord 1.0\n      0.12500000000000      0.25000000000000      0.50000000000000 C\n$end\n",
+      "output": "$title\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/absent-title.vmol\n$coord 1.0\n      0.12500000000000      0.25000000000000      0.50000000000000 C\n$end\n",
       "source_has_fixed_axes": false,
       "status": "observed",
       "state": {
-        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/absent-title.vmol",
+        "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/absent-title.vmol",
         "factor_to_angstrom": "1.0",
         "atoms": [
           {
@@ -9652,10 +9652,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/empty-title.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/empty-title.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/empty-title.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/empty-title.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9696,10 +9696,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/space-title.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/space-title.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/space-title.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/space-title.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9740,10 +9740,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/unicode-title.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/unicode-title.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/unicode-title.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/unicode-title.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9784,10 +9784,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/title-after-coordinates.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/title-after-coordinates.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/title-after-coordinates.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/title-after-coordinates.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9828,10 +9828,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/canonical-elements.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/canonical-elements.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/canonical-elements.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/canonical-elements.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9881,10 +9881,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/precision.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/precision.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/precision.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/precision.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9925,10 +9925,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scientific.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scientific.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/scientific.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/scientific.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -9969,10 +9969,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/signed-zero.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/signed-zero.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/signed-zero.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/signed-zero.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10013,10 +10013,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/subnormal.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/subnormal.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/subnormal.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/subnormal.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10057,10 +10057,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/long-decimal.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/long-decimal.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/long-decimal.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/long-decimal.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10101,10 +10101,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-x.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-x.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-x.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-x.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10122,10 +10122,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-y.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-y.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-y.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-y.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10143,10 +10143,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-z.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-z.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-z.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-z.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10164,10 +10164,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xy.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xy.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xy.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xy.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10185,10 +10185,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xz.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xz.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xz.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xz.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10206,10 +10206,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-yz.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-yz.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-yz.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-yz.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10227,10 +10227,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xyz.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xyz.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-xyz.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-xyz.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10248,10 +10248,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-zx.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-zx.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-zx.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-zx.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10269,10 +10269,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-zyx.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-zyx.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/fixed-zyx.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/fixed-zyx.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10290,10 +10290,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/source-order.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/source-order.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/source-order.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/source-order.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10352,10 +10352,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/heavy-element.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/heavy-element.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/heavy-element.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/heavy-element.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10405,10 +10405,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/no-final-newline.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/no-final-newline.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/no-final-newline.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/no-final-newline.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10449,10 +10449,10 @@
         "argv": [
           "/opt/homebrew/bin/obabel",
           "-ivmol",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/blank-layout.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/blank-layout.vmol",
           "-ovmol",
           "-O",
-          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-hf87gmql/blank-layout.out.vmol",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-j4_o1h1_/blank-layout.out.vmol",
           "-ab"
         ],
         "returncode": 0,
@@ -10476,10 +10476,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/identity.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/identity.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/identity.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/identity.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10520,10 +10520,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scaled-two.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scaled-two.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scaled-two.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scaled-two.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10564,10 +10564,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scaled-half.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scaled-half.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scaled-half.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scaled-half.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10608,10 +10608,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/bohr-factor.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/bohr-factor.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/bohr-factor.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/bohr-factor.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10652,21 +10652,21 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/absent-title.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/absent-title.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/absent-title.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/absent-title.out.vmol",
             "-ab"
           ],
           "returncode": 0,
           "stdout": "",
           "stderr": "1 molecule converted\n"
         },
-        "output": "$title\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/absent-title.vmol\n$coord 1.0\n      0.12500000000000      0.25000000000000      0.50000000000000 C\n$end\n",
+        "output": "$title\n/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/absent-title.vmol\n$coord 1.0\n      0.12500000000000      0.25000000000000      0.50000000000000 C\n$end\n",
         "source_has_fixed_axes": false,
         "status": "observed",
         "state": {
-          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/absent-title.vmol",
+          "title": "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/absent-title.vmol",
           "factor_to_angstrom": "1.0",
           "atoms": [
             {
@@ -10696,10 +10696,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/empty-title.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/empty-title.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/empty-title.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/empty-title.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10740,10 +10740,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/space-title.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/space-title.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/space-title.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/space-title.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10784,10 +10784,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/unicode-title.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/unicode-title.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/unicode-title.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/unicode-title.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10828,10 +10828,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/title-after-coordinates.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/title-after-coordinates.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/title-after-coordinates.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/title-after-coordinates.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10872,10 +10872,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/canonical-elements.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/canonical-elements.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/canonical-elements.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/canonical-elements.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10925,10 +10925,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/precision.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/precision.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/precision.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/precision.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -10969,10 +10969,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scientific.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scientific.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/scientific.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/scientific.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11013,10 +11013,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/signed-zero.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/signed-zero.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/signed-zero.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/signed-zero.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11057,10 +11057,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/subnormal.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/subnormal.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/subnormal.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/subnormal.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11101,10 +11101,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/long-decimal.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/long-decimal.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/long-decimal.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/long-decimal.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11145,10 +11145,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-x.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-x.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-x.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-x.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11166,10 +11166,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-y.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-y.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-y.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-y.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11187,10 +11187,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-z.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-z.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-z.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-z.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11208,10 +11208,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xy.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xy.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xy.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xy.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11229,10 +11229,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xz.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xz.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xz.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xz.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11250,10 +11250,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-yz.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-yz.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-yz.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-yz.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11271,10 +11271,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xyz.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xyz.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-xyz.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-xyz.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11292,10 +11292,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-zx.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-zx.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-zx.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-zx.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11313,10 +11313,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-zyx.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-zyx.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/fixed-zyx.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/fixed-zyx.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11334,10 +11334,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/source-order.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/source-order.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/source-order.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/source-order.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11396,10 +11396,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/heavy-element.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/heavy-element.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/heavy-element.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/heavy-element.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11449,10 +11449,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/no-final-newline.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/no-final-newline.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/no-final-newline.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/no-final-newline.out.vmol",
             "-ab"
           ],
           "returncode": 0,
@@ -11493,10 +11493,10 @@
           "argv": [
             "/opt/homebrew/bin/obabel",
             "-ivmol",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/blank-layout.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/blank-layout.vmol",
             "-ovmol",
             "-O",
-            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-ki6n5r2t/blank-layout.out.vmol",
+            "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-viewmol-nsc_q0nl/blank-layout.out.vmol",
             "-ab"
           ],
           "returncode": 0,

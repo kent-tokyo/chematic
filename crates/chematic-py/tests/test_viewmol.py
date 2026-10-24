@@ -3,7 +3,7 @@ import copy,json
 from pathlib import Path
 import pytest
 import chematic
-P=json.loads((Path(__file__).resolve().parents[3]/'validation/viewmol_preservation/cases.json').read_text())
+P=json.loads((Path(__file__).resolve().parents[3]/'validation/viewmol_preservation/cases.json').read_text(encoding='utf-8'))
 def bits(rows):return [[v.hex() for v in row] for row in rows]
 @pytest.mark.parametrize('c',P['valid'],ids=lambda c:c['id'])
 def test_roundtrip_and_projection(c):

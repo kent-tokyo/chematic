@@ -35,7 +35,7 @@ process.stdout.write(JSON.stringify(out));
 '''
 def sha(path):return hashlib.sha256(Path(path).read_bytes()).hexdigest()
 def run(args,text=None):
- r=subprocess.run(args,input=text,text=True,capture_output=True,timeout=30)
+ r=subprocess.run(args,input=text,text=True,encoding='utf-8',capture_output=True,timeout=30)
  return {'argv':[str(a) for a in args],'returncode':r.returncode,'stdout':r.stdout,'stderr':r.stderr}
 def cli_refusal(r):return r['returncode']==2 and not r['stdout'] and r['stderr'].startswith('chematic: ViewMol line ')
 def format_refusal(e):return isinstance(e,ValueError) and str(e).startswith('ViewMol line ')
@@ -132,8 +132,8 @@ def openbabel_lane(p,binary):
  rows=[]
  with tempfile.TemporaryDirectory(prefix='chematic-viewmol-') as directory:
   for c in p['valid']:
-   source=Path(directory)/(c['id']+'.vmol');output=Path(directory)/(c['id']+'.out.vmol');source.write_text(c['text'])
-   receipt=run([binary,'-ivmol',source,'-ovmol','-O',output,'-ab']);text=output.read_text() if output.exists() else ''
+   source=Path(directory)/(c['id']+'.vmol');output=Path(directory)/(c['id']+'.out.vmol');source.write_text(c['text'],encoding='utf-8')
+   receipt=run([binary,'-ivmol',source,'-ovmol','-O',output,'-ab']);text=output.read_text(encoding='utf-8') if output.exists() else ''
    row={'id':c['id'],'receipt':receipt,'output':text,'source_has_fixed_axes':any(a['fixed_axes'] for a in c['expected']['atoms'])}
    try:
     if receipt['returncode']:raise ValueError('nonzero external exit')
@@ -145,7 +145,7 @@ def openbabel_lane(p,binary):
 def unit_probe(binary):
  text='$title\nunit probe\n$coord 2.0\n.125 .25 .5 C\n$end\n'
  with tempfile.TemporaryDirectory(prefix='chematic-viewmol-unit-') as directory:
-  source=Path(directory)/'units.vmol';source.write_text(text);receipt=run([binary,'-ivmol',source,'-oxyz','-ab'])
+  source=Path(directory)/'units.vmol';source.write_text(text,encoding='utf-8');receipt=run([binary,'-ivmol',source,'-oxyz','-ab'])
   try:positions=[float(v) for v in receipt['stdout'].splitlines()[2].split()[1:]]
   except (ValueError,IndexError):positions=None
   return {'source':text,'receipt':receipt,'expected_angstrom':[.25,.5,1.0],'observed':positions,'exact':receipt['returncode']==0 and positions==[.25,.5,1.]}
@@ -154,7 +154,7 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__)
  for name in ['python-path','wasm-module','cli','output']:parser.add_argument('--'+name,type=Path,required=True)
  parser.add_argument('--candidate-base',help='Validated base commit; defaults to HEAD/origin-main merge base')
- parser.add_argument('--openbabel',default='/opt/homebrew/bin/obabel');a=parser.parse_args();p=json.loads(PACKET.read_text())
+ parser.add_argument('--openbabel',default='/opt/homebrew/bin/obabel');a=parser.parse_args();p=json.loads(PACKET.read_text(encoding='utf-8'))
  base=a.candidate_base
  if base is None:
   result=run(['git','-C',str(ROOT),'merge-base','HEAD','origin/main'])
@@ -177,7 +177,7 @@ def main():
          'openbabel_inventory':run([a.openbabel,'-L','vmol']),'unit_probe':unit_probe(a.openbabel),
          'summary':{'candidate':summary,'openbabel':ob},'candidate_receipts':lanes,'openbabel_receipts':external,
          'candidate_text_rewrite':{'scope':'External same-format output observability only; fixed-axis input may be outside the installed OB subset.','observed':sum(r['status']=='observed' for r in rewrites),'total':len(rewrites),'receipts':rewrites}}
- a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n');print(json.dumps(report['summary'],indent=2))
+ a.output.parent.mkdir(parents=True,exist_ok=True);a.output.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n',encoding='utf-8');print(json.dumps(report['summary'],indent=2))
  good=all(r['exact_all_four_states']==r['valid_total'] and r['projected_bits_all_four']==r['valid_total'] and r['typed_refused']==r['refusal_total'] and r['raw_projection_records_exact']==r['unsafe_projection_total'] and r['unsafe_projection_refused']==r['unsafe_projection_total'] for r in summary.values())
  return 0 if good and report['unit_probe']['exact'] else 1
 if __name__=='__main__':raise SystemExit(main())
