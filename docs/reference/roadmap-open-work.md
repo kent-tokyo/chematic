@@ -21,9 +21,11 @@ dated evidence belongs in the
 - **MCS:** v1.2.1 fixes the v1.2.0 ring/chain input-order regression,
   equal-atom bond-count ties, complete-ring valid-best selection, and typed
   resource limits. Rust MCS queries now retain observed atom and bond
-  alternatives under relaxed comparators. Full FMCS parity, generalized
-  Python/WASM SMARTS output, the explicit-H policy difference, and a newly
-  selected independent holdout remain open.
+  alternatives under relaxed comparators. Python and WASM now expose these
+  alternatives as SMARTS for configurations without charge, isotope, or
+  chirality matching. Encoding those constraints in the result, full FMCS
+  parity, the explicit-H policy difference, and a newly selected independent
+  holdout remain open.
 - **Standardization:** current source matches RDKit 2026.09.1 on Normalize
   4,069/4,069, Cleanup 4,057/4,069, and Reionize 4,069/4,069 comparable rows.
   Classify the remaining 12 Cleanup rows before adding more transforms.

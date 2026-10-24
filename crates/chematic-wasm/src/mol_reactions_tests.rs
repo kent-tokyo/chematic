@@ -67,6 +67,21 @@ mod mcs_config_tests {
     }
 
     #[test]
+    fn mcs_smarts_keeps_relaxed_alternatives() {
+        for (inputs, config) in [
+            (r#"["NO","CO"]"#, r#"{"atomCompare":"any"}"#),
+            (r#"["C=N","C#N"]"#, r#"{"bondCompare":"any"}"#),
+        ] {
+            let result = mcs_smarts_json_with_config(inputs, config).unwrap();
+            let value: serde_json::Value = serde_json::from_str(&result).unwrap();
+            let smarts = value["smarts"].as_str().unwrap();
+            assert!(smarts.contains(','), "{smarts}");
+            assert_eq!(value["wasTimedOut"], false);
+            assert_eq!(value["wasResourceLimited"], false);
+        }
+    }
+
+    #[test]
     fn no_common_substructure_returns_null_smiles() {
         // Two disconnected, chemically unrelated single-heavy-atom molecules.
         let smiles = r#"["[He]","[Ne]"]"#;
