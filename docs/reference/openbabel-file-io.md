@@ -150,3 +150,12 @@ original inputs, RDKit 2026.09.1 reads exact coordinate/partial-charge vectors
 from the native candidate in 8/8 cases each. Open Babel 3.2.1 default MOL2
 rewrites retain them in 3/8 and 5/8 cases respectively. The linked packet
 discloses source qualification, native-only extremes and measurement limits.
+
+## Native V3000 3D regeneration
+
+[The 3D numeric diagnostic](v3000-3d-numeric-preservation.md) compares native
+conformer output with Open Babel 3.2.1 explicitly writing V3000. Through the
+same RDKit reader, exact coordinates survive in 9/9 candidate records and
+2/9 Open Babel records. Indexed graph fields and source CIP arrays survive in
+all nine records for both paths. The packet is a small numeric diagnostic
+with separate native-only extremes, not a format-wide or stereo ranking.

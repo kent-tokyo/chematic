@@ -332,6 +332,23 @@ fn append_atoms_2d(
     out.push_str("M  V30 END ATOM\n");
 }
 
+/// Retain four decimals where exact and compact; otherwise use round-trip
+/// scientific notation. Compact tokens also bound each coordinate to 24 bytes.
+fn coordinate_3d(value: f64) -> String {
+    let mut text = String::new();
+    crate::mol2000::push_fixed4(&mut text, value, 0);
+    if value.is_finite()
+        && (text.len() > 24
+            || !text
+                .parse::<f64>()
+                .is_ok_and(|parsed| parsed.to_bits() == value.to_bits()))
+    {
+        text.clear();
+        write!(text, "{value:e}").expect("writing to String cannot fail");
+    }
+    text
+}
+
 fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, conformer: &Coords3D) {
     out.push_str("M  V30 BEGIN ATOM\n");
     for (idx, atom) in mol.atoms() {
@@ -340,20 +357,22 @@ fn append_atoms_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata, con
             .get(idx.0 as usize)
             .copied()
             .unwrap_or(Point3::zero());
-        out.push_str("M  V30 ");
-        crate::mol2000::push_right_aligned_u32(out, idx.0 + 1, 0);
-        out.push(' ');
-        out.push_str(v3000_atom_symbol(mol, idx, atom));
-        for coordinate in [point.x, point.y, point.z] {
-            out.push(' ');
-            // Reuse the same exact fallback for ties, large and nonfinite
-            // coordinates as the V2000 and 2D V3000 writers.
-            crate::mol2000::push_fixed4(out, coordinate, 0);
+        let [x, y, z] = [point.x, point.y, point.z].map(coordinate_3d);
+        let prefix = format!(
+            "M  V30 {} {} {x} {y}",
+            idx.0 + 1,
+            v3000_atom_symbol(mol, idx, atom)
+        );
+        let mut tail = atom.atom_map.unwrap_or(0).to_string();
+        append_atom_properties(&mut tail, mol, metadata, idx, atom);
+        // V3000 continuations join between tokens. Keep arbitrary source
+        // property text intact, and never split a numeric token or UTF-8 text.
+        if prefix.len() + z.len() + tail.len() + 2 > 80 {
+            writeln!(out, "{prefix} -\nM  V30 {z} -\nM  V30 {tail}")
+                .expect("writing to String cannot fail");
+        } else {
+            writeln!(out, "{prefix} {z} {tail}").expect("writing to String cannot fail");
         }
-        out.push(' ');
-        crate::mol2000::push_right_aligned_u32(out, atom.atom_map.unwrap_or(0).into(), 0);
-        append_atom_properties(out, mol, metadata, idx, atom);
-        out.push('\n');
     }
     out.push_str("M  V30 END ATOM\n");
 }
@@ -642,6 +661,9 @@ fn write_v3000_reporting(
 /// `conformer`** -- it writes whatever coordinates it is given, trusting the
 /// caller. If `conformer`'s geometry doesn't actually match a declared
 /// square-planar tag, this will silently write a self-inconsistent file.
+/// Finite supplied x/y/z values retain binary64 precision; short exact
+/// four-decimal fields keep their previous spelling. This numeric contract
+/// does not validate arbitrary metadata or non-finite values.
 /// Use [`write_mol_v3000_with_conformer_checked`] instead to fail closed on
 /// that mismatch (or on a missing/flat conformer) rather than trusting it.
 pub fn write_mol_v3000_with_conformer(
