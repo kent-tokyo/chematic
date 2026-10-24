@@ -5,9 +5,11 @@ Comparator: RDKit 2026.09.1 in Python 3.13.6 on macOS 27.0.1 arm64.
 The [machine fingerprint packet](2026-10-25-rdkit-core-usr-accuracy.json)
 records corpus hashes, exact per-algorithm counts, and every mismatch (none).
 The measured CLI binary SHA-256 was
-`61cc65c0164d4bf8e3e7c34f7f12f7c66534840fb60d2265e16978a9e6ce81a5`;
+`496cfb79442e288bd2b06acdd12066318c6b4259d3356091165184da5cc9482f`;
 the comparator script SHA-256 was
 `efa8850f2b324a7bad6a4fb1c74fe8344370b572c0dc2dfa868fcb183ca99cd0`.
+The final CLI rerun produced a byte-identical fingerprint packet
+(SHA-256 `c09a14d33071ef398553ef7c8c84e25546c0e5a550a870523879b111dd576fc9`).
 
 ## Chemical graph, stereo search, and fingerprints
 
