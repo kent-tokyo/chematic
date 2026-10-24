@@ -275,9 +275,19 @@ fn charge_originally_isolated_metals(before: &Molecule, normalized: Molecule) ->
 /// which has different post-disconnection charge and hydrogen handling.
 fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
     let mut atoms: Vec<_> = mol.atoms().map(|(_, atom)| atom.clone()).collect();
+    let removed = disconnect_metal_ligand_bonds(mol, &mut atoms);
+    if removed.is_empty() {
+        return clone_molecule(mol);
+    }
+    adjust_cut_metal_hydrogens(mol, &mut atoms, &removed);
+    rebuild_cleanup_graph(mol, atoms, &removed)
+}
+
+fn disconnect_metal_ligand_bonds(
+    mol: &Molecule,
+    atoms: &mut [chematic_core::Atom],
+) -> HashSet<BondIdx> {
     let mut removed = HashSet::new();
-    // The source may be written in Kekule form. RDKit sanitizes it before
-    // selecting bonds for the default metal disconnector.
     let aromaticity = mol
         .bonds()
         .any(|(_, bond)| {
@@ -301,21 +311,15 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
         let ligand_atom = &atoms[ligand];
         let metal_z = atoms[metal].element.atomic_number();
         let ligand_z = ligand_atom.element.atomic_number();
-        let aromatic_carbon = ligand_z == 6
-            && aromaticity
-                .as_ref()
-                .is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)));
-        let zinc_fused_aromatic_edge = metal_z == 30
-            && ligand_z == 6
-            && bond.order == BondOrder::Double
-            && mol.neighbors(AtomIdx(metal as u32)).any(|(neighbor, _)| {
-                neighbor.0 as usize != ligand
-                    && mol.atom(neighbor).element.atomic_number() == 6
-                    && (mol.atom(neighbor).aromatic
-                        || aromaticity
-                            .as_ref()
-                            .is_some_and(|model| model.is_atom_aromatic(neighbor)))
-            });
+        let (aromatic_carbon, zinc_fused_aromatic_edge) = metal_aromatic_exclusions(
+            mol,
+            metal,
+            ligand,
+            metal_z,
+            ligand_z,
+            bond.order,
+            aromaticity.as_ref(),
+        );
         if !default_metal_disconnector_match(metal_z, ligand_z)
             || aromatic_carbon
             || zinc_fused_aromatic_edge
@@ -335,7 +339,7 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
             atoms[ligand].hydrogen_count = None;
             continue;
         }
-        transfer_metal_ligand_charge(mol, &mut atoms, metal, ligand, bond.order);
+        transfer_metal_ligand_charge(mol, atoms, metal, ligand, bond.order);
         if metal_z == 30
             && ligand_z == 6
             && mol.degree(AtomIdx(ligand as u32)) == 4
@@ -348,10 +352,38 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
             };
         }
     }
-    if removed.is_empty() {
-        return clone_molecule(mol);
-    }
+    removed
+}
 
+#[allow(clippy::too_many_arguments)]
+fn metal_aromatic_exclusions(
+    mol: &Molecule,
+    metal: usize,
+    ligand: usize,
+    metal_z: u8,
+    ligand_z: u8,
+    bond_order: BondOrder,
+    aromaticity: Option<&chematic_perception::AromaticityModel>,
+) -> (bool, bool) {
+    let aromatic_carbon = ligand_z == 6
+        && aromaticity.is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)));
+    let zinc_fused_aromatic_edge = metal_z == 30
+        && ligand_z == 6
+        && bond_order == BondOrder::Double
+        && mol.neighbors(AtomIdx(metal as u32)).any(|(neighbor, _)| {
+            neighbor.0 as usize != ligand
+                && mol.atom(neighbor).element.atomic_number() == 6
+                && (mol.atom(neighbor).aromatic
+                    || aromaticity.is_some_and(|model| model.is_atom_aromatic(neighbor)))
+        });
+    (aromatic_carbon, zinc_fused_aromatic_edge)
+}
+
+fn adjust_cut_metal_hydrogens(
+    mol: &Molecule,
+    atoms: &mut [chematic_core::Atom],
+    removed: &HashSet<BondIdx>,
+) {
     let cut_metals: HashSet<_> = mol
         .bonds()
         .filter(|(bond_idx, _)| removed.contains(bond_idx))
@@ -397,8 +429,6 @@ fn disconnect_metals_for_cleanup(mol: &Molecule) -> Molecule {
             .sum::<u8>();
         atoms[idx].hydrogen_count = Some(target.saturating_sub(remaining));
     }
-
-    rebuild_cleanup_graph(mol, atoms, &removed)
 }
 
 /// RDKit 2026.09.1's default MetalNof and MetalNon SMARTS element sets.
