@@ -14,6 +14,16 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Editable formatted DL-POLY Classic HISTORY trajectories in Rust, Python,
+  WASM/Node and CLI, retaining all frames, source atom IDs/order, changing cells,
+  masses, charges, positions, velocities, forces and integration timesteps in
+  raw source units. Modern/binary layouts, inconsistent metadata and numeric
+  values that cannot fit exact fixed-width output refuse. See
+  [HISTORY records](docs/reference/dlpoly-history.md) for the bounded profile
+  and the separate Open Babel all-frame coordinate comparison.
+
 ### Fixed
 
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps

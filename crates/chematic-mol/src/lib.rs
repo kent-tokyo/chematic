@@ -16,6 +16,13 @@
 //! let written = write_mol(&mol, &meta);
 //! ```
 
+pub mod dlpoly_history;
+pub use dlpoly_history::{
+    DlpolyHistory, DlpolyHistoryAtom, DlpolyHistoryError, DlpolyHistoryFrame, DlpolyHistoryLimits,
+    dlpoly_history_from_json, parse_dlpoly_history, parse_dlpoly_history_with_limits,
+    write_dlpoly_history,
+};
+
 pub mod ccd;
 pub use ccd::{
     CcdAtom, CcdBond, CcdComponent, CcdError, CcdParseLimits, parse_ccd_component,
