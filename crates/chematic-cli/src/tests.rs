@@ -203,7 +203,7 @@ fn similarity_rejects_unknown_algorithms() {
 #[test]
 fn substructure_reports_sorted_atom_mappings() {
     let json: serde_json::Value =
-        serde_json::from_str(&substructure_json("c1ccccc1", "c").unwrap()).unwrap();
+        serde_json::from_str(&substructure_json("c1ccccc1", "c", false).unwrap()).unwrap();
     assert_eq!(json["match_count"], 6);
     assert_eq!(
         json["matches"].as_array().unwrap()[0]
@@ -217,7 +217,7 @@ fn substructure_reports_sorted_atom_mappings() {
 #[test]
 fn substructure_rejects_invalid_smarts() {
     assert!(
-        substructure_json("CCO", "[")
+        substructure_json("CCO", "[", false)
             .unwrap_err()
             .contains("SMARTS")
     );
@@ -461,7 +461,7 @@ fn batch_similarity_processes_tsv_pairs_and_retains_errors() {
 #[test]
 fn batch_substructure_processes_tsv_queries_and_retains_errors() {
     let json: serde_json::Value = serde_json::from_str(
-        &batch_substructure_json("c1ccccc1\tc\nCCO\t[\n", &default_batch_limits()).unwrap(),
+        &batch_substructure_json("c1ccccc1\tc\nCCO\t[\n", &default_batch_limits(), false).unwrap(),
     )
     .unwrap();
     assert_eq!(json["valid_count"], 1);

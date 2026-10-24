@@ -120,7 +120,7 @@ enum Command {
     Fingerprint {
         /// SMILES to analyze.
         smiles: String,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -130,7 +130,7 @@ enum Command {
         smiles_a: String,
         /// Second SMILES to analyze.
         smiles_b: String,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
     },
@@ -140,6 +140,9 @@ enum Command {
         smiles: String,
         /// SMARTS query.
         smarts: String,
+        /// Enforce atom and bond stereochemistry in the SMARTS query.
+        #[arg(long)]
+        use_chirality: bool,
     },
     /// Standardize a SMILES molecule and emit an auditable JSON report.
     Standardize {
@@ -215,7 +218,7 @@ enum Command {
         /// Read line-delimited SMILES from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -237,7 +240,7 @@ enum Command {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
-        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_rdk, or rdkit_torsion.
+        /// Algorithm: ecfp4, ecfp6, maccs, rdkit_morgan, rdkit_pattern, rdkit_rdk, or rdkit_torsion.
         #[arg(long, default_value = "ecfp4")]
         algorithm: String,
         #[command(flatten)]
@@ -248,6 +251,9 @@ enum Command {
         /// Read tab-separated pairs from this file instead of stdin.
         #[arg(short, long)]
         input: Option<PathBuf>,
+        /// Enforce atom and bond stereochemistry in each SMARTS query.
+        #[arg(long)]
+        use_chirality: bool,
         #[command(flatten)]
         limits: BatchLimits,
     },
@@ -613,14 +619,7 @@ fn cxsmiles_json(cxsmiles: &str) -> Result<String, String> {
 fn fingerprint_json(smiles: &str, algorithm: &str) -> Result<String, String> {
     let mol = parse_cli_smiles(smiles)?;
     let algorithm = algorithm.to_ascii_lowercase();
-    let fp = match algorithm.as_str() {
-        "ecfp4" => chematic_fp::ecfp4(&mol),
-        "ecfp6" => chematic_fp::ecfp6(&mol),
-        "maccs" => chematic_fp::maccs(&mol),
-        "rdkit_rdk" => chematic_fp::rdkit_rdk_fp(&mol),
-        "rdkit_torsion" => chematic_fp::rdkit_torsion_fp(&mol),
-        _ => return Err(format!("unsupported fingerprint algorithm: {algorithm}")),
-    };
+    let fp = fingerprint_for(&mol, &algorithm)?;
     let bits: Vec<usize> = (0..2048).filter(|&bit| fp.get(bit)).collect();
     Ok(serde_json::json!({
         "algorithm": algorithm,
@@ -640,6 +639,10 @@ fn fingerprint_for(
         "ecfp4" => Ok(chematic_fp::ecfp4(mol)),
         "ecfp6" => Ok(chematic_fp::ecfp6(mol)),
         "maccs" => Ok(chematic_fp::maccs(mol)),
+        "rdkit_morgan" => {
+            chematic_fp::rdkit_morgan_ecfp4_bitvec(mol).map_err(|error| error.to_string())
+        }
+        "rdkit_pattern" => Ok(chematic_fp::rdkit_pattern_fp(mol)),
         "rdkit_rdk" => Ok(chematic_fp::rdkit_rdk_fp(mol)),
         "rdkit_torsion" => Ok(chematic_fp::rdkit_torsion_fp(mol)),
         other => Err(format!("unsupported fingerprint algorithm: {other}")),
@@ -661,10 +664,75 @@ fn similarity_json(smiles_a: &str, smiles_b: &str, algorithm: &str) -> Result<St
     .to_string())
 }
 
-fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
-    let mol = parse_cli_smiles(smiles)?;
+fn substructure_json(smiles: &str, smarts: &str, use_chirality: bool) -> Result<String, String> {
+    let mut mol = parse_cli_smiles(smiles)?;
+    let has_stereo_markers = mol
+        .atoms()
+        .any(|(_, atom)| atom.chirality != chematic_core::Chirality::None)
+        || mol.bonds().any(|(_, bond)| {
+            matches!(
+                bond.order,
+                chematic_core::BondOrder::Up | chematic_core::BondOrder::Down
+            )
+        })
+        || mol.has_bond_directions();
+    let stereo = if use_chirality && has_stereo_markers {
+        // MolFromSmiles discards a written @/@@ tag on a non-stereogenic atom.
+        // Applying the same target-side perception avoids treating a symmetric
+        // ring carbon as a chiral hit merely because its SMILES contained @.
+        let stereo = chematic_smiles::rdkit_legacy_stereo(&mol).map_err(|e| e.to_string())?;
+        for (index, tagged) in stereo.atom_tagged.iter().enumerate() {
+            if !tagged {
+                mol.set_chirality(
+                    chematic_core::AtomIdx(index as u32),
+                    chematic_core::Chirality::None,
+                );
+            }
+        }
+        Some(stereo)
+    } else {
+        None
+    };
     let query = chematic_smarts::parse_smarts(smarts).map_err(|e| e.to_string())?;
-    let matches = chematic_smarts::find_matches(&query, &mol);
+    let config = chematic_smarts::MatchConfig {
+        use_chirality,
+        ..Default::default()
+    };
+    let mut matches = chematic_smarts::find_matches_with_config(&query, &mol, &config);
+    if let Some(stereo) = &stereo {
+        // A slash-written bond is not always stereogenic (e.g. identical
+        // substituents at an alkene end). The matcher checks marker parity;
+        // RDKit's target perception additionally rejects such double bonds.
+        let stereo_doubles: Vec<_> = query
+            .bonds
+            .iter()
+            .filter(|bond| {
+                bond.query
+                    == chematic_smarts::BondQuery::Primitive(chematic_smarts::BondPrimitive::Double)
+                    && [bond.atom1, bond.atom2].into_iter().all(|end| {
+                        query.adj[end].iter().any(|&(edge, other)| {
+                            other != bond.atom1
+                                && other != bond.atom2
+                                && matches!(
+                                    query.bonds[edge].query,
+                                    chematic_smarts::BondQuery::Primitive(
+                                        chematic_smarts::BondPrimitive::Up
+                                            | chematic_smarts::BondPrimitive::Down
+                                    )
+                                )
+                        })
+                    })
+            })
+            .collect();
+        matches.retain(|mapping| {
+            stereo_doubles.iter().all(|bond| {
+                let left = mapping[&bond.atom1];
+                let right = mapping[&bond.atom2];
+                mol.bond_between(left, right)
+                    .is_some_and(|(idx, _)| stereo.bond_stereo[idx.0 as usize] > 1)
+            })
+        });
+    }
     let matches: Vec<Vec<usize>> = matches
         .iter()
         .map(|mapping| {
@@ -679,6 +747,7 @@ fn substructure_json(smiles: &str, smarts: &str) -> Result<String, String> {
     Ok(serde_json::json!({
         "smiles": chematic_smiles::canonical_smiles(&mol),
         "smarts": smarts,
+        "use_chirality": use_chirality,
         "match_count": matches.len(),
         "matches": matches,
     })
@@ -1074,7 +1143,11 @@ fn batch_similarity_json(
     Ok(output.to_string())
 }
 
-fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, String> {
+fn batch_substructure_json(
+    text: &str,
+    limits: &BatchLimits,
+    use_chirality: bool,
+) -> Result<String, String> {
     let lines = batch_lines(text, limits)?;
     let mut records = Vec::with_capacity(lines.len());
     let mut valid_count = 0usize;
@@ -1082,7 +1155,9 @@ fn batch_substructure_json(text: &str, limits: &BatchLimits) -> Result<String, S
         let result = line
             .split_once('\t')
             .ok_or_else(|| "expected SMILES<TAB>SMARTS".to_string())
-            .and_then(|(smiles, smarts)| substructure_json(smiles.trim(), smarts.trim()))
+            .and_then(|(smiles, smarts)| {
+                substructure_json(smiles.trim(), smarts.trim(), use_chirality)
+            })
             .and_then(|json| {
                 serde_json::from_str::<serde_json::Value>(&json).map_err(|e| e.to_string())
             });
