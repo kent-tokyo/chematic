@@ -7,8 +7,8 @@ use chematic_mol::{
 const INPUT: &str = include_str!("../../../validation/openbabel-2429-2026-10-24/either-single.mol");
 
 #[test]
-fn graph_only_unknown_alkene_remains_unknown_after_writing_real_coordinates() {
-    let mol = chematic_smiles::parse("CC=CC").unwrap();
+fn parsed_unknown_alkene_remains_unknown_after_writing_real_coordinates() {
+    let mol = read_mol_v3000_with_diagnostics(INPUT).unwrap().mol;
     let coords = [(-1., 1.), (0., 0.), (1., 0.), (2., -1.)];
     let text = write_mol_v3000(&mol, &Default::default(), &coords);
     assert!(text.contains("2 2 2 3 CFG=2"));
@@ -17,6 +17,14 @@ fn graph_only_unknown_alkene_remains_unknown_after_writing_real_coordinates() {
     let partial = write_mol_v3000(&mol, &Default::default(), &[(-1., 1.)]);
     let partial = read_mol_v3000_with_diagnostics(&partial).unwrap();
     assert_eq!(partial.coords, [(-1., 1.), (0., 0.), (0., 0.), (0., 0.)]);
+
+    // A molecule that never carried an explicit unknown-stereo declaration
+    // remains free to express the geometry supplied by its caller.
+    let plain = chematic_smiles::parse("CC=CC").unwrap();
+    let text = write_mol_v3000(&plain, &Default::default(), &coords);
+    let read = read_mol_v3000_with_diagnostics(&text).unwrap();
+    assert!(!chematic_chem::assign_ez_bonds(&read.mol).is_empty());
+
     for smiles in ["C/C=C/C", "C/C=C\\C"] {
         let mol = chematic_smiles::parse(smiles).unwrap();
         let text = write_mol_v3000(&mol, &Default::default(), &[]);

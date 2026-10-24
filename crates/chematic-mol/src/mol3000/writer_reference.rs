@@ -192,7 +192,8 @@ fn append_bonds_2d(
                     let cfg = if wedge.order == BondOrder::Up { 1 } else { 3 };
                     (start, end, format!(" CFG={cfg}"))
                 }
-                None if depiction.unexpressed_double_bonds.contains(&bond_idx)
+                None if mol.bond_stereo_is_unspecified(bond_idx)
+                    || depiction.unexpressed_double_bonds.contains(&bond_idx)
                     || depiction.unspecified_double_bonds.contains(&bond_idx) =>
                 {
                     (atom1, atom2, " CFG=2".to_string())
@@ -200,10 +201,14 @@ fn append_bonds_2d(
                 None => (atom1, atom2, String::new()),
             },
             None => {
-                let cfg = match bond.order {
-                    BondOrder::Up => " CFG=1",
-                    BondOrder::Down => " CFG=3",
-                    _ => "",
+                let cfg = if mol.bond_stereo_is_unspecified(bond_idx) {
+                    " CFG=2"
+                } else {
+                    match bond.order {
+                        BondOrder::Up => " CFG=1",
+                        BondOrder::Down => " CFG=3",
+                        _ => "",
+                    }
                 };
                 (atom1, atom2, cfg.to_string())
             }
@@ -227,12 +232,17 @@ fn append_bonds_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
             .and_then(|orders| orders.get(&bond_idx).copied())
             .unwrap_or(bond.order);
         let bond_id = bond_idx.0 + 1;
+        let stereo = if mol.bond_stereo_is_unspecified(bond_idx) {
+            " CFG=2"
+        } else {
+            ""
+        };
         out.push_str(&format!(
-            "M  V30 {bond_id} {} {} {}{}\n",
+            "M  V30 {bond_id} {} {} {}{stereo}{}\n",
             v3000_bond_order(written),
             bond.atom1.0 + 1,
             bond.atom2.0 + 1,
-            bond_properties(metadata, bond_id, false)
+            bond_properties(metadata, bond_id, !stereo.is_empty())
         ));
     }
     out.push_str("M  V30 END BOND\n");
@@ -328,15 +338,7 @@ pub fn write_mol_v3000_with_stereo_report(
     let mut out = String::new();
     append_header(&mut out, mol, metadata, "  chematic\n");
 
-    // Intentional #2429 semantic change shared with the optimized writer;
-    // the remaining string-building reference stays frozen.
-    let real_coords = coords.len() >= mol.atom_count()
-        && coords[..mol.atom_count()]
-            .iter()
-            .any(|&(x, y)| x != 0.0 || y != 0.0);
-    let needs_either =
-        real_coords && !crate::stereo_depiction::undeclared_stereo_double_bonds(mol).is_empty();
-    let depiction = (crate::stereo_depiction::needs_stereo_depiction(mol) || needs_either)
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
         .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
     let coords = depiction.as_ref().map_or(coords, |value| &value.coords);
 

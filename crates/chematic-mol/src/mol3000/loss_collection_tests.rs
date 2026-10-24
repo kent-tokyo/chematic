@@ -1,4 +1,4 @@
-//! Frozen string-building profile with the intentional #2429 either guard.
+//! Frozen string-building profile with explicit #2429 unknown-stereo state.
 //! Plain output and public loss fields must still match.
 use super::*;
 
@@ -10,13 +10,7 @@ fn frozen_reporting(
     let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic\n");
 
-    let real_coords = coords.len() >= mol.atom_count()
-        && coords[..mol.atom_count()]
-            .iter()
-            .any(|&(x, y)| x != 0.0 || y != 0.0);
-    let needs_either =
-        real_coords && !crate::stereo_depiction::undeclared_stereo_double_bonds(mol).is_empty();
-    let depiction = (crate::stereo_depiction::needs_stereo_depiction(mol) || needs_either)
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
         .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
     let coords = depiction.as_ref().map_or(coords, |value| &value.coords);
 

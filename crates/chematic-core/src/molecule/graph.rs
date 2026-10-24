@@ -176,6 +176,11 @@ impl Molecule {
                 builder.set_bond_direction(*new_bidx, *direction);
             }
         }
+        for &old_bidx in &self.unspecified_bond_stereo {
+            if let Some(Some(new_bidx)) = bond_remap.get(old_bidx as usize) {
+                builder.set_bond_stereo_unspecified(*new_bidx);
+            }
+        }
         // Anchors follow their atoms (a stash is read from its anchor).
         for (old_bidx, anchor) in &self.bond_direction_anchors {
             if let (Some(Some(new_bidx)), Some(Some(new_anchor))) = (
@@ -315,6 +320,9 @@ impl Molecule {
         builder.copy_atom_tags_from(self);
         builder.copy_r_groups_from(self);
         builder.copy_bond_directions_from(self);
+        if order != BondOrder::Double {
+            builder.clear_bond_stereo_unspecified(idx);
+        }
         builder.build()
     }
 
@@ -342,6 +350,9 @@ impl Molecule {
                     if let Some(anchor) = self.bond_direction_anchor(bidx) {
                         builder.set_bond_direction_anchor(new_bidx, anchor);
                     }
+                }
+                if self.bond_stereo_is_unspecified(bidx) {
+                    builder.set_bond_stereo_unspecified(new_bidx);
                 }
             }
         }

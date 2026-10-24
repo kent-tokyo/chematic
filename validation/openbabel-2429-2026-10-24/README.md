@@ -12,12 +12,12 @@ new Python regression failing against the retained prior runtime.
 
 The fix retains single/double-bond `CFG=2` in normalized `MolMetadata`, suppresses
 coordinate-based E/Z on double bonds adjacent to a wavy carrier's endpoints,
-and writes an explicit double-either marker for undeclared potential alkene
-stereo when complete real 2D coordinates are written. Rust source-metadata
-writers retain the original wavy bond and endpoint order, including 3D output.
-Python/WASM graph-only writers may express the same unknown alkene state with
-double-bond CFG=2; they do not retain the original wave's location. Existing
-exact-source APIs remain available and unchanged.
+and records the resulting explicitly unknown alkene state on the graph. Rust
+source-metadata writers retain the original wavy bond and endpoint order,
+including 3D output. Python/WASM graph-only writers may express that same state
+with double-bond `CFG=2`; they do not retain the original wave's location. An
+ordinary graph without an explicit unknown marker may still express supplied
+E/Z geometry. Existing exact-source APIs remain available and unchanged.
 
 ## Fixed comparison
 
@@ -50,7 +50,7 @@ semantic tests. The frozen writer profiles adopt only the new either-marker
 selection policy; the string-building comparisons remain in place.
 
 This is an alkene/V3000 contract, not SVG wave rendering, general tetrahedral
-either perception, a core unknown-versus-absent distinction, V2000 output,
+either perception, V2000 output,
 arbitrary malformed CFG validation, or comprehensive stereo preservation.
 The fixed packet does not establish toolkit-wide superiority or publication.
 

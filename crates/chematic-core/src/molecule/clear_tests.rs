@@ -33,6 +33,7 @@ fn clear_removes_all_graph_and_source_metadata() {
     assert!(mol.stereo_group_bonds.is_empty());
     assert!(mol.stereo_neighbor_order.is_empty());
     assert!(mol.bond_directions.is_empty());
+    assert!(mol.unspecified_bond_stereo.is_empty());
     assert!(mol.bond_direction_anchors.is_empty());
     assert!(mol.smiles_ring_closure_keys.is_empty());
     assert_eq!(mol.formula(), "");

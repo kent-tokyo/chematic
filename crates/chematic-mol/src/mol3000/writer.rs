@@ -450,7 +450,8 @@ fn append_bonds_2d(
                     };
                     (start, end, cfg)
                 }
-                None if depiction.unexpressed_double_bonds.contains(&bond_idx)
+                None if mol.bond_stereo_is_unspecified(bond_idx)
+                    || depiction.unexpressed_double_bonds.contains(&bond_idx)
                     || depiction.unspecified_double_bonds.contains(&bond_idx) =>
                 {
                     (atom1, atom2, " CFG=2")
@@ -458,10 +459,14 @@ fn append_bonds_2d(
                 None => (atom1, atom2, ""),
             },
             None => {
-                let cfg = match bond.order {
-                    BondOrder::Up => " CFG=1",
-                    BondOrder::Down => " CFG=3",
-                    _ => "",
+                let cfg = if mol.bond_stereo_is_unspecified(bond_idx) {
+                    " CFG=2"
+                } else {
+                    match bond.order {
+                        BondOrder::Up => " CFG=1",
+                        BondOrder::Down => " CFG=3",
+                        _ => "",
+                    }
                 };
                 (atom1, atom2, cfg)
             }
@@ -493,13 +498,23 @@ fn append_bonds_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
         let bond_id = bond_idx.0 + 1;
         write!(
             out,
-            "M  V30 {bond_id} {} {} {}",
+            "M  V30 {bond_id} {} {} {}{}",
             v3000_bond_order(written),
             bond.atom1.0 + 1,
-            bond.atom2.0 + 1
+            bond.atom2.0 + 1,
+            if mol.bond_stereo_is_unspecified(bond_idx) {
+                " CFG=2"
+            } else {
+                ""
+            }
         )
         .expect("writing to String cannot fail");
-        append_bond_properties(out, metadata, bond_id, false);
+        append_bond_properties(
+            out,
+            metadata,
+            bond_id,
+            mol.bond_stereo_is_unspecified(bond_idx),
+        );
         out.push('\n');
     }
     out.push_str("M  V30 END BOND\n");
@@ -615,15 +630,7 @@ fn write_v3000_reporting(
     let mut out = writer_buffer(mol, metadata);
     append_header(&mut out, mol, metadata, "  chematic\n");
 
-    // Real coordinates must not assign E/Z to an undeclared alkene merely
-    // because a graph-only binding discarded source CFG=2 metadata (#2429).
-    let real_coords = coords.len() >= mol.atom_count()
-        && coords[..mol.atom_count()]
-            .iter()
-            .any(|&(x, y)| x != 0.0 || y != 0.0);
-    let needs_either =
-        real_coords && !crate::stereo_depiction::undeclared_stereo_double_bonds(mol).is_empty();
-    let depiction = (crate::stereo_depiction::needs_stereo_depiction(mol) || needs_either)
+    let depiction = crate::stereo_depiction::needs_stereo_depiction(mol)
         .then(|| crate::stereo_depiction::stereo_depiction(mol, coords));
     let coords = depiction.as_ref().map_or(coords, |value| &value.coords);
 

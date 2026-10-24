@@ -47,21 +47,21 @@ either endpoint. A remote wavy bond does not suppress unrelated alkene stereo.
 |---|---|
 | Rust `read_mol_v3000_with_diagnostics` followed by `write_mol_v3000` with its metadata | Original single-bond marker and endpoint order, with normalized output IDs |
 | Rust `write_mol_v3000_with_conformer` with source metadata | Original either marker retained in the 3D block |
-| Python `from_mol_v3000` / `Mol.to_mol_v3000` with complete real 2D coordinates | Unknown alkene remains unknown on reparse; output may use double-bond `CFG=2` |
+| Python `from_mol_v3000` / `Mol.to_mol_v3000` | Explicitly unknown alkene remains unknown on reparse; output may use double-bond `CFG=2` |
 | WASM `mol_from_v3000_block` / `to_mol_v3000_block` | Same unknown-alkene contract through generated 2D coordinates |
 
-Graph-only bindings do not own the original marker's source position. The
-2D V3000 writer marks undeclared potential alkene stereo as either when given
-complete real coordinates, so the layout cannot create an E/Z assignment on
-reparse. Complete zero coordinates and missing-coordinate defaults keep their
-existing behavior. Already declared E/Z stereo follows the existing depiction
-path. Use Python `roundtrip_mol_v3000_source` or WASM
+Graph-only bindings retain the semantic fact that an alkene was explicitly
+unknown, but not the original marker's carrier-bond position. Their writers may
+therefore emit `CFG=2` directly on the double bond. An ordinary graph without
+that marker remains free to express caller-supplied E/Z geometry; it is not
+silently changed to unknown. Already declared E/Z stereo follows the existing
+depiction path. Use Python `roundtrip_mol_v3000_source` or WASM
 `roundtrip_mol_v3000_block` for exact unedited source retention; those APIs
 predate this change.
 
 This addresses alkene interpretation and V3000 rewriting. It does not add SVG
-wavy-bond rendering, a core distinction between unknown and absent stereo,
-general tetrahedral either-bond perception, or changes to V2000 output.
+wavy-bond rendering, general tetrahedral either-bond perception, or changes to
+V2000 output.
 Atom-line CFG is separate and remains outside this bond configuration profile.
 
 The fixed packet `validation/openbabel-2429-2026-10-24/` contains 16 authored

@@ -1021,6 +1021,9 @@ fn finish_v3000_report(
     parser
         .unspecified_ez
         .extend(either_bonds::adjacent_unknown_double_bonds(&mol, &metadata));
+    for &bond in &parser.unspecified_ez {
+        mol.set_bond_stereo_unspecified(bond);
+    }
     if !parser.stereo_groups.is_empty() {
         mol.set_stereo_groups_with_bonds(
             parser

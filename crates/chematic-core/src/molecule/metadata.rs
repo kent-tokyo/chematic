@@ -124,6 +124,12 @@ impl Molecule {
                 self.bond_direction_anchors.insert(*new_key, new_atom);
             }
         }
+        let old_unspecified = std::mem::take(&mut self.unspecified_bond_stereo);
+        for old_key in old_unspecified {
+            if let Some(Some(new_key)) = bond_remap.get(old_key as usize) {
+                self.unspecified_bond_stereo.insert(*new_key);
+            }
+        }
 
         // Rebuild adjacency from scratch.
         let new_n = self.atoms.len();
@@ -241,6 +247,19 @@ impl Molecule {
                 std::cmp::Ordering::Equal => {} // this bond itself was removed
                 std::cmp::Ordering::Greater => {
                     self.bond_directions.insert(old_key - 1, direction);
+                }
+            }
+        }
+        let old_unspecified = std::mem::take(&mut self.unspecified_bond_stereo);
+        for old_key in old_unspecified {
+            let old = old_key as usize;
+            match old.cmp(&removed) {
+                std::cmp::Ordering::Less => {
+                    self.unspecified_bond_stereo.insert(old_key);
+                }
+                std::cmp::Ordering::Equal => {}
+                std::cmp::Ordering::Greater => {
+                    self.unspecified_bond_stereo.insert(old_key - 1);
                 }
             }
         }
@@ -433,6 +452,7 @@ impl Molecule {
             stereo_neighbor_order: self.stereo_neighbor_order.clone(),
             bond_directions: Default::default(),
             bond_direction_anchors: Default::default(),
+            unspecified_bond_stereo: Default::default(),
             smiles_ring_closure_keys: Default::default(),
             derived: Default::default(),
         })
@@ -448,6 +468,9 @@ impl Molecule {
     pub fn set_bond_order(&mut self, idx: BondIdx, order: BondOrder) {
         self.invalidate_derived();
         self.bonds[idx.0 as usize].order = order;
+        if order != BondOrder::Double {
+            self.unspecified_bond_stereo.remove(&idx.0);
+        }
     }
 
     /// Make bond `idx` a dative bond from `donor` (stored as `atom1`, see
@@ -457,6 +480,7 @@ impl Molecule {
         self.invalidate_derived();
         let bond = &mut self.bonds[idx.0 as usize];
         bond.order = BondOrder::Dative;
+        self.unspecified_bond_stereo.remove(&idx.0);
         if bond.atom2 == donor {
             std::mem::swap(&mut bond.atom1, &mut bond.atom2);
         }
@@ -744,5 +768,23 @@ impl Molecule {
         self.invalidate_derived();
         self.bond_directions.remove(&idx.0);
         self.bond_direction_anchors.remove(&idx.0);
+    }
+
+    /// Whether an interchange source explicitly left this double-bond
+    /// configuration unspecified.
+    pub fn bond_stereo_is_unspecified(&self, idx: BondIdx) -> bool {
+        self.unspecified_bond_stereo.contains(&idx.0)
+    }
+
+    /// Preserve an explicit unknown double-bond stereo declaration.
+    pub fn set_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
+        self.unspecified_bond_stereo.insert(idx.0);
+    }
+
+    /// Remove an explicit unknown double-bond stereo declaration.
+    pub fn clear_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
+        self.unspecified_bond_stereo.remove(&idx.0);
     }
 }

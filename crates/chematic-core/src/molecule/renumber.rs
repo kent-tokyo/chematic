@@ -143,6 +143,10 @@ impl Molecule {
                 self.bond_direction_anchors.keys().copied().collect(),
             ),
             (
+                "unspecified stereo bond",
+                self.unspecified_bond_stereo.iter().copied().collect(),
+            ),
+            (
                 "ring closure bond",
                 self.smiles_ring_closure_keys.keys().copied().collect(),
             ),
