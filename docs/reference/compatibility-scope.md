@@ -117,7 +117,7 @@ preserving normal fused aromatic atoms with 1.5-order bookkeeping.
 An aromatic atom bonded by a triple bond to another aromatic atom, with no
 explicit double bond at that atom, follows RDKit's corrected valence instead.
 This narrow case is needed for the accepted stress-corpus graph measured in
-[`2026-10-25-rdkit-core-usr-accuracy.md`](../../benchmarks/2026-10-25-rdkit-core-usr-accuracy.md);
+[`2026-10-25-rdkit-core-usr-accuracy.md`](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-25-rdkit-core-usr-accuracy.md);
 the #9735 refusal packet remains a separate strict-chemistry contract.
 
 Rust `rdkit_canonical_smiles` and `rdkit_sanitized_model`, Python
