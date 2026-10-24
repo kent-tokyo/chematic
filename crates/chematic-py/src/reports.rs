@@ -18,6 +18,15 @@ struct Report {
     html: String,
 }
 
+/// Escape caller-provided text before inserting it into an HTML text node.
+fn escape_html_text(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
 #[pymethods]
 impl Report {
     fn _repr_html_(&self) -> &str {
@@ -351,6 +360,7 @@ fn report(
                 .and_then(|ns| ns.get(i))
                 .and_then(|n| n.as_deref())
                 .unwrap_or("");
+            let label = escape_html_text(label);
 
             let svg = chematic_mol::stereo_depiction::with_stereo_depiction(m, chematic_depict::render_svg);
 
@@ -382,6 +392,7 @@ fn report(
     let cards_html: String = cards.into_iter().map(|(_, c)| c).collect();
     let n = mols.len();
     let ver = env!("CARGO_PKG_VERSION");
+    let title = escape_html_text(title);
 
     let html = format!(
         r#"<!DOCTYPE html>
@@ -592,6 +603,8 @@ fn warn_flag(value: bool) -> String {
 }
 
 fn comparison_table(m: &ComparisonMetrics, name1: &str, name2: &str) -> String {
+    let name1 = escape_html_text(name1);
+    let name2 = escape_html_text(name2);
     format!(
         r#"<table>
 <tr><th>Property</th><th>{name1}</th><th>{name2}</th><th>Delta</th></tr>
@@ -661,6 +674,7 @@ fn comparison_table(m: &ComparisonMetrics, name1: &str, name2: &str) -> String {
 
 fn comparison_document(heading: &str, common: usize, summary: &str, table: &str) -> String {
     let version = env!("CARGO_PKG_VERSION");
+    let heading = escape_html_text(heading);
     format!(
         r#"<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8"><title>{heading}</title>

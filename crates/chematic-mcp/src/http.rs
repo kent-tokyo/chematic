@@ -47,15 +47,15 @@
 //!    body.
 //!
 //! Limits: at most `max_concurrency` connections are served at once (more
-//! get `503` with `Retry-After`), request headers are bounded, and reads and
-//! writes time out, so a slow client cannot hold a worker forever. Every
-//! response closes its connection.
+//! get `503` with `Retry-After` while bounded rejection slots remain),
+//! request headers are bounded, and request reads and response writes each
+//! have an overall deadline. Every response closes its connection.
 
-use std::io::{self, BufRead, BufReader, Write};
+use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serde_json::{Value, json};
 
@@ -70,6 +70,8 @@ const MAX_REQUEST_LINE_BYTES: usize = 8 * 1024;
 const MAX_HEADER_BYTES: usize = 32 * 1024;
 /// Most header fields accepted.
 const MAX_HEADERS: usize = 100;
+/// Limit threads that drain and reject requests beyond normal concurrency.
+const MAX_REJECTION_WORKERS: usize = 16;
 
 /// Options of the Streamable HTTP adapter.
 #[derive(Debug, Clone)]
@@ -111,6 +113,14 @@ pub struct HttpServer {
     config: Arc<HttpConfig>,
 }
 
+struct WorkerSlot(Arc<AtomicUsize>);
+
+impl Drop for WorkerSlot {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::SeqCst);
+    }
+}
+
 impl HttpServer {
     /// Bind the adapter. Refuses a non-loopback address unless
     /// `allow_non_loopback` is set, and a `max_concurrency` of 0.
@@ -147,50 +157,36 @@ impl HttpServer {
     /// served on its own thread, at most `max_concurrency` at once.
     pub fn serve(self) -> io::Result<()> {
         let active = Arc::new(AtomicUsize::new(0));
+        let rejecting = Arc::new(AtomicUsize::new(0));
         for stream in self.listener.incoming() {
-            let mut stream = match stream {
+            let stream = match stream {
                 Ok(s) => s,
                 Err(e) => {
                     eprintln!("chematic-mcp: accept error: {e}");
                     continue;
                 }
             };
-            let _ = stream.set_read_timeout(Some(self.config.io_timeout));
-            let _ = stream.set_write_timeout(Some(self.config.io_timeout));
             if active.fetch_add(1, Ordering::SeqCst) >= self.config.max_concurrency {
                 active.fetch_sub(1, Ordering::SeqCst);
-                // Consume one bounded request before closing the connection. On
-                // some TCP stacks, closing a socket with unread request bytes
-                // sends a reset that can discard the 503 response. The normal
-                // parser keeps this drain subject to the same header, body and
-                // I/O limits as a served request; no tool is executed here.
-                {
-                    let mut reader = BufReader::new(&mut stream);
-                    let _ = read_request(&mut reader);
+                // A complete bounded read avoids a TCP reset discarding the
+                // 503 response. Do it outside the sole accept loop; even slow
+                // peers can occupy only a fixed number of rejection workers.
+                if rejecting.fetch_add(1, Ordering::SeqCst) >= MAX_REJECTION_WORKERS {
+                    rejecting.fetch_sub(1, Ordering::SeqCst);
+                    continue;
                 }
-                let response = HttpResponse::json(
-                    503,
-                    &protocol::error_response(
-                        &Value::Null,
-                        protocol::INTERNAL_ERROR,
-                        "server busy: too many concurrent requests",
-                        Some(json!({ "maxConcurrency": self.config.max_concurrency })),
-                    ),
-                )
-                .with_header("Retry-After", "1");
-                let _ = response.write_to(&mut stream);
+                let rejecting = Arc::clone(&rejecting);
+                let config = Arc::clone(&self.config);
+                std::thread::spawn(move || {
+                    let _slot = WorkerSlot(rejecting);
+                    reject_busy_connection(stream, &config);
+                });
                 continue;
             }
             let config = Arc::clone(&self.config);
             let active = Arc::clone(&active);
             std::thread::spawn(move || {
-                struct Release(Arc<AtomicUsize>);
-                impl Drop for Release {
-                    fn drop(&mut self) {
-                        self.0.fetch_sub(1, Ordering::SeqCst);
-                    }
-                }
-                let _release = Release(active);
+                let _slot = WorkerSlot(active);
                 serve_connection(stream, &config);
             });
         }
@@ -313,16 +309,80 @@ fn http_error(status: u16, code: i64, message: impl Into<String>) -> HttpRespons
     )
 }
 
+/// Apply an absolute deadline across all reads or writes in one HTTP phase.
+/// A socket read timeout alone resets after each byte and permits slow peers
+/// to occupy a worker indefinitely.
+struct DeadlineIo {
+    stream: TcpStream,
+    deadline: Instant,
+}
+
+impl DeadlineIo {
+    fn new(stream: TcpStream, timeout: Duration) -> Self {
+        let now = Instant::now();
+        Self {
+            stream,
+            deadline: now.checked_add(timeout).unwrap_or(now),
+        }
+    }
+
+    fn remaining(&self) -> io::Result<Duration> {
+        self.deadline
+            .checked_duration_since(Instant::now())
+            .filter(|remaining| !remaining.is_zero())
+            .ok_or_else(|| io::Error::new(io::ErrorKind::TimedOut, "HTTP I/O deadline exceeded"))
+    }
+}
+
+impl Read for DeadlineIo {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let remaining = self.remaining()?.max(Duration::from_millis(1));
+        self.stream.set_read_timeout(Some(remaining))?;
+        self.stream.read(buf)
+    }
+}
+
+impl Write for DeadlineIo {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        let remaining = self.remaining()?.max(Duration::from_millis(1));
+        self.stream.set_write_timeout(Some(remaining))?;
+        self.stream.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        self.remaining()?;
+        self.stream.flush()
+    }
+}
+
 fn serve_connection(stream: TcpStream, config: &HttpConfig) {
-    let mut writer = match stream.try_clone() {
+    let writer = match stream.try_clone() {
         Ok(w) => w,
         Err(_) => return,
     };
-    let mut reader = BufReader::new(stream);
+    let mut reader = BufReader::new(DeadlineIo::new(stream, config.io_timeout));
     let response = match read_request(&mut reader) {
         Ok(request) => handle_http_request(&request, config),
         Err(response) => response,
     };
+    let mut writer = DeadlineIo::new(writer, config.io_timeout);
+    let _ = response.write_to(&mut writer);
+}
+
+fn reject_busy_connection(stream: TcpStream, config: &HttpConfig) {
+    let mut reader = BufReader::new(DeadlineIo::new(stream, config.io_timeout));
+    let _ = read_request(&mut reader);
+    let mut writer = DeadlineIo::new(reader.into_inner().stream, config.io_timeout);
+    let response = HttpResponse::json(
+        503,
+        &protocol::error_response(
+            &Value::Null,
+            protocol::INTERNAL_ERROR,
+            "server busy: too many concurrent requests",
+            Some(json!({ "maxConcurrency": config.max_concurrency })),
+        ),
+    )
+    .with_header("Retry-After", "1");
     let _ = response.write_to(&mut writer);
 }
 
