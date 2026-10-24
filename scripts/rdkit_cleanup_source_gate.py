@@ -245,22 +245,29 @@ def main() -> None:
     if args.previous_source:
         previous = json.loads(args.previous_source.read_text())
         if (previous["source_rows"] != len(corpus)
-                or previous["compatible_rows"] != len(compatible)
                 or previous["corpus_sha256"] != sha256(corpus_path)
                 or previous["rdkit_version"] != rdBase.rdkitVersion
                 or {row["index"] for row in previous["oracle_errors"]}
-                    != {row["index"] for row in errors}
-                or {row["index"] for row in previous["excluded"]}
-                    != {row["index"] for row in excluded}):
+                    != {row["index"] for row in errors}):
             raise ValueError("previous source report uses a different corpus or oracle")
+        all_indices = set(range(len(corpus)))
+        oracle_error_indices = {row["index"] for row in errors}
+        previous_excluded = {row["index"] for row in previous["excluded"]}
+        current_excluded = {row["index"] for row in excluded}
+        previous_compatible = all_indices - oracle_error_indices - previous_excluded
+        current_compatible = all_indices - oracle_error_indices - current_excluded
         previous_mismatches = {row["index"] for row in previous["mismatches"]}
         current_mismatches = {row["index"] for row in mismatches}
+        previous_exact_indices = previous_compatible - previous_mismatches
+        current_exact_indices = current_compatible - current_mismatches
         comparison = {
             "previous_source_commit": previous["source_commit"],
             "previous_report_sha256": sha256(args.previous_source),
             "previous_exact": previous["exact_rows"],
-            "fixed_indices": sorted(previous_mismatches - current_mismatches),
-            "regressed_indices": sorted(current_mismatches - previous_mismatches),
+            "fixed_indices": sorted(previous_mismatches & current_exact_indices),
+            "regressed_indices": sorted(previous_exact_indices & current_mismatches),
+            "newly_excluded_indices": sorted(previous_compatible - current_compatible),
+            "newly_compatible_indices": sorted(current_compatible - previous_compatible),
         }
         if previous.get("reionize_mismatches") is not None:
             previous_reionize_mismatches = {
@@ -297,15 +304,18 @@ def main() -> None:
             str(path.relative_to(ROOT)): sha256(path)
             for path in (
                 ROOT / "crates/chematic-chem/src/standardize.rs",
+                ROOT / "crates/chematic-chem/src/standardize/pipeline.rs",
                 ROOT / "crates/chematic-chem/src/standardize/reionize.rs",
                 ROOT / "crates/chematic-chem/src/standardize/cleanup.rs",
                 ROOT / "crates/chematic-chem/src/standardize/cleanup/acid_base.rs",
                 ROOT / "crates/chematic-chem/src/hydrogen.rs",
                 ROOT / "crates/chematic-chem/src/standardize/groups.rs",
                 ROOT / "crates/chematic-core/src/molecule/builder.rs",
+                ROOT / "crates/chematic-core/src/molecule/metadata.rs",
                 ROOT / "crates/chematic-chem/examples/cleanup_rdkit_dump.rs",
                 ROOT / "crates/chematic-smiles/src/lib.rs",
                 ROOT / "crates/chematic-smiles/src/rdkit/mod.rs",
+                ROOT / "crates/chematic-smiles/src/rdkit/cleanup_write.rs",
                 ROOT / "scripts/rdkit_cleanup_source_gate.py",
             )
         },

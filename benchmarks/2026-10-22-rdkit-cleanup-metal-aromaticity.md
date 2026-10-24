@@ -14,3 +14,9 @@ Evidence: [stress machine report](../validation/results/rdkit-cleanup-metal-arom
 `python3 scripts/check_standardization_source_evidence.py`, `cargo test --locked -p chematic-chem`, `cargo clippy --locked -p chematic-chem --all-targets -- -D warnings`, and `cargo fmt --all -- --check` passed locally.
 
 The reaction and R-group comparison boundaries remain as described in [the workflow packet](2026-10-18-rdkit-workflows-followup.md). This result does not establish overall superiority to RDKit.
+
+## Integrated-PR recheck (2026-10-24)
+
+The aggregated PR candidate was rebuilt and compared again with RDKit 2026.09.1. On the independent 10k corpus, Cleanup improved from 9,997 to 9,998 exact rows with no newly mismatching row. On the 4,072-row stress corpus, all 12 previously comparable Cleanup differences became exact. Fourteen malformed or unsupported inputs moved from permissive parsing to an explicit source refusal, so the shared comparable set is now 4,055 rows rather than 4,069; those refusals are recorded separately and are not counted as exact matches.
+
+Current-source evidence: [stress report](../validation/results/rdkit-cleanup-integrated-prs-stress-2026-10-24.json) and [10k report](../validation/results/rdkit-cleanup-integrated-prs-10k-2026-10-24.json). The source-evidence checker now verifies both output changes and compatible-set changes instead of accepting a hash-only update.

@@ -9,10 +9,10 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RECORD = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-stress-2026-10-22.json"
-PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-square-planar-stress-2026-10-22.json"
-TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-10k-2026-10-22.json"
-TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-square-planar-10k-2026-10-22.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-integrated-prs-stress-2026-10-24.json"
+PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-stress-2026-10-22.json"
+TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-integrated-prs-10k-2026-10-24.json"
+TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-metal-aromaticity-10k-2026-10-22.json"
 REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
 SUMMARY = ROOT / "benchmarks/2026-10-22-rdkit-reionize-in-memory-stereo.json"
@@ -62,12 +62,29 @@ def check_comparison(record: dict, previous: dict, previous_path: Path) -> None:
     assert not comparison["regressed_indices"]
     assert digest(previous_path) == comparison["previous_report_sha256"]
     assert previous["source_commit"] == comparison["previous_source_commit"]
+    all_indices = set(range(record["source_rows"]))
+    previous_unscored = {
+        row["index"] for field in ("excluded", "oracle_errors") for row in previous[field]
+    }
+    current_unscored = {
+        row["index"] for field in ("excluded", "oracle_errors") for row in record[field]
+    }
+    previous_compatible = all_indices - previous_unscored
+    current_compatible = all_indices - current_unscored
     old_cleanup = {row["index"] for row in previous["mismatches"]}
     new_cleanup = {row["index"] for row in record["mismatches"]}
-    assert comparison["fixed_indices"] == sorted(old_cleanup - new_cleanup)
-    assert comparison["regressed_indices"] == sorted(new_cleanup - old_cleanup)
+    previous_exact = previous_compatible - old_cleanup
+    current_exact = current_compatible - new_cleanup
+    assert comparison["fixed_indices"] == sorted(old_cleanup & current_exact)
+    assert comparison["regressed_indices"] == sorted(previous_exact & new_cleanup)
+    assert comparison.get("newly_excluded_indices", []) == sorted(
+        previous_compatible - current_compatible
+    )
+    assert comparison.get("newly_compatible_indices", []) == sorted(
+        current_compatible - previous_compatible
+    )
     assert comparison["previous_exact"] == previous["exact_rows"]
-    assert record["exact_rows"] == previous["exact_rows"] + len(old_cleanup - new_cleanup)
+    assert record["exact_rows"] == len(current_exact)
     if previous["reionize_mismatches"] is None:
         assert previous["reionize_exact_rows"] == previous["reionize_compatible_rows"]
     old_reionize = {row["index"] for row in previous["reionize_mismatches"] or []}
@@ -87,19 +104,26 @@ def main() -> None:
     previous = json.loads(PREVIOUS_RECORD.read_text())
     check_current_record(record)
     check_comparison(record, previous, PREVIOUS_RECORD)
-    assert record["baseline_comparison"]["fixed_indices"] == [1686]
+    assert record["baseline_comparison"]["fixed_indices"] == [
+        403, 1471, 1497, 1630, 2478, 2602, 2677, 2787, 3154, 3238, 3501, 3737
+    ]
     assert record["baseline_comparison"]["reionize_fixed_indices"] == []
-    assert record["reionize_exact_rows"] == previous["reionize_exact_rows"] == 4069
-    assert record["normalize_exact_rows"] == previous["normalize_exact_rows"] == 4069
+    assert record["baseline_comparison"]["newly_excluded_indices"] == [
+        1334, 1373, 1400, 1550, 1904, 2253, 2449, 2671, 2859, 3056, 3235, 3497,
+        4019, 4066
+    ]
+    assert record["reionize_exact_rows"] == record["normalize_exact_rows"] == 4055
+    assert previous["reionize_exact_rows"] == previous["normalize_exact_rows"] == 4069
     assert record["oracle_nonreparseable_indices"] == [1497, 1630, 2677]
-    assert record["source_nonreparseable_indices"] == []
+    assert record["source_nonreparseable_indices"] == [1497, 1630, 2677]
 
     ten_k = json.loads(TEN_K_RECORD.read_text())
     ten_k_previous = json.loads(TEN_K_PREVIOUS.read_text())
     check_current_record(ten_k)
     check_comparison(ten_k, ten_k_previous, TEN_K_PREVIOUS)
-    assert ten_k["exact_rows"] == ten_k_previous["exact_rows"] == 9997
-    assert ten_k["baseline_comparison"]["fixed_indices"] == []
+    assert ten_k["exact_rows"] == 9998
+    assert ten_k_previous["exact_rows"] == 9997
+    assert ten_k["baseline_comparison"]["fixed_indices"] == [6991]
 
     # Keep the earlier Reionize evidence frozen while current source hashes
     # are checked against the new Cleanup report above.
