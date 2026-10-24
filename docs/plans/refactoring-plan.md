@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R26 structural-debt program is complete. Implementation history and
+The R0-R27 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -31,9 +31,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R24 | Shared validation and CI harnesses | Complete |
 | R25 | Final orchestration splits and release-grade verification | Complete |
 | R26 | Low-risk test extraction and bounded parser/CIP ownership | Complete |
+| R27 | Structural-alert catalog and test ownership | Complete |
 
-R17-R26 reduced the checked debt baseline from 14 file and 76 function
-allowances to **4 file and 50 function allowances**. The program separated:
+R17-R27 reduced the checked debt baseline from 14 file and 76 function
+allowances to **3 file and 50 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -47,11 +48,17 @@ out of production modules, isolated the reaction-SMARTS parser, and gave E/Z
 completeness its own CIP module. This closed the PDB, POSCAR, reaction-SMARTS
 and CIP file allowances without changing public paths or chemistry behavior.
 
-R0-R25 passed the full release-grade verification stack before merge. R26 was
-validated with the four affected crates' complete library-test suites,
-warnings-as-errors clippy, formatting, the budget scanner, and diff checks;
-repository-wide release and binding gates remain the responsibility of the PR
-CI before merge.
+R27 moved the immutable PAINS and Brenk SMARTS catalogs and their tests out of
+the alert runtime module. Pattern text and order, cache construction, matching
+budgets, public APIs, and fail-safe behavior are unchanged. This closes the
+`alerts.rs` file allowance without treating ordered chemistry data as runtime
+logic.
+
+R0-R26 passed the full release-grade verification stack before merge. R27 was
+validated with the affected crate's complete library-test suite,
+warnings-as-errors clippy, formatting, catalog-preservation checks, the budget
+scanner, and diff checks; repository-wide release and binding gates remain the
+responsibility of the PR CI before merge.
 
 ## Retained debt
 

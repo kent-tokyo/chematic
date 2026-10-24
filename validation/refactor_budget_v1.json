@@ -10,7 +10,6 @@
     "crates/chematic-smiles/src/rdkit/periodic.rs"
   ],
   "file_allowances": {
-    "crates/chematic-chem/src/alerts.rs": 2579,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-smiles/src/rdkit/depict.rs": 2303

@@ -1,6 +1,6 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the completed R9-R26
+This inventory records the R8 cleanup review and the completed R9-R27
 structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
@@ -9,14 +9,13 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The completed R26 program contains 4 file allowances and 50 function
+The completed R27 program contains 3 file allowances and 50 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
 The retained large files fall into three reviewed groups:
 
-- ordered chemistry rules and perception engines: `alerts.rs` and Avalon
-  `fingerprint.rs`;
+- ordered chemistry rules and perception engines: Avalon `fingerprint.rs`;
 - compatibility ports whose branch and accumulation order is observable:
   RDKit depiction;
 - native compatibility infrastructure: InChI deduplication.
@@ -45,6 +44,11 @@ R26 then extracts PDB, POSCAR, reaction-SMARTS, SMARTS-parity and SMILES-writer
 tests, isolates the reaction-SMARTS parser, and moves E/Z completeness behind
 the existing CIP facade. The public APIs and the two moved parser function
 allowances retain their previous contracts and ratchet values.
+R27 separates the immutable PAINS and Brenk SMARTS catalogs and alert tests
+from the runtime matcher. Catalog order remains unchanged and observable;
+the PAINS table is split into two ordered declaration modules, so no new
+scanner exclusion is needed and the runtime module falls below the file-size
+budget.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 
