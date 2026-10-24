@@ -46,6 +46,7 @@ means the operation is not exposed on that binding.
 | CIF, small molecule | R/W | R | — | No Python writer or WASM surface |
 | PQR | R/W | R/W | R/W | Numeric atom fields are checked |
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ does not carry bonds |
+| [DL-POLY CONFIG/REVCON](dlpoly-config.md) | bounded R/W | bounded R/W | bounded R/W | Single record; source-unit positions/velocities/forces and cell; imcon 0..3 |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
 | ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |

@@ -37,7 +37,9 @@ mod fhiaims;
 use fhiaims::*;
 mod dmol3;
 use dmol3::*;
+mod dlpoly;
 mod exyz;
+use dlpoly::{parse_dlpoly_config, write_dlpoly_config};
 mod mopac;
 use exyz::*;
 mod gro;
@@ -1452,6 +1454,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_dmol3,
         select_pdb_atoms,
         parse_exyz,
+        parse_dlpoly_config,
+        write_dlpoly_config,
         write_exyz,
         parse_turbomole,
         write_turbomole,

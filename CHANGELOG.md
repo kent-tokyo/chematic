@@ -14,6 +14,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- DL-POLY CONFIG/REVCON single-record read/write in Rust, Python, WASM/Node
+  and the CLI, retaining source-unit positions, velocities, forces, cell vectors,
+  opaque names/suffixes and optional IDs/counts. Unsupported boundary modes,
+  inconsistent levels, unknown JSON fields and precision-losing output are refused.
+
 ### Fixed
 
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps

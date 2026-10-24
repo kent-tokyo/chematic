@@ -40,7 +40,12 @@ pub mod cml;
 pub mod cml_named;
 pub mod conversion;
 pub mod cube;
+pub mod dlpoly;
 pub mod dmol3;
+pub use dlpoly::{
+    DlpolyAtom, DlpolyConfig, DlpolyConfigLimits, DlpolyError, dlpoly_config_from_json,
+    parse_dlpoly_config, parse_dlpoly_config_with_limits, write_dlpoly_config,
+};
 pub mod error;
 pub mod exyz;
 pub mod fhiaims;
