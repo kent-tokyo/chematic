@@ -583,7 +583,7 @@ fn parse_mol2_impl(
 /// `NO_CHARGES` refers to the partial-charge column.
 ///
 /// `coords` must have one entry per atom in `mol`.  Missing entries use
-/// `(0.0, 0.0, 0.0)`.
+/// `(0.0, 0.0, 0.0)`. Finite coordinate values retain binary64 precision.
 pub fn write_mol2_source(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     let mut out = String::new();
 
@@ -608,9 +608,12 @@ pub fn write_mol2_source(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
             .copied()
             .unwrap_or((0.0, 0.0, 0.0));
         // Use symbol as atom type (simplified; no hybridisation-based suffix).
-        out.push_str(&format!(
-            "{i:>6} {sym:<4} {x:>10.4} {y:>10.4} {z:>10.4} {sym:<8} 1  LIG  0.0000\n"
-        ));
+        out.push_str(&format!("{i:>6} {sym:<4} "));
+        for value in [x, y, z] {
+            crate::mol2_tripos::push_mol2_real(&mut out, value);
+            out.push(' ');
+        }
+        out.push_str(&format!("{sym:<8} 1  LIG  0.0000\n"));
     }
 
     // BOND section.

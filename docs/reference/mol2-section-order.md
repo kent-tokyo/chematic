@@ -3,7 +3,9 @@
 The editable/generated MOL2 writers offer an explicit `AtomBondAdjacent`
 policy for readers expecting ATOM immediately followed by BOND, as requested
 in [Open Babel #2350](https://github.com/openbabel/openbabel/issues/2350).
-The default keeps the existing ATOM → UNITY_ATOM_ATTR → BOND order and bytes.
+The default keeps the existing ATOM → UNITY_ATOM_ATTR → BOND order.
+[Numeric regeneration](mol2-numeric-preservation.md) retains extra digits when
+four decimals would change finite coordinates or partial charges.
 
 This is a reader-specific choice. On the nine original controls, Open Babel
 3.2.1 preserved formal charges with the default order. With adjacent ATOM/BOND,
@@ -30,7 +32,7 @@ const adjacent = wasm.smiles_to_mol2('[O-2]', true);
 
 Rust provides `write_mol2_with_section_order` and
 `write_mol2_record_with_section_order` with `Mol2SectionOrder::AtomBondAdjacent`.
-The existing `write_mol2` and `write_mol2_record` retain their behavior.
+The existing `write_mol2` and `write_mol2_record` retain their default section order.
 No CLI option is added. No exports are added to Python or WASM.
 
 The option moves UNITY after BOND without dropping its attributes. It preserves

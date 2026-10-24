@@ -141,3 +141,12 @@ to claim general Open Babel file-format superiority.
 - [Open Babel supported formats](https://openbabel.org/docs/FileFormats/Overview.html)
 - [Open Babel `obabel` CLI](https://openbabel.org/docs/Command-line_tools/babel.html)
 - [Open Babel 3.2.1 release](https://github.com/openbabel/openbabel/releases/tag/openbabel-3-2-1)
+
+## Native MOL2 numeric regeneration
+
+[The numeric preservation diagnostic](mol2-numeric-preservation.md) exercises
+editable record output, separately from exact source retention. On eight
+original inputs, RDKit 2026.09.1 reads exact coordinate/partial-charge vectors
+from the native candidate in 8/8 cases each. Open Babel 3.2.1 default MOL2
+rewrites retain them in 3/8 and 5/8 cases respectively. The linked packet
+discloses source qualification, native-only extremes and measurement limits.
