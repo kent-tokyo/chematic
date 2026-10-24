@@ -27,7 +27,7 @@ test('LPMD writer uses edits and rejects ambiguous JSON and resource excess',()=
  const r=structuredClone(packet.valid[0].record);r.frames[0].cell[0][0]='10';r.frames[0].atoms[0][1]='.5';
  assert.deepEqual(JSON.parse(wasm.lpmd_positions_angstrom_json(JSON.stringify(r)))[0][0],[5,2,8]);
  const s=JSON.stringify(r);
- for(const bad of [s.replace('"columns":','"columns":[],"columns":'),s.replace('"cell":','"c\\u0065ll":[],"cell":'),s.replace('{','{"unknown":1,')]) assert.throws(()=>wasm.write_lpmd_from_json(bad));
+ for(const bad of [s.replace('"columns":','"columns":[],"columns":'),s.replace('"cell":','"c\\u0065ll":[],"cell":'),JSON.stringify({...r,unknown:1})]) assert.throws(()=>wasm.write_lpmd_from_json(bad));
  assert.throws(()=>wasm.parse_lpmd_json(' '.repeat(1000001)));
  const huge=structuredClone(r);huge.frames=Array.from({length:1025},()=>r.frames[0]);
  assert.throws(()=>wasm.write_lpmd_from_json(JSON.stringify(huge)));
