@@ -56,6 +56,15 @@ geometry. The opt-in CLI route removes non-stereogenic atom tags and rejects
 non-stereogenic double-bond markers using the RDKit-compatible legacy
 perception port. An unsupported perception input is
 reported as an error instead of being silently counted as a nonmatch.
+For RDKit-style aromaticity and ring-query interpretation, add
+`--rdkit-parity` to either substructure command. This selects the existing
+experimental aromaticity and symmetrized-SSSR search profile; a perception
+or ring-model failure is reported as an error. The flag can be combined with
+`--use-chirality`. The unflagged commands retain native search semantics.
+The comparison in
+`validation/results/rdkit-cli-search-25query-stress-v1-2025.09.3.json`
+records this option's agreement against RDKit 2025.09.3; it is a bounded
+Boolean search comparison, not a full SMARTS compatibility certificate.
 Directional markers on a closing ring digit are interpreted from the closing
 atom back to the opening atom, including in stereo-sensitive SMARTS searches.
 The reproducible CLI regression gate is

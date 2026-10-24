@@ -64,6 +64,56 @@ fn json_output(args: &[&str], stdin: &str) -> Value {
 }
 
 #[test]
+fn rdkit_parity_search_perceives_aromaticity_in_single_and_batch_modes() {
+    // RDKit 2025.09.3 sanitizes aromatic cyclobutadiene to a non-aromatic
+    // ring, while a Kekule benzene is perceived as aromatic.
+    let native = json_output(&["substructure", "c1ccc1", "c"], "");
+    assert_eq!(native["match_count"], 4);
+    let parity = json_output(&["substructure", "c1ccc1", "c", "--rdkit-parity"], "");
+    assert_eq!(parity["match_count"], 0);
+    assert_eq!(parity["rdkit_parity"], true);
+    let arsenic_query = json_output(&["substructure", "s1cccc1", "[as]", "--rdkit-parity"], "");
+    assert_eq!(arsenic_query["match_count"], 0);
+    let opposite_alkene = json_output(
+        &[
+            "substructure",
+            "F/C=C/F",
+            "F/C=C\\F",
+            "--rdkit-parity",
+            "--use-chirality",
+        ],
+        "",
+    );
+    assert_eq!(opposite_alkene["match_count"], 0);
+    let explicit_h = json_output(
+        &["substructure", "[H][C@](F)(Cl)Br", "[D3]", "--rdkit-parity"],
+        "",
+    );
+    assert_eq!(explicit_h["matches"], json!([[0]]));
+    let ammonia = json_output(
+        &["substructure", "[H]N([H])[H]", "[D3]", "--rdkit-parity"],
+        "",
+    );
+    assert_eq!(ammonia["match_count"], 0);
+    for parity in [false, true] {
+        let mut args = vec!["substructure", "[*H]", "[H1]"];
+        if parity {
+            args.push("--rdkit-parity");
+        }
+        let wildcard_h = json_output(&args, "");
+        assert_eq!(wildcard_h["match_count"], 1);
+    }
+
+    let batch = json_output(
+        &["batch-substructure", "--rdkit-parity"],
+        "c1ccc1\tc\nC1=CC=CC=C1\tc\n",
+    );
+    assert_eq!(batch["valid_count"], 2);
+    assert_eq!(batch["records"][0]["substructure"]["match_count"], 0);
+    assert_eq!(batch["records"][1]["substructure"]["match_count"], 6);
+}
+
+#[test]
 fn conversion_round_trips_all_advertised_molecular_formats() {
     for format in ["v3000", "cml", "cjson", "moljson", "cdxml"] {
         let out = invoke(

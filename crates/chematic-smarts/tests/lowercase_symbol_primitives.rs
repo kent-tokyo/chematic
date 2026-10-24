@@ -29,12 +29,22 @@ fn lowercase_letters_after_an_aromatic_atom_are_primitives() {
         ("c1ccsc1", "[sa]", 1),
         ("c1ccsc1", "[ca]", 4),
         ("c1cc[se]c1", "[se]", 1),
+        ("s1cccc1", "[as]", 0),
+        ("s1cccc1", "[a]", 5),
         ("c1cc[se]c1", "[cr6]", 0),
         ("C[Se]C", "[se]", 0),
         ("[Na+].[Cl-]", "[Na]", 1),
     ] {
         assert_eq!(count(smiles, smarts), expected, "{smarts} on {smiles}");
     }
+}
+
+#[test]
+fn bracket_as_is_arsenic_not_aromatic_any_followed_by_sulfur() {
+    // This native target retains the source's aromatic flags; RDKit's
+    // MolFromSmiles sanitizer can choose a non-aromatic view for the same text.
+    assert_eq!(count("[as]1ccccc1", "[as]"), 1);
+    assert_eq!(count("s1cccc1", "[as]"), 0);
 }
 
 #[test]
