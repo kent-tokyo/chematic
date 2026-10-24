@@ -301,6 +301,14 @@ struct Walk<'a> {
     bond_rsize: &'a [u32],
 }
 
+fn chain_path_emits(nbonds: i32, minbonds: i32, atom_color: i32, flags: u32) -> bool {
+    nbonds >= minbonds
+        && (atom_color > 0 || flags & IGNORE_TERM_SYMBOL != 0)
+        && flags & PROCESS_CHAINS != 0
+        && (flags & FORCED_HETERO_END == 0 || flags & IGNORE_TERM_SYMBOL != 0 || atom_color != 6)
+        && atom_color > 1
+}
+
 impl Walk<'_> {
     /// `SetPathBitsRec`.
     #[allow(clippy::too_many_arguments)]
@@ -377,14 +385,7 @@ impl Walk<'_> {
                 if flags & IGNORE_PATH_SYMBOL == 0 {
                     seed = ns(seed, i64::from(acolor));
                 }
-                if nbonds >= minbonds
-                    && (acolor > 0 || flags & IGNORE_TERM_SYMBOL != 0)
-                    && flags & PROCESS_CHAINS != 0
-                    && (flags & FORCED_HETERO_END == 0
-                        || flags & IGNORE_TERM_SYMBOL != 0
-                        || acolor != 6)
-                    && acolor > 1
-                {
+                if chain_path_emits(nbonds, minbonds, acolor, flags) {
                     if flags & IGNORE_TERM_SYMBOL != 0 {
                         fp[hash_position(seed, ncounts)] += 1;
                     } else {

@@ -1,6 +1,6 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the completed R9-R30
+This inventory records the R8 cleanup review and the completed R9-R31
 structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
@@ -9,7 +9,7 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The completed R30 program contains 0 file allowances and 50 function
+The completed R31 program contains 0 file allowances and 47 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
@@ -56,6 +56,10 @@ the orchestration file below the scanner limit.
 R30 physically separates Avalon's ordered pattern-counting function from its
 hash, valence and walk helpers. The include-based layout preserves the port's
 source order and wrapping arithmetic while closing the last file allowance.
+R31 removes three more function allowances by isolating path-emission policy,
+one-ring aromaticity evaluation and terminal-bond shortening. The retained 47
+functions were re-reviewed against their domain fixtures and remain explicit
+ratchet entries rather than targets for mechanical splitting.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 

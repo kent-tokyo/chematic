@@ -71,14 +71,6 @@
       "decisions": 375,
       "lines": 1485
     },
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::path_bits#1": {
-      "decisions": 29,
-      "lines": 107
-    },
-    "crates/chematic-fp/src/rdkit_avalon/rings.rs::perceive_aromatic_bonds#1": {
-      "decisions": 26,
-      "lines": 76
-    },
     "crates/chematic-fp/src/rdkit_avalon/rings.rs::perceive_dy_aromaticity#1": {
       "decisions": 58,
       "lines": 173
@@ -138,10 +130,6 @@
     "crates/chematic-smiles/src/rdkit/depict.rs::embed_nontetrahedral_stereo#1": {
       "decisions": 29,
       "lines": 134
-    },
-    "crates/chematic-smiles/src/rdkit/depict/embedded_frag.rs::remove_collisions_shorten_bonds#1": {
-      "decisions": 28,
-      "lines": 83
     },
     "crates/chematic-smiles/src/rdkit/inchi_read.rs::rdkit_molecule_from_inchi_output#1": {
       "decisions": 52,

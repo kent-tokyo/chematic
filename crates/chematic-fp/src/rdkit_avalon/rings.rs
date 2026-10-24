@@ -472,6 +472,68 @@ pub(crate) fn set_ring_size_flags(
     (atom_rsize, bond_rsize)
 }
 
+fn perceive_aromatic_ring(
+    ring: &RingNode,
+    mol: &AvalonMolecule,
+    bond_types: &mut [i32],
+    bond_is_in_ring: &[bool],
+    sp_count: &mut [i32],
+) -> bool {
+    sp_count.iter_mut().for_each(|count| *count = 0);
+    let mut ndouble = 0;
+    let mut nsingle = 0;
+    for i in ring.bond_set.members() {
+        if bond_types[i] == SINGLE {
+            nsingle += 1;
+        }
+    }
+    let mut is_cumulene = false;
+    for i in ring.bond_set.members() {
+        let bond = &mol.bonds[i];
+        if bond_types[i] == DOUBLE {
+            ndouble += 1;
+            sp_count[bond.atoms[0] as usize] += 1;
+            if sp_count[bond.atoms[0] as usize] > 1 {
+                is_cumulene = true;
+            }
+            sp_count[bond.atoms[1] as usize] += 1;
+            if sp_count[bond.atoms[1] as usize] > 1 {
+                is_cumulene = true;
+            }
+        } else if bond_types[i] == TRIPLE {
+            is_cumulene = true;
+        }
+    }
+    for i in ring.bond_set.members() {
+        let bond = &mol.bonds[i];
+        if bond_types[i] == AROMATIC {
+            if sp_count[bond.atoms[0] as usize] == 0 {
+                sp_count[bond.atoms[0] as usize] += 1;
+            }
+            if sp_count[bond.atoms[1] as usize] == 0 {
+                sp_count[bond.atoms[1] as usize] += 1;
+            }
+        }
+    }
+    let mut ring_is_aromatic = !is_cumulene && (ring.cardinality - 2) % 4 == 0;
+    for i in ring.bond_set.members() {
+        let bond = &mol.bonds[i];
+        if sp_count[bond.atoms[0] as usize] != 1 || sp_count[bond.atoms[1] as usize] != 1 {
+            ring_is_aromatic = false;
+        }
+    }
+    let mut changed = false;
+    if ring_is_aromatic && (ndouble > 0 || nsingle > 0) {
+        for i in ring.bond_set.members() {
+            if bond_is_in_ring[i] && bond_types[i] != AROMATIC {
+                changed = true;
+                bond_types[i] = AROMATIC;
+            }
+        }
+    }
+    changed
+}
+
 /// `PerceiveAromaticBonds`: sets `bond_types` to `AROMATIC` for bonds in
 /// Hückel-sized rings of sp2 atoms.
 pub(crate) fn perceive_aromatic_bonds(mol: &AvalonMolecule, bond_types: &mut [i32]) {
@@ -479,9 +541,9 @@ pub(crate) fn perceive_aromatic_bonds(mol: &AvalonMolecule, bond_types: &mut [i3
     let n_atoms = mol.atoms.len();
     let mut bond_is_in_ring = vec![false; mol.bonds.len()];
     let base = combine_rings(ring_list(&graph));
-    for r in &base {
-        for m in r.bond_set.members() {
-            bond_is_in_ring[m] = true;
+    for ring in &base {
+        for member in ring.bond_set.members() {
+            bond_is_in_ring[member] = true;
         }
     }
     let pairs = proper_ring_pairs(&base, n_atoms, &graph);
@@ -492,57 +554,9 @@ pub(crate) fn perceive_aromatic_bonds(mol: &AvalonMolecule, bond_types: &mut [i3
     let mut sp_count = vec![0i32; n_atoms + 1];
     loop {
         let mut changed = false;
-        for r in &rings {
-            sp_count.iter_mut().for_each(|c| *c = 0);
-            let mut ndouble = 0;
-            let mut nsingle = 0;
-            for i in r.bond_set.members() {
-                if bond_types[i] == SINGLE {
-                    nsingle += 1;
-                }
-            }
-            let mut is_cumulene = false;
-            for i in r.bond_set.members() {
-                let b = &mol.bonds[i];
-                if bond_types[i] == DOUBLE {
-                    ndouble += 1;
-                    sp_count[b.atoms[0] as usize] += 1;
-                    if sp_count[b.atoms[0] as usize] > 1 {
-                        is_cumulene = true;
-                    }
-                    sp_count[b.atoms[1] as usize] += 1;
-                    if sp_count[b.atoms[1] as usize] > 1 {
-                        is_cumulene = true;
-                    }
-                } else if bond_types[i] == TRIPLE {
-                    is_cumulene = true;
-                }
-            }
-            for i in r.bond_set.members() {
-                let b = &mol.bonds[i];
-                if bond_types[i] == AROMATIC {
-                    if sp_count[b.atoms[0] as usize] == 0 {
-                        sp_count[b.atoms[0] as usize] += 1;
-                    }
-                    if sp_count[b.atoms[1] as usize] == 0 {
-                        sp_count[b.atoms[1] as usize] += 1;
-                    }
-                }
-            }
-            let mut ring_is_aromatic = !is_cumulene && (r.cardinality - 2) % 4 == 0;
-            for i in r.bond_set.members() {
-                let b = &mol.bonds[i];
-                if sp_count[b.atoms[0] as usize] != 1 || sp_count[b.atoms[1] as usize] != 1 {
-                    ring_is_aromatic = false;
-                }
-            }
-            if ring_is_aromatic && (ndouble > 0 || nsingle > 0) {
-                for i in r.bond_set.members() {
-                    if bond_is_in_ring[i] && bond_types[i] != AROMATIC {
-                        changed = true;
-                        bond_types[i] = AROMATIC;
-                    }
-                }
+        for ring in &rings {
+            if perceive_aromatic_ring(ring, mol, bond_types, &bond_is_in_ring, &mut sp_count) {
+                changed = true;
             }
         }
         if !changed {

@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R30 structural-debt program is complete. Implementation history and
+The R0-R31 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -35,9 +35,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R28 | InChI dedup and indexed-graph ownership | Complete |
 | R29 | RDKit depiction geometry and fragment ownership | Complete |
 | R30 | Avalon fingerprint orchestration ownership | Complete |
+| R31 | Final function-debt audit and closeout | Complete |
 
-R17-R30 reduced the checked debt baseline from 14 file and 76 function
-allowances to **0 file and 50 function allowances**. The program separated:
+R17-R31 reduced the checked debt baseline from 14 file and 76 function
+allowances to **0 file and 47 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -73,11 +74,18 @@ bounded physical include file. Hash insertion order, wrapping arithmetic,
 branch order, public flags and fingerprint output remain unchanged. This
 closes the final production-file allowance.
 
-R0-R29 passed their affected suites and PR gates before merge. R30 was
-validated with the affected crate's complete test suite, warnings-as-errors
-clippy, formatting, source-preservation and fingerprint fixture checks, the
-budget scanner, and diff checks; repository-wide release and binding gates
-remain the responsibility of the PR CI before merge.
+R31 extracted three bounded decisions from Avalon path emission, Avalon ring
+aromaticity and RDKit-compatible collision repair. The original traversal,
+mutation and floating-point order are retained, while all three orchestration
+functions now satisfy the normal function budget. The remaining 47 entries
+were re-reviewed and retained because they are ordered chemistry ports,
+bounded searches, format state machines or generated-table dispatch.
+
+R0-R30 passed their affected suites and PR gates before merge. R31 was
+validated with the affected crates' complete test suites, warnings-as-errors
+clippy, formatting, frozen fingerprint and coordinate fixtures, the budget
+scanner, and diff checks; repository-wide release and binding gates remain the
+responsibility of the PR CI before merge.
 
 ## Retained debt
 

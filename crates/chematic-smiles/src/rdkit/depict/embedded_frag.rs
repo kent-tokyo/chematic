@@ -1065,6 +1065,28 @@ impl EFrag {
         Ok(())
     }
 
+    fn shorten_terminal_bond(
+        &mut self,
+        ctx: &Ctx,
+        atom: usize,
+        degree: usize,
+        fixed: bool,
+        respect_fixed: bool,
+    ) -> DResult<()> {
+        if degree != 1 || (respect_fixed && fixed) {
+            return Ok(());
+        }
+        let mut location = self.loc(atom)?;
+        let neighbour = ctx.deg1_neighbor(atom)?;
+        location = location.sub(self.at(neighbour).loc);
+        location = location.scale(0.9);
+        if location.length() > 0.75 {
+            location = location.add(self.at(neighbour).loc);
+            self.at(atom).loc = location;
+        }
+        Ok(())
+    }
+
     /// `removeCollisionsShortenBonds`.
     fn remove_collisions_shorten_bonds(&mut self, ctx: &Ctx) -> DResult<()> {
         let mut colls = self.find_collisions(ctx, false);
@@ -1095,26 +1117,8 @@ impl EFrag {
                 path.remove(0);
                 let n_open = ctx.any_non_ring_bonds(aid1, &path)?;
                 if n_open > 0 {
-                    if deg1 == 1 {
-                        let mut loc = self.loc(aid1)?;
-                        let aid_a = ctx.deg1_neighbor(aid1)?;
-                        loc = loc.sub(self.at(aid_a).loc);
-                        loc = loc.scale(0.9);
-                        if loc.length() > 0.75 {
-                            loc = loc.add(self.at(aid_a).loc);
-                            self.at(aid1).loc = loc;
-                        }
-                    }
-                    if deg2 == 1 && !fixed2 {
-                        let mut loc = self.loc(aid2)?;
-                        let aid_a = ctx.deg1_neighbor(aid2)?;
-                        loc = loc.sub(self.at(aid_a).loc);
-                        loc = loc.scale(0.9);
-                        if loc.length() > 0.75 {
-                            loc = loc.add(self.at(aid_a).loc);
-                            self.at(aid2).loc = loc;
-                        }
-                    }
+                    self.shorten_terminal_bond(ctx, aid1, deg1, fixed1, false)?;
+                    self.shorten_terminal_bond(ctx, aid2, deg2, fixed2, true)?;
                 } else {
                     let mut rpath = Vec::new();
                     let mut nbr_map = BTreeMap::new();
