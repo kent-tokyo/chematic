@@ -21,6 +21,8 @@ mod reaction_cx;
 mod registration;
 use reaction_cx::normalize_reaction_cxsmiles;
 
+mod nwchem;
+use nwchem::{parse_nwchem_geometry, write_nwchem_geometry};
 mod bgf;
 use bgf::{parse_bgf, write_bgf};
 
@@ -1460,6 +1462,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
+        parse_nwchem_geometry,
+        write_nwchem_geometry,
         parse_bgf,
         write_bgf,
         parse_exyz,

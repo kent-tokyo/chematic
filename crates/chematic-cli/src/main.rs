@@ -51,6 +51,19 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Preserve a Cartesian NWChem GEOMETRY block; full calculation decks refuse.
+    NwchemGeometry {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long, conflicts_with = "inspect")]
+        from_json: bool,
+        #[arg(long, default_value_t = 16 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Read/write one Tinker XYZ frame, preserving names, force-field types and connectivity.
     TinkerXyz {
         #[arg(short, long)]

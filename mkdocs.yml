@@ -83,6 +83,7 @@ nav:
     - RDKit Support Matrix: reference/rdkit-migration.md
   - Formats & Bindings:
     - Format Capability Matrix: reference/format-capabilities.md
+    - NWChem Geometry: reference/nwchem-geometry.md
     - Tinker XYZ: reference/tinker-xyz.md
     - DL-POLY CONFIG: reference/dlpoly-config.md
     - Molden Geometry & Vibrations: reference/molden-vibrations.md

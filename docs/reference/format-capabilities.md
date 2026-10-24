@@ -52,6 +52,7 @@ means the operation is not exposed on that binding.
 | [Molden geometry/vibrations](molden-vibrations.md) | bounded R/W | bounded R/W | bounded R/W | Explicit units and IR/Raman/modes; refuses GTO/MO and trajectories |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
+| NWChem input (`nw`), Cartesian GEOMETRY block | bounded R/W | bounded R/W | bounded R/W | [Units, center tags and nuclear attributes](nwchem-geometry.md); full calculation decks refuse |
 | ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |
 | ORCA output | R | R | R | No writer |
 | Gaussian input/log | R/W or R | R/W or R | bounded | Input and output are separate APIs |

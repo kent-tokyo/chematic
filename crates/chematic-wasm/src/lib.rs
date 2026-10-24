@@ -3,6 +3,8 @@
 //! Exposes a small, ergonomic API for parsing SMILES and computing molecular
 //! descriptors from JavaScript/TypeScript via `wasm-bindgen`.
 
+mod nwchem;
+pub use nwchem::*;
 mod bgf;
 pub use bgf::*;
 

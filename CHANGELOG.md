@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Editable Cartesian NWChem GEOMETRY blocks in Rust, Python, WASM/Node and CLI,
+  preserving explicit/omitted units and controls, case-sensitive center tags,
+  velocities, nuclear charges, isotope masses and nuclear models. Full job
+  decks and unsupported syntax refuse. Shared cases and a pinned same-XYZ
+  export comparison are documented in [NWChem geometry](docs/reference/nwchem-geometry.md).
 - Tinker XYZ (`txyz`) single-frame read/write in Rust, Python, WASM/Node and
   the CLI. Editable records retain opaque atom names, force-field type numbers,
   declared connectivity, Cartesian coordinates and optional periodic cells.

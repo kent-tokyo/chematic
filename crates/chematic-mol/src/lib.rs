@@ -22,6 +22,13 @@ pub use bgf::{
     parse_bgf, parse_bgf_with_limits, write_bgf,
 };
 
+pub mod nwchem;
+pub use nwchem::{
+    NwchemCenter, NwchemError, NwchemGeometry, NwchemLimits, NwchemNucleus, NwchemPrint,
+    nwchem_geometry_from_json, parse_nwchem_geometry, parse_nwchem_geometry_with_limits,
+    write_nwchem_geometry,
+};
+
 pub mod ccd;
 pub use ccd::{
     CcdAtom, CcdBond, CcdComponent, CcdError, CcdParseLimits, parse_ccd_component,
