@@ -44,6 +44,7 @@ means the operation is not exposed on that binding.
 | CDXML | bounded R/W | bounded R/W | bounded R/W | Rich editing and all ChemDraw semantics are out of scope |
 | PDB | R/W | R/W | R/W | Model/record and metadata handling is API-specific |
 | mmCIF | R/W | R/W | R/W | Molecular and crystallographic profiles are distinct |
+| Free Form Fractional (`fract`) | bounded R/W | bounded R/W | bounded R/W | [Single-cell decimal/uncertainty record](fract-preservation.md); CLI also available |
 | CIF, small molecule | R/W | R | — | No Python writer or WASM surface |
 | PQR | R/W | R/W | R/W | Numeric atom fields are checked |
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ has no bonds; Python typed ExtXYZ R/I/S/L columns; WASM writes R only |
@@ -134,6 +135,7 @@ Use these pages when the short matrix is not enough:
 - [MolJSON graph input integrity](moljson-graph-input.md)
 - [MOL2 hydrogen order](mol2-hydrogen-order.md) and
   [Kekulé output](mol2-kekule-bond-output.md)
+- [Free Form Fractional precision and uncertainty](fract-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
 - [mmCIF numeric preservation](mmcif-numeric-preservation.md)

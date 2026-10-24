@@ -1,0 +1,637 @@
+{
+  "schema_version": 1,
+  "provenance": "Original authored cases; no external corpus or implementation copied.",
+  "valid": [
+    {
+      "id": "orthogonal",
+      "text": "simple\n4 5 6 90 90 90\nC 0 0.5 1\n",
+      "expected": {
+        "title": "simple",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "C",
+            "fractional": [
+              "0",
+              "0.5",
+              "1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "uncertainty",
+      "text": "errors\n4.000(3) 5.00(2) 6.000(12) 90.0(1) 90.0(2) 90.0(3)\nC 0.12345678901234567(32) 0.25(2) 0.750(12)\n",
+      "expected": {
+        "title": "errors",
+        "cell": [
+          "4.000(3)",
+          "5.00(2)",
+          "6.000(12)",
+          "90.0(1)",
+          "90.0(2)",
+          "90.0(3)"
+        ],
+        "atoms": [
+          {
+            "element": "C",
+            "fractional": [
+              "0.12345678901234567(32)",
+              "0.25(2)",
+              "0.750(12)"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "high-precision",
+      "text": "precision\n4.123456789012345 5.234567890123456 6.345678901234567 89.12345678901234 91.12345678901234 92.23456789012345\nSi 0.12345678901234567 0.23456789012345678 0.34567890123456789\n",
+      "expected": {
+        "title": "precision",
+        "cell": [
+          "4.123456789012345",
+          "5.234567890123456",
+          "6.345678901234567",
+          "89.12345678901234",
+          "91.12345678901234",
+          "92.23456789012345"
+        ],
+        "atoms": [
+          {
+            "element": "Si",
+            "fractional": [
+              "0.12345678901234567",
+              "0.23456789012345678",
+              "0.34567890123456789"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "triclinic",
+      "text": "tilted\n3.14 3.24 5.18 80 100 120\nO .66667 .33333 .3750\nZn .33333 .66667 .5000\n",
+      "expected": {
+        "title": "tilted",
+        "cell": [
+          "3.14",
+          "3.24",
+          "5.18",
+          "80",
+          "100",
+          "120"
+        ],
+        "atoms": [
+          {
+            "element": "O",
+            "fractional": [
+              ".66667",
+              ".33333",
+              ".3750"
+            ]
+          },
+          {
+            "element": "Zn",
+            "fractional": [
+              ".33333",
+              ".66667",
+              ".5000"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unwrapped",
+      "text": "outside\n4 5 6 90 90 90\nNa -1.25 2.75 3.125\n",
+      "expected": {
+        "title": "outside",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Na",
+            "fractional": [
+              "-1.25",
+              "2.75",
+              "3.125"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "signed-zero",
+      "text": "zeros\n4 5 6 90 90 90\nH -0 -0.000 +0E-9999\n",
+      "expected": {
+        "title": "zeros",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "H",
+            "fractional": [
+              "-0",
+              "-0.000",
+              "+0E-9999"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "scientific",
+      "text": "exponents\n4e0 5E+0 6.0e0 9e1 90E0 90e-0\nN +1.2345678901234567e-1(03) 2.5e-1 3.75E-1\n",
+      "expected": {
+        "title": "exponents",
+        "cell": [
+          "4e0",
+          "5E+0",
+          "6.0e0",
+          "9e1",
+          "90E0",
+          "90e-0"
+        ],
+        "atoms": [
+          {
+            "element": "N",
+            "fractional": [
+              "+1.2345678901234567e-1(03)",
+              "2.5e-1",
+              "3.75E-1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "commas",
+      "text": "comma cell\n4,5,6,90,90,90\nCl .25 .5 .75\n",
+      "expected": {
+        "title": "comma cell",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Cl",
+            "fractional": [
+              ".25",
+              ".5",
+              ".75"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "mixed-delimiters",
+      "text": "mixed\n4, 5\t6,90 90, 90\nXe 0.125 0.25 0.5\n",
+      "expected": {
+        "title": "mixed",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Xe",
+            "fractional": [
+              "0.125",
+              "0.25",
+              "0.5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "utf8-crlf",
+      "text": "結晶 α  title  \r\n4 5 6 90 90 90\r\nFe .1 .2 .3\r\n",
+      "expected": {
+        "title": "結晶 α  title  ",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Fe",
+            "fractional": [
+              ".1",
+              ".2",
+              ".3"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-title",
+      "text": "\n4 5 6 90 90 90\nHe 0.1 0.2 0.3\n",
+      "expected": {
+        "title": "",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "He",
+            "fractional": [
+              "0.1",
+              "0.2",
+              "0.3"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "subnormal",
+      "text": "subnormal\n4 5 6 90 90 90\nNe 4.9406564584124654e-324 -4.9406564584124654e-324 2.2250738585072014e-308\n",
+      "expected": {
+        "title": "subnormal",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Ne",
+            "fractional": [
+              "4.9406564584124654e-324",
+              "-4.9406564584124654e-324",
+              "2.2250738585072014e-308"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-decimal",
+      "text": "decimal lexeme\n4 5 6 90 90 90\nAr 0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 0.000000000000000000000000001(0012) 0.50(00)\n",
+      "expected": {
+        "title": "decimal lexeme",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Ar",
+            "fractional": [
+              "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+              "0.000000000000000000000000001(0012)",
+              "0.50(00)"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "source-order",
+      "text": "repeated elements\n4 5 6 90 90 90\nO .8 .1 .2\nC .7 .2 .3\nO .6 .3 .4\n",
+      "expected": {
+        "title": "repeated elements",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "O",
+            "fractional": [
+              ".8",
+              ".1",
+              ".2"
+            ]
+          },
+          {
+            "element": "C",
+            "fractional": [
+              ".7",
+              ".2",
+              ".3"
+            ]
+          },
+          {
+            "element": "O",
+            "fractional": [
+              ".6",
+              ".3",
+              ".4"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "all-elements",
+      "text": "periodic table\n4 5 6 90 90 90\nOg 0 .5 1\nU .25 .75 .125\n",
+      "expected": {
+        "title": "periodic table",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Og",
+            "fractional": [
+              "0",
+              ".5",
+              "1"
+            ]
+          },
+          {
+            "element": "U",
+            "fractional": [
+              ".25",
+              ".75",
+              ".125"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "tabs",
+      "text": "\tspace\t\n4\t5\t6\t90\t90\t90\nKr .1 .2 .3\n",
+      "expected": {
+        "title": "\tspace\t",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "Kr",
+            "fractional": [
+              ".1",
+              ".2",
+              ".3"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "blank-atom-lines",
+      "text": "blank\n4 5 6 90 90 90\n\n C .1 .2 .3 \n \t\n",
+      "expected": {
+        "title": "blank",
+        "cell": [
+          "4",
+          "5",
+          "6",
+          "90",
+          "90",
+          "90"
+        ],
+        "atoms": [
+          {
+            "element": "C",
+            "fractional": [
+              ".1",
+              ".2",
+              ".3"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "refused": [
+    {
+      "id": "empty",
+      "text": ""
+    },
+    {
+      "id": "missing-cell",
+      "text": "title\n"
+    },
+    {
+      "id": "no-atoms",
+      "text": "title\n4 5 6 90 90 90\n"
+    },
+    {
+      "id": "short-cell",
+      "text": "test\n4 5 6 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "long-cell",
+      "text": "test\n4 5 6 90 90 90 1\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "empty-comma",
+      "text": "test\n4,,5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "trailing-comma",
+      "text": "test\n4 5 6 90 90 90,\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "zero-length",
+      "text": "test\n0 5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "negative-length",
+      "text": "test\n-4 5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "angle-zero",
+      "text": "test\n4 5 6 0 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "angle-180",
+      "text": "test\n4 5 6 180 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "singular-cell",
+      "text": "test\n4 5 6 60 60 120\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "inconsistent-cell",
+      "text": "test\n4 5 6 10 10 170\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "overflow-volume",
+      "text": "test\n1e200 1e200 1e200 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "bad-element",
+      "text": "test\n4 5 6 90 90 90\nXx 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "site-label",
+      "text": "test\n4 5 6 90 90 90\nC1 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "lowercase",
+      "text": "test\n4 5 6 90 90 90\nc 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "extra-field",
+      "text": "test\n4 5 6 90 90 90\nC 0.1 0.2 0.3 charge=1\n"
+    },
+    {
+      "id": "short-atom",
+      "text": "test\n4 5 6 90 90 90\nC 0.1 0.2\n"
+    },
+    {
+      "id": "second-record",
+      "text": "test\n4 5 6 90 90 90\nC 0.1 0.2 0.3\nsecond\n4 5 6 90 90 90\nC 0 0 0\n"
+    },
+    {
+      "id": "comment-extension",
+      "text": "test\n4 5 6 90 90 90\nC 0.1 0.2 0.3\n# comment\n"
+    },
+    {
+      "id": "title-nul",
+      "text": "test\u0000\n4 5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "bare-cr",
+      "text": "te\rst\n4 5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "line-too-long",
+      "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n4 5 6 90 90 90\nC 0.1 0.2 0.3\n"
+    },
+    {
+      "id": "number-24",
+      "text": "test\n4 5 6 90 90 90\nC NaN 0.2 0.3\n"
+    },
+    {
+      "id": "number-25",
+      "text": "test\n4 5 6 90 90 90\nC inf 0.2 0.3\n"
+    },
+    {
+      "id": "number-26",
+      "text": "test\n4 5 6 90 90 90\nC -inf 0.2 0.3\n"
+    },
+    {
+      "id": "number-27",
+      "text": "test\n4 5 6 90 90 90\nC 1e999 0.2 0.3\n"
+    },
+    {
+      "id": "number-28",
+      "text": "test\n4 5 6 90 90 90\nC 1e-999 0.2 0.3\n"
+    },
+    {
+      "id": "number-29",
+      "text": "test\n4 5 6 90 90 90\nC -1e-999 0.2 0.3\n"
+    },
+    {
+      "id": "number-30",
+      "text": "test\n4 5 6 90 90 90\nC 1e 0.2 0.3\n"
+    },
+    {
+      "id": "number-31",
+      "text": "test\n4 5 6 90 90 90\nC 0x1 0.2 0.3\n"
+    },
+    {
+      "id": "number-32",
+      "text": "test\n4 5 6 90 90 90\nC 1D-2 0.2 0.3\n"
+    },
+    {
+      "id": "number-33",
+      "text": "test\n4 5 6 90 90 90\nC . 0.2 0.3\n"
+    },
+    {
+      "id": "number-34",
+      "text": "test\n4 5 6 90 90 90\nC 1() 0.2 0.3\n"
+    },
+    {
+      "id": "number-35",
+      "text": "test\n4 5 6 90 90 90\nC 1(a) 0.2 0.3\n"
+    },
+    {
+      "id": "number-36",
+      "text": "test\n4 5 6 90 90 90\nC 1(2 0.2 0.3\n"
+    },
+    {
+      "id": "number-37",
+      "text": "test\n4 5 6 90 90 90\nC 1(2)) 0.2 0.3\n"
+    },
+    {
+      "id": "number-38",
+      "text": "test\n4 5 6 90 90 90\nC 1(2)(3) 0.2 0.3\n"
+    },
+    {
+      "id": "number-39",
+      "text": "test\n4 5 6 90 90 90\nC 1(2)e-1 0.2 0.3\n"
+    },
+    {
+      "id": "number-40",
+      "text": "test\n4 5 6 90 90 90\nC 1.2junk 0.2 0.3\n"
+    },
+    {
+      "id": "number-41",
+      "text": "test\n4 5 6 90 90 90\nC １.２ 0.2 0.3\n"
+    },
+    {
+      "id": "number-42",
+      "text": "test\n4 5 6 90 90 90\nC 0.1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 0.2 0.3\n"
+    }
+  ]
+}

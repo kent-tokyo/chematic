@@ -5919,6 +5919,14 @@ def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]
     """Write current explicit geometry without discarding fractional kinds or metadata."""
     ...
 
+def parse_fract(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read title, cell and element/fractional tokens, retaining uncertainty digits."""
+    ...
+
+def write_fract(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields; numeric entries must be decimal strings."""
+    ...
+
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""

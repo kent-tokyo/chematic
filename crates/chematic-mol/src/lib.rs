@@ -60,6 +60,11 @@ pub mod cml;
 pub mod cml_named;
 pub mod conversion;
 pub mod cube;
+pub mod fract;
+pub use fract::{
+    FractAtom, FractError, FractNumber, FractParseLimits, FractRecord, parse_fract,
+    parse_fract_json, parse_fract_with_limits, write_fract, write_fract_with_limits,
+};
 pub mod dlpoly;
 pub mod dmol3;
 pub use dlpoly::{

@@ -32,6 +32,8 @@ mod chemdraw;
 mod dlpoly;
 mod ensemble_v2;
 mod format_io;
+mod fract;
+pub use fract::*;
 mod tinker;
 pub use dlpoly::*;
 pub use tinker::*;

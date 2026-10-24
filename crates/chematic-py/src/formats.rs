@@ -42,6 +42,8 @@ mod cdjson;
 use cdjson::*;
 mod fhiaims;
 use fhiaims::*;
+mod fract;
+use fract::*;
 mod dmol3;
 use dmol3::*;
 mod dlpoly;
@@ -1460,6 +1462,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdfile_to_smiles,
         parse_fhiaims,
         write_fhiaims,
+        parse_fract,
+        write_fract,
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
