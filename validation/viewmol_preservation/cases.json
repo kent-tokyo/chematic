@@ -1,0 +1,1044 @@
+{
+  "schema_version": 1,
+  "provenance": "Original authored ViewMol geometry cases based on the public input-filter specification; no external fixtures or implementation copied.",
+  "valid": [
+    {
+      "id": "identity",
+      "text": "$title\nidentity\n$coord 1.0\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "identity",
+        "factor_to_angstrom": "1.0",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "scaled-two",
+      "text": "$title\nscale\n$coord 2.0\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "scale",
+        "factor_to_angstrom": "2.0",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "scaled-half",
+      "text": "$title\nhalf\n$coord .5\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "half",
+        "factor_to_angstrom": ".5",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.0625,
+          0.125,
+          0.25
+        ]
+      ]
+    },
+    {
+      "id": "bohr-factor",
+      "text": "$title\nexplicit scale\n$coord 0.529177210544\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "explicit scale",
+        "factor_to_angstrom": "0.529177210544",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.066147151318,
+          0.132294302636,
+          0.264588605272
+        ]
+      ]
+    },
+    {
+      "id": "absent-title",
+      "text": "$coord 1.0\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": null,
+        "factor_to_angstrom": "1.0",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "empty-title",
+      "text": "$title\n\n$coord 1\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "space-title",
+      "text": "$title\n  title  \n$coord 1\n.125 .25 .5 C\n$end\n",
+      "expected": {
+        "title": "  title  ",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "unicode-title",
+      "text": "$title\r\n分子 α Å\r\n$coord 2\r\n.125 .25 .5 C\r\n$end\r\n",
+      "expected": {
+        "title": "分子 α Å",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "title-after-coordinates",
+      "text": "$coord 2\n.125 .25 .5 C\n$title\nlater\n$end\n",
+      "expected": {
+        "title": "later",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "canonical-elements",
+      "text": "$title\ncase\n$coord 1\n0 0 0 C\n.25 0 0 Cl\n$end\n",
+      "expected": {
+        "title": "case",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              "0",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          },
+          {
+            "element": "Cl",
+            "position": [
+              ".25",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.25,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "precision",
+      "text": "$title\nprecision\n$coord 1\n.12345678901234567 -.23456789012345678 .34567890123456789 Si\n$end\n",
+      "expected": {
+        "title": "precision",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "Si",
+            "position": [
+              ".12345678901234567",
+              "-.23456789012345678",
+              ".34567890123456789"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.12345678901234566,
+          -0.23456789012345677,
+          0.3456789012345679
+        ]
+      ]
+    },
+    {
+      "id": "scientific",
+      "text": "$title\nscientific\n$coord 1.5\n+1.2345678901234567e-1 2.5E-1 3.75e-1 N\n$end\n",
+      "expected": {
+        "title": "scientific",
+        "factor_to_angstrom": "1.5",
+        "atoms": [
+          {
+            "element": "N",
+            "position": [
+              "+1.2345678901234567e-1",
+              "2.5E-1",
+              "3.75e-1"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.18518518351851848,
+          0.375,
+          0.5625
+        ]
+      ]
+    },
+    {
+      "id": "signed-zero",
+      "text": "$title\nzero\n$coord 2\n-0 -0.000 +0E-9999 He\n$end\n",
+      "expected": {
+        "title": "zero",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "He",
+            "position": [
+              "-0",
+              "-0.000",
+              "+0E-9999"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          -0.0,
+          -0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "subnormal",
+      "text": "$title\nsubnormal\n$coord 1\n4.9406564584124654e-324 -4.9406564584124654e-324 2.2250738585072014e-308 Ne\n$end\n",
+      "expected": {
+        "title": "subnormal",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "Ne",
+            "position": [
+              "4.9406564584124654e-324",
+              "-4.9406564584124654e-324",
+              "2.2250738585072014e-308"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          5e-324,
+          -5e-324,
+          2.2250738585072014e-308
+        ]
+      ]
+    },
+    {
+      "id": "long-decimal",
+      "text": "$title\ndecimal lexeme\n$coord 1\n0.12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 1.00000000000000000000001 .0000000000000000000001 Ar\n$end\n",
+      "expected": {
+        "title": "decimal lexeme",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "Ar",
+            "position": [
+              "0.12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+              "1.00000000000000000000001",
+              ".0000000000000000000001"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.12345678901234568,
+          1.0,
+          1e-22
+        ]
+      ]
+    },
+    {
+      "id": "fixed-x",
+      "text": "$title\nfixed x\n$coord 2\n.125 .25 .5 C x\n$end\n",
+      "expected": {
+        "title": "fixed x",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "x"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-y",
+      "text": "$title\nfixed y\n$coord 2\n.125 .25 .5 C y\n$end\n",
+      "expected": {
+        "title": "fixed y",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "y"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-z",
+      "text": "$title\nfixed z\n$coord 2\n.125 .25 .5 C z\n$end\n",
+      "expected": {
+        "title": "fixed z",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "z"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-xy",
+      "text": "$title\nfixed xy\n$coord 2\n.125 .25 .5 C xy\n$end\n",
+      "expected": {
+        "title": "fixed xy",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "xy"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-xz",
+      "text": "$title\nfixed xz\n$coord 2\n.125 .25 .5 C xz\n$end\n",
+      "expected": {
+        "title": "fixed xz",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "xz"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-yz",
+      "text": "$title\nfixed yz\n$coord 2\n.125 .25 .5 C yz\n$end\n",
+      "expected": {
+        "title": "fixed yz",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "yz"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-xyz",
+      "text": "$title\nfixed xyz\n$coord 2\n.125 .25 .5 C xyz\n$end\n",
+      "expected": {
+        "title": "fixed xyz",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "xyz"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-zx",
+      "text": "$title\nfixed zx\n$coord 2\n.125 .25 .5 C zx\n$end\n",
+      "expected": {
+        "title": "fixed zx",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "zx"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "fixed-zyx",
+      "text": "$title\nfixed zyx\n$coord 2\n.125 .25 .5 C zyx\n$end\n",
+      "expected": {
+        "title": "fixed zyx",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": "zyx"
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.25,
+          0.5,
+          1.0
+        ]
+      ]
+    },
+    {
+      "id": "source-order",
+      "text": "$title\nO C O\n$coord 1\n-.125 0 0 O\n0 0 0 C\n.125 0 0 O\n$end\n",
+      "expected": {
+        "title": "O C O",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "O",
+            "position": [
+              "-.125",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          },
+          {
+            "element": "C",
+            "position": [
+              "0",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          },
+          {
+            "element": "O",
+            "position": [
+              ".125",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          -0.125,
+          0.0,
+          0.0
+        ],
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          0.125,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "heavy-element",
+      "text": "$title\nOg U\n$coord 1\n.125 0 0 Og\n.25 0 0 U\n$end\n",
+      "expected": {
+        "title": "Og U",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "Og",
+            "position": [
+              ".125",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          },
+          {
+            "element": "U",
+            "position": [
+              ".25",
+              "0",
+              "0"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.0,
+          0.0
+        ],
+        [
+          0.25,
+          0.0,
+          0.0
+        ]
+      ]
+    },
+    {
+      "id": "no-final-newline",
+      "text": "$title\nlast\n$coord 1\n.125 .25 .5 C\n$end",
+      "expected": {
+        "title": "last",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    },
+    {
+      "id": "blank-layout",
+      "text": "$title\nlayout\n$coord\t1\n\n\t.125\t.25\t.5\tC  \n$end\n\n",
+      "expected": {
+        "title": "layout",
+        "factor_to_angstrom": "1",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              ".125",
+              ".25",
+              ".5"
+            ],
+            "fixed_axes": null
+          }
+        ]
+      },
+      "expected_angstrom": [
+        [
+          0.125,
+          0.25,
+          0.5
+        ]
+      ]
+    }
+  ],
+  "refused": [
+    {
+      "id": "empty",
+      "text": ""
+    },
+    {
+      "id": "missing-end",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n"
+    },
+    {
+      "id": "missing-coord",
+      "text": "$title\ntest\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "missing-factor",
+      "text": "$title\ntest\n$coord\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "negative-factor",
+      "text": "$title\ntest\n$coord -2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "zero-factor",
+      "text": "$title\ntest\n$coord 0\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "two-coordinates",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$coord 1\n.4 .5 .6 O\n$end\n"
+    },
+    {
+      "id": "duplicate-title",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$title\nother\n$end\n"
+    },
+    {
+      "id": "title-missing-value",
+      "text": "$title\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "title-marker",
+      "text": "$title\n$value\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "bare-coordinates",
+      "text": "1 2 3 C\n$end\n"
+    },
+    {
+      "id": "extra-column",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C 1 2\n$end\n"
+    },
+    {
+      "id": "short-row",
+      "text": "$title\ntest\n$coord 2\n.1 .2 C\n$end\n"
+    },
+    {
+      "id": "bad-element",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 Xx\n$end\n"
+    },
+    {
+      "id": "pseudoatom",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 X\n$end\n"
+    },
+    {
+      "id": "site-label",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C1\n$end\n"
+    },
+    {
+      "id": "numeric-species",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 6\n$end\n"
+    },
+    {
+      "id": "duplicate-axis",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C xx\n$end\n"
+    },
+    {
+      "id": "bad-axis",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C a\n$end\n"
+    },
+    {
+      "id": "uppercase-axis",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C X\n$end\n"
+    },
+    {
+      "id": "separate-axis-tokens",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C x z\n$end\n"
+    },
+    {
+      "id": "unknown-group",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$unitcell 1 1 1 90 90 90\n$end\n"
+    },
+    {
+      "id": "vibration-group",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$vibrational spectrum\nA1 100 1 1\n$end\n"
+    },
+    {
+      "id": "trajectory-group",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$grad 1\n$end\n"
+    },
+    {
+      "id": "orbital-group",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$scfmo\n$end\n"
+    },
+    {
+      "id": "two-records",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$end\n$title\ntest\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "trailing-atom",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n$end\n1 2 3 O\n"
+    },
+    {
+      "id": "empty-atoms",
+      "text": "$title\ntest\n$coord 2\n$end\n"
+    },
+    {
+      "id": "title-control",
+      "text": "$title\nte\u0000st\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "bare-cr",
+      "text": "$title\nte\rst\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "line-limit",
+      "text": "$title\nttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n$coord 2\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "comment-extension",
+      "text": "$title\ntest\n$coord 2\n.1 .2 .3 C\n# comment\n$end\n"
+    },
+    {
+      "id": "coordinate-number-32",
+      "text": "$title\ntest\n$coord 2\nNaN .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-33",
+      "text": "$title\ntest\n$coord 2\ninf .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-34",
+      "text": "$title\ntest\n$coord 2\n-inf .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-35",
+      "text": "$title\ntest\n$coord 2\n1e999 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-36",
+      "text": "$title\ntest\n$coord 2\n1e-999 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-37",
+      "text": "$title\ntest\n$coord 2\n-1e-999 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-38",
+      "text": "$title\ntest\n$coord 2\n1e .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-39",
+      "text": "$title\ntest\n$coord 2\n0x1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-40",
+      "text": "$title\ntest\n$coord 2\n1D-2 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-41",
+      "text": "$title\ntest\n$coord 2\n. .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-42",
+      "text": "$title\ntest\n$coord 2\n1.2(3) .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-43",
+      "text": "$title\ntest\n$coord 2\n1.2junk .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-44",
+      "text": "$title\ntest\n$coord 2\n１.２ .2 .3 C\n$end\n"
+    },
+    {
+      "id": "coordinate-number-45",
+      "text": "$title\ntest\n$coord 2\n0.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "factor-number-46",
+      "text": "$title\ntest\n$coord NaN\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "factor-number-47",
+      "text": "$title\ntest\n$coord inf\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "factor-number-48",
+      "text": "$title\ntest\n$coord 1e999\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "factor-number-49",
+      "text": "$title\ntest\n$coord 1e-999\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "factor-number-50",
+      "text": "$title\ntest\n$coord 2junk\n.1 .2 .3 C\n$end\n"
+    },
+    {
+      "id": "lowercase-element",
+      "text": "$title\nidentity\n$coord 1.0\n.125 .25 .5 c\n$end\n"
+    },
+    {
+      "id": "noncanonical-element-case",
+      "text": "$title\nidentity\n$coord 1.0\n.125 .25 .5 CL\n$end\n"
+    }
+  ],
+  "projection_refused": [
+    {
+      "id": "overflow",
+      "text": "$title\nraw preserved\n$coord 2\n1.7976931348623157e308 0 0 C x\n$end\n",
+      "expected": {
+        "title": "raw preserved",
+        "factor_to_angstrom": "2",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              "1.7976931348623157e308",
+              "0",
+              "0"
+            ],
+            "fixed_axes": "x"
+          }
+        ]
+      }
+    },
+    {
+      "id": "underflow",
+      "text": "$title\nraw preserved\n$coord .5\n4.9406564584124654e-324 0 0 C x\n$end\n",
+      "expected": {
+        "title": "raw preserved",
+        "factor_to_angstrom": ".5",
+        "atoms": [
+          {
+            "element": "C",
+            "position": [
+              "4.9406564584124654e-324",
+              "0",
+              "0"
+            ],
+            "fixed_axes": "x"
+          }
+        ]
+      }
+    }
+  ]
+}

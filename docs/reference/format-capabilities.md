@@ -56,6 +56,7 @@ means the operation is not exposed on that binding.
 | ChemDoodle JSON | bounded R/W | bounded R/W | — | Molecular graph subset |
 | LAMMPS data | R/W | R/W | R/W | Units and atom styles are explicit |
 | LAMMPS dump/trajectory | R/W | R/W | R/W | Streaming/materialization differs by binding |
+| ViewMol (`vmol`) | bounded R/W | bounded R/W | bounded R/W | [Raw unit factor, fixed axes, title and explicit Angstrom projection](viewmol-preservation.md); CLI also available |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |
 
 ## Checked conversion reports (initial adapter)
@@ -140,6 +141,7 @@ Use these pages when the short matrix is not enough:
 - [Extended XYZ output integrity](extxyz-output-integrity.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
+- [ViewMol geometry, units and fixed axes](viewmol-preservation.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),
   [MOPAC Cartesian](openbabel-mopac-cartesian.md),
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)

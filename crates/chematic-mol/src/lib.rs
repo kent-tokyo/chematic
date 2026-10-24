@@ -374,3 +374,9 @@ pub use pdb_conect::{
     PdbConectError, PdbConectFrame, PdbConectLimits, PdbConectOptions, parse_pdb_conect,
     parse_pdb_conect_with_options, parse_pdb_conect_with_options_and_limits,
 };
+
+pub mod viewmol;
+pub use viewmol::{
+    ViewmolAtom, ViewmolError, ViewmolParseLimits, ViewmolRecord, parse_viewmol,
+    parse_viewmol_json, parse_viewmol_with_limits, write_viewmol, write_viewmol_with_limits,
+};
