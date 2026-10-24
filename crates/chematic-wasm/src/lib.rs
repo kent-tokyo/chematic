@@ -34,6 +34,8 @@ mod ensemble_v2;
 mod format_io;
 mod fract;
 pub use fract::*;
+mod gpr;
+pub use gpr::*;
 mod tinker;
 pub use dlpoly::*;
 pub use tinker::*;

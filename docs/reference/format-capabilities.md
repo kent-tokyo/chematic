@@ -35,6 +35,7 @@ means the operation is not exposed on that binding.
 | SMILES | R/W | R/W | R/W | Graph/stereo text; not an identity key |
 | SMARTS | match | validate/match | match | Query evaluation, not a general writer |
 | BGF / BIOGRF 200 | bounded R/W | bounded R/W | bounded R/W | [Editable nonperiodic atom/connectivity records](bgf-records.md); periodic/extended dialects refuse |
+| Ghemical (`gpr`) | bounded R/W | bounded R/W | bounded R/W | [Version 100, one nm coordinate set and optional partial charges](gpr-preservation.md); CLI also available |
 | HIN | bounded R/source W | bounded R/source W | inspect/source W | No edited-graph writer |
 | MOL/SDF V2000/V3000 | R/W | R/W | R/W | Use checked/source routes for stereo and SD fields |
 | MOL2 | R/W | R/W | R/W | Typed/charge/metadata preservation is profile-specific |
@@ -136,6 +137,7 @@ Use these pages when the short matrix is not enough:
 - [MOL2 hydrogen order](mol2-hydrogen-order.md) and
   [Kekulé output](mol2-kekule-bond-output.md)
 - [Free Form Fractional precision and uncertainty](fract-preservation.md)
+- [Ghemical GPR records](gpr-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
 - [mmCIF numeric preservation](mmcif-numeric-preservation.md)

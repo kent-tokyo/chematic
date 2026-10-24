@@ -87,6 +87,7 @@ pub use tinker::{
 pub mod fhiaims;
 pub mod gamess_zmat;
 pub mod gaussian;
+pub mod gpr;
 pub mod gro;
 pub mod gro_lammps;
 pub mod gzmat;
@@ -414,4 +415,10 @@ pub use rdfile::{
 pub use pdb_conect::{
     PdbConectError, PdbConectFrame, PdbConectLimits, PdbConectOptions, parse_pdb_conect,
     parse_pdb_conect_with_options, parse_pdb_conect_with_options_and_limits,
+};
+
+pub use gpr::{
+    GprAtom, GprBond, GprBondOrder, GprCoordinate, GprError, GprParseLimits, GprPartialCharge,
+    GprRecord, gpr_nominal_value, parse_gpr, parse_gpr_json, parse_gpr_with_limits, write_gpr,
+    write_gpr_with_limits,
 };

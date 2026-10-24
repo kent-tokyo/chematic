@@ -44,6 +44,8 @@ mod fhiaims;
 use fhiaims::*;
 mod fract;
 use fract::*;
+mod gpr;
+use gpr::*;
 mod dmol3;
 use dmol3::*;
 mod dlpoly;
@@ -1464,6 +1466,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_fhiaims,
         parse_fract,
         write_fract,
+        parse_gpr,
+        write_gpr,
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,

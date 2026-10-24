@@ -10,6 +10,7 @@ use std::path::PathBuf;
 mod conversion_format;
 mod dispatch;
 mod fract;
+mod gpr;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -52,6 +53,21 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Read/write gpr 100, retaining nm coordinates, bond codes and partial charges.
+    Gpr {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit editable JSON instead of gpr text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read strict record JSON and emit gpr text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Read/write a single-cell fract record while retaining decimal/uncertainty tokens.
     Fract {
         #[arg(short, long)]
