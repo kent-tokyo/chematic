@@ -294,6 +294,8 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_coordinate_projection -q
       - name: V3000 native 3D numeric observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_3d_numeric -q
+      - name: V3000 atom scalar observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v3000_atom_scalars -q
       - name: V3000 source coordinate observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_source_roundtrip -q
       - name: SDF document framing observer

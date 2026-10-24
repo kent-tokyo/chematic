@@ -1,0 +1,243 @@
+{
+  "schema": "chematic.v3000-atom-scalars.v1",
+  "provenance": "Original synthetic atom-field controls authored for chematic on 2026-10-24; MIT. Ordinary atom fields, separate local quoted LABEL extension controls, and explicit rejection inputs. Not a holdout or chemical-validity corpus.",
+  "cases": [
+    {
+      "id": "neutral_control",
+      "scope": "ordinary",
+      "input": "neutral_control\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": 0,
+        "isotope": 0,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "positive_charge",
+      "scope": "ordinary",
+      "input": "positive_charge\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0 0 0 0 CHG=1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 7,
+        "charge": 1,
+        "isotope": 0,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "negative_charge",
+      "scope": "ordinary",
+      "input": "negative_charge\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 O 0 0 0 0 CHG=-1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 8,
+        "charge": -1,
+        "isotope": 0,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "isotope_carbon",
+      "scope": "ordinary",
+      "input": "isotope_carbon\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=13\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": 0,
+        "isotope": 13,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "deuterium_alias",
+      "scope": "ordinary",
+      "input": "deuterium_alias\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 D 0 0 0 0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 1,
+        "charge": 0,
+        "isotope": 2,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "combined_fields",
+      "scope": "ordinary",
+      "input": "combined_fields\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 N 0 0 0 7 CHG=1 MASS=15\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 7,
+        "charge": 1,
+        "isotope": 15,
+        "atom_map": 7
+      }
+    },
+    {
+      "id": "mapped_carbon",
+      "scope": "ordinary",
+      "input": "mapped_carbon\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 42\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": 0,
+        "isotope": 0,
+        "atom_map": 42
+      }
+    },
+    {
+      "id": "explicit_defaults",
+      "scope": "ordinary",
+      "input": "explicit_defaults\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": 0,
+        "isotope": 0,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "quoted_charge_mass",
+      "scope": "quoted_compatibility",
+      "input": "quoted_charge_mass\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 LABEL=\"memo CHG=2 MASS=13 end\"\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": 0,
+        "isotope": 0,
+        "atom_map": 0
+      }
+    },
+    {
+      "id": "quoted_and_real_fields",
+      "scope": "quoted_compatibility",
+      "input": "quoted_and_real_fields\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 9 LABEL=\"memo CHG=2 MASS=13 end\" CHG=-1 MASS=14\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "expected": {
+        "number": 6,
+        "charge": -1,
+        "isotope": 14,
+        "atom_map": 9
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "chg_0",
+      "input": "chg_0\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=bad\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_1",
+      "input": "chg_1\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=128\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_2",
+      "input": "chg_2\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=-129\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_3",
+      "input": "chg_3\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=1.5\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_4",
+      "input": "chg_4\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=1e0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_5",
+      "input": "chg_5\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "mass_0",
+      "input": "mass_0\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=bad\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_1",
+      "input": "mass_1\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_2",
+      "input": "mass_2\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=-1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_3",
+      "input": "mass_3\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=65536\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_4",
+      "input": "mass_4\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=1.5\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_5",
+      "input": "mass_5\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=1e1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_6",
+      "input": "mass_6\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "chg_duplicate_false",
+      "input": "chg_duplicate_false\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=1 CHG=-1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_duplicate_true",
+      "input": "chg_duplicate_true\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG=1 CHG=1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "chg_bare",
+      "input": "chg_bare\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 CHG\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "CHG"
+    },
+    {
+      "id": "mass_duplicate_false",
+      "input": "mass_duplicate_false\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=13 MASS=14\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_duplicate_true",
+      "input": "mass_duplicate_true\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS=13 MASS=13\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "mass_bare",
+      "input": "mass_bare\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 0 MASS\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    },
+    {
+      "id": "map_0",
+      "input": "map_0\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 bad\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "atom map"
+    },
+    {
+      "id": "map_1",
+      "input": "map_1\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 -1\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "atom map"
+    },
+    {
+      "id": "map_2",
+      "input": "map_2\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 65536\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "atom map"
+    },
+    {
+      "id": "map_3",
+      "input": "map_3\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 1.5\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "atom map"
+    },
+    {
+      "id": "map_4",
+      "input": "map_4\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 C 0 0 0 1e0\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "atom map"
+    },
+    {
+      "id": "deuterium_invalid_mass",
+      "input": "deuterium_invalid_mass\n  fixture           2D\n\n  0  0  0  0  0  0            999 V3000\nM  V30 BEGIN CTAB\nM  V30 COUNTS 1 0 0 0 0\nM  V30 BEGIN ATOM\nM  V30 1 D 0 0 0 0 MASS=bad\nM  V30 END ATOM\nM  V30 END CTAB\nM  END\n",
+      "field": "MASS"
+    }
+  ]
+}
