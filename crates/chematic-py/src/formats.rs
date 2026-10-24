@@ -42,6 +42,8 @@ mod exyz;
 mod tinker;
 use dlpoly::{parse_dlpoly_config, write_dlpoly_config};
 use tinker::{parse_tinker_xyz, write_tinker_xyz};
+mod molden;
+use molden::{parse_molden, write_molden};
 mod mopac;
 use exyz::*;
 mod gro;
@@ -1460,6 +1462,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_tinker_xyz,
         parse_dlpoly_config,
         write_dlpoly_config,
+        parse_molden,
+        write_molden,
         write_exyz,
         parse_turbomole,
         write_turbomole,

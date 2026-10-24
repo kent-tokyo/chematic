@@ -1,0 +1,968 @@
+{
+  "schema_version": 1,
+  "license": "MIT",
+  "provenance": "Original synthetic geometry/vibration cases authored for this repository; not copied from a Molden distribution or physical reference calculation.",
+  "cases": [
+    {
+      "id": "atoms_angstrom",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 1 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n",
+      "expected": {
+        "atoms": {
+          "unit": "angstrom",
+          "atoms": [
+            {
+              "symbol": "H",
+              "index": 1,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "symbol": "H",
+              "index": 2,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.529177210903
+              ]
+            }
+          ]
+        },
+        "frequencies": null,
+        "fr_coords": null,
+        "normal_modes": null,
+        "intensities": null
+      }
+    },
+    {
+      "id": "atoms_bohr",
+      "input": "[Molden Format]\n[Atoms] AU\nH 1 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n",
+      "expected": {
+        "atoms": {
+          "unit": "bohr",
+          "atoms": [
+            {
+              "symbol": "H",
+              "index": 1,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "symbol": "H",
+              "index": 2,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.529177210903
+              ]
+            }
+          ]
+        },
+        "frequencies": null,
+        "fr_coords": null,
+        "normal_modes": null,
+        "intensities": null
+      }
+    },
+    {
+      "id": "vibrations_ir_only",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "both_geometries_and_raman",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 1 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5 32.5\n",
+      "expected": {
+        "atoms": {
+          "unit": "angstrom",
+          "atoms": [
+            {
+              "symbol": "H",
+              "index": 1,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "symbol": "H",
+              "index": 2,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.529177210903
+              ]
+            }
+          ]
+        },
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": 32.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "intensities_absent",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": null
+      }
+    },
+    {
+      "id": "raman_zero_present",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5 0.0\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": 0.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "negative_frequency",
+      "input": "[Molden Format]\n[FREQ]\n-123.45678901234567\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          -123.45678901234567
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "zero_frequency",
+      "input": "[Molden Format]\n[FREQ]\n0.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          0.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "mode_order_and_optional_raman",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n2000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 2\n0.2 0.0 0.0\n-0.2 0.0 0.0\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n1.0\n2.0 3.0\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0,
+          2000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 2,
+            "displacements_bohr": [
+              [
+                0.2,
+                0.0,
+                0.0
+              ],
+              [
+                -0.2,
+                0.0,
+                0.0
+              ]
+            ]
+          },
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 1.0,
+            "raman": null
+          },
+          {
+            "ir": 2.0,
+            "raman": 3.0
+          }
+        ]
+      }
+    },
+    {
+      "id": "source_atom_ids",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 2 1 0.0 0.0 0.529177210903\nH 1 1 0.0 0.0 0.0\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5 32.5\n",
+      "expected": {
+        "atoms": {
+          "unit": "angstrom",
+          "atoms": [
+            {
+              "symbol": "H",
+              "index": 2,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.529177210903
+              ]
+            },
+            {
+              "symbol": "H",
+              "index": 1,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            }
+          ]
+        },
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": 32.5
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_displacements",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n1.2345678901234568e-130 -0.12345678901234566 3.456789012345678\n0.0 0.0 -0.1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                1.2345678901234568e-130,
+                -0.12345678901234566,
+                3.456789012345678
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_fr_coords",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.12345678901234566 -0.9876543210987654 1.2345678901234567\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.12345678901234566,
+              -0.9876543210987654,
+              1.2345678901234567
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_atoms_coords",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 1 1 0.0 0.0 0.0\nH 2 1 0.12345678901234566 -0.9876543210987654 1.2345678901234567\n",
+      "expected": {
+        "atoms": {
+          "unit": "angstrom",
+          "atoms": [
+            {
+              "symbol": "H",
+              "index": 1,
+              "atomic_number": 1,
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ]
+            },
+            {
+              "symbol": "H",
+              "index": 2,
+              "atomic_number": 1,
+              "position": [
+                0.12345678901234566,
+                -0.9876543210987654,
+                1.2345678901234567
+              ]
+            }
+          ]
+        },
+        "frequencies": null,
+        "fr_coords": null,
+        "normal_modes": null,
+        "intensities": null
+      }
+    },
+    {
+      "id": "precise_frequency_intensities",
+      "input": "[Molden Format]\n[FREQ]\n987.1234567890123\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n0.12345678901234566 9.876543210987655e+96\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          987.1234567890123
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 0.12345678901234566,
+            "raman": 9.876543210987655e+96
+          }
+        ]
+      }
+    },
+    {
+      "id": "fortran_exponents",
+      "input": "[Molden Format]\n[FREQ]\n1.0D+3\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 1.0d-1\n0.0 0.0 -1.0d-1\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": [
+          {
+            "index": 1,
+            "displacements_bohr": [
+              [
+                0.0,
+                0.0,
+                0.1
+              ],
+              [
+                0.0,
+                0.0,
+                -0.1
+              ]
+            ]
+          }
+        ],
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "frequency_geometry_without_modes",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[INT]\n12.5\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": [
+          1000.0
+        ],
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": null,
+        "intensities": [
+          {
+            "ir": 12.5,
+            "raman": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "fr_coords_geometry_only",
+      "input": "[Molden Format]\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n",
+      "expected": {
+        "atoms": null,
+        "frequencies": null,
+        "fr_coords": [
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              0.0
+            ]
+          },
+          {
+            "symbol": "H",
+            "position_bohr": [
+              0.0,
+              0.0,
+              1.0
+            ]
+          }
+        ],
+        "normal_modes": null,
+        "intensities": null
+      }
+    }
+  ],
+  "refusals": [
+    {
+      "id": "empty",
+      "input": ""
+    },
+    {
+      "id": "missing_magic",
+      "input": "[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "duplicate_section",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[FREQ]\n1000\n"
+    },
+    {
+      "id": "missing_atoms_unit",
+      "input": "[Molden Format]\n[Atoms]\nH 1 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "unsupported_unit",
+      "input": "[Molden Format]\n[Atoms] nm\nH 1 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "symbol_number_disagreement",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 1 8 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "duplicate_atom_ids",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 1 1 0.0 0.0 0.0\nH 1 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "invalid_index",
+      "input": "[Molden Format]\n[Atoms] Angs\nH 0 1 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "nonfinite_coordinate",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH nan 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "nonfinite_frequency",
+      "input": "[Molden Format]\n[FREQ]\n1e400\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "truncated_mode",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "invalid_mode_id",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 0\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "freq_mode_mismatch",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n2000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "intensity_count_mismatch",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n1.0\n"
+    },
+    {
+      "id": "extra_mode_component",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1 1.0\n[INT]\n12.5\n"
+    },
+    {
+      "id": "empty_int_section",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n"
+    },
+    {
+      "id": "unsupported_intensity_column",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5 2 3\n"
+    },
+    {
+      "id": "data_outside_section",
+      "input": "[Molden Format]\nunscoped text\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "section_argument",
+      "input": "[Molden Format]\n[FREQ] cm-1\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n"
+    },
+    {
+      "id": "ghost_atom",
+      "input": "[Molden Format]\n[Atoms] Angs\nX 1 0 0.0 0.0 0.0\nH 2 1 0.0 0.0 0.529177210903\n"
+    },
+    {
+      "id": "unsupported_gto",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[GTO]\nopaque\n"
+    },
+    {
+      "id": "unsupported_mo",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[MO]\nopaque\n"
+    },
+    {
+      "id": "unsupported_sto",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[STO]\nopaque\n"
+    },
+    {
+      "id": "unsupported_geometries",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[GEOMETRIES]\nopaque\n"
+    },
+    {
+      "id": "unsupported_geoconv",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[GEOCONV]\nopaque\n"
+    },
+    {
+      "id": "unsupported_scfconv",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[SCFCONV]\nopaque\n"
+    },
+    {
+      "id": "unsupported_5d",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[5D]\nopaque\n"
+    },
+    {
+      "id": "unsupported_title",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[TITLE]\nopaque\n"
+    },
+    {
+      "id": "unsupported_unknown",
+      "input": "[Molden Format]\n[FREQ]\n1000.0\n[FR-COORD]\nH 0.0 0.0 0.0\nH 0.0 0.0 1.0\n[FR-NORM-COORD]\nvibration 1\n0.0 0.0 0.1\n0.0 0.0 -0.1\n[INT]\n12.5\n[UNKNOWN]\nopaque\n"
+    }
+  ]
+}

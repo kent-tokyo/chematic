@@ -48,6 +48,7 @@ means the operation is not exposed on that binding.
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ has no bonds; Python typed ExtXYZ R/I/S/L columns; WASM writes R only |
 | [Tinker XYZ (`txyz`)](tinker-xyz.md) | bounded R/W | bounded R/W | bounded R/W | Single typed frame with explicit connectivity and optional cell; no bond-order perception |
 | [DL-POLY CONFIG/REVCON](dlpoly-config.md) | bounded R/W | bounded R/W | bounded R/W | Single record; source-unit positions/velocities/forces and cell; imcon 0..3 |
+| [Molden geometry/vibrations](molden-vibrations.md) | bounded R/W | bounded R/W | bounded R/W | Explicit units and IR/Raman/modes; refuses GTO/MO and trajectories |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
 | ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |

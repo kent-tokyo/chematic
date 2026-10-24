@@ -28,6 +28,8 @@ mod format_io;
 mod tinker;
 pub use dlpoly::*;
 pub use tinker::*;
+mod molden;
+pub use molden::*;
 mod hin;
 mod mol_3d;
 mod mol_depict;

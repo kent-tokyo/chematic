@@ -46,6 +46,12 @@ pub use dlpoly::{
     DlpolyAtom, DlpolyConfig, DlpolyConfigLimits, DlpolyError, dlpoly_config_from_json,
     parse_dlpoly_config, parse_dlpoly_config_with_limits, write_dlpoly_config,
 };
+pub mod molden;
+pub use molden::{
+    MoldenAtom, MoldenAtoms, MoldenError, MoldenIntensity, MoldenLengthUnit, MoldenLimits,
+    MoldenNormalMode, MoldenRecord, MoldenVibrationAtom, molden_record_from_json, parse_molden,
+    parse_molden_with_limits, write_molden,
+};
 pub mod error;
 pub mod exyz;
 pub mod tinker;

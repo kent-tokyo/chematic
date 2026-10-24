@@ -85,6 +85,7 @@ nav:
     - Format Capability Matrix: reference/format-capabilities.md
     - Tinker XYZ: reference/tinker-xyz.md
     - DL-POLY CONFIG: reference/dlpoly-config.md
+    - Molden Geometry & Vibrations: reference/molden-vibrations.md
     - Language Bindings: reference/language-bindings.md
     - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md

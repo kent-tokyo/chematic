@@ -66,6 +66,21 @@ enum Command {
         #[arg(long, default_value_t = 64 * 1024 * 1024)]
         max_input_bytes: usize,
     },
+    /// Retain Molden geometry/vibration data; refuse electronic/trajectory sections.
+    Molden {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit an editable record as JSON.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read edited record JSON and write Molden text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Read/write one DL-POLY CONFIG, retaining positions, velocities, forces and cell.
     DlpolyConfig {
         #[arg(short, long)]
