@@ -493,7 +493,10 @@ fn build_comment_line(frame: &XyzFrame) -> String {
     }
     parts.push(format!("Properties={props}"));
     for (k, v) in &frame.info {
-        if v.is_empty() || v.chars().any(char::is_whitespace) || v.contains('"') {
+        if v.is_empty()
+            || v.chars().any(char::is_whitespace)
+            || v.contains(['"', '\\', '\'', '[', ']', '{', '}', '='])
+        {
             // Escape '"' and '\' so the quoted value reparses back to
             // exactly `v` -- see `tokenize_info_line`'s matching escape
             // handling, both modeled on ASE's own `key_val_str_to_dict`.
@@ -513,28 +516,12 @@ fn build_comment_line(frame: &XyzFrame) -> String {
     parts.join(" ")
 }
 
-/// Rejects an [`XyzFrame`] that [`write_extxyz`]/[`ExtxyzWriter::write_frame`]
-/// cannot losslessly round-trip through extxyz `key=value` comment-line
-/// syntax. Returns `Err(detail)` naming the first offending field. Checks:
-/// - an [`XyzFrame::info`] key or a [`XyzProperty::name`] containing
-///   whitespace, `:`, `=`, or `"` (all syntactically significant to the
-///   tokenizer/column-spec grammar, and -- unlike values -- names/keys have
-///   no quoting or escaping to fall back on);
-/// - an info key literally `"Lattice"` or `"Properties"`, which
-///   [`parse_one_frame_ext`] always special-cases regardless of whether it
-///   came from [`XyzFrame::lattice`]/[`properties`](XyzFrame::properties) or
-///   a generic info entry, so a generic entry with either name would
-///   reparse as the *wrong* field (or fail as `InvalidLattice`/
-///   `InvalidProperties` if its value isn't in that field's own syntax);
-/// - an info value containing an embedded newline, which no amount of
-///   quoting/escaping can represent inside a single comment line;
-/// - a [`XyzProperty`] declaring `count == 0`, which `Properties=`' own
-///   grammar (parsed by [`parse_properties`]) requires to be at least 1.
-///
-/// Info values containing `"` or `\` are otherwise fine: `build_comment_line`
-/// escapes them the same way [`tokenize_info_line`] un-escapes them on read
-/// (both modeled on ASE's own `key_val_str_to_dict`), so they are not
-/// rejected here.
+/// Validate complete finite geometry/cell data, metadata grammar, unique names,
+/// reserved property aliases, exact property shapes/types and safe atom tokens.
+/// The legacy public error variant is retained for all unwritable frame data.
+/// No writes occur until this preflight succeeds. Structured fields determine
+/// the header; when none are present, a free comment must not declare hidden
+/// metadata or columns absent from the structured frame.
 fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
     for (k, v) in &frame.info {
         if k.is_empty() || k.chars().any(|c| c.is_whitespace() || c == '=' || c == '"') {
@@ -574,6 +561,14 @@ fn validate_extxyz_writable(frame: &XyzFrame) -> Result<(), String> {
             ));
         }
     }
+    super::extxyz_validation::validate(frame)?;
+    if frame.lattice.is_none() && frame.properties.is_empty() && frame.info.is_empty() {
+        let (lattice, columns, info) =
+            parse_extxyz_header(&frame.comment).map_err(|e| e.to_string())?;
+        if lattice.is_some() || columns.len() != 2 || !info.is_empty() {
+            return Err("comment declares fields absent from the structured frame".into());
+        }
+    }
     Ok(())
 }
 
@@ -590,17 +585,13 @@ impl<W: std::io::Write> ExtxyzWriter<W> {
     /// Write one frame. Call repeatedly for a multi-frame trajectory.
     ///
     /// Returns an [`std::io::Error`] of kind [`std::io::ErrorKind::InvalidData`]
-    /// (not a sink failure) if `frame.info`/`frame.properties` contains a
-    /// key/value/name that cannot be represented in extxyz syntax -- see
+    /// (not a sink failure) for invalid/unrepresentable frame data -- see
     /// [`validate_extxyz_writable`]. [`write_extxyz`] surfaces the same
     /// check as a typed [`XyzError`] instead.
     ///
-    /// # Panics
-    /// Panics if `frame.properties` is inconsistent with `frame.atoms`
-    /// (a `values` row missing for some atom, or a row whose length
-    /// doesn't match its column's declared `count`) -- this is a caller
-    /// contract on hand-built `XyzFrame` values, not something that can
-    /// happen from any of this module's own parsers.
+    /// Preflights the complete frame before writing its count line. Invalid
+    /// geometry/property/metadata data returns InvalidData without touching the
+    /// sink. Sink I/O errors may still leave a partially written valid frame.
     pub fn write_frame(&mut self, frame: &XyzFrame) -> std::io::Result<()> {
         if let Err(detail) = validate_extxyz_writable(frame) {
             return Err(std::io::Error::new(std::io::ErrorKind::InvalidData, detail));
@@ -638,12 +629,10 @@ impl<W: std::io::Write> ExtxyzWriter<W> {
 
 /// Write a single extxyz frame to a string.
 ///
-/// Returns [`XyzError::UnwritableMetadata`] if `frame.info`/`frame.properties`
-/// contains a key/value/name that cannot be represented in extxyz syntax --
-/// see [`validate_extxyz_writable`]. A frame produced by [`parse_extxyz`]
-/// can never trigger this (the parser's own tokenizer already rejects those
-/// characters on read); it is reachable only from a hand-built `XyzFrame`,
-/// e.g. via the Python/WASM `to_extxyz` bindings.
+/// Returns [`XyzError::UnwritableMetadata`] for invalid/unrepresentable frame
+/// data (including geometry, property shapes/types and metadata). The complete
+/// frame is validated before any bytes are written. Numeric values use Rust's
+/// round-tripping float spelling; this does not preserve lexical source text.
 pub fn write_extxyz(frame: &XyzFrame) -> Result<String, XyzError> {
     let mut buf = Vec::new();
     ExtxyzWriter::new(&mut buf)

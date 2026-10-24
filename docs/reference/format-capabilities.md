@@ -135,6 +135,7 @@ Use these pages when the short matrix is not enough:
 - [CML collections](cml-collection.md) and [named atoms](cml-named-atoms.md)
 - [CML namespace-aware projection](cml-namespace-projection.md)
 - [Checked CML to CJSON projection](cml-cjson-projection.md)
+- [Extended XYZ output integrity](extxyz-output-integrity.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),

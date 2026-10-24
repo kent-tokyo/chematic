@@ -3951,7 +3951,9 @@ def to_extxyz(
     ``dict[str, str]`` of extra frame metadata (e.g. ``{"energy": "-76.4"}``).
 
     Raises:
-        ValueError: if `coords`' length doesn't match `mol`'s atom count.
+        ValueError: on invalid shapes, nonfinite values or unrepresentable names.
+        Reserved atom/position aliases and duplicate semantic columns are refused.
+        Molecular bonds, charge/isotope/stereo fields are not projected.
     """
     ...
 
