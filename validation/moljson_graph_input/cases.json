@@ -1,0 +1,559 @@
+{
+  "schema": "chematic.moljson-graph-input.v1",
+  "scope": "Original graph-only fixtures for the chematic atom-record dialect, not oxpig MolJSON or general source preservation",
+  "valid": [
+    {
+      "id": "single_control",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 1,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "double",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":2,\"aromatic\":false}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 2,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "triple",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":3,\"aromatic\":false}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 3,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "quadruple",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":4,\"aromatic\":false}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 4,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "quadruple_reverse_ids_no_flag",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"b\",\"target_id\":\"a\",\"order\":4}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "Cr",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 1,
+            "target": 0,
+            "order": 4,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "isotope_charge_h",
+      "input": "{\"atoms\":[{\"id\":\"carbon\",\"element\":\"C\",\"hydrogens\":0,\"charge\":-1,\"isotope\":13},{\"id\":\"oxygen\",\"element\":\"O\",\"hydrogens\":0,\"charge\":1,\"isotope\":18}],\"bonds\":[{\"source_id\":\"carbon\",\"target_id\":\"oxygen\",\"order\":1}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": -1,
+            "isotope": 13,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "O",
+            "charge": 1,
+            "isotope": 18,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 1,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "native_integer_bounds",
+      "input": "{\"atoms\":[{\"id\":\"min\",\"element\":\"C\",\"hydrogens\":0,\"charge\":-128,\"isotope\":0},{\"id\":\"max\",\"element\":\"C\",\"hydrogens\":0,\"charge\":127,\"isotope\":65535}],\"bonds\":[]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": -128,
+            "isotope": 0,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "C",
+            "charge": 127,
+            "isotope": 65535,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "aromatic_explicit",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true},{\"id\":\"b\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1.5,\"aromatic\":true}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          },
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 1.5,
+            "aromatic": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "aromatic_order_only",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true},{\"id\":\"b\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1.5}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          },
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 1.5,
+            "aromatic": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "aromatic_flag_only",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true},{\"id\":\"b\",\"element\":\"C\",\"hydrogens\":0,\"aromatic\":true}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"aromatic\":true}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          },
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": true
+          }
+        ],
+        "bonds": [
+          {
+            "source": 0,
+            "target": 1,
+            "order": 1.5,
+            "aromatic": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "missing_optional_fields",
+      "input": "{\"atoms\":[{\"id\":\"default\",\"element\":\"C\"}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "C",
+            "charge": 0,
+            "isotope": null,
+            "hydrogens": 4,
+            "aromatic": false
+          }
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "unicode_and_source_order",
+      "input": "{\"atoms\":[{\"id\":\"乙\",\"element\":\"N\",\"hydrogens\":0,\"charge\":1},{\"id\":\"甲\",\"element\":\"O\",\"hydrogens\":0,\"isotope\":18}],\"bonds\":[{\"source_id\":\"甲\",\"target_id\":\"乙\"}]}",
+      "expected": {
+        "atoms": [
+          {
+            "element": "N",
+            "charge": 1,
+            "isotope": null,
+            "hydrogens": 0,
+            "aromatic": false
+          },
+          {
+            "element": "O",
+            "charge": 0,
+            "isotope": 18,
+            "hydrogens": 0,
+            "aromatic": false
+          }
+        ],
+        "bonds": [
+          {
+            "source": 1,
+            "target": 0,
+            "order": 1,
+            "aromatic": false
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty_graph",
+      "input": "{\"atoms\":[],\"bonds\":[]}",
+      "expected": {
+        "atoms": [],
+        "bonds": []
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "atom_charge_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":128},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":-129},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":65536},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_3",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":18446744073709551615},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_4",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":0.5},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_5",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":1.0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_6",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":true},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_7",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":null},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_charge_8",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"charge\":\"1\"},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":65536},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":65537},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":-1},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_3",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":0.5},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_4",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":1.0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_5",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":true},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_6",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":{}},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_isotope_7",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"isotope\":\"13\"},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_aromatic_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"aromatic\":1},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_aromatic_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"aromatic\":null},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "atom_aromatic_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0,\"aromatic\":\"true\"},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":0,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":0.9,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1.49,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_3",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":2.5,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_4",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":4.1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_5",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":5,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_6",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":-1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_7",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":true,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_8",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":null,\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_9",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":\"2\",\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_order_10",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":{},\"aromatic\":false}]}"
+    },
+    {
+      "id": "bond_aromatic_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":1}]}"
+    },
+    {
+      "id": "bond_aromatic_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":null}]}"
+    },
+    {
+      "id": "bond_aromatic_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":\"true\"}]}"
+    },
+    {
+      "id": "conflicting_aromatic",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":2,\"aromatic\":true}]}"
+    },
+    {
+      "id": "conflicting_nonaromatic",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1.5,\"aromatic\":false}]}"
+    },
+    {
+      "id": "duplicate_atom_id",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "empty_atom_id",
+      "input": "{\"atoms\":[{\"id\":\"\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "self_bond",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"a\",\"order\":1,\"aromatic\":false}]}"
+    },
+    {
+      "id": "duplicate_pair",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false},{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":2}]}"
+    },
+    {
+      "id": "reverse_duplicate_pair",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false},{\"source_id\":\"b\",\"target_id\":\"a\",\"order\":2}]}"
+    },
+    {
+      "id": "duplicate_bond_id",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"c\",\"element\":\"C\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false,\"id\":\"same\"},{\"source_id\":\"b\",\"target_id\":\"c\",\"order\":1,\"id\":\"same\"}]}"
+    },
+    {
+      "id": "invalid_bond_id",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"aromatic\":false,\"id\":null}]}"
+    },
+    {
+      "id": "bonds_shape_0",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":null}"
+    },
+    {
+      "id": "bonds_shape_1",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":{}}"
+    },
+    {
+      "id": "bonds_shape_2",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"Cr\",\"hydrogens\":0},{\"id\":\"b\",\"element\":\"Cr\",\"hydrogens\":0}],\"bonds\":\"bonds\"}"
+    },
+    {
+      "id": "duplicate_root_key",
+      "input": "{\"atoms\":[],\"atoms\":[{\"id\":\"a\",\"element\":\"C\"}]}"
+    },
+    {
+      "id": "duplicate_atom_key",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\",\"charge\":-1,\"charge\":1}]}"
+    },
+    {
+      "id": "escaped_duplicate_atom_key",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\",\"charge\":-1,\"ch\\u0061rge\":1}]}"
+    },
+    {
+      "id": "duplicate_bond_key",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\"},{\"id\":\"b\",\"element\":\"O\"}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1,\"order\":2}]}"
+    },
+    {
+      "id": "underflow_order",
+      "input": "{\"atoms\":[{\"id\":\"a\",\"element\":\"C\"},{\"id\":\"b\",\"element\":\"O\"}],\"bonds\":[{\"source_id\":\"a\",\"target_id\":\"b\",\"order\":1e-9999}]}"
+    }
+  ]
+}

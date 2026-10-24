@@ -23,6 +23,7 @@ verified.
 | [XYZ numeric read contract](xyz-numeric-read.md) | 14 finite/signed-zero controls retain binary64 bits; 16 unsafe numeric tokens are explicitly refused in native/Python/WASM reads | Arbitrary decimal precision, writer precision, whole-format or toolkit-wide superiority; refusals are not counted as preservation |
 | [Python typed ExtXYZ round trips](extxyz-output-integrity.md#typed-python-readwrite-round-trips) | Declared R/I/S/L kinds, widths and data plus plain comments survive 12 authored Python dictionary round trips | General ASE ExtXYZ, typed WASM writing, graph/stereo, speed or toolkit-wide superiority |
 | [CDXML bond meaning](cdxml-bond-meaning.md) | Quadruple class, dative class/direction and explicit unsupported-order refusal in an authored development packet | Complete CDXML/schema/query/stereo/source retention or speed |
+| [Local MolJSON graph input](moljson-graph-input.md) | 13 known-field graphs retain charges/isotopes/H/flags/connectivity/orders; 51 invalid or ambiguous graph inputs are refused | Upstream oxpig schema, stereo/source retention, general writer safety, speed or an Open Babel same-format score |
 
 The overview therefore reports Open Babel separately from RDKit and COSMolKit.
 File-I/O results are not used to imply descriptor, fingerprint, reaction,
