@@ -1,4 +1,4 @@
-//! RDKit-bit-exact Atom Pair fingerprint (`GetHashedAtomPairFingerprintAsBitVect`).
+//! RDKit-compatible Atom Pair fingerprint (`GetHashedAtomPairFingerprintAsBitVect`).
 //!
 //! Opt-in `RdkitExact`-mode addition, kept fully separate from
 //! [`crate::atom_pair::atom_pair_fp`] (chematic's own native scheme). Second of
@@ -36,15 +36,10 @@
 //! `[1,2,4,8]`, folded into a 2048-bit output) is identical in structure to
 //! [`crate::rdkit_torsion_fp`]'s.
 //!
-//! **Status**: 87.2% bit-exact on a 1000-molecule general corpus sample
-//! (`scripts/fixtures/descriptor_census_corpus.smi`), verified against a live RDKit
-//! oracle (`rdkit.Chem.AllChem.GetHashedAtomPairFingerprintAsBitVect`) --
-//! zero implementation bugs found this round. Every single mismatching
-//! molecule in the sample contains a hypervalent S or P atom (confirmed: 0
-//! mismatches among non-S/P molecules), meaning the entire residual is
-//! [`crate::rdkit_torsion::num_pi_electrons`]'s already-documented
-//! hybridization-gate gap (shared via the reused `atom_code` invariant) --
-//! no new gap specific to atom-pair enumeration or hashing.
+//! Against RDKit 2026.09.1's generator, the pinned CLI comparison is
+//! 4,072/4,072 exact on `stress-v1.smi`, 10,000/10,000 on the browser corpus,
+//! and 5,000/5,000 on `descriptor_census_corpus.smi`. These fixed-corpus
+//! results do not establish universal bit-exactness.
 
 use std::collections::VecDeque;
 
@@ -95,14 +90,11 @@ fn all_pairs_dist(mol: &Molecule) -> Vec<Vec<Option<u32>>> {
     dist
 }
 
-/// RDKit-bit-exact Atom Pair fingerprint, matching
+/// RDKit-compatible Atom Pair fingerprint, matching
 /// `rdkit.Chem.AllChem.GetHashedAtomPairFingerprintAsBitVect(mol, nBits=2048)`
 /// (`includeChirality=False`, `nBitsPerEntry=4`, the Python API's own defaults)
-/// exactly, except for [`crate::rdkit_torsion_fp`]'s own shared
-/// `num_pi_electrons` residual (hybridization-gate not replicated for
-/// hypervalent atoms) -- see that function's doc comment for the gap, and
-/// this module's own doc comment for the corpus measurement confirming it's
-/// the *only* remaining gap here.
+/// on the validated corpora. See this module's corpus results and the shared
+/// atom-code implementation at [`crate::rdkit_torsion::num_pi_electrons`].
 pub fn rdkit_atom_pair_fp(mol: &Molecule) -> BitVec2048 {
     chematic_smiles::with_rdkit_model_molecule(mol, rdkit_atom_pair_fp_impl)
 }

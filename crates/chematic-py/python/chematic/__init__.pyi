@@ -3917,7 +3917,11 @@ def from_extxyz(text: str) -> dict:
 
     Returns:
         dict: ``{"mol": Mol, "coords": list[list[float]],
-        "lattice": list[float] | None, "properties": dict, "info": dict}``.
+        "lattice": list[float] | None, "properties": dict, "info": dict,
+        "comment": str, "property_schema": dict[str, tuple[str, int]]}``.
+        Schema entries retain R/I/S/L kinds and widths, even with no atoms.
+        Info stays raw strings; comment is the original second line. Pass the
+        complete dict to ``to_extxyz(**result)`` to retain supported typed data.
 
     Raises:
         ValueError: on malformed input, nonfinite numeric data or nonzero
@@ -3947,17 +3951,28 @@ def to_extxyz(
     lattice: Optional[list[float]] = None,
     properties: Optional[dict] = None,
     info: Optional[dict] = None,
+    *,
+    property_schema: Optional[dict[str, tuple[str, int]]] = None,
+    comment: str = "",
 ) -> str:
-    """Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+    """Write geometry with optional typed Extended XYZ atom columns.
 
-    ``properties`` is ``dict[str, list[list[float]]]`` (real-valued per-atom
-    columns only, e.g. ``{"forces": [[fx, fy, fz], ...]}``). ``info`` is
-    ``dict[str, str]`` of extra frame metadata (e.g. ``{"energy": "-76.4"}``).
+    ``property_schema`` maps each property name to (kind, positive width):
+    R = finite binary64, I = signed 64-bit int, S = checked single-token str,
+    L = bool. Its names must exactly match ``properties``. Omitting it keeps
+    the existing real-column API with widths inferred from nonempty rows.
+    Integers not exactly representable as R are refused; declare I instead.
+    Python bool is accepted only in L columns. Empty frames need an explicit
+    schema for extra properties, since their widths cannot be inferred.
+
+    ``to_extxyz(**from_extxyz(text))`` retains supported types, widths, values,
+    atom order, cell, raw info and plain XYZ comments. With structured fields,
+    the header is rebuilt and the comment is superseded. Spelling/spacing may
+    change. Bonds, formal charges, isotope identity and stereo are not projected.
 
     Raises:
-        ValueError: on invalid shapes, nonfinite values or unrepresentable names.
-        Reserved atom/position aliases and duplicate semantic columns are refused.
-        Molecular bonds, charge/isotope/stereo fields are not projected.
+        ValueError: on invalid schemas, shapes, types, nonfinite values,
+        unsafe tokens/names, reserved aliases or duplicate semantic columns.
     """
     ...
 
@@ -4254,6 +4269,14 @@ def shape_screen(query: Mol, smiles_list: list[str]) -> list[tuple[int, float]]:
 
     Invalid SMILES are skipped. Returned indices always refer to the original
     ``smiles_list`` positions.
+    """
+    ...
+
+def rdkit_usr_descriptors(coords: list[tuple[float, float, float]]) -> list[float]:
+    """Return RDKit-compatible 12-value USR moments for supplied coordinates.
+
+    Include explicit hydrogen coordinates when the reference conformer has
+    them. Raises ValueError for fewer than three atoms or nonfinite geometry.
     """
     ...
 
@@ -4872,6 +4895,27 @@ def find_mcs_checked(
         mcs, timed_out = chematic.find_mcs_checked(mols, timeout_ms=500)
         if timed_out:
             print("warning: MCS may not be optimal")
+    """
+    ...
+
+def find_mcs_smarts_checked(
+    mols: list[Mol],
+    match_bonds: bool = True,
+    min_atoms: int = 1,
+    timeout_ms: Optional[int] = None,
+    ring_matches_ring_only: bool = False,
+    complete_rings_only: bool = False,
+    atom_compare: McsAtomComparison = "elements",
+    bond_compare: McsBondComparison = "order_or_aromatic",
+    maximize_bonds: bool = True,
+    max_search_nodes: Optional[int] = None,
+) -> tuple[Optional[str], bool]:
+    """Return the MCS SMARTS query and whether the deadline stopped the search.
+
+    Unlike :func:`find_mcs_checked`, this retains all observed atom and bond
+    alternatives under relaxed comparison. A resource limit raises
+    ``ChematicInputError``. Charge, isotope, and chirality matching are not
+    exposed here because the returned query does not encode those constraints.
     """
     ...
 

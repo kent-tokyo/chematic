@@ -46,6 +46,7 @@ from .chematic import (
     run_smirks,
     run_smirks_checked,
     find_mcs,
+    find_mcs_smarts_checked,
     iter_sdf,
     iter_sdf_checked,
     iter_sdf_batched,

@@ -91,3 +91,15 @@ def test_default_comparison_is_still_elements():
     mols = [ch.from_smiles("CCC"), ch.from_smiles("NNN")]
     assert ch.find_mcs(mols) is None
     assert ch.find_mcs(mols, atom_compare=ch.McsAtomCompare.ELEMENTS) is None
+
+
+@pytest.mark.parametrize("first,second,options", [
+    ("NO", "CO", {"atom_compare": "any"}),
+    ("CO", "NO", {"atom_compare": "any"}),
+    ("C=N", "CN", {"bond_compare": "any"}),
+    ("CN", "C=N", {"bond_compare": "any"}),
+])
+def test_concrete_mcs_projection_uses_first_input_alternative(first, second, options):
+    result = ch.find_mcs([ch.from_smiles(first), ch.from_smiles(second)], **options)
+    assert result is not None
+    assert result.smiles == ch.from_smiles(first).smiles

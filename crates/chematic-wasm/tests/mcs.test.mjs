@@ -16,7 +16,19 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..", "..", "..");
 
 const wasm = await import(path.join(repoRoot, "crates/chematic-wasm/pkg-node/chematic_wasm.js"));
-const { mcs_smiles_json, mcs_smiles_json_with_config } = wasm;
+const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_config } = wasm;
+
+{
+  const result = JSON.parse(mcs_smarts_json_with_config(
+    JSON.stringify(["NO", "CO"]), JSON.stringify({ atomCompare: "any" })
+  ));
+  assert.match(result.smarts, /,/);
+  assert.equal(result.wasTimedOut, false);
+  assert.equal(result.wasResourceLimited, false);
+  assert.throws(() => mcs_smarts_json_with_config(
+    JSON.stringify(["[13CH4]", "C"]), JSON.stringify({ matchIsotope: true })
+  ));
+}
 
 // Default config (`{}`) matches the bare mcs_smiles_json's own default.
 // (mcs_smiles_json returns a plain SMILES string, or the literal string

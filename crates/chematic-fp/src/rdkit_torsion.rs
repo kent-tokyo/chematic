@@ -1,34 +1,17 @@
-//! RDKit-bit-exact Topological Torsion fingerprint (`GetHashedTopologicalTorsionFingerprintAsBitVect`).
+//! RDKit-compatible Topological Torsion fingerprint (`GetHashedTopologicalTorsionFingerprintAsBitVect`).
 //!
-//! Opt-in `RdkitExact`-mode addition, kept fully separate from [`crate::atom_pair::torsion_fp`]
-//! (chematic's own native, similarity-preserving-but-not-RDKit-identical scheme) --
-//! neither function changes the other's behavior. First of the fingerprint-parity
-//! series (Track A / 99-point directive Phase 6): Topological Torsion measured
-//! closest to RDKit of the six priority fingerprints (avg. Hamming distance ~66/2048
-//! on a 100-molecule sample, vs. 300-600+ for the other five), so it's the pattern
-//! this module establishes for the rest.
+//! Kept separate from [`crate::atom_pair::torsion_fp`], which has its own
+//! similarity-preserving bit scheme.
 //!
 //! Derived from RDKit's C++ source (`Code/GraphMol/Fingerprints/FingerprintUtil.cpp`,
-//! `AtomPairs.cpp`, `TopologicalTorsionGenerator.cpp`, `Atom.cpp`), commit pinned at
-//! research time against `master` (RDKit 2026.03 series, matching this repo's
-//! currently-installed `rdkit` package). Every constant/formula below is a direct
-//! port, not a reinterpretation -- see each function's doc comment for the exact
-//! C++ source it mirrors.
+//! `AtomPairs.cpp`, `TopologicalTorsionGenerator.cpp`, `Atom.cpp`). The current
+//! fixed-corpus comparison uses RDKit 2026.09.1.
 //!
-//! **Status**: 87.2% bit-exact on a 1000-molecule general corpus sample
-//! (`scripts/fixtures/descriptor_census_corpus.smi`), verified against a live RDKit
-//! oracle (`rdkit.Chem.AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect`).
-//! Two known, documented residual sources account for essentially all
-//! remaining misses -- see [`num_pi_electrons`]'s doc comment (RDKit's
-//! hybridization-gated pi-electron count for hypervalent atoms, e.g. P/S,
-//! not replicated) and [`triangle_closure_paths`]'s doc comment
-//! (asymmetrically-substituted 3-membered rings can need more than the one
-//! closure entry this module generates). Three real bugs were found and
-//! fixed reaching this point (0% -> 87.2%), each verified against the live
-//! oracle before moving to the next: a missing `-2` "topological torsion
-//! correction" on atom invariants, double-counted torsion paths inflating
-//! count-simulation thresholds, and missing 3-membered-ring closure
-//! entries entirely.
+//! Against RDKit 2026.09.1's generator, the pinned CLI comparison is
+//! 4,072/4,072 exact on `stress-v1.smi`, 10,000/10,000 on the browser corpus,
+//! and 5,000/5,000 on `descriptor_census_corpus.smi`. These fixed-corpus
+//! results do not establish universal bit-exactness; see the
+//! three-membered-ring limitation at [`triangle_closure_paths`].
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::fmt;
@@ -106,27 +89,11 @@ const N_BITS_PER_ENTRY: usize = 4;
 /// zero-order bonds are excluded entirely (RDKit's `getValenceContrib(&atom)
 /// != 0.0` guard), not merely counted as order-1.
 ///
-/// **Known residual, NOT implemented here**: the real C++ function's
-/// non-aromatic branch is additionally gated on `atom.getHybridization() !=
-/// Atom::SP3` -- for an atom RDKit's hybridization-perception classifies as
-/// SP3 despite carrying a formal double bond (confirmed via a live RDKit
-/// oracle: a phosphinic-acid `P` atom in `[PH](=O)O`, `GetHybridization()
-/// == SP3`, `GetNumPiElectrons() == 0` even though it has a `P=O` bond),
-/// the real function returns 0 unconditionally, skipping the bond-order sum
-/// entirely. This function has no hybridization gate at all, so it always
-/// takes the bond-order-sum path once an atom has any multiple bond,
-/// disagreeing with RDKit specifically for atoms RDKit perceives as SP3
-/// under formal-multiple-bond bookkeeping (observed for hypervalent P/S;
-/// not yet characterized exhaustively). Replicating this exactly requires
-/// porting RDKit's own hybridization-perception algorithm -- chematic's
-/// existing `chematic_chem::hybridization_per_atom` was checked and does
-/// NOT match RDKit for this same case (reports SP2, not SP3), so it isn't a
-/// drop-in fix either. Confirmed to be the dominant remaining source of
-/// non-bit-exact output after the 3-membered-ring fix
-/// ([`triangle_closure_paths`]) landed -- measured 87.2% bit-exact on a
-/// 1000-molecule general corpus sample, with essentially all remaining
-/// misses attributable to this gap or to asymmetrically-substituted
-/// 3-membered rings (see that function's own doc comment).
+/// RDKit returns zero for non-aromatic SP3 atoms even when they carry a
+/// formal multiple bond, such as a sulfonyl or phosphoryl center. The exact
+/// sanitizer model supplies this value when available; the local
+/// [`rdkit_perceives_sp3`] rule covers ordinary and dative P/S cases.
+/// Unmodelled or sanitizer-rejected inputs retain the bond-order fallback.
 pub(crate) fn num_pi_electrons(mol: &Molecule, idx: AtomIdx) -> u32 {
     // Where chematic's perception may disagree with RDKit's (hypervalent
     // atoms, metals, radicals, ...), RDKit's own count on its model.
@@ -189,14 +156,16 @@ fn main_group_outer_electrons(z: u8) -> Option<i32> {
 /// Whether RDKit's `setHybridization` (ConjugHybrid.cpp) assigns `SP3` to a
 /// non-aromatic atom, for the cases this module can decide exactly.
 ///
-/// RDKit computes `norbs = totalDegree + lonePairs`, with
-/// `lonePairs = (nOuter - (totalValence + charge)) / 2` at or above an octet,
-/// and assigns `SP3` for `norbs == 4` unless the atom has at most three
+/// RDKit computes `norbs = totalDegree - outgoingDativeBonds + lonePairs`,
+/// with `lonePairs = (nOuter - (totalValence + charge)) / 2` at or above an
+/// octet. Outgoing dative bonds contribute no valence; incoming dative bonds
+/// contribute one unit of valence. RDKit assigns `SP3` for `norbs == 4`
+/// unless the atom has at most three
 /// neighbours (including H) *and* a conjugated bond. For a non-aromatic P/S/Se
 /// style atom (`nOuter` 5 or 6, beyond the first row, degree >= 2)
 /// `isAtomConjugCand` is false and its multiple bonds lead to terminal atoms,
 /// so none of its bonds can be marked conjugated. Anything this function
-/// cannot decide exactly (dative bonds, below-octet radical bookkeeping,
+/// cannot decide exactly (zero-order bonds, below-octet radical bookkeeping,
 /// unknown outer shells, possibly conjugated first-row atoms) returns
 /// `false`, i.e. the historical bond-order sum is used.
 ///
@@ -211,6 +180,7 @@ fn rdkit_perceives_sp3(mol: &Molecule, idx: AtomIdx) -> bool {
     };
     let mut bond_valence = 0i32;
     let mut has_multiple = false;
+    let mut outgoing_dative_bonds = 0i32;
     for (_, bidx) in mol.neighbors(idx) {
         bond_valence += match mol.bond(bidx).order {
             BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
@@ -226,8 +196,13 @@ fn rdkit_perceives_sp3(mol: &Molecule, idx: AtomIdx) -> bool {
                 has_multiple = true;
                 4
             }
-            // Aromatic bonds on a non-aromatic atom, dative/zero-order and
-            // query bonds: not decided here.
+            BondOrder::Dative if mol.bond(bidx).atom1 == idx => {
+                outgoing_dative_bonds += 1;
+                0
+            }
+            BondOrder::Dative => 1,
+            // Aromatic bonds on a non-aromatic atom, zero-order and query
+            // bonds: not decided here.
             _ => return false,
         };
     }
@@ -242,7 +217,7 @@ fn rdkit_perceives_sp3(mol: &Molecule, idx: AtomIdx) -> bool {
     }
     let total_degree = mol.degree(idx) as i32 + hydrogens;
     let lone_pairs = (n_outer - (total_valence + charge)) / 2; // C++ truncation
-    if total_degree + lone_pairs != 4 {
+    if total_degree - outgoing_dative_bonds + lone_pairs != 4 {
         return false;
     }
     if total_degree > 3 {
@@ -550,11 +525,12 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
     hash_vec(&path_codes)
 }
 
-/// RDKit-bit-exact Topological Torsion fingerprint, matching
+/// RDKit-compatible Topological Torsion fingerprint, matching
 /// `rdkit.Chem.AllChem.GetHashedTopologicalTorsionFingerprintAsBitVect(mol,
 /// nBits=2048)` (`includeChirality=False`, `nBitsPerEntry=4`, the Python
-/// API's own defaults) exactly. `torsionAtomCount` is fixed at 4 (RDKit's
-/// own default); `includeChirality` is not supported (see [`atom_code`]).
+/// API's own defaults) on the validated corpora. `torsionAtomCount` is fixed
+/// at 4 (RDKit's own default); `includeChirality` is not supported (see
+/// [`atom_code`]).
 ///
 /// Every torsion path (both [`four_atom_paths`]'s ordinary 4-distinct-atom
 /// walks and [`triangle_closure_paths`]'s 3-membered-ring closures) folds
@@ -566,11 +542,8 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// scheme) and this function produce structurally different bit patterns
 /// even before considering the atom-code/hashing differences.
 ///
-/// Known residual (not yet bit-exact): an *asymmetrically substituted*
-/// 3-membered ring can require more than one closure entry per ring (see
-/// [`triangle_closure_paths`]'s doc comment) -- measured at ~87% bit-exact
-/// on a 200-molecule general corpus sample, with essentially all remaining
-/// misses confined to this one narrow structural class.
+/// An asymmetrically substituted three-membered ring can require more than
+/// one closure entry per ring (see [`triangle_closure_paths`]).
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     chematic_smiles::with_rdkit_model_molecule(mol, rdkit_torsion_fp_impl)
 }
@@ -794,6 +767,36 @@ mod tests {
                 }
             );
         }
+    }
+
+    #[test]
+    fn outgoing_dative_bond_matches_rdkit_2026_09_1_torsion_oracle() {
+        let dative_and_triple = mol("Cc1onc(NS(->O)(=O)c2ccc(N)cc#2)c1");
+        assert_eq!(rdkit_atom_code(&dative_and_triple, AtomIdx(6), 0), Ok(228));
+        let fp = rdkit_torsion_fp(&dative_and_triple);
+        assert_eq!(fp.popcount(), 29);
+        assert_eq!(crate::fingerprint_test_digest(&fp), 0xce9acdef1bcd1c0e);
+
+        // The same S donor code applies without the unusual aromatic triple;
+        // an ordinary S-O bond keeps the different, RDKit-observed code 236.
+        let dative = mol("Cc1cc(NS(=O)(->O)c2ccc(N)cc2)no1");
+        assert_eq!(rdkit_atom_code(&dative, AtomIdx(5), 0), Ok(228));
+        let ordinary = mol("Cc1cc(NS(=O)(O)c2ccc(N)cc#2)no1");
+        assert_eq!(rdkit_atom_code(&ordinary, AtomIdx(5), 0), Ok(236));
+        let fp = rdkit_torsion_fp(&ordinary);
+        assert_eq!(fp.popcount(), 29);
+        assert_eq!(crate::fingerprint_test_digest(&fp), 0xa6b53ef2b751717e);
+
+        // RDKit counts an incoming dative bond in the acceptor's valence;
+        // charge and the resulting implicit hydrogen determine its orbitals.
+        assert_eq!(
+            rdkit_atom_code(&mol("O->S(=O)(N)C"), AtomIdx(1), 0),
+            Ok(236)
+        );
+        assert_eq!(
+            rdkit_atom_code(&mol("[O-]->[S+](=O)(N)C"), AtomIdx(1), 0),
+            Ok(228)
+        );
     }
 
     #[test]

@@ -1,0 +1,54 @@
+{
+  "schema": "chematic.extxyz-python-types.v1",
+  "scope": "Original bounded R/I/S/L Python round trips; no general ASE ExtXYZ coverage claim",
+  "valid": [
+    {
+      "id": "real_control",
+      "text": "1\nProperties=species:S:1:pos:R:3:weight:R:1\nC 0 1.25 2.5 0.125\n"
+    },
+    {
+      "id": "wide_signed_integers",
+      "text": "3\nProperties=species:S:1:pos:R:3:id:I:1\nC 0 0 0 9007199254740993\nO 1 0 0 -9223372036854775808\nH 2 0 0 9223372036854775807\n"
+    },
+    {
+      "id": "strings",
+      "text": "2\nProperties=species:S:1:pos:R:3:label:S:2\nC 0 0 0 alpha 甲\nO 1 0 0 beta_2 42\n"
+    },
+    {
+      "id": "logical_vectors",
+      "text": "2\nProperties=species:S:1:pos:R:3:mask:L:3\nC 0 0 0 T false 1\nO 1 0 0 F true 0\n"
+    },
+    {
+      "id": "mixed_types_cell_info",
+      "text": "2\nLattice=\"3 0.25 0 0 4 0.5 0 0 5\" Properties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:2:vec:R:2 note=\"two atoms\" step=17\nC -0.0 0.12345678901234566 2.5 9007199254740993 -5 donor T F 1e-150 -0.0\nO 1 0 0 7 42 acceptor F T -1e150 0.25\n"
+    },
+    {
+      "id": "empty_typed_frame",
+      "text": "0\nProperties=species:S:1:pos:R:3:id:I:2:tag:S:1:mask:L:3:vec:R:4\n"
+    },
+    {
+      "id": "plain_comment",
+      "text": "1\nenergy in external file; sample 甲\nHe 0 0 0\n"
+    },
+    {
+      "id": "empty_comment_frame",
+      "text": "0\nempty sample\n"
+    },
+    {
+      "id": "species_position_header",
+      "text": "1\nProperties=species:S:1:pos:R:3\nNe 0 0 0\n"
+    },
+    {
+      "id": "real_extremes",
+      "text": "1\nProperties=species:S:1:pos:R:3:weights:R:3\nC -0.0 5e-324 1.7976931348623157e308 5e-324 -1.7976931348623157e308 -0.0\n"
+    },
+    {
+      "id": "integral_reals",
+      "text": "2\nProperties=species:S:1:pos:R:3:value:R:1\nC 0 0 0 1.0\nO 1 0 0 0.0\n"
+    },
+    {
+      "id": "numeric_strings",
+      "text": "2\nProperties=species:S:1:pos:R:3:tag:S:2\nC 0 0 0 T 9007199254740993\nO 1 0 0 NaN -0.0\n"
+    }
+  ]
+}

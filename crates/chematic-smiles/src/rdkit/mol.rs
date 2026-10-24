@@ -577,11 +577,17 @@ impl Mol {
         let mut minimum_explicit = 0;
         // `unsigned int dv`: -1 never compares below `accum`.
         if dv >= 0 && accum > f64::from(dv) && self.is_aromatic_atom(a) {
-            if strict {
-                // Aromatic correction may reduce 1.5-order bookkeeping, but
-                // cannot erase explicit multiple bonds or hydrogens (#9735).
-                // One per aromatic bond is a conservative lower bound, also
-                // retaining the donor/acceptor contribution of dative bonds.
+            // Keep the strict lower bound for #9735's exocyclic multiple-bond
+            // overvalence. RDKit does accept aromatic ring triples in the
+            // fingerprint stress corpus, so only that specific bond shape
+            // uses RDKit's corrected valence without the extra floor.
+            let aromatic_triple = self.atom_bonds[a].iter().any(|&b| {
+                let bond = &self.bonds[b];
+                bond.bt == BondType::Triple && self.atoms[bond.other(a)].aromatic
+            }) && !self.atom_bonds[a]
+                .iter()
+                .any(|&b| self.bonds[b].bt == BondType::Double);
+            if strict && !aromatic_triple {
                 minimum_explicit = self.atom_bonds[a]
                     .iter()
                     .map(|&b| self.bonds[b].valence_contrib(a).floor() as i32)
@@ -1022,7 +1028,7 @@ mod primitive_contract_tests {
     use super::*;
 
     #[test]
-    fn strict_aromatic_valence_keeps_explicit_lower_bound_and_dative_direction() {
+    fn strict_aromatic_valence_keeps_overvalence_guard_and_dative_direction() {
         let mut center = Atom::new(6);
         center.aromatic = true;
         let mol = star(center, 5);
@@ -1032,6 +1038,15 @@ mod primitive_contract_tests {
             error
                 .to_string()
                 .contains("C, 5, is greater than permitted")
+        );
+        let mut center = Atom::new(6);
+        center.aromatic = true;
+        let mol = star(center, 6);
+        let error = mol.calc_explicit_valence_value(0, true).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("C, 6, is greater than permitted")
         );
 
         for donor in [true, false] {

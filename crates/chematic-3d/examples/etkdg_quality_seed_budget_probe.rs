@@ -6,7 +6,7 @@ use std::io::{self, BufRead};
 
 use chematic_3d::rdkit_embed::{
     RdkitEmbedOptions, RdkitMmffConformer, etkdg_embed_multiple_confs_mmff_best_gradient,
-    rdkit_embed_multiple_confs_mmff,
+    rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
 };
 use serde_json::{Value, json};
 
@@ -72,6 +72,17 @@ fn main() {
             &molecule, num_confs, &options, max_iters,
         )
         .expect("quality ensemble");
+        let adaptive = row["adaptive_retry_iters"].as_u64().map(|retry_iters| {
+            rdkit_embed_multiple_confs_mmff_adaptive(
+                &molecule,
+                num_confs,
+                &options,
+                max_iters,
+                u32::try_from(retry_iters).expect("retry iteration budget fits u32"),
+                1,
+            )
+            .expect("adaptive ensemble")
+        });
         println!(
             "{}",
             json!({
@@ -82,6 +93,7 @@ fn main() {
                 "bonds": bonds,
                 "compatibility": summary(&compatibility),
                 "quality": summary(&quality),
+                "adaptive": adaptive.as_deref().map(summary),
                 "quality_candidates": quality.iter().map(|conformer| json!({
                     "status": conformer.status,
                     "energy": conformer.energy,

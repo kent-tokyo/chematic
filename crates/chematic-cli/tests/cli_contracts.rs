@@ -402,6 +402,7 @@ fn every_cli_algorithm_and_resource_limit_has_an_executable_contract() {
         "rdkit_pattern",
         "rdkit_rdk",
         "rdkit_torsion",
+        "rdkit_atom_pair",
     ] {
         let fingerprint = json_output(&["fingerprint", "c1ccccc1O", "--algorithm", algorithm], "");
         assert_eq!(fingerprint["algorithm"], algorithm);
@@ -460,6 +461,11 @@ fn rdkit_compatible_fingerprints_match_independent_ethanol_oracle() {
             54, 173, 217, 429, 622, 759, 778, 874, 946, 967, 1022, 1033, 1061, 1236, 1289, 1295
         ])
     );
+    let atom_pair = json_output(
+        &["fingerprint", "CCO", "--algorithm", "rdkit_atom_pair"],
+        "",
+    );
+    assert_eq!(atom_pair["set_bits"], json!([1404, 1596, 1916]));
     let batch = json_output(
         &["batch-fingerprints", "--algorithm", "rdkit_morgan"],
         "CCO\n",

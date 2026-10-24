@@ -222,6 +222,14 @@ fn rdkit_heavy_mode_matches_pinned_mcs_count_oracle() {
             row["expected"][1].as_u64().unwrap() as usize,
             "{line}"
         );
+        if query.atom_count() > 0 {
+            for input in &inputs {
+                assert!(
+                    !crate::find_matches(&query, input).is_empty(),
+                    "RDKit-heavy MCS query did not re-match an input: {line}"
+                );
+            }
+        }
         comparisons += 1;
     }
     assert_eq!(comparisons, 660);
@@ -266,6 +274,14 @@ fn pinned_mcs_profile_counts_remain_exact() {
             ],
             "{line}"
         );
+        if query.atom_count() > 0 {
+            for input in &inputs {
+                assert!(
+                    !crate::find_matches(&query, input).is_empty(),
+                    "native MCS query did not re-match an input: {line}"
+                );
+            }
+        }
         comparisons += 1;
     }
     assert_eq!(comparisons, 1980);
@@ -306,4 +322,91 @@ fn complete_rings_only_keeps_smaller_valid_chain_after_larger_partial_ring() {
         assert!(!crate::find_matches(&query, refs[0]).is_empty());
         assert!(!crate::find_matches(&query, refs[1]).is_empty());
     }
+}
+
+#[test]
+fn mcs_comparator_query_matches_every_input() {
+    use crate::find_matches;
+
+    for (smiles, atom_compare, bond_compare, match_bonds, atoms, bonds) in [
+        (
+            ["CO", "NO", "SO"],
+            AtomCompare::Any,
+            BondCompare::OrderOrAromatic,
+            true,
+            2,
+            1,
+        ),
+        (
+            ["CO", "NO", "SO"],
+            AtomCompare::AnyHeavyAtom,
+            BondCompare::OrderOrAromatic,
+            true,
+            2,
+            1,
+        ),
+        (
+            ["C=N", "CN", "C#N"],
+            AtomCompare::Elements,
+            BondCompare::Any,
+            true,
+            2,
+            1,
+        ),
+        (
+            ["C=N", "CN", "C#N"],
+            AtomCompare::Elements,
+            BondCompare::OrderOrAromatic,
+            false,
+            2,
+            1,
+        ),
+    ] {
+        let molecules: Vec<_> = smiles.iter().map(|value| parse(value).unwrap()).collect();
+        let refs: Vec<_> = molecules.iter().collect();
+        let config = McsConfig {
+            atom_compare,
+            bond_compare,
+            match_bonds,
+            ..Default::default()
+        };
+        let outcome = find_mcs_with_config_checked(&refs, &config);
+        assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+        let query = outcome.into_query();
+        assert_eq!(query.atom_count(), atoms, "{smiles:?}");
+        assert_eq!(query.bonds.len(), bonds, "{smiles:?}");
+        for (smiles, mol) in smiles.iter().zip(&molecules) {
+            assert!(
+                !find_matches(&query, mol).is_empty(),
+                "MCS query does not match source {smiles}"
+            );
+        }
+    }
+}
+
+#[test]
+fn mcs_comparator_query_excludes_unobserved_alternatives() {
+    use crate::find_matches;
+
+    let carbon_oxygen = parse("CO").unwrap();
+    let nitrogen_oxygen = parse("NO").unwrap();
+    let phosphorus_oxygen = parse("PO").unwrap();
+    let any_atoms = McsConfig {
+        atom_compare: AtomCompare::Any,
+        ..Default::default()
+    };
+    let query = find_mcs_with_config(&[&carbon_oxygen, &nitrogen_oxygen], &any_atoms);
+    assert_eq!(query.atom_count(), 2);
+    assert!(find_matches(&query, &phosphorus_oxygen).is_empty());
+
+    let double = parse("C=N").unwrap();
+    let single = parse("CN").unwrap();
+    let triple = parse("C#N").unwrap();
+    let any_bonds = McsConfig {
+        bond_compare: BondCompare::Any,
+        ..Default::default()
+    };
+    let query = find_mcs_with_config(&[&double, &single], &any_bonds);
+    assert_eq!(query.bonds.len(), 1);
+    assert!(find_matches(&query, &triple).is_empty());
 }

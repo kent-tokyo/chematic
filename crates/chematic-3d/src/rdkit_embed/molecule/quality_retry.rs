@@ -6,6 +6,23 @@ use crate::stereo_constraints::verify_stereo;
 
 use super::{RdkitMmffConformer, optimize_mmff_conformer};
 
+/// Accept a refined geometry only when every declared stereochemical
+/// constraint remains evaluable and satisfied. The adaptive retry APIs share
+/// this gate with the quality profile.
+pub(super) fn stereo_safe_retry(mh: &Molecule, coords: &[[f64; 3]]) -> bool {
+    if coords.len() != mh.atom_count() || !coords.iter().flatten().all(|value| value.is_finite()) {
+        return false;
+    }
+    let geometry = Coords3D {
+        points: coords
+            .iter()
+            .map(|&[x, y, z]| Point3::new(x, y, z))
+            .collect(),
+    };
+    let stereo = verify_stereo(mh, &geometry);
+    stereo.n_violations() == 0 && stereo.n_unevaluable() == 0
+}
+
 pub(super) fn refine_unfinished_quality_minimum(
     mh: &Molecule,
     mut candidates: Vec<RdkitMmffConformer>,
@@ -27,19 +44,9 @@ pub(super) fn refine_unfinished_quality_minimum(
     if retry.status == 0
         && retry.energy.is_finite()
         && retry.energy <= best.energy
-        && retry.coords.iter().flatten().all(|value| value.is_finite())
+        && stereo_safe_retry(mh, &retry.coords)
     {
-        let coords = Coords3D {
-            points: retry
-                .coords
-                .iter()
-                .map(|&[x, y, z]| Point3::new(x, y, z))
-                .collect(),
-        };
-        let stereo = verify_stereo(mh, &coords);
-        if stereo.n_violations() == 0 && stereo.n_unevaluable() == 0 {
-            candidates[best_index] = retry;
-        }
+        candidates[best_index] = retry;
     }
     candidates
 }
@@ -56,6 +63,28 @@ fn lowest_unfinished_index(candidates: &[RdkitMmffConformer]) -> Option<usize> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn adaptive_retry_rejects_mirrored_and_planar_stereo() {
+        let mol = chematic_smiles::parse("F[C@](Cl)(Br)I").unwrap();
+        let coords = [
+            [1.0, 1.0, 1.0],
+            [0.0, 0.0, 0.0],
+            [1.0, -1.0, -1.0],
+            [-1.0, 1.0, -1.0],
+            [-1.0, -1.0, 1.0],
+        ];
+        let mirrored = coords.map(|point| [-point[0], point[1], point[2]]);
+        assert_ne!(
+            stereo_safe_retry(&mol, &coords),
+            stereo_safe_retry(&mol, &mirrored)
+        );
+        assert!(!stereo_safe_retry(
+            &mol,
+            &coords.map(|point| [point[0], point[1], 0.0])
+        ));
+        assert!(!stereo_safe_retry(&mol, &coords[..4]));
+    }
 
     #[test]
     fn retry_selection_skips_converged_minimum() {

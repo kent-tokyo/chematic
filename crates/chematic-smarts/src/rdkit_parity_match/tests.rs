@@ -3,6 +3,35 @@ use crate::parser::parse_smarts;
 use chematic_smiles::parse;
 
 #[test]
+fn rdkit_2026_09_aromatic_triple_ring_search() {
+    // RDKit MolFromSmiles/HasSubstructMatch keeps this six-carbon ring
+    // aromatic even though its closure bond is triple. Neither an aliphatic
+    // X3 carbon nor an explicit C=C occurs in its sanitized query graph.
+    let config = RdkitParityConfig {
+        use_rdkit_parity_aromaticity: true,
+        ring_count_model: RdkitRingCountModel::RelevantCycles,
+        ..RdkitParityConfig::default()
+    };
+    for smiles in [
+        "c1cc#ccc1",
+        "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+    ] {
+        let mol = parse(smiles).unwrap();
+        for (smarts, expected) in [
+            ("c", true),
+            ("c#c", true),
+            ("[#6]=[#6]", false),
+            ("[C;X3]", false),
+        ] {
+            let query = parse_smarts(smarts).unwrap();
+            let (matches, exhausted) = find_matches_rdkit_parity(&query, &mol, &config).unwrap();
+            assert!(!exhausted, "{smiles} {smarts}");
+            assert_eq!(!matches.is_empty(), expected, "{smiles} {smarts}");
+        }
+    }
+}
+
+#[test]
 fn organometallic_ring_closure_is_single_in_raw_graph() {
     let mol = parse("CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10").unwrap();
     let (bond_idx, bond) = mol.bond_between(AtomIdx(4), AtomIdx(9)).unwrap();

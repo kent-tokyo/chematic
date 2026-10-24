@@ -725,6 +725,35 @@ mod tests {
     }
 
     #[test]
+    fn explicit_aromatic_six_ring_triple_survives_rdkit_parity_view() {
+        // RDKit 2026.09.1 accepts c1cc#ccc1 and keeps all six carbons
+        // aromatic; the triple ring closure remains a triple bond.
+        for smiles in [
+            "c1cc#ccc1",
+            "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+        ] {
+            let mol = chematic_smiles::parse(smiles).expect("valid SMILES");
+            let perceived = apply_aromaticity_rdkit_parity_experimental(&mol).unwrap();
+            let ring_atoms: &[u32] = if smiles == "c1cc#ccc1" {
+                &[0, 1, 2, 3, 4, 5]
+            } else {
+                &[9, 10, 11, 12, 14, 15]
+            };
+            for &atom in ring_atoms {
+                assert!(perceived.atom(AtomIdx(atom)).aromatic, "{smiles}: atom {atom}");
+            }
+            assert_eq!(
+                perceived
+                    .bonds()
+                    .filter(|(_, bond)| bond.order == BondOrder::Triple)
+                    .count(),
+                1,
+                "{smiles}"
+            );
+        }
+    }
+
+    #[test]
     fn neutral_oxygen_and_sulfur_are_not_aromatic_macrocycle_donors() {
         // RDKit Aromaticity.cpp suppresses neutral divalent O/S two-electron
         // donation when the containing SSSR ring has at least nine atoms.

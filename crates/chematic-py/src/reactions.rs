@@ -1027,8 +1027,8 @@ fn build_mcs_config(
 }
 
 /// Reconstruct a concrete `Mol` from a `QueryMolecule` produced by MCS search
-/// (atom queries are always `AtomicNum` primitives; bond queries are typed
-/// primitives) -- `None` when the query has no atoms (no common substructure).
+/// by selecting the first input's observed atom and bond alternatives --
+/// `None` when the query has no atoms (no common substructure).
 fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
     use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
     use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
@@ -1041,7 +1041,19 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
         match q {
             AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
             AtomQuery::And(lhs, rhs) => extract_atomic_num(lhs).or_else(|| extract_atomic_num(rhs)),
+            AtomQuery::Or(lhs, _) => extract_atomic_num(lhs),
             _ => None,
+        }
+    }
+
+    // Choose the first input's bond order when MCS produced an observed-order OR.
+    fn first_bond_order(q: &BondQuery) -> BondOrder {
+        match q {
+            BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+            BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
+            BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
+            BondQuery::Or(lhs, _) | BondQuery::And(lhs, _) => first_bond_order(lhs),
+            _ => BondOrder::Single,
         }
     }
 
@@ -1052,10 +1064,7 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
     let mut aromatic_atoms = vec![false; qmol.atoms.len()];
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
-            if matches!(
-                qmol.bonds[*bond_idx].query,
-                BondQuery::Primitive(BondPrimitive::Aromatic)
-            ) {
+            if first_bond_order(&qmol.bonds[*bond_idx].query) == BondOrder::Aromatic {
                 aromatic_atoms[atom_idx] = true;
                 aromatic_atoms[*neighbor_idx] = true;
             }
@@ -1074,12 +1083,7 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
             if atom_idx < *neighbor_idx {
-                let order = match &qmol.bonds[*bond_idx].query {
-                    BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
-                    BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
-                    BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
-                    _ => BondOrder::Single,
-                };
+                let order = first_bond_order(&qmol.bonds[*bond_idx].query);
                 let _ = builder.add_bond(
                     AtomIdx(atom_idx as u32),
                     AtomIdx(*neighbor_idx as u32),
@@ -1242,6 +1246,78 @@ fn find_mcs_checked(
     }
 }
 
+/// Return the actual MCS query as SMARTS, preserving observed atom and bond
+/// alternatives. The status distinguishes a partial timeout result.
+///
+/// Charge, isotope, and chirality matching flags are deliberately absent:
+/// the native MCS query does not yet encode those predicates for re-search.
+#[pyfunction]
+#[pyo3(signature = (
+    mols,
+    match_bonds=true,
+    min_atoms=1,
+    timeout_ms=None,
+    ring_matches_ring_only=false,
+    complete_rings_only=false,
+    atom_compare="elements",
+    bond_compare="order_or_aromatic",
+    maximize_bonds=true,
+    max_search_nodes=None,
+))]
+#[allow(clippy::too_many_arguments)]
+fn find_mcs_smarts_checked(
+    mols: Vec<Mol>,
+    match_bonds: bool,
+    min_atoms: usize,
+    timeout_ms: Option<u64>,
+    ring_matches_ring_only: bool,
+    complete_rings_only: bool,
+    atom_compare: &str,
+    bond_compare: &str,
+    maximize_bonds: bool,
+    max_search_nodes: Option<usize>,
+) -> PyResult<(Option<String>, bool)> {
+    let mut config = build_mcs_config(
+        match_bonds,
+        min_atoms,
+        timeout_ms,
+        ring_matches_ring_only,
+        complete_rings_only,
+        atom_compare,
+        bond_compare,
+        false,
+        false,
+        false,
+        maximize_bonds,
+    )?;
+    if let Some(limit) = max_search_nodes {
+        config.max_search_nodes = Some(limit);
+    }
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config)
+    } else {
+        chematic_smarts::find_mcs_with_config_checked(&refs, &config)
+    };
+    let timed_out = outcome.was_timed_out();
+    if outcome.was_resource_limited() {
+        return Err(crate::errors::input_error(
+            "resource_limit",
+            "mcs_resource_limit",
+            "mcs",
+            "MCS search reached its configured resource limit before proving the result optimal"
+                .to_string(),
+        ));
+    }
+    let query = outcome.into_query();
+    if query.atoms.is_empty() {
+        return Ok((None, timed_out));
+    }
+    let smarts = chematic_smarts::mcs_query_to_smarts(&query)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    Ok((Some(smarts), timed_out))
+}
+
 // ---------------------------------------------------------------------------
 // Module definition
 // ---------------------------------------------------------------------------
@@ -1279,5 +1355,56 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         run_smirks_strict,
         find_mcs,
         find_mcs_checked,
+        find_mcs_smarts_checked,
     )
+}
+
+#[cfg(test)]
+mod mcs_projection_tests {
+    use super::*;
+
+    #[test]
+    fn concrete_mcs_projection_uses_first_input_alternative() {
+        for (first, second, atom_compare, bond_compare) in [
+            (
+                "NO",
+                "CO",
+                chematic_smarts::AtomCompare::Any,
+                chematic_smarts::BondCompare::OrderOrAromatic,
+            ),
+            (
+                "CO",
+                "NO",
+                chematic_smarts::AtomCompare::Any,
+                chematic_smarts::BondCompare::OrderOrAromatic,
+            ),
+            (
+                "C=N",
+                "CN",
+                chematic_smarts::AtomCompare::Elements,
+                chematic_smarts::BondCompare::Any,
+            ),
+            (
+                "CN",
+                "C=N",
+                chematic_smarts::AtomCompare::Elements,
+                chematic_smarts::BondCompare::Any,
+            ),
+        ] {
+            let left = chematic_smiles::parse(first).unwrap();
+            let right = chematic_smiles::parse(second).unwrap();
+            let config = chematic_smarts::McsConfig {
+                atom_compare,
+                bond_compare,
+                ..Default::default()
+            };
+            let query = chematic_smarts::find_mcs_with_config(&[&left, &right], &config);
+            let projected = qmol_to_mol(&query).unwrap();
+            assert_eq!(
+                chematic_smiles::canonical_smiles(projected.inner.as_ref()),
+                chematic_smiles::canonical_smiles(&left),
+                "{first} versus {second}"
+            );
+        }
+    }
 }

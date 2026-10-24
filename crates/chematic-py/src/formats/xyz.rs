@@ -1,5 +1,7 @@
 use super::*;
 
+mod properties;
+
 /// Parse an XYZ string and return ``(Mol, coords)`` where coords is a list of ``[x,y,z]``.
 ///
 /// Keeps every listed atom, including H, without inferring bonds. Accepts
@@ -48,8 +50,17 @@ pub(crate) fn extxyz_frame_to_pydict<'py>(
         None => d.set_item("lattice", py.None())?,
     }
 
+    d.set_item("comment", &frame.comment)?;
+    let property_schema = PyDict::new(py);
     let properties = PyDict::new(py);
     for prop in &frame.properties {
+        if property_schema.contains(&prop.name)? {
+            return Err(PyValueError::new_err(format!(
+                "duplicate property name {:?}",
+                prop.name
+            )));
+        }
+        property_schema.set_item(&prop.name, (properties::kind_tag(prop.kind), prop.count))?;
         match prop.kind {
             chematic_mol::XyzPropertyKind::Real => {
                 let v: Vec<Vec<f64>> = extxyz_property_rows(prop, |x| match x {
@@ -82,6 +93,7 @@ pub(crate) fn extxyz_frame_to_pydict<'py>(
         }
     }
     d.set_item("properties", properties)?;
+    d.set_item("property_schema", property_schema)?;
 
     let info = PyDict::new(py);
     for (k, v) in &frame.info {
@@ -112,7 +124,12 @@ pub(super) fn extxyz_property_rows<T>(
 ///     "lattice": list[float] | None (9 numbers, row-major cell matrix),
 ///     "properties": dict[str, list[list[float | int | str | bool]]]
 ///     (per-atom columns beyond position, e.g. ``"forces"``, ``"charge"``),
-///     "info": dict[str, str]}`` (other frame metadata, e.g. ``"energy"``).
+///     "info": dict[str, str], "comment": str,
+///     "property_schema": dict[str, tuple[str, int]]}``. Schema entries carry
+///     the declared R/I/S/L kind and component count (including empty frames).
+///     Info values remain raw strings. The comment is the original second line.
+///     Pass the complete dict to ``to_extxyz(**result)`` for supported typed
+///     columns and comments; source formatting may change.
 ///
 /// Raises:
 ///     ValueError: on malformed input (bad ``Lattice=``/``Properties=``,
@@ -148,44 +165,30 @@ pub(super) fn from_extxyz_all<'py>(
         .collect()
 }
 
-/// Write a molecule + coordinates as an Extended XYZ (extxyz) frame.
+/// Write coordinates and optional typed atom columns as one Extended XYZ frame.
 ///
-/// Args:
-///     mol: The molecule to write; atom order is preserved as the extxyz
-///         atom order.
-///     coords: Cartesian coordinates as ``[[x, y, z], ...]`` (Å), same
-///         order and length as `mol`'s atoms.
-///     lattice: Optional 9-number row-major cell matrix
-///         (``[ax, ay, az, bx, by, bz, cx, cy, cz]``).
-///     properties: Optional ``dict[str, list[list[float]]]`` of extra
-///         real-valued per-atom columns (e.g.
-///         ``{"forces": [[fx, fy, fz], ...]}``), one row per atom, same
-///         row length within a column. Only real-valued (``R``) columns
-///         are supported from Python; build a
-///         ``chematic_mol::XyzProperty`` directly from Rust for
-///         integer/string/logical columns.
-///     info: Optional ``dict[str, str]`` of extra frame metadata (e.g.
-///         ``{"energy": "-76.4"}``), written in dict iteration order.
+/// `property_schema` maps each property name to `(kind, component_count)`, where
+/// kind is R (finite binary64), I (signed 64-bit int), S (checked single-token
+/// string), or L (bool). Its names must exactly match `properties`. Omitting it
+/// retains the real-valued property API, with width inferred from nonempty rows.
+/// Integers that cannot be represented exactly as R are refused; use I instead.
 ///
-/// Returns:
-///     str: extxyz file contents (one frame).
-///
-/// Raises:
-///     ValueError: if `coords`' length doesn't match `mol`'s atom count,
-///     invalid shapes/types, nonfinite coordinates/cell/property values or
-///     unrepresentable metadata/property names. Reserved species/position aliases
-///     and colliding charge/charges columns are refused before output. Bare empty
-///     info values are refused; explicitly typed metadata strings remain raw tags.
-///     This geometry writer does not transfer molecular bonds, formal charges,
-///     isotopes or stereo; supply real-valued atom data explicitly in properties.
+/// `from_extxyz` supplies this schema and the original `comment`, allowing
+/// `to_extxyz(**from_extxyz(text))` to retain supported column types/widths,
+/// values, atom order, cell, raw info and plain XYZ comments, even with no atoms.
+/// With structured fields the header is rebuilt from those fields; source
+/// spelling/spacing is not retained. Existing writable-token restrictions apply.
+/// Molecular bonds, formal charges, isotopes and stereo are not transferred.
 #[pyfunction]
-#[pyo3(signature = (mol, coords, lattice=None, properties=None, info=None))]
+#[pyo3(signature = (mol, coords, lattice=None, properties=None, info=None, *, property_schema=None, comment=""))]
 pub(super) fn to_extxyz<'py>(
     mol: &Mol,
     coords: Vec<[f64; 3]>,
     lattice: Option<[f64; 9]>,
     properties: Option<Bound<'py, PyDict>>,
     info: Option<Bound<'py, PyDict>>,
+    property_schema: Option<Bound<'py, PyDict>>,
+    comment: &str,
 ) -> PyResult<String> {
     let n = mol.inner.atom_count();
     if coords.len() != n {
@@ -202,39 +205,7 @@ pub(super) fn to_extxyz<'py>(
         })
         .collect();
 
-    let mut xyz_properties = Vec::new();
-    if let Some(properties) = properties {
-        for (key, value) in properties.iter() {
-            let name: String = key.extract()?;
-            let rows: Vec<Vec<f64>> = value.extract().map_err(|_| {
-                PyValueError::new_err(format!(
-                    "properties['{name}'] must be a list of lists of float"
-                ))
-            })?;
-            if rows.len() != n {
-                return Err(PyValueError::new_err(format!(
-                    "properties['{name}'] has {} row(s), mol has {n} atom(s)",
-                    rows.len()
-                )));
-            }
-            let count = rows.first().map_or(0, |r| r.len());
-            if rows.iter().any(|r| r.len() != count) {
-                return Err(PyValueError::new_err(format!(
-                    "properties['{name}'] rows have inconsistent lengths"
-                )));
-            }
-            let values = rows
-                .into_iter()
-                .map(|r| r.into_iter().map(chematic_mol::XyzValue::Real).collect())
-                .collect();
-            xyz_properties.push(chematic_mol::XyzProperty {
-                name,
-                kind: chematic_mol::XyzPropertyKind::Real,
-                count,
-                values,
-            });
-        }
-    }
+    let xyz_properties = properties::decode(properties.as_ref(), property_schema.as_ref(), n)?;
 
     let mut xyz_info = Vec::new();
     if let Some(info) = info {
@@ -245,7 +216,7 @@ pub(super) fn to_extxyz<'py>(
 
     let frame = chematic_mol::XyzFrame {
         atoms,
-        comment: String::new(),
+        comment: comment.to_owned(),
         lattice,
         properties: xyz_properties,
         info: xyz_info,
