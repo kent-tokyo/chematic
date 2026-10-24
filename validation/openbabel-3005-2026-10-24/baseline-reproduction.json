@@ -1,0 +1,7 @@
+{
+  "package": "/private/tmp/chematic-rdkit-9738-python-20261024/chematic",
+  "binary_sha256": "57056d8850e314cf9d713b9a04d4cc971265c057db0684a275c1998e1e9d98e0",
+  "smiles": "[2H]O[13CH2][3H]",
+  "result": "checked writer accepted; ordinary H/O/C/H output contains no isotope labels",
+  "scope": "local baseline package from RDKit #9738 branch; PDBQT source matches origin/main at 38b4c92c"
+}

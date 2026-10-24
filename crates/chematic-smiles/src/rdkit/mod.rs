@@ -36,6 +36,7 @@ mod align;
 mod aromaticity;
 mod atom_environment;
 mod canon;
+mod cleanup_write;
 mod crippen_params;
 mod depict;
 mod embed_view;
@@ -133,40 +134,20 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// Metal disconnection can leave an isolated ion carrying a non-tetrahedral
 /// tag from the input complex. RDKit's Cleanup retains that tag on the
 /// resulting molecule, although parsing the isolated ion as a *new* SMILES
-/// would discard it. This function preserves the tag of a fully occupied
-/// isolated Cleanup product. The Cleanup graph remaps the permutation first
-/// when an isolated center had a vacant coordination site.
+/// would discard it. The ordinary [`rdkit_canonical_smiles`] models that new
+/// parse; this function preserves the tag of an isolated Cleanup product.
+/// Cleanup remaps a three-ligand square-planar permutation before writing.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
-    let mut model = parse::from_chematic(mol)?;
-    let initial_atom_count = model.atoms.len();
-    let isolated_tags: Vec<_> = model
-        .atoms
-        .iter()
-        .enumerate()
-        .filter(|(idx, atom)| {
-            model.degree(*idx) == 0
-                && atom.chiral.nontet().is_some()
-                && mol
-                    .stereo_neighbor_order(chematic_core::AtomIdx(*idx as u32))
-                    .is_some_and(|order| order.is_empty())
-        })
-        .map(|(idx, atom)| (idx, atom.chiral, atom.chiral_perm))
-        .collect();
-    if has_added_hydrogens(mol) {
-        sanitize::sanitize_keeping_hs(&mut model)?;
-    } else {
-        sanitize::remove_hs_and_sanitize(&mut model)?;
-    }
-    stereo::legacy_stereo_perception_unflagged(&mut model);
-    // If removeHs changed indices, there is no safe index correspondence for
-    // the retained tags, so the normal sanitized output is used.
-    if model.atoms.len() == initial_atom_count {
-        for (idx, tag, permutation) in isolated_tags {
-            model.atoms[idx].chiral = tag;
-            model.atoms[idx].chiral_perm = permutation;
-        }
-    }
-    write::mol_to_smiles_owned(model, &RdkitSmilesParams::default())
+    rdkit_cleanup_smiles(mol, &RdkitSmilesParams::default())
+}
+
+/// Write an already-cleaned molecule with RDKit SMILES options while retaining
+/// the in-memory tag of a fully occupied isolated metal center.
+pub fn rdkit_cleanup_smiles(
+    mol: &Molecule,
+    params: &RdkitSmilesParams,
+) -> Result<String, RdkitSmilesError> {
+    cleanup_write::write_cleanup_smiles(mol, params)
 }
 
 /// RDKit's `SmilesWriteParams` as `Chem.MolToSmiles` exposes them
@@ -511,6 +492,8 @@ pub struct RdkitChemistryProblem {
 /// `KekulizeException` with the unkekulized atoms). Problems come in
 /// RDKit's order. Parse SMILES with impossible O/F valences with
 /// [`crate::parse_template`], which [`crate::parse`] rejects.
+/// Strict valence checks additionally refuse aromatic overvalence hidden by
+/// RDKit's aromatic correction (upstream #9735), reporting the affected atom.
 ///
 /// ```
 /// let mol = chematic_smiles::parse("c1cccc1").unwrap();

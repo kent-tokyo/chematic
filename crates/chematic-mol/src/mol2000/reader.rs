@@ -62,7 +62,7 @@ fn parse_header(
     ))
 }
 
-fn parse_counts(lines: &mut NumberedLines<'_>) -> Result<(usize, usize), MolParseError> {
+pub(super) fn parse_counts(lines: &mut NumberedLines<'_>) -> Result<(usize, usize), MolParseError> {
     let (line_number, line) = next_required(lines)?;
     if !line.contains("V2000") {
         return Err(MolParseError::InvalidCountLine {
@@ -343,6 +343,8 @@ struct PropertyUpdates {
     charges: Vec<(AtomIdx, i8)>,
     isotopes: Vec<(AtomIdx, u16)>,
     r_groups: Vec<(AtomIdx, RGroupLabel)>,
+    charges_explicit: bool,
+    isotopes_explicit: bool,
 }
 
 fn property_pairs<'a>(
@@ -431,6 +433,26 @@ fn parse_isotope_properties(
     Ok(())
 }
 
+// Fixed-width M ISO pairs can touch when the mass occupies all four columns.
+// Keep accepting historical whitespace-separated records through the caller.
+fn fixed_isotope_fields(line: &str) -> Option<Vec<&str>> {
+    if !line.starts_with("M  ISO") {
+        return None;
+    }
+    let count = line.get(6..9)?.trim().parse::<usize>().ok()?;
+    let end = 9usize.checked_add(count.checked_mul(8)?)?;
+    if !line.get(end..)?.trim().is_empty() {
+        return None;
+    }
+    let mut fields = vec!["M", "ISO", line.get(6..9)?.trim()];
+    for i in 0..count {
+        let start = 9 + i * 8;
+        fields.push(line.get(start..start + 4)?.trim());
+        fields.push(line.get(start + 4..start + 8)?.trim());
+    }
+    Some(fields)
+}
+
 fn parse_rgroup_properties(
     fields: &[&str],
     line_number: usize,
@@ -462,10 +484,18 @@ fn parse_property_block(
         let fields: Vec<&str> = line.split_whitespace().collect();
         match fields.get(0..2) {
             Some(["M", "CHG"]) => {
-                parse_charge_properties(&fields, line_number, atom_count, &mut updates)?
+                parse_charge_properties(&fields, line_number, atom_count, &mut updates)?;
+                updates.charges_explicit = true;
             }
             Some(["M", "ISO"]) => {
-                parse_isotope_properties(&fields, line_number, atom_count, &mut updates)?
+                let fixed = fixed_isotope_fields(line);
+                parse_isotope_properties(
+                    fixed.as_deref().unwrap_or(&fields),
+                    line_number,
+                    atom_count,
+                    &mut updates,
+                )?;
+                updates.isotopes_explicit = true;
             }
             Some(["M", "RGP"]) => {
                 parse_rgroup_properties(&fields, line_number, atom_count, &mut updates)?
@@ -498,6 +528,21 @@ fn apply_atom_updates(
     updates: PropertyUpdates,
 ) {
     flag_aromatic_bond_atoms(mol);
+    // CTfile property records replace the entire corresponding atom-block
+    // channel, not just the listed atoms. Reset once, then apply all lines.
+    // Keep charge and isotope presence independent; absent channels retain
+    // their legacy atom-block values.
+    if updates.charges_explicit || updates.isotopes_explicit {
+        for index in 0..mol.atom_count() {
+            let atom = AtomIdx(index as u32);
+            if updates.charges_explicit {
+                mol.set_charge(atom, 0);
+            }
+            if updates.isotopes_explicit {
+                mol.set_isotope(atom, None);
+            }
+        }
+    }
     for (atom, charge) in updates.charges {
         mol.set_charge(atom, charge);
     }

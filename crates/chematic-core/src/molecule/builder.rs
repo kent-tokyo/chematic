@@ -13,6 +13,7 @@ pub struct MoleculeBuilder {
     stereo_neighbor_order: std::collections::HashMap<u32, Vec<u32>>,
     bond_directions: std::collections::HashMap<u32, BondOrder>,
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
+    unspecified_bond_stereo: std::collections::HashSet<u32>,
     smiles_ring_closure_keys: std::collections::HashMap<u32, u64>,
 }
 
@@ -38,6 +39,7 @@ impl MoleculeBuilder {
             stereo_neighbor_order: std::collections::HashMap::new(),
             bond_directions: std::collections::HashMap::new(),
             bond_direction_anchors: std::collections::HashMap::new(),
+            unspecified_bond_stereo: std::collections::HashSet::new(),
             smiles_ring_closure_keys: std::collections::HashMap::new(),
         }
     }
@@ -61,6 +63,7 @@ impl MoleculeBuilder {
         b.stereo_neighbor_order = mol.stereo_neighbor_order.clone();
         b.bond_directions = mol.bond_directions.clone();
         b.bond_direction_anchors = mol.bond_direction_anchors.clone();
+        b.unspecified_bond_stereo = mol.unspecified_bond_stereo.clone();
         b.smiles_ring_closure_keys = mol.smiles_ring_closure_keys.clone();
         b
     }
@@ -160,6 +163,16 @@ impl MoleculeBuilder {
         self.bond_direction_anchors.insert(idx.0, atom);
     }
 
+    /// Record that a double bond's configuration was explicitly unspecified.
+    pub fn set_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.unspecified_bond_stereo.insert(idx.0);
+    }
+
+    /// Remove an explicit unknown-stereo marker from bond `idx`.
+    pub fn clear_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.unspecified_bond_stereo.remove(&idx.0);
+    }
+
     /// Record that bond `idx` closed SMILES ring label `label` at its
     /// `occurrence`-th use (see [`Molecule::rdkit_bond_order`]).
     pub fn set_smiles_ring_closure(&mut self, idx: BondIdx, label: u32, occurrence: u32) {
@@ -194,6 +207,7 @@ impl MoleculeBuilder {
         self.smiles_ring_closure_keys = mol.smiles_ring_closure_keys.clone();
         self.bond_directions = mol.bond_directions.clone();
         self.bond_direction_anchors = mol.bond_direction_anchors.clone();
+        self.unspecified_bond_stereo = mol.unspecified_bond_stereo.clone();
     }
 
     /// Read-only reference to an atom already added to the builder.
@@ -298,6 +312,7 @@ impl MoleculeBuilder {
             stereo_neighbor_order: self.stereo_neighbor_order,
             bond_directions: self.bond_directions,
             bond_direction_anchors: self.bond_direction_anchors,
+            unspecified_bond_stereo: self.unspecified_bond_stereo,
             smiles_ring_closure_keys: self.smiles_ring_closure_keys,
             derived: Default::default(),
         }

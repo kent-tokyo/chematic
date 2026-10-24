@@ -339,6 +339,12 @@ fn absent_cfg_opaque_sparse_and_malformed_attributes_keep_reports_and_errors() {
     for ids in [[1u32, 2, 3], [55, 7, 101]] {
         for kind in 0..=12 {
             for tail in tails {
+                // The frozen parser intentionally predates the #2429 fix.
+                // Single-bond CFG=2 is now retained, covered independently by
+                // v3000_either_single; keep the old oracle for unaffected rows.
+                if kind == 1 && tail.split_whitespace().any(|token| token == "CFG=2") {
+                    continue;
+                }
                 let rows = format!(
                     "M  V30 1 {kind} {} {}{tail}\nM  V30 2 1 {} {}\n",
                     ids[0], ids[1], ids[1], ids[2]

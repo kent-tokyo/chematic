@@ -60,7 +60,7 @@ fn append_atom_properties(
     if atom.charge != 0 {
         line.push_str(&format!(" CHG={}", atom.charge));
     }
-    if let Some(isotope) = atom.isotope {
+    if let Some(isotope) = atom.isotope.filter(|&mass| mass != 0) {
         line.push_str(&format!(" MASS={isotope}"));
     }
     if let Some(hydrogens) = atom.hydrogen_count {
@@ -192,7 +192,8 @@ fn append_bonds_2d(
                     let cfg = if wedge.order == BondOrder::Up { 1 } else { 3 };
                     (start, end, format!(" CFG={cfg}"))
                 }
-                None if depiction.unexpressed_double_bonds.contains(&bond_idx)
+                None if mol.bond_stereo_is_unspecified(bond_idx)
+                    || depiction.unexpressed_double_bonds.contains(&bond_idx)
                     || depiction.unspecified_double_bonds.contains(&bond_idx) =>
                 {
                     (atom1, atom2, " CFG=2".to_string())
@@ -200,10 +201,14 @@ fn append_bonds_2d(
                 None => (atom1, atom2, String::new()),
             },
             None => {
-                let cfg = match bond.order {
-                    BondOrder::Up => " CFG=1",
-                    BondOrder::Down => " CFG=3",
-                    _ => "",
+                let cfg = if mol.bond_stereo_is_unspecified(bond_idx) {
+                    " CFG=2"
+                } else {
+                    match bond.order {
+                        BondOrder::Up => " CFG=1",
+                        BondOrder::Down => " CFG=3",
+                        _ => "",
+                    }
                 };
                 (atom1, atom2, cfg.to_string())
             }
@@ -227,12 +232,17 @@ fn append_bonds_3d(out: &mut String, mol: &Molecule, metadata: &MolMetadata) {
             .and_then(|orders| orders.get(&bond_idx).copied())
             .unwrap_or(bond.order);
         let bond_id = bond_idx.0 + 1;
+        let stereo = if mol.bond_stereo_is_unspecified(bond_idx) {
+            " CFG=2"
+        } else {
+            ""
+        };
         out.push_str(&format!(
-            "M  V30 {bond_id} {} {} {}{}\n",
+            "M  V30 {bond_id} {} {} {}{stereo}{}\n",
             v3000_bond_order(written),
             bond.atom1.0 + 1,
             bond.atom2.0 + 1,
-            bond_properties(metadata, bond_id, false)
+            bond_properties(metadata, bond_id, !stereo.is_empty())
         ));
     }
     out.push_str("M  V30 END BOND\n");

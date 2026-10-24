@@ -93,6 +93,11 @@ pub struct Molecule {
     /// aromatic bond. This preserves which endpoint introduced the marker
     /// when atom/bond indices are rebuilt during canonical search.
     bond_direction_anchors: std::collections::HashMap<u32, AtomIdx>,
+    /// Double bonds whose configuration was explicitly unspecified by an
+    /// interchange source (for example V3000 `CFG=2`). Kept separately from
+    /// directional bond markers so real coordinates on an ordinary graph can
+    /// still express E/Z instead of being treated as unknown.
+    unspecified_bond_stereo: std::collections::HashSet<u32>,
     /// SMILES ring-closure bonds, keyed by bond index: the ring label in the
     /// high 32 bits and the label's occurrence in the low 32. Recorded by the
     /// SMILES parser so [`Molecule::rdkit_bond_order`] can list bonds the way

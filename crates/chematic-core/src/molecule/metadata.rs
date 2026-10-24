@@ -31,6 +31,122 @@ fn remap_stereo_groups_after_atom_removal(
         .collect()
 }
 
+fn atom_remap_after_removal(atom_count: usize, removed: usize) -> Vec<Option<AtomIdx>> {
+    let mut remap = vec![None; atom_count];
+    let mut new_pos = 0u32;
+    for (old, slot) in remap.iter_mut().enumerate() {
+        if old != removed {
+            *slot = Some(AtomIdx(new_pos));
+            new_pos += 1;
+        }
+    }
+    remap
+}
+
+fn remap_bonds_after_atom_removal(
+    molecule: &mut Molecule,
+    removed_atom: AtomIdx,
+    atom_remap: &[Option<AtomIdx>],
+) -> Vec<Option<u32>> {
+    let mut new_bonds = Vec::new();
+    let mut bond_remap = vec![None; molecule.bonds.len()];
+    for (old_bidx, bond) in molecule.bonds.iter().enumerate() {
+        if bond.atom1 == removed_atom || bond.atom2 == removed_atom {
+            continue;
+        }
+        if let (Some(a1), Some(a2)) = (
+            atom_remap[bond.atom1.0 as usize],
+            atom_remap[bond.atom2.0 as usize],
+        ) {
+            bond_remap[old_bidx] = Some(new_bonds.len() as u32);
+            new_bonds.push(BondEntry {
+                atom1: a1,
+                atom2: a2,
+                order: bond.order,
+            });
+        }
+    }
+    molecule.bonds = new_bonds;
+    bond_remap
+}
+
+fn remap_bond_metadata_after_atom_removal(
+    molecule: &mut Molecule,
+    atom_remap: &[Option<AtomIdx>],
+    bond_remap: &[Option<u32>],
+) {
+    for (old_key, direction) in std::mem::take(&mut molecule.bond_directions) {
+        if let Some(Some(new_key)) = bond_remap.get(old_key as usize) {
+            molecule.bond_directions.insert(*new_key, direction);
+        }
+    }
+    for (old_key, atom) in std::mem::take(&mut molecule.bond_direction_anchors) {
+        if let (Some(Some(new_key)), Some(new_atom)) = (
+            bond_remap.get(old_key as usize),
+            atom_remap.get(atom.0 as usize).and_then(|mapped| *mapped),
+        ) {
+            molecule.bond_direction_anchors.insert(*new_key, new_atom);
+        }
+    }
+    for old_key in std::mem::take(&mut molecule.unspecified_bond_stereo) {
+        if let Some(Some(new_key)) = bond_remap.get(old_key as usize) {
+            molecule.unspecified_bond_stereo.insert(*new_key);
+        }
+    }
+}
+
+fn remap_atom_metadata_after_atom_removal(
+    molecule: &mut Molecule,
+    removed: usize,
+    atom_remap: &[Option<AtomIdx>],
+    bond_remap: &[Option<u32>],
+) {
+    for (old_key, order) in std::mem::take(&mut molecule.stereo_neighbor_order) {
+        let old_atom = old_key as usize;
+        if old_atom == removed {
+            continue;
+        }
+        if let Some(Some(new_key)) = atom_remap.get(old_atom) {
+            let new_order = order
+                .iter()
+                .filter_map(|&value| {
+                    if matches!(value, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
+                        Some(value)
+                    } else if value as usize == removed {
+                        None
+                    } else {
+                        atom_remap
+                            .get(value as usize)
+                            .and_then(|mapped| mapped.map(|atom| atom.0))
+                    }
+                })
+                .collect();
+            molecule.stereo_neighbor_order.insert(new_key.0, new_order);
+        }
+    }
+    for (old_key, label) in std::mem::take(&mut molecule.r_groups) {
+        if let Some(Some(new_atom)) = atom_remap.get(old_key as usize) {
+            molecule.r_groups.insert(new_atom.0, label);
+        }
+    }
+    let groups = remap_stereo_groups_after_atom_removal(
+        std::mem::take(&mut molecule.stereo_groups),
+        std::mem::take(&mut molecule.stereo_group_bonds),
+        atom_remap,
+        bond_remap,
+    );
+    molecule.set_stereo_groups_with_bonds(groups);
+}
+
+fn rebuild_adjacency(molecule: &mut Molecule) {
+    molecule.adjacency = vec![vec![]; molecule.atoms.len()];
+    for (bidx, bond) in molecule.bonds.iter().enumerate() {
+        let bond_idx = BondIdx(bidx as u32);
+        molecule.adjacency[bond.atom1.0 as usize].push((bond.atom2, bond_idx));
+        molecule.adjacency[bond.atom2.0 as usize].push((bond.atom1, bond_idx));
+    }
+}
+
 impl Molecule {
     /// Replace this molecule with a fresh empty graph.
     ///
@@ -62,18 +178,8 @@ impl Molecule {
     pub fn remove_atom(&mut self, idx: AtomIdx) -> Vec<Option<AtomIdx>> {
         self.invalidate_derived();
         self.smiles_ring_closure_keys.clear();
-        let n = self.atoms.len();
         let removed = idx.0 as usize;
-
-        let mut remap: Vec<Option<AtomIdx>> = vec![None; n];
-        let mut new_pos = 0u32;
-        for (old, slot) in remap.iter_mut().enumerate() {
-            if old == removed {
-                continue;
-            }
-            *slot = Some(AtomIdx(new_pos));
-            new_pos += 1;
-        }
+        let remap = atom_remap_after_removal(self.atoms.len(), removed);
 
         // Drain the single slot instead of calling `Vec::remove` directly.
         // Besides making the order-preserving intent explicit, this avoids a
@@ -85,95 +191,10 @@ impl Molecule {
             let _ = self.atom_tags.drain(removed..=removed).next();
         }
 
-        // Keep only bonds not involving the removed atom; remap endpoints and
-        // track each surviving bond's new index so `bond_directions` (keyed
-        // by bond index) can be remapped the same way as `stereo_neighbor_order`
-        // is remapped by atom index below.
-        let mut new_bonds: Vec<BondEntry> = Vec::new();
-        let mut bond_remap: Vec<Option<u32>> = vec![None; self.bonds.len()];
-        for (old_bidx, bond) in self.bonds.iter().enumerate() {
-            if bond.atom1 == idx || bond.atom2 == idx {
-                continue;
-            }
-            if let (Some(a1), Some(a2)) =
-                (remap[bond.atom1.0 as usize], remap[bond.atom2.0 as usize])
-            {
-                bond_remap[old_bidx] = Some(new_bonds.len() as u32);
-                new_bonds.push(BondEntry {
-                    atom1: a1,
-                    atom2: a2,
-                    order: bond.order,
-                });
-            }
-        }
-        self.bonds = new_bonds;
-
-        // Remap bond directions in-place, same shift as bond_remap above.
-        let old_bond_directions = std::mem::take(&mut self.bond_directions);
-        for (old_key, direction) in old_bond_directions {
-            if let Some(Some(new_key)) = bond_remap.get(old_key as usize) {
-                self.bond_directions.insert(*new_key, direction);
-            }
-        }
-        let old_bond_anchors = std::mem::take(&mut self.bond_direction_anchors);
-        for (old_key, atom) in old_bond_anchors {
-            if let (Some(Some(new_key)), Some(new_atom)) = (
-                bond_remap.get(old_key as usize),
-                remap.get(atom.0 as usize).and_then(|r| *r),
-            ) {
-                self.bond_direction_anchors.insert(*new_key, new_atom);
-            }
-        }
-
-        // Rebuild adjacency from scratch.
-        let new_n = self.atoms.len();
-        self.adjacency = vec![vec![]; new_n];
-        for (bidx, bond) in self.bonds.iter().enumerate() {
-            let bi = BondIdx(bidx as u32);
-            self.adjacency[bond.atom1.0 as usize].push((bond.atom2, bi));
-            self.adjacency[bond.atom2.0 as usize].push((bond.atom1, bi));
-        }
-
-        // Remap stereo neighbor order in-place.
-        let old_stereo = std::mem::take(&mut self.stereo_neighbor_order);
-        for (old_key, order) in old_stereo {
-            let old_atom = old_key as usize;
-            if old_atom == removed {
-                continue;
-            }
-            if let Some(Some(new_key)) = remap.get(old_atom) {
-                let new_order: Vec<u32> = order
-                    .iter()
-                    .filter_map(|&v| {
-                        if matches!(v, STEREO_H_SENTINEL | STEREO_VACANT_SENTINEL) {
-                            Some(v)
-                        } else if v as usize == removed {
-                            None
-                        } else {
-                            remap.get(v as usize).and_then(|r| r.map(|a| a.0))
-                        }
-                    })
-                    .collect();
-                self.stereo_neighbor_order.insert(new_key.0, new_order);
-            }
-        }
-
-        let old_r_groups = std::mem::take(&mut self.r_groups);
-        for (old_key, label) in old_r_groups {
-            if let Some(Some(new_atom)) = remap.get(old_key as usize) {
-                self.r_groups.insert(new_atom.0, label);
-            }
-        }
-
-        let old_groups = std::mem::take(&mut self.stereo_groups);
-        let old_group_bonds = std::mem::take(&mut self.stereo_group_bonds);
-        let groups = remap_stereo_groups_after_atom_removal(
-            old_groups,
-            old_group_bonds,
-            &remap,
-            &bond_remap,
-        );
-        self.set_stereo_groups_with_bonds(groups);
+        let bond_remap = remap_bonds_after_atom_removal(self, idx, &remap);
+        remap_bond_metadata_after_atom_removal(self, &remap, &bond_remap);
+        rebuild_adjacency(self);
+        remap_atom_metadata_after_atom_removal(self, removed, &remap, &bond_remap);
 
         remap
     }
@@ -241,6 +262,19 @@ impl Molecule {
                 std::cmp::Ordering::Equal => {} // this bond itself was removed
                 std::cmp::Ordering::Greater => {
                     self.bond_directions.insert(old_key - 1, direction);
+                }
+            }
+        }
+        let old_unspecified = std::mem::take(&mut self.unspecified_bond_stereo);
+        for old_key in old_unspecified {
+            let old = old_key as usize;
+            match old.cmp(&removed) {
+                std::cmp::Ordering::Less => {
+                    self.unspecified_bond_stereo.insert(old_key);
+                }
+                std::cmp::Ordering::Equal => {}
+                std::cmp::Ordering::Greater => {
+                    self.unspecified_bond_stereo.insert(old_key - 1);
                 }
             }
         }
@@ -433,6 +467,7 @@ impl Molecule {
             stereo_neighbor_order: self.stereo_neighbor_order.clone(),
             bond_directions: Default::default(),
             bond_direction_anchors: Default::default(),
+            unspecified_bond_stereo: Default::default(),
             smiles_ring_closure_keys: Default::default(),
             derived: Default::default(),
         })
@@ -448,6 +483,9 @@ impl Molecule {
     pub fn set_bond_order(&mut self, idx: BondIdx, order: BondOrder) {
         self.invalidate_derived();
         self.bonds[idx.0 as usize].order = order;
+        if order != BondOrder::Double {
+            self.unspecified_bond_stereo.remove(&idx.0);
+        }
     }
 
     /// Make bond `idx` a dative bond from `donor` (stored as `atom1`, see
@@ -457,6 +495,7 @@ impl Molecule {
         self.invalidate_derived();
         let bond = &mut self.bonds[idx.0 as usize];
         bond.order = BondOrder::Dative;
+        self.unspecified_bond_stereo.remove(&idx.0);
         if bond.atom2 == donor {
             std::mem::swap(&mut bond.atom1, &mut bond.atom2);
         }
@@ -744,5 +783,23 @@ impl Molecule {
         self.invalidate_derived();
         self.bond_directions.remove(&idx.0);
         self.bond_direction_anchors.remove(&idx.0);
+    }
+
+    /// Whether an interchange source explicitly left this double-bond
+    /// configuration unspecified.
+    pub fn bond_stereo_is_unspecified(&self, idx: BondIdx) -> bool {
+        self.unspecified_bond_stereo.contains(&idx.0)
+    }
+
+    /// Preserve an explicit unknown double-bond stereo declaration.
+    pub fn set_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
+        self.unspecified_bond_stereo.insert(idx.0);
+    }
+
+    /// Remove an explicit unknown double-bond stereo declaration.
+    pub fn clear_bond_stereo_unspecified(&mut self, idx: BondIdx) {
+        self.invalidate_derived();
+        self.unspecified_bond_stereo.remove(&idx.0);
     }
 }

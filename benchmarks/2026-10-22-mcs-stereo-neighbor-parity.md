@@ -31,15 +31,16 @@ comparisons match RDKit. The seventh alanine pair is also checked in both
 orders: 14/14 total. Three equivalent spellings of the first molecule as a
 three-input MCS also return 4/3 with both implementations.
 
-## Scope and remaining difference
+## Scope and adjudicated oracle difference
 
 The fix compares the ligand permutation under the actual MCS atom mapping.
 Partially mapped centers remain eligible; allene and non-tetrahedral stereo
 retain their prior policy. This result does not establish FMCS-wide parity,
 fingerprint accuracy, or overall superiority to RDKit.
 
-For the three-input set `F[C@H](Cl)Br`, `Cl[C@@H](F)Br`, and
-`Cl[C@H](F)Br`, RDKit returns 2/1 while CheMatic returns 3/2. This difference
-is unresolved and is not counted as a pass. Future work should determine
-whether RDKit's multi-input stereo rule intentionally excludes a partial
-center before changing either implementation.
+For the mixed three-input set `F[C@H](Cl)Br`, `Cl[C@@H](F)Br`, and
+`Cl[C@H](F)Br`, RDKit 2026.09.1 is input-order dependent: the six
+permutations return either 2/1 or 3/2 depending on which molecule is first.
+CheMatic returns 3/2 for all six permutations. This row is therefore classified
+as `oracle_order_unstable`, not tuned to one RDKit ordering. A Rust regression
+test fixes CheMatic's permutation-invariant result.

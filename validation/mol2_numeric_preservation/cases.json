@@ -1,0 +1,229 @@
+{
+  "schema": "chematic.mol2-numeric-packet.v1",
+  "provenance": "Original synthetic numeric boundary inputs authored for chematic on 2026-10-24; MIT. No external molecular data.",
+  "oracle": "Authored coordinate and partial-charge tokens parsed as IEEE 754 binary64; exact bits including signed zero. Eight paired cases and three native-only finite extremes, no holdout or chemical-validity claim.",
+  "cases": [
+    {
+      "id": "fixed4_control",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\nfixed4_control\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0.125 -2.5 3.0001 C.3 1 LIG 0.25\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "0.125",
+          "-2.5",
+          "3.0001"
+        ]
+      ],
+      "expected_partial_charges": [
+        "0.25"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "coordinate_precision",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\ncoordinate_precision\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 1.2345678901234567 -2.345678901234567 3.456789012345678 C.3 1 LIG 0.25\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "1.2345678901234567",
+          "-2.345678901234567",
+          "3.456789012345678"
+        ]
+      ],
+      "expected_partial_charges": [
+        "0.25"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "tiny_displacement",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\ntiny_displacement\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0.000000123456789 -0.000000987654321 0.00004999999999999999 C.3 1 LIG 0.25\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "0.000000123456789",
+          "-0.000000987654321",
+          "0.00004999999999999999"
+        ]
+      ],
+      "expected_partial_charges": [
+        "0.25"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "partial_charge_precision",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\npartial_charge_precision\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0.125 -2.5 3.0 C.3 1 LIG -0.12345678901234566\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "0.125",
+          "-2.5",
+          "3.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "-0.12345678901234566"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "signed_zero",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\nsigned_zero\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 -0.0 0.0 -0.0 C.3 1 LIG -0.0\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "-0.0",
+          "0.0",
+          "-0.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "-0.0"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "large_coordinate",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\nlarge_coordinate\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 123456789.12345679 -98765432.98765433 0.0 C.3 1 LIG 0.25\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "123456789.12345679",
+          "-98765432.98765433",
+          "0.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "0.25"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "rounding_boundary",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\nrounding_boundary\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 1.0000499999999999 -0.00005000000000000001 2.0000000000000004 C.3 1 LIG 0.00005000000000000001\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "1.0000499999999999",
+          "-0.00005000000000000001",
+          "2.0000000000000004"
+        ]
+      ],
+      "expected_partial_charges": [
+        "0.00005000000000000001"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "mixed_two_atoms",
+      "scope": "paired",
+      "input": "@<TRIPOS>MOLECULE\nmixed_two_atoms\n2 1 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 0.12345678901234566 -0.00000123456789 0.25 C.3 1 LIG -0.6789012345678901\n2 C2 1.6234567890123457 0.00000987654321 0.25 C.3 1 LIG 0.6789012345678901\n@<TRIPOS>BOND\n1 1 2 1\n",
+      "expected_coordinates": [
+        [
+          "0.12345678901234566",
+          "-0.00000123456789",
+          "0.25"
+        ],
+        [
+          "1.6234567890123457",
+          "0.00000987654321",
+          "0.25"
+        ]
+      ],
+      "expected_partial_charges": [
+        "-0.6789012345678901",
+        "0.6789012345678901"
+      ],
+      "expected_atomic_numbers": [
+        6,
+        6
+      ],
+      "expected_bonds": [
+        [
+          0,
+          1,
+          1
+        ]
+      ]
+    },
+    {
+      "id": "smallest_subnormal",
+      "scope": "native_only",
+      "input": "@<TRIPOS>MOLECULE\nsmallest_subnormal\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 5e-324 -5e-324 0.0 C.3 1 LIG -5e-324\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "5e-324",
+          "-5e-324",
+          "0.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "-5e-324"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "smallest_normal",
+      "scope": "native_only",
+      "input": "@<TRIPOS>MOLECULE\nsmallest_normal\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 2.2250738585072014e-308 -2.2250738585072014e-308 0.0 C.3 1 LIG 2.2250738585072014e-308\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "2.2250738585072014e-308",
+          "-2.2250738585072014e-308",
+          "0.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "2.2250738585072014e-308"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    },
+    {
+      "id": "largest_finite",
+      "scope": "native_only",
+      "input": "@<TRIPOS>MOLECULE\nlargest_finite\n1 0 0 0 0\nSMALL\nUSER_CHARGES\n\n@<TRIPOS>ATOM\n1 C1 1.7976931348623157e308 -1.7976931348623157e308 0.0 C.3 1 LIG 1.7976931348623157e308\n@<TRIPOS>BOND\n",
+      "expected_coordinates": [
+        [
+          "1.7976931348623157e308",
+          "-1.7976931348623157e308",
+          "0.0"
+        ]
+      ],
+      "expected_partial_charges": [
+        "1.7976931348623157e308"
+      ],
+      "expected_atomic_numbers": [
+        6
+      ],
+      "expected_bonds": []
+    }
+  ]
+}

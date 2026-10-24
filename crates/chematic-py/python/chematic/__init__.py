@@ -169,8 +169,9 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     ChemicalJSON, MolJSON, CDXML, PDB, XYZ, PDBQT, and same-format GJF/COM
     source retention. PDB, XYZ, and PDBQT output require ``coords=[[x, y, z], ...]`` unless the input provides them.
 
-    The molecular graph and supported stereochemistry are preserved. Format-
-    specific metadata is not promised to survive conversion. PDBQT input supplies
+    The bridge projects supported graph fields. Target formats can omit stereo
+    declarations and format-specific metadata; use format-specific APIs or
+    checked conversion reports when those fields matter. PDBQT input supplies
     coordinates and partial charges unless explicitly overridden; PDBQT output
     from that input uses checked field widths and rounds to three decimals.
     Its bonds are not inferred and source AutoDock types, identities and torsion
@@ -178,10 +179,14 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     use from_pdbqt_with_data() when those values are needed without rounding.
     MOL2 to MOL2 and CJSON to CJSON validate and retain the exact source; coordinate,
     charge, name, and comment overrides are rejected on that path.
+    CML to CML retains exact UTF-8 source for one well-formed XML 1.0 document
+    with a CML-namespace molecule root. Nested molecules and DTDs are refused;
+    unknown fields, references and stereo are retained opaquely, not validated
+    chemically. Overrides are rejected; this route does not edit the source.
     GJF/COM to GJF/COM retains exact source for one Cartesian job, including
     opaque job sections; overrides are rejected. Other GJF output routes
     require the explicit geometry writer.
-    V3000 input supplies source x/y/z for CJSON, PDB, XYZ and PDBQT output
+    V2000 and V3000 input supply source x/y/z for CJSON, PDB, XYZ and PDBQT output
     unless coords is explicitly provided. Each writer's precision and metadata
     limits still apply; this does not verify cross-format stereochemistry.
     V3000 to V3000 also validates and retains one exact source block, including
@@ -190,13 +195,25 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     overrides are rejected. Other MOL/SDF inputs require exactly one record
     and omit its SD fields before graph conversion. Use the SDF iterators for
     batch conversion. SDF output from other formats is one framed record.
-    CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
-    stays missing; partial/malformed 3D and multiple molecules are refused.
-    This route resolves CML namespace prefixes and forward bond references,
-    requires unique atom IDs, and excludes foreign subtrees/attributes from the
-    graph. 2D layout and metadata are omitted.
+    CML to CJSON verifies a bounded graph/Cartesian/name profile on reparse.
+    Source atom order, elements, charges, isotope masses, single/double/triple
+    bonds, XYZ bits and consistent title/name text are preserved. Explicit H
+    counts must match local CJSON inference. 2D, stereo, aromatic/query/zero
+    bonds and unrepresented attributes/elements are refused.
+    Molecule/atom/bond IDs are document-local references; their spellings and
+    lexical XML are omitted.
+    Overrides are rejected. Use source retention for opaque CML payload.
     CJSON inputs use the checked record profile: malformed known arrays,
     duplicate keys/bonds and unsupported bond-order tokens are refused.
+    Graph-projected CJSON output uses Mol.to_cjson_checked: unsupported
+    in-memory properties (including stereo, explicit H counts, aromatic atom
+    flags and nonstandard bonds) raise ValueError. This does not detect fields
+    already discarded by a source reader. MOL2 projection and exact CJSON
+    retention keep their separate contracts.
+    CJSON to CML verifies the indexed graph, source 3D coordinates and name
+    after reparse. Opaque fields (including stereo/unit cells), partial charges,
+    conflicting names and overrides are refused. Generated CML atom IDs follow
+    source order; source chemistry and coordinate stereo are not validated.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
     complete declared partial charges on reparse. Incomplete/undeclared charge
     columns and overrides are rejected. Other MOL2 metadata and stereo are
@@ -232,6 +249,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if source in {"mol", "sdf"}:
         text = single_sdf_mol_block(text)
         source = "mol_v3000" if text.split("\n", 4)[3].rstrip().endswith("V3000") else "mol"
+    if source == target == "cml":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CML source-preserving conversion does not accept overrides")
+        return roundtrip_cml_source(text)
     if source == target == "mol2":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 source-preserving conversion does not accept overrides")
@@ -240,6 +261,14 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("V3000 source-preserving conversion does not accept overrides")
         return roundtrip_mol_v3000_source(text)
+    if source == "cjson" and target == "cml":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CJSON to CML preserving projection does not accept overrides")
+        return project_cjson_to_cml(text)
+    if source == "cml" and target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CML to CJSON preserving projection does not accept overrides")
+        return project_cml_to_cjson(text)
     if source == "mol2" and target == "cjson":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
@@ -257,7 +286,12 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if source == "smiles":
         mol = from_smiles(text)
     elif source == "mol":
-        mol = from_mol_block(text)
+        if target in {"cjson", "pdb", "xyz", "pdbqt"}:
+            mol, _, parsed_coords = from_mol_block_with_coords_3d(text)
+            if coords is None:
+                coords = parsed_coords
+        else:
+            mol = from_mol_block(text)
     elif source == "mol_v3000":
         mol, _, parsed_coords = from_mol_v3000_with_coords_3d(text)
         if coords is None:
@@ -265,12 +299,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     elif source == "mol2":
         mol = from_mol2(text)
     elif source == "cml":
-        if target == "cjson":
-            mol, parsed_coords = from_cml_with_3d(text)
-            if coords is None:
-                coords = parsed_coords
-        else:
-            mol = from_cml(text)
+        mol = from_cml(text)
     elif source == "cjson":
         mol, parsed_coords = from_cjson_checked(text)
         if coords is None and parsed_coords:
@@ -311,7 +340,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     if target == "cml":
         return mol.to_cml()
     if target == "cjson":
-        return mol.to_cjson(coords or [])
+        return mol.to_cjson_checked(coords if coords is not None else [])
     if target == "moljson":
         return mol.to_moljson()
     if target == "cdxml":

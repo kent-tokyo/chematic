@@ -23,6 +23,12 @@ def test_source_xyz_and_graph_in_cjson(case, variant):
     assert len(xyz) == mol.atom_count
     _, _, xy = chematic.from_mol_v3000_with_coords(source)
     assert bits(xy) == bits([row[:2] for row in xyz])
+    if case['id'] == 'four_atom_geometry':
+        # The V3000 reader infers chirality from this geometry. CJSON does not
+        # encode that atom property; retaining XYZ alone is no longer success.
+        with pytest.raises(ValueError, match='cannot preserve atom chirality at atom 0'):
+            chematic.convert_format(source, '.V3000', 'cjson')
+        return
     value = json.loads(chematic.convert_format(source, '.V3000', 'cjson'))
     atoms = value['atoms']; bonds = value['bonds']
     flat = atoms['coords']['3d']

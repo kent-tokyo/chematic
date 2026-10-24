@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-import hashlib
+import json
 import re
 import subprocess
 import tomllib
@@ -20,8 +20,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PYI = Path("crates/chematic-py/python/chematic/__init__.pyi")
 PYPROJECT = Path("crates/chematic-py/pyproject.toml")
-WASM_BASELINE = ROOT / "demo/pkg/chematic_wasm.d.ts"
-WASM_BASELINE_SHA256 = "bca23e85ad3ab1604160ba5cf6e84e39877b2121d0e5c10f4c3b2eacb264928a"
+WASM_BASELINE = Path("demo/pkg/chematic_wasm.d.ts")
+CROSS_BINDING_CONTRACT = Path("validation/cross_binding_contract.json")
 
 
 def required_arguments(node: ast.FunctionDef | ast.AsyncFunctionDef) -> int:
@@ -122,25 +122,55 @@ def dts_surface(text: str) -> set[str]:
     return surface
 
 
-def check_wasm(candidate: Path) -> None:
-    digest = hashlib.sha256(WASM_BASELINE.read_bytes()).hexdigest()
-    if digest != WASM_BASELINE_SHA256:
-        raise SystemExit(f"WASM baseline drifted: {digest}")
-    removed = sorted(dts_surface(WASM_BASELINE.read_text()) - dts_surface(candidate.read_text()))
+def tagged_text(baseline: str, path: Path) -> str:
+    try:
+        path = path.relative_to(ROOT)
+    except ValueError:
+        pass
+    return subprocess.check_output(
+        ["git", "show", f"{baseline}:{path}"], cwd=ROOT, text=True
+    )
+
+
+def check_wasm(candidate: Path, baseline: str) -> None:
+    old = tagged_text(baseline, WASM_BASELINE)
+    removed = sorted(dts_surface(old) - dts_surface(candidate.read_text()))
     if removed:
         raise SystemExit("WASM declarations removed:\n" + "\n".join(removed))
 
 
+def json_contract_surface(text: str) -> set[tuple[str, str, tuple[str, ...]]]:
+    document = json.loads(text)
+    surface = set()
+    for operation in document.get("operations", []):
+        surface.add((
+            operation["id"],
+            operation["contract"],
+            tuple(sorted(operation.get("bindings", []))),
+        ))
+    return surface
+
+
+def check_json_contract(baseline: str) -> None:
+    old = json_contract_surface(tagged_text(baseline, CROSS_BINDING_CONTRACT))
+    new = json_contract_surface((ROOT / CROSS_BINDING_CONTRACT).read_text())
+    removed = sorted(old - new)
+    if removed:
+        lines = [f"{name}: contract={contract}, bindings={','.join(bindings)}" for name, contract, bindings in removed]
+        raise SystemExit("Cross-binding JSON contracts removed or narrowed:\n" + "\n".join(lines))
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--baseline", default="v1.1.9")
+    parser.add_argument("--baseline", default="v1.2.0")
     parser.add_argument("--wasm-dts", type=Path)
     args = parser.parse_args()
     check_python(args.baseline)
     check_python_dependencies(args.baseline)
+    check_json_contract(args.baseline)
     if args.wasm_dts:
-        check_wasm(args.wasm_dts)
-    print("Python/WASM public API compatibility passed")
+        check_wasm(args.wasm_dts, args.baseline)
+    print("Python/WASM/JSON public API compatibility passed")
 
 
 if __name__ == "__main__":

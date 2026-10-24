@@ -118,7 +118,10 @@ def main():
     print(json.dumps(summary))
     if not args.baseline:
         for label in ('python','wasm'):
-            require(summary[label]['valid_exact']==60 and summary[label]['invalid_no_output']==84,'candidate failed')
+            require(summary[label]['valid_exact']==33 and summary[label]['valid_no_output']==27
+                    and summary[label]['invalid_no_output']==84,'candidate failed')
+        # 27 reader-profile annotations are now refused by checked conversion;
+        # refusals are not counted as successful preservation.
 
 
 if __name__=='__main__':main()

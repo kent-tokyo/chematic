@@ -84,6 +84,7 @@ nav:
   - Formats & Bindings:
     - Format Capability Matrix: reference/format-capabilities.md
     - Language Bindings: reference/language-bindings.md
+    - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md
     - Errors & Limits: reference/error-and-limits.md
     - MCP Protocol: reference/mcp-protocol-reference.md
@@ -91,7 +92,12 @@ nav:
     - Validation Report: reference/validation.md
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
+    - mmCIF Numeric Preservation: reference/mmcif-numeric-preservation.md
     - Open Babel File I/O: reference/openbabel-file-io.md
+    - V3000 Atom Scalar Integrity: reference/v3000-atom-scalar-integrity.md
+    - V2000 Isotope Output: reference/v2000-isotope-output.md
+    - V2000 Property Precedence: reference/v2000-property-precedence.md
+    - CML Lexical Meaning: reference/cml-lexical-meaning.md
   - API Reference:
     - Python: api/chematic.md
   - Project:

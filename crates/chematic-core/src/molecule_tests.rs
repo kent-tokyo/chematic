@@ -569,4 +569,31 @@ mod tests {
         larger.copy_atom_tags_from(&mol);
         assert!(larger.build().atom_tag(born).is_none());
     }
+
+    #[test]
+    fn explicit_unknown_bond_stereo_survives_copies_but_not_order_changes() {
+        let mut builder = MoleculeBuilder::new();
+        let a = builder.add_atom(Atom::new(Element::C));
+        let b = builder.add_atom(Atom::new(Element::C));
+        let bond = builder.add_bond(a, b, BondOrder::Double).unwrap();
+        builder.set_bond_stereo_unspecified(bond);
+        let mol = builder.build();
+        assert!(mol.bond_stereo_is_unspecified(bond));
+        assert!(
+            MoleculeBuilder::from_molecule(&mol)
+                .build()
+                .bond_stereo_is_unspecified(bond)
+        );
+
+        let single = mol.with_bond_order(bond, BondOrder::Single);
+        assert!(!single.bond_stereo_is_unspecified(bond));
+
+        let mut dative = mol.clone();
+        dative.set_dative_bond(bond, a);
+        assert!(!dative.bond_stereo_is_unspecified(bond));
+
+        let mut in_place = mol;
+        in_place.set_bond_order(bond, BondOrder::Triple);
+        assert!(!in_place.bond_stereo_is_unspecified(bond));
+    }
 }

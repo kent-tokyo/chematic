@@ -22,6 +22,13 @@ def test_projection_selects_cml_graph_by_namespace_and_scope(case,variant):
     expected=case["expected"]
     assert mol.atom_count==len(expected["numbers"])
     assert bits(xyz)==bits(expected["coordinates"])
+    if case['id'] in {'foreign-atom','foreign-bond','foreign-attributes','foreign-ancestor',
+                       'namespace-reset-note','rebound-prefix','empty-namespace-atom',
+                       'formula-is-not-graph','comment-cdata'}:
+        # The reader still selects the graph, while checked conversion refuses
+        # annotations that its CJSON target cannot represent.
+        with pytest.raises(ValueError):chematic.convert_format(text,'cml','cjson')
+        return
     data=json.loads(chematic.convert_format(text,"cml","cjson"))
     a,b=data["atoms"],data["bonds"]
     assert bits([a["coords"]["3d"]])==bits(expected["coordinates"])

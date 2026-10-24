@@ -8,6 +8,12 @@ const packet=JSON.parse(readFileSync(new URL('../../../validation/v3000_coordina
 const bits=values=>values.map(value=>{const b=Buffer.alloc(8);b.writeDoubleBE(Number(value));return b.toString('hex');});
 for(const c of packet.cases){
  for(const source of [c.input,c.input.replaceAll('\n','\r\n'),c.input.trimEnd()]){
+  if(c.id==='four_atom_geometry'){
+   // The reader infers atom chirality here; XYZ alone cannot encode it in
+   // the checked CJSON graph profile. Refusal must not count as preservation.
+   assert.throws(()=>wasm.convert_common_format(source,'.V3000','cjson'),/cannot preserve atom chirality at atom 0/);
+   continue;
+  }
   const out=JSON.parse(wasm.convert_common_format(source,'.V3000','cjson'));
   const a=out.atoms,b=out.bonds,e=c.expected,n=e.numbers.length;
   assert.deepEqual(bits(a.coords['3d']),bits(e.coordinates.flat()),c.id);
@@ -25,4 +31,4 @@ assert.throws(()=>wasm.convert_common_format(' '.repeat(1000001),'v3000','cjson'
 const many=n=>['count test','','',source.split('\n')[3],'M  V30 BEGIN CTAB',`M  V30 COUNTS ${n} 0 0 0 0`,'M  V30 BEGIN ATOM',...Array.from({length:n},(_,i)=>`M  V30 ${i+1} C 0 0 0 0`),'M  V30 END ATOM','M  V30 BEGIN BOND','M  V30 END BOND','M  V30 END CTAB','M  END',''].join('\n');
 assert.equal(JSON.parse(wasm.convert_common_format(many(10000),'v3000','cjson')).atoms.coords['3d'].length,30000);
 assert.throws(()=>wasm.convert_common_format(many(10001),'v3000','cjson'),/atom count/);
-console.log('V3000 coordinate projection: 24 inputs preserve xyz bits and indexed graph, limits/invalid input passed');
+console.log('V3000 coordinate projection: 21 inputs preserve xyz bits/indexed graph, 3 inferred-stereo refusals, limits/invalid input passed');

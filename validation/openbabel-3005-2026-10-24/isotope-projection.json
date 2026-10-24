@@ -1,0 +1,494 @@
+{
+  "scope": "rigid PDBQT isotope omission; no docking/torsion quality claim",
+  "head": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "worktree_status": " M CHANGELOG.md\n M crates/chematic-mol/src/lib.rs\n M crates/chematic-mol/src/pdbqt.rs\n M crates/chematic-mol/src/pdbqt/checked.rs\n M crates/chematic-py/python/chematic/__init__.pyi\n M crates/chematic-py/src/formats.rs\n M crates/chematic-py/src/formats/pdbqt.rs\n M crates/chematic-wasm/src/pdbqt_checked.rs\n M docs/reference/format-capabilities.md\n M docs/reference/pdbqt-checked-output.md\n M validation/results/binding_surface_inventory-current.json\n",
+  "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "rdkit": "2026.09.1",
+  "python_extension_sha256": "18e7f532c999ec157607dd4f7d888485669f67aeac439a7b5d923266674d97be",
+  "node": "v24.5.0",
+  "wasm_sha256": "8a5c94a25a23ccb40854e851d838f7ef39dd7025a5a1fac75dacb474314b2ab8",
+  "source_sha256": {
+    "crates/chematic-mol/src/pdbqt.rs": "cab44b0a5128da48483d4bc56ab3760ee03813bcde94068a7462320ccf3806be",
+    "crates/chematic-mol/src/pdbqt/checked.rs": "82630f17ef6ed8761b37d70893623c3bbc2d2d274bee5d2a0b5345465fcc3140",
+    "crates/chematic-mol/src/pdbqt/isotopes.rs": "aa808ca0273fa57ddf7b0f2891a302a3d78850f9ab0bf78af992fcb836383c90",
+    "crates/chematic-py/src/formats/pdbqt.rs": "11a09ff24791138bba90320ad5eeab540e6880de8f46198af08a4540a96914b4",
+    "crates/chematic-wasm/src/pdbqt_checked.rs": "489ff5bc23a55dbe09c6bfce3f195417408e61778245ff06978a76c7f6c85c28",
+    "validation/openbabel_issues/pdbqt-isotopes/cases.json": "0e82d90f8e87666caaf4e81fb2a1de1ebae48ee7de6854404e6a272c239d9426",
+    "scripts/validation/validate_pdbqt_isotopes.py": "18050e6928efaffbe2fa1a20af281ff09c16bf6ecaf52343bc301d11c288c11e"
+  },
+  "accepted_projections": 23,
+  "checked_refusals": 20,
+  "isotope_labels": 48,
+  "results": [
+    {
+      "name": "ordinary",
+      "checked_refused": false,
+      "atoms": 3,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      3  O   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 OA\nEND\n",
+      "isotopes_omitted": []
+    },
+    {
+      "name": "explicit-H",
+      "checked_refused": false,
+      "atoms": 4,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  C   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      4  H   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 H \nEND\n",
+      "isotopes_omitted": []
+    },
+    {
+      "name": "HDO",
+      "checked_refused": true,
+      "atoms": 3,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 HD\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 2
+        }
+      ]
+    },
+    {
+      "name": "heavy-water",
+      "checked_refused": true,
+      "atoms": 3,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 HD\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 2
+        }
+      ]
+    },
+    {
+      "name": "tritium-water",
+      "checked_refused": true,
+      "atoms": 3,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 HD\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 3
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 3
+        }
+      ]
+    },
+    {
+      "name": "mixed-labels",
+      "checked_refused": true,
+      "atoms": 4,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  C   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      4  H   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 H \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 1,
+          "mass_number": 3
+        }
+      ]
+    },
+    {
+      "name": "deuterated-carbon",
+      "checked_refused": true,
+      "atoms": 5,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      4  H   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      5  H   LIG A   1       4.000  -2.345   6.789  1.00  0.00    -0.123 H \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 4,
+          "pdbqt_serial": 5,
+          "atomic_number": 1,
+          "mass_number": 2
+        }
+      ]
+    },
+    {
+      "name": "carbon-13",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 C \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 6,
+          "mass_number": 13
+        }
+      ]
+    },
+    {
+      "name": "nitrogen-15",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  N   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 N \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 7,
+          "mass_number": 15
+        }
+      ]
+    },
+    {
+      "name": "oxygen-18",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  O   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 OA\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 8,
+          "mass_number": 18
+        }
+      ]
+    },
+    {
+      "name": "sulfur-34",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  S   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 SA\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 16,
+          "mass_number": 34
+        }
+      ]
+    },
+    {
+      "name": "phosphorus-31",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  P   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 P \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 15,
+          "mass_number": 31
+        }
+      ]
+    },
+    {
+      "name": "chlorine-37",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Cl   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 Cl\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 17,
+          "mass_number": 37
+        }
+      ]
+    },
+    {
+      "name": "bromine-81",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Br   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 Br\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 35,
+          "mass_number": 81
+        }
+      ]
+    },
+    {
+      "name": "iron-57",
+      "checked_refused": true,
+      "atoms": 1,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Fe   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 Fe\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 26,
+          "mass_number": 57
+        }
+      ]
+    },
+    {
+      "name": "aromatic-carbon-13",
+      "checked_refused": true,
+      "atoms": 6,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      3  C   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      4  C   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      5  C   LIG A   1       4.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      6  C   LIG A   1       5.000  -2.345   6.789  1.00  0.00    -0.123 A \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 6,
+          "mass_number": 13
+        }
+      ]
+    },
+    {
+      "name": "multiple-fragments",
+      "checked_refused": true,
+      "atoms": 2,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1 Cl   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 Cl\nATOM      2  N   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 N \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 17,
+          "mass_number": 37
+        },
+        {
+          "source_atom_index": 1,
+          "pdbqt_serial": 2,
+          "atomic_number": 7,
+          "mass_number": 15
+        }
+      ]
+    },
+    {
+      "name": "mixed-donor",
+      "checked_refused": true,
+      "atoms": 4,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  N   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 N \nATOM      3  C   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      4  O   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 OA\nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 1,
+          "pdbqt_serial": 2,
+          "atomic_number": 7,
+          "mass_number": 15
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 8,
+          "mass_number": 18
+        }
+      ]
+    },
+    {
+      "name": "atom-maps",
+      "checked_refused": true,
+      "atoms": 4,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  O   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      3  C   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      4  H   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 H \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 1,
+          "mass_number": 3
+        }
+      ]
+    },
+    {
+      "name": "labelled-amine",
+      "checked_refused": true,
+      "atoms": 4,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      2  N   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 N \nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 HD\nATOM      4  C   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 C \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 3
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 2
+        }
+      ]
+    },
+    {
+      "name": "acetophenone",
+      "checked_refused": false,
+      "atoms": 9,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      3  O   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      4  C   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      5  C   LIG A   1       4.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      6  C   LIG A   1       5.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      7  C   LIG A   1       6.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      8  C   LIG A   1       7.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      9  C   LIG A   1       8.000  -2.345   6.789  1.00  0.00    -0.123 A \nEND\n",
+      "isotopes_omitted": []
+    },
+    {
+      "name": "acetophenone-d8",
+      "checked_refused": true,
+      "atoms": 17,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  H   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      3  H   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      4  H   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM      5  C   LIG A   1       4.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      6  O   LIG A   1       5.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      7  C   LIG A   1       6.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      8  C   LIG A   1       7.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      9  H   LIG A   1       8.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM     10  C   LIG A   1       9.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM     11  H   LIG A   1      10.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM     12  C   LIG A   1      11.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM     13  H   LIG A   1      12.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM     14  C   LIG A   1      13.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM     15  H   LIG A   1      14.000  -2.345   6.789  1.00  0.00    -0.123 H \nATOM     16  C   LIG A   1      15.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM     17  H   LIG A   1      16.000  -2.345   6.789  1.00  0.00    -0.123 H \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 2,
+          "pdbqt_serial": 3,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 8,
+          "pdbqt_serial": 9,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 10,
+          "pdbqt_serial": 11,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 12,
+          "pdbqt_serial": 13,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 14,
+          "pdbqt_serial": 15,
+          "atomic_number": 1,
+          "mass_number": 2
+        },
+        {
+          "source_atom_index": 16,
+          "pdbqt_serial": 17,
+          "atomic_number": 1,
+          "mass_number": 2
+        }
+      ]
+    },
+    {
+      "name": "acetophenone-C13",
+      "checked_refused": true,
+      "atoms": 9,
+      "pdbqt": "REMARK  PDBQT written by chematic\nREMARK  NAME = LIG\nATOM      1  C   LIG A   1       0.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      2  C   LIG A   1       1.000  -2.345   6.789  1.00  0.00    -0.123 C \nATOM      3  O   LIG A   1       2.000  -2.345   6.789  1.00  0.00    -0.123 OA\nATOM      4  C   LIG A   1       3.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      5  C   LIG A   1       4.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      6  C   LIG A   1       5.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      7  C   LIG A   1       6.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      8  C   LIG A   1       7.000  -2.345   6.789  1.00  0.00    -0.123 A \nATOM      9  C   LIG A   1       8.000  -2.345   6.789  1.00  0.00    -0.123 A \nEND\n",
+      "isotopes_omitted": [
+        {
+          "source_atom_index": 0,
+          "pdbqt_serial": 1,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 1,
+          "pdbqt_serial": 2,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 3,
+          "pdbqt_serial": 4,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 4,
+          "pdbqt_serial": 5,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 5,
+          "pdbqt_serial": 6,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 6,
+          "pdbqt_serial": 7,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 7,
+          "pdbqt_serial": 8,
+          "atomic_number": 6,
+          "mass_number": 13
+        },
+        {
+          "source_atom_index": 8,
+          "pdbqt_serial": 9,
+          "atomic_number": 6,
+          "mass_number": 13
+        }
+      ]
+    }
+  ]
+}

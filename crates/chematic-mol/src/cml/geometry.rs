@@ -1,4 +1,4 @@
-//! Additive CML Cartesian reader. Legacy graph/2D readers keep their behavior.
+//! Namespace-aware CML Cartesian reader, separate from the lightweight 2D reader.
 use super::*;
 
 /// A source-ordered graph and optional complete Cartesian Angstrom coordinates.

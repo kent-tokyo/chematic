@@ -1,0 +1,298 @@
+{
+  "schema": "chematic.trust-holdout-manifest.v2",
+  "candidate_frozen_commit": "29b3fdc9ddf17c26cdb65b73be101e8e82046841",
+  "candidate_frozen_at": "2026-10-24T06:17:53+09:00",
+  "frozen_on": "2026-10-24",
+  "selection_policy": "Post-candidate external sources; SHA-256 rank of source identity and input text with lane-specific fixed v2 seed. v1 source IDs are excluded. Selection does not execute a chemistry engine or inspect outcomes.",
+  "sources": {
+    "nci": {
+      "url": "https://cactus.nci.nih.gov/download/nci/NCISMA99.sdz",
+      "archive_sha256": "3da792f624dc94caa9a3e9967fc7b1eed0ca79e0bd2d044f808cf916680a17ad",
+      "decompressed_sha256": "031736b438a9596d89cf11802fa97934c3878ebbf021924c417a57e02c7930cd",
+      "rows": 248889,
+      "acquired_at": "2026-10-24T06:19:07+09:00",
+      "acquired_after_candidate_freeze": true
+    },
+    "pubchem": {
+      "url_template": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/{cids}/property/IsomericSMILES/JSON",
+      "bundle_sha256": "f53ceb4269d3788e01cf6dfe5208e5fd9862544851820b99ff6798fc18db46b6",
+      "records": 5000,
+      "acquired_at": "2026-10-23T21:20:11.128154+00:00",
+      "requests": [
+        {
+          "cid_first": 500001,
+          "cid_last": 500100,
+          "sha256": "f0dc7f6ae2450166dd7082268a5272f6154bb9ee4bf1fd1f2983602f8d887a77"
+        },
+        {
+          "cid_first": 500101,
+          "cid_last": 500200,
+          "sha256": "f5cb4400408e38bc07efa7974ddfc806a27ce737381202ab2a6aa8aa7c7b479b"
+        },
+        {
+          "cid_first": 500201,
+          "cid_last": 500300,
+          "sha256": "4bf529828027c09b782578dec95fd32389810f8a37a8719c2584e3d39f51f3a0"
+        },
+        {
+          "cid_first": 500301,
+          "cid_last": 500400,
+          "sha256": "7a543b12f7da3d18dc669a811a51316a80f9fcfdfff07838a0d18c062618ae65"
+        },
+        {
+          "cid_first": 500401,
+          "cid_last": 500500,
+          "sha256": "b98feb9572d660d31da4b1e4195a5847d7521e07f1703dede22b6cdd91c6e4f5"
+        },
+        {
+          "cid_first": 500501,
+          "cid_last": 500600,
+          "sha256": "fab31b94f147aad7f2734312830282e178b22aece9d232a8ed0d94d1c48b1cce"
+        },
+        {
+          "cid_first": 500601,
+          "cid_last": 500700,
+          "sha256": "42da70dfc605277888424343e09239d5996b5381c0c5df87afda6250b2d07c9e"
+        },
+        {
+          "cid_first": 500701,
+          "cid_last": 500800,
+          "sha256": "f8d1004903a20ed3505673d7039a3b61246222a0e572372e9368ad7a122195fd"
+        },
+        {
+          "cid_first": 500801,
+          "cid_last": 500900,
+          "sha256": "0994a775c6af47209014c2b14c6a462f22cab1e11cbc7ef0fd9a151e7cce78f1"
+        },
+        {
+          "cid_first": 500901,
+          "cid_last": 501000,
+          "sha256": "e9370b5d2171c1d6fa333073bef8f6666b26c3bfb5c241b2c3ee9fc6f3d5d217"
+        },
+        {
+          "cid_first": 501001,
+          "cid_last": 501100,
+          "sha256": "91cfc4c67e782e941e0686027ab11e571dddb0f182b5080ba0d2779c844e4bc6"
+        },
+        {
+          "cid_first": 501101,
+          "cid_last": 501200,
+          "sha256": "f2f9d653735a0ab4994d7e2ba72ae62dedd579184e1a12a1a8938d073c1b8131"
+        },
+        {
+          "cid_first": 501201,
+          "cid_last": 501300,
+          "sha256": "8d4d8d60ce6e8fe2ad85817adf6f62b1105bfdb6513486ec24ea7b0536c3befa"
+        },
+        {
+          "cid_first": 501301,
+          "cid_last": 501400,
+          "sha256": "c4853325545b2105c117d940fe74ba11c89b077a4cf1179f90e1c2e22bc3f2fc"
+        },
+        {
+          "cid_first": 501401,
+          "cid_last": 501500,
+          "sha256": "9c28507d254a78e1c93b1cee0df2af3381f90bc181322d8347f327a982d004f2"
+        },
+        {
+          "cid_first": 501501,
+          "cid_last": 501600,
+          "sha256": "bca95c1808611bdb90c0fbf7d2647f679583b1dfb02c9af0a196a71a1f1f0306"
+        },
+        {
+          "cid_first": 501601,
+          "cid_last": 501700,
+          "sha256": "3acdadfb037008c83f130fe55fceba92665b6719602cd60b3d5ab640e2e59133"
+        },
+        {
+          "cid_first": 501701,
+          "cid_last": 501800,
+          "sha256": "ea75c36b0356b5312563667c3f4e589cfd5f66711edbd814e8ea27a6ed80524f"
+        },
+        {
+          "cid_first": 501801,
+          "cid_last": 501900,
+          "sha256": "9a8a8a16f353668cdaf9b1141da0bfd0efc674f44b90397b4c7e5451621a7dbc"
+        },
+        {
+          "cid_first": 501901,
+          "cid_last": 502000,
+          "sha256": "ab929fa2c859323dc8dddb382a3f06e12cedb644f1bdaeaf005816ebc9945c60"
+        },
+        {
+          "cid_first": 502001,
+          "cid_last": 502100,
+          "sha256": "53c966c059d09782d0c5e57a69ba2081d77316d54c3f431a8be67c56254322d9"
+        },
+        {
+          "cid_first": 502101,
+          "cid_last": 502200,
+          "sha256": "1c4fbda25febfd9edffed58e5b9f8aec3ad789e54589304d7319ca919b3eec35"
+        },
+        {
+          "cid_first": 502201,
+          "cid_last": 502300,
+          "sha256": "7bcf3185ecd5a0e726daa424b2773eb2c9ad194a634be9126f9bc40733e9e7f8"
+        },
+        {
+          "cid_first": 502301,
+          "cid_last": 502400,
+          "sha256": "d04b5787f1b2e5aaea5fa819f25cc3022db4f2779fc37a0613a42e9ac8bdec08"
+        },
+        {
+          "cid_first": 502401,
+          "cid_last": 502500,
+          "sha256": "c3a968dde1d53369b9f9919d02e070c5cf2f882fd0f2ddd9129897236c2ee4f5"
+        },
+        {
+          "cid_first": 502501,
+          "cid_last": 502600,
+          "sha256": "e07ab4b1b71b90a838952f34a4cf5daece1bfa6ff485dbb797ed2502b592b9c5"
+        },
+        {
+          "cid_first": 502601,
+          "cid_last": 502700,
+          "sha256": "70fdce53675c2f4af0d461c1f39ac529eb8de3872f1c97a52eac3d1efe90b95d"
+        },
+        {
+          "cid_first": 502701,
+          "cid_last": 502800,
+          "sha256": "f8a65df53d43652cd3712b44aa356d8f0440036e69b41f5c0f2e3e2cf0eb72ea"
+        },
+        {
+          "cid_first": 502801,
+          "cid_last": 502900,
+          "sha256": "37b6fd17baf35d5ef97abc0856c2b6fff483bd4d4648a0b4b41238dba5c7dafe"
+        },
+        {
+          "cid_first": 502901,
+          "cid_last": 503000,
+          "sha256": "70cb8fb205f9fa26b33489b1fe5f064fac37f9e877da932ed0e7fc40a6abc916"
+        },
+        {
+          "cid_first": 503001,
+          "cid_last": 503100,
+          "sha256": "356a6712fc4546bdd7bf307e05c4ceddc0f8eea7df39c219ef6b32962043596f"
+        },
+        {
+          "cid_first": 503101,
+          "cid_last": 503200,
+          "sha256": "fa26846d4d281b8df7e3ad3988e488df208e02fc480fcbeb6c2415054723cd19"
+        },
+        {
+          "cid_first": 503201,
+          "cid_last": 503300,
+          "sha256": "dc0d4f4b535a7f35c31df2f7536a608e6674cc5e78765799f57cf45028740a05"
+        },
+        {
+          "cid_first": 503301,
+          "cid_last": 503400,
+          "sha256": "3156e20c46d5c794328c45b698e189c2c18229e2fc969a8da02c937bd5f82c41"
+        },
+        {
+          "cid_first": 503401,
+          "cid_last": 503500,
+          "sha256": "5c38c1a1cce5491b32b47085c2cd4487b89c301f81d6ab4ff35f75e8fc936ed8"
+        },
+        {
+          "cid_first": 503501,
+          "cid_last": 503600,
+          "sha256": "b07dca4936575b89636beb99b1e037b2ba2dcfb7628b5d3151b4982d74f579dd"
+        },
+        {
+          "cid_first": 503601,
+          "cid_last": 503700,
+          "sha256": "34f5470a2f841119ffa2eb0e3b5b384cdf5629b992681333c2480347a1b2df8d"
+        },
+        {
+          "cid_first": 503701,
+          "cid_last": 503800,
+          "sha256": "a5e68d711a1bceaf6c0b9f4463c6ef363db496793cdcd4f5000b6f57b4b1c988"
+        },
+        {
+          "cid_first": 503801,
+          "cid_last": 503900,
+          "sha256": "26dab7a1fcb8293c122793ec5fc00444dec56a4da834e21472e828f09ff1b490"
+        },
+        {
+          "cid_first": 503901,
+          "cid_last": 504000,
+          "sha256": "2597d24a6ad787b97a930261e6fad719ce7064f7c0db705b594beafdec9a0df7"
+        },
+        {
+          "cid_first": 504001,
+          "cid_last": 504100,
+          "sha256": "c8cc94f98a80dbf2c7af0d03a18fb5267ce651dc8ba12977d2104832a82a93df"
+        },
+        {
+          "cid_first": 504101,
+          "cid_last": 504200,
+          "sha256": "472730cbd08b62f474b6d458ed330e97be9c5b02d71d6571da84452ad9bd1ca5"
+        },
+        {
+          "cid_first": 504201,
+          "cid_last": 504300,
+          "sha256": "d3871800c7496d9d45040404931b79d059faf47c4fba1b63cfea4f808db072cb"
+        },
+        {
+          "cid_first": 504301,
+          "cid_last": 504400,
+          "sha256": "9e9d7c0150e6fbd9e739f12af7822bac207d0383711d1bb3b28f23932b5995cf"
+        },
+        {
+          "cid_first": 504401,
+          "cid_last": 504500,
+          "sha256": "3cabaeec8a368e3458d1954e1cedd9b396cd48140f29d1694a9edf728ba7cb5e"
+        },
+        {
+          "cid_first": 504501,
+          "cid_last": 504600,
+          "sha256": "6042c41731e7f105cfffbe49240fae25c4d24e3dde9f86b872b31aaf3535f31c"
+        },
+        {
+          "cid_first": 504601,
+          "cid_last": 504700,
+          "sha256": "33af86afdabd6d4b80bca1a172c399e3d7d33ac06dbf481f140dfb3f4eed44ee"
+        },
+        {
+          "cid_first": 504701,
+          "cid_last": 504800,
+          "sha256": "d41bb06841716ec2f24da2745f528a355cbbf8deee597b041e91515eb323baf9"
+        },
+        {
+          "cid_first": 504801,
+          "cid_last": 504900,
+          "sha256": "5ede870f1f12b7743323845a4d87852a66cdc1f10886034d0014b69cf7c0d45a"
+        },
+        {
+          "cid_first": 504901,
+          "cid_last": 505000,
+          "sha256": "fac572932533fc0cdbcbd0bdabce6019a6bf76b5f33185d35d6948b8229b21f9"
+        }
+      ],
+      "acquired_after_candidate_freeze": true
+    }
+  },
+  "independence": {
+    "excluded_v1_source_ids": 288,
+    "overlap_with_v1": 0
+  },
+  "lanes": {
+    "mcs-comparison.jsonl": {
+      "rows": 64,
+      "sha256": "1490cad7817ba512414690f60363cfcee3bf567ec93fc3d92140a3b8a472c5f3",
+      "contains_expected_outputs": false
+    },
+    "sdf-attributes.jsonl": {
+      "rows": 64,
+      "sha256": "fa89abcff9cf4270baecabe0220e3a2c756b1d2a638acb3cf8341223c455fbfc",
+      "contains_expected_outputs": false
+    },
+    "stereo-3d.jsonl": {
+      "rows": 96,
+      "sha256": "f8e0d6e0e1575c2df97113d8234ee054e72c99200abca4265c70732a6619093b",
+      "contains_expected_outputs": false
+    }
+  },
+  "use_policy": "One-shot scoring after this manifest is committed. Record every row; do not tune on these inputs, replace failures, or pool them with development data."
+}

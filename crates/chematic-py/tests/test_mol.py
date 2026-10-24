@@ -258,6 +258,23 @@ def test_cleanup_preserves_donor_valence_after_metal_disconnection():
     assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[LiH]"
 
 
+def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():
+    source = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
+    assert source.cleanup().rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"
+    assert source.cleanup().rdkit_smiles_with() == source.cleanup().rdkit_smiles
+    assert source.cleanup().rdkit_smiles_with(isomeric=False) == (
+        "[Br-].[Cl-].[F-].[I-].[Pt+4]"
+    )
+    # A fresh parse of the isolated ion has no occupied coordination sphere.
+    assert chematic.from_smiles("[Pt@SP1+4]").rdkit_smiles == "[Pt+4]"
+    assert chematic.from_smiles("C[Co@OH1](N)(N)(N)(N)Cl").cleanup().rdkit_smiles == (
+        "[CH3-].[Cl-].[Co@OH1+6].[NH2-].[NH2-].[NH2-].[NH2-]"
+    )
+    partial = chematic.from_smiles("F[Pt@SP1](Cl)Br").cleanup()
+    assert partial.rdkit_smiles == "[Br-].[Cl-].[F-].[Pt@SP2+3]"
+    assert partial.rdkit_smiles_with(isomeric=False) == "[Br-].[Cl-].[F-].[Pt+3]"
+
+
 def test_cleanup_keeps_unsupported_lithium_carbonyl_readable():
     text = "C(c1c(Oc2c(C)ccc(c2)Cl)ccc(C)c1)[C]([Li])(=O)O.Cl"
     assert chematic.from_smiles(text).cleanup().rdkit_smiles == (

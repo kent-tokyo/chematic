@@ -24,7 +24,9 @@ use crate::mol2000::{
 /// Prefix that marks every V3000 continuation line.
 const V30_PREFIX: &str = "M  V30 ";
 
+mod atom_scalars;
 mod coordinates;
+mod either_bonds;
 pub use coordinates::parse_mol_v3000_with_coords_3d;
 mod source;
 pub use source::{
@@ -198,7 +200,7 @@ fn parse_rgroup_number(tokens: &[&str]) -> Result<Option<u16>, String> {
 fn opaque_atom_properties(tokens: &[&str]) -> String {
     let mut opaque = Vec::new();
     let mut skipping_rgroups = false;
-    for token in tokens {
+    for (top_level, token) in atom_scalars::scoped_tokens(tokens) {
         if skipping_rgroups {
             if token.ends_with(')') {
                 skipping_rgroups = false;
@@ -209,10 +211,12 @@ fn opaque_atom_properties(tokens: &[&str]) -> String {
             skipping_rgroups = !token.ends_with(')');
             continue;
         }
-        if token.starts_with("CHG=") || token.starts_with("MASS=") || token.starts_with("HCOUNT=") {
+        if token.starts_with("HCOUNT=")
+            || (top_level && (token.starts_with("CHG=") || token.starts_with("MASS=")))
+        {
             continue;
         }
-        opaque.push(*token);
+        opaque.push(token);
     }
     opaque.join(" ")
 }
@@ -336,14 +340,9 @@ fn parse_v3000_atom_line(
     let deuterium = sym == "D";
     let (x, y, z) = parse_v3000_coords(tokens, line)?;
 
-    let aamap_raw = tokens[5].parse::<u16>().unwrap_or(0);
-    let atom_map = (aamap_raw != 0).then_some(aamap_raw);
-    let charge: i8 = parse_kv(kv_tokens, "CHG")
-        .and_then(|v| v.parse::<i8>().ok())
-        .unwrap_or(0);
-    let isotope = parse_kv(kv_tokens, "MASS")
-        .and_then(|v| v.parse::<u16>().ok())
-        .or_else(|| deuterium.then_some(2));
+    let atom_map = atom_scalars::atom_map(tokens[5], line)?;
+    let (charge, isotope) = atom_scalars::charge_and_isotope(kv_tokens, line)?;
+    let isotope = isotope.or_else(|| deuterium.then_some(2));
     let hydrogen_count = parse_kv(kv_tokens, "HCOUNT").and_then(|v| {
         let n: i32 = v.parse().ok()?;
         if n < 0 { None } else { Some(n as u8) }
@@ -474,13 +473,16 @@ fn parse_v3000_bond_line(
         explicitly_unspecified_ez.insert(bidx);
     }
     // Preserve richer V3000 bond attributes without pretending to interpret
-    // them. Wedge CFG is regenerated from BondOrder; double-bond CFG=2
-    // has no core tag, so retain it explicitly for lossless rewriting. ENDPTS is the one supported reference-bearing attribute: its
+    // them. Wedge CFG is regenerated from BondOrder; single/double CFG=2
+    // has no core tag, so retain it explicitly for rewriting (Open Babel #2429).
+    // ENDPTS is the one supported reference-bearing attribute: its
     // atom ids must follow the normalized output order when source ids are
     // non-contiguous. ATTACH and future keys remain opaque.
     let opaque_properties = kv_tokens
         .iter()
-        .filter(|token| !token.starts_with("CFG=") || (btype_raw == 2 && token.trim() == "CFG=2"))
+        .filter(|token| {
+            !token.starts_with("CFG=") || (matches!(btype_raw, 1 | 2) && token.trim() == "CFG=2")
+        })
         .copied()
         .collect::<Vec<_>>()
         .join(" ");
@@ -1004,7 +1006,7 @@ fn apply_v3000_radical_hydrogens(mol: &mut Molecule, properties: &[(u32, String)
 }
 
 fn finish_v3000_report(
-    parser: V3000Parser,
+    mut parser: V3000Parser,
     mut metadata: MolMetadata,
     line2: &str,
 ) -> Result<(MolReadReport, Vec<f64>), MolParseError> {
@@ -1016,6 +1018,12 @@ fn finish_v3000_report(
     metadata.v3000_sgroups = parser.sgroups;
     metadata.v3000_bond_properties = parser.bond_properties;
     metadata.v3000_atom_properties = parser.atom_properties;
+    parser
+        .unspecified_ez
+        .extend(either_bonds::adjacent_unknown_double_bonds(&mol, &metadata));
+    for &bond in &parser.unspecified_ez {
+        mol.set_bond_stereo_unspecified(bond);
+    }
     if !parser.stereo_groups.is_empty() {
         mol.set_stereo_groups_with_bonds(
             parser

@@ -9,8 +9,13 @@ use chematic_core::{AtomIdx, Molecule};
 use serde::Serialize;
 use std::collections::HashMap;
 
+mod cjson_cml;
 mod cjson_mol2;
+pub use cjson_cml::{project_cjson_to_cml, project_cjson_to_cml_with_limits};
+mod cml_cjson;
+pub use cml_cjson::{project_cml_to_cjson, project_cml_to_cjson_with_limits};
 mod cml_source;
+pub use cml_source::{roundtrip_cml_source, roundtrip_cml_source_with_limits};
 mod mol2_cjson_projection;
 pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};
 

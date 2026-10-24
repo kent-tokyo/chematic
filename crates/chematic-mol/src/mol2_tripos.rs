@@ -773,7 +773,7 @@ pub fn parse_mol2_record_with_limits(
 /// Write a molecule and its 3D coordinates to Tripos MOL2 format.
 ///
 /// `coords` must have one entry per atom in `mol`.  Missing entries use
-/// `(0.0, 0.0, 0.0)`.
+/// `(0.0, 0.0, 0.0)`. Finite coordinate values retain binary64 precision.
 pub fn write_mol2(mol: &Molecule, coords: &[(f64, f64, f64)]) -> String {
     write_mol2_with_section_order(mol, coords, Mol2SectionOrder::default())
 }
@@ -872,6 +872,23 @@ fn write_mol2_header(record: &Mol2Record, out: &mut String) {
     out.push('\n');
 }
 
+/// MOL2 real fields are whitespace-delimited, unlike V2000 fixed fields.
+/// Keep legacy four-decimal bytes when they already round trip exactly;
+/// otherwise use Rust's round-trip decimal spelling, including signed zero.
+pub(crate) fn push_mol2_real(out: &mut String, value: f64) {
+    let start = out.len();
+    crate::mol2000::push_fixed4(out, value, 10);
+    if value.is_finite()
+        && !out[start..]
+            .trim()
+            .parse::<f64>()
+            .is_ok_and(|parsed| parsed.to_bits() == value.to_bits())
+    {
+        out.truncate(start);
+        let _ = write!(out, "{value:>10}");
+    }
+}
+
 fn write_mol2_atom(record: &Mol2Record, idx: AtomIdx, out: &mut String) {
     let atom = record.molecule.atom(idx);
     let source = record.atoms.get(idx.0 as usize);
@@ -894,11 +911,11 @@ fn write_mol2_atom(record: &Mol2Record, idx: AtomIdx, out: &mut String) {
     let partial_charge = source.and_then(|row| row.partial_charge).unwrap_or(0.0);
     let _ = write!(out, "{atom_id:>6} {atom_name:<8} ");
     for value in [x, y, z] {
-        crate::mol2000::push_fixed4(out, value, 10);
+        push_mol2_real(out, value);
         out.push(' ');
     }
     let _ = write!(out, "{atom_type:<8} {subst_id:>4}  {subst_name:<8} ");
-    crate::mol2000::push_fixed4(out, partial_charge, 10);
+    push_mol2_real(out, partial_charge);
     if let Some(row) = source {
         for status in &row.status_bits {
             out.push(' ');
@@ -1023,6 +1040,8 @@ fn write_mol2_opaque_sections(record: &Mol2Record, out: &mut String) {
 
 /// Serialize a loss-aware MOL2 record, retaining atom types, partial charges,
 /// residue fields, status bits, formal-charge attributes, and opaque sections.
+/// Finite coordinates and partial charges reparse to the same binary64 bits.
+/// This is a numeric guarantee, not validation of arbitrary editable records.
 pub fn write_mol2_record(record: &Mol2Record) -> String {
     write_mol2_record_with_section_order(record, Mol2SectionOrder::default())
 }

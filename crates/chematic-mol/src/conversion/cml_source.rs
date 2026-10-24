@@ -11,7 +11,7 @@ fn malformed(message: impl Into<String>) -> ConversionError {
 
 // Inspect only the prolog, skipping comments/PIs instead of matching XML-like
 // text inside opaque payload. roxmltree subsequently checks the whole document.
-fn validate_prolog(text: &str) -> Result<(), ConversionError> {
+pub(super) fn validate_prolog(text: &str) -> Result<(), ConversionError> {
     let ascii = text.is_ascii();
     let mut rest = text.strip_prefix('\u{feff}').unwrap_or(text);
     loop {
@@ -117,15 +117,34 @@ fn validate(text: &str, limits: &ConversionLimits) -> Result<(), ConversionError
     Ok(())
 }
 
+/// Retain one bounded, well-formed XML 1.0 CML molecule document verbatim.
+///
+/// Requires a CML-namespace molecule root and rejects nested CML molecules,
+/// DTDs and unsupported encodings. Atom/bond element counts, XML depth/nodes,
+/// input lines/bytes and output bytes are bounded. Unknown content is opaque:
+/// no chemistry, schema, references or stereo interpretation is verified.
+pub fn roundtrip_cml_source_with_limits(
+    text: &str,
+    limits: &ConversionLimits,
+) -> Result<String, ConversionError> {
+    validate(text, limits)?;
+    if text.len() > limits.max_output_bytes {
+        return Err(ConversionError::ResourceLimit("output bytes"));
+    }
+    Ok(text.to_owned())
+}
+
+/// Exact CML source retention with the shared conversion limits.
+pub fn roundtrip_cml_source(text: &str) -> Result<String, ConversionError> {
+    roundtrip_cml_source_with_limits(text, &ConversionLimits::default())
+}
+
 pub(super) fn convert(
     text: &str,
     policy: ConversionPolicy,
     limits: &ConversionLimits,
 ) -> Result<ConversionReport, ConversionError> {
-    validate(text, limits)?;
-    if text.len() > limits.max_output_bytes {
-        return Err(ConversionError::ResourceLimit("output bytes"));
-    }
+    let output = roundtrip_cml_source_with_limits(text, limits)?;
     Ok(ConversionReport {
         schema: "chematic.conversion-report.v1",
         input_format: "cml",
@@ -135,7 +154,7 @@ pub(super) fn convert(
         source_record_index: 0,
         verification_scope: "exact_source_bytes",
         candidate_graph_verified: false,
-        output: Some(text.to_owned()),
+        output: Some(output),
         observations: vec![
             ConversionObservation {
                 field: "source_text",

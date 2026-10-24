@@ -1,0 +1,19 @@
+unknown-alkene
+  authored          2D
+
+  0  0  0     0  0            999 V3000
+M  V30 BEGIN CTAB
+M  V30 COUNTS 4 3 0 0 0
+M  V30 BEGIN ATOM
+M  V30 10 C -1 1 0 0
+M  V30 20 C 0 0 0 0
+M  V30 30 C 1 0 0 0
+M  V30 40 C 2 -1 0 0
+M  V30 END ATOM
+M  V30 BEGIN BOND
+M  V30 50 1 10 20
+M  V30 60 2 20 30
+M  V30 70 1 30 40 CFG=2
+M  V30 END BOND
+M  V30 END CTAB
+M  END

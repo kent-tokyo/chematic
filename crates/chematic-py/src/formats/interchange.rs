@@ -1,5 +1,26 @@
 use super::*;
 
+/// Checked CJSON -> CML graph/XYZ/name projection. Refuses opaque fields,
+/// partial charges and conflicting names; does not validate source chemistry.
+#[pyfunction]
+pub(super) fn project_cjson_to_cml(
+    #[pyo3(from_py_with = serialized_text)] text: &str,
+) -> PyResult<String> {
+    chematic_mol::project_cjson_to_cml(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
+/// Checked CML graph/Cartesian/name projection; refuses unrepresented payload.
+/// IDs resolve references; lexical XML is not retained. Explicit H counts must
+/// agree with local CJSON inference. Does not certify chemistry or geometry stereo.
+#[pyfunction]
+pub(super) fn project_cml_to_cjson(
+    #[pyo3(from_py_with = serialized_text)] text: &str,
+) -> PyResult<String> {
+    chematic_mol::project_cml_to_cjson(text)
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+}
+
 /// Project MOL2 to CJSON with checked graph/xyz/name/declared partial charges.
 /// Incomplete or undeclared charge columns fail; no values are computed/filled.
 /// Other MOL2 metadata and stereo are not retained or verified. Use

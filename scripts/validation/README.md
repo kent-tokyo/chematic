@@ -20,7 +20,7 @@ The runner checks the Python and generated Node package versions against the
 workspace version before producing a new report, and records their artifact
 hashes.
 
-`score_trust_holdouts.py` retains the one-shot scorer for the frozen v1 trust
+`score_trust_holdouts.py` retains the one-shot scorer for frozen trust
 holdouts. Its published row-level score is historical evidence; use the exact
 candidate artifact and manifest described in the dated benchmark record.
 

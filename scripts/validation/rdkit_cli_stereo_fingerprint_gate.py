@@ -2,9 +2,11 @@
 
 Usage: python scripts/validation/rdkit_cli_stereo_fingerprint_gate.py \
     --binary target/debug/chematic \
-    --stereo-self-corpus scripts/fixtures/descriptor_census_corpus.smi
+    --stereo-self-corpus scripts/fixtures/descriptor_census_corpus.smi \
+    --fingerprint-corpus validation/cosmolkit_comparison/corpora/stress-v1.smi
 
 The optional corpus checks stereo-bearing SMILES against themselves as SMARTS.
+Repeat --fingerprint-corpus to compare Pattern and RDK on other fixed corpora.
 This is a regression gate, not a toolkit-wide accuracy measurement. Run after
 building the current CLI binary.
 """
@@ -67,7 +69,56 @@ def cli_json(binary: Path, args: list[str], stdin: str) -> dict:
     return json.loads(result.stdout)
 
 
-def run(binary: Path, stereo_self_corpus: Path | None = None) -> dict:
+def compare_fingerprint_corpus(binary: Path, path: Path) -> dict:
+    corpus_bytes = path.read_bytes()
+    smiles = [
+        line.split()[0] for line in corpus_bytes.decode("utf-8").splitlines()
+        if line.strip() and not line.startswith("#")
+    ]
+    molecules = [Chem.MolFromSmiles(value) for value in smiles]
+    rdkit_rejected = sum(molecule is None for molecule in molecules)
+    algorithms = {}
+    for algorithm, fingerprint in (
+        ("rdkit_pattern", lambda molecule: Chem.PatternFingerprint(molecule, fpSize=2048)),
+        ("rdkit_rdk", lambda molecule: Chem.RDKFingerprint(molecule, fpSize=2048)),
+    ):
+        rows = cli_json(
+            binary,
+            ["batch-fingerprints", "--algorithm", algorithm, "--input", str(path)],
+            "",
+        )["records"]
+        mismatches = []
+        comparable = 0
+        for index, (value, molecule, row) in enumerate(zip(smiles, molecules, rows, strict=True)):
+            if molecule is None:
+                continue
+            comparable += 1
+            expected = set(fingerprint(molecule).GetOnBits())
+            actual = (
+                set(row["fingerprint"]["set_bits"])
+                if row["fingerprint"] is not None else None
+            )
+            if actual != expected or row["error"] is not None:
+                mismatches.append({
+                    "index": index, "smiles": value, "error": row["error"],
+                    "missing_bits": sorted(expected - actual) if actual is not None else None,
+                    "extra_bits": sorted(actual - expected) if actual is not None else None,
+                })
+        algorithms[algorithm] = {"comparable": comparable, "mismatches": mismatches}
+    return {
+        "path": str(path),
+        "sha256": hashlib.sha256(corpus_bytes).hexdigest(),
+        "records": len(smiles),
+        "rdkit_rejected": rdkit_rejected,
+        "algorithms": algorithms,
+    }
+
+
+def run(
+    binary: Path,
+    stereo_self_corpus: Path | None = None,
+    fingerprint_corpora: tuple[Path, ...] = (),
+) -> dict:
     stereo_pairs = [
         (target, query)
         for target in STEREO_SMILES
@@ -157,6 +208,9 @@ def run(binary: Path, stereo_self_corpus: Path | None = None) -> dict:
         "stereo_self_corpus_sha256": corpus_sha256,
         "stereo_self_cases": len(self_cases),
         "stereo_self_mismatches": self_mismatches,
+        "fingerprint_corpora": [
+            compare_fingerprint_corpus(binary, path) for path in fingerprint_corpora
+        ],
     }
 
 
@@ -164,11 +218,17 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--stereo-self-corpus", type=Path)
+    parser.add_argument("--fingerprint-corpus", type=Path, action="append", default=[])
     args = parser.parse_args()
-    result = run(args.binary.resolve(), args.stereo_self_corpus)
+    result = run(args.binary.resolve(), args.stereo_self_corpus, tuple(args.fingerprint_corpus))
     print(json.dumps(result, ensure_ascii=False, indent=2))
+    corpus_mismatches = any(
+        algorithm["mismatches"]
+        for corpus in result["fingerprint_corpora"]
+        for algorithm in corpus["algorithms"].values()
+    )
     return int(bool(result["stereo_search_mismatches"] or result["fingerprint_mismatches"]
-                    or result["stereo_self_mismatches"]))
+                    or result["stereo_self_mismatches"] or corpus_mismatches))
 
 
 if __name__ == "__main__":

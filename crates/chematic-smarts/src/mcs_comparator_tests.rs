@@ -22,7 +22,10 @@ fn chiral_mcs_uses_mapped_neighbor_parity_not_smiles_tag_spelling() {
             let query = outcome.into_query();
             assert_eq!(
                 query.atom_count(),
-                pair["expected"][0].as_u64().unwrap() as usize
+                pair["expected"][0].as_u64().unwrap() as usize,
+                "{} versus {}",
+                pair["left"].as_str().unwrap(),
+                pair["right"].as_str().unwrap()
             );
             assert_eq!(
                 query.bonds.len(),
@@ -46,6 +49,30 @@ fn chiral_mcs_checks_each_molecule_in_a_multi_input_mapping() {
     assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
     let query = outcome.into_query();
     assert_eq!([query.atom_count(), query.bonds.len()], [4, 3]);
+}
+
+#[test]
+fn chiral_mcs_mixed_three_input_result_is_order_invariant() {
+    let first = parse("F[C@H](Cl)Br").unwrap();
+    let same_ordered_differently = parse("Cl[C@@H](F)Br").unwrap();
+    let opposite = parse("Cl[C@H](F)Br").unwrap();
+    let config = McsConfig {
+        match_chiral_tag: true,
+        ..Default::default()
+    };
+    for refs in [
+        [&first, &same_ordered_differently, &opposite],
+        [&first, &opposite, &same_ordered_differently],
+        [&same_ordered_differently, &first, &opposite],
+        [&same_ordered_differently, &opposite, &first],
+        [&opposite, &first, &same_ordered_differently],
+        [&opposite, &same_ordered_differently, &first],
+    ] {
+        let outcome = find_mcs_with_config_checked(&refs, &config);
+        assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
+        let query = outcome.into_query();
+        assert_eq!([query.atom_count(), query.bonds.len()], [3, 2]);
+    }
 }
 
 #[test]

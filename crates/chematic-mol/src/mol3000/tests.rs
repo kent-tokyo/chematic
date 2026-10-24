@@ -826,3 +826,17 @@ M  END
     let (mol, _) = parse_mol_v3000(mol_str).expect("parse atommapped");
     assert_eq!(mol.atom(AtomIdx(0)).atom_map, Some(3));
 }
+
+#[test]
+fn zero_isotope_is_not_serialized_as_invalid_mass() {
+    let mol = chematic_smiles::parse("[0CH4]").expect("parse zero-isotope carbon");
+    let block = write_mol_v3000(&mol, &crate::mol2000::MolMetadata::default(), &[]);
+
+    assert!(
+        !block.contains("MASS=0"),
+        "zero is not a CTfile isotope: {block}"
+    );
+    let (roundtripped, _) = parse_mol_v3000(&block).expect("reparse generated V3000");
+    assert_eq!(roundtripped.atom_count(), 1);
+    assert_eq!(roundtripped.atom(AtomIdx(0)).element, Element::C);
+}

@@ -1,0 +1,78 @@
+{
+  "schema": "chematic.reaction-cx-summary.v1",
+  "utc": "2026-10-23T19:11:19.376536+00:00",
+  "base": "38b4c92c430d9b3bfe70e47e97293b9017ced990",
+  "state": "unpublished candidate",
+  "scope": "Enhanced tetrahedral atom-group representation only; compact a/&n/on CX fields. Group numbers are reaction-wide by explicit API convention. No full CX, execution-correlation or unique-key claim.",
+  "baseline": "Retained prior 29c5c192 local runtime (main 38b4c92c plus unrelated V3000 either-bond change) has no new API. Not a separate rebuilt release/main binary, not a chemistry-failure score.",
+  "python_wasm_output_parity": 40,
+  "observer_rdkit": "2026.09.1",
+  "observer_controls": 6,
+  "observations": [
+    {
+      "engine": "chematic",
+      "available": false,
+      "counts": {
+        "match": 0,
+        "atom_membership_difference": 0,
+        "group_partition_difference": 0,
+        "writer_refused": 0,
+        "observer_refused": 0
+      }
+    },
+    {
+      "engine": "chematic",
+      "available": true,
+      "counts": {
+        "match": 40,
+        "atom_membership_difference": 0,
+        "group_partition_difference": 0,
+        "writer_refused": 0,
+        "observer_refused": 0
+      }
+    },
+    {
+      "engine": "wasm",
+      "available": true,
+      "counts": {
+        "match": 40,
+        "atom_membership_difference": 0,
+        "group_partition_difference": 0,
+        "writer_refused": 0,
+        "observer_refused": 0
+      }
+    },
+    {
+      "engine": "rdkit",
+      "available": true,
+      "counts": {
+        "match": 29,
+        "atom_membership_difference": 8,
+        "group_partition_difference": 3,
+        "writer_refused": 0,
+        "observer_refused": 0
+      }
+    }
+  ],
+  "source_and_packet_sha256": {
+    "Cargo.lock": "e4b1f5b719ea6359cb8832b95c45868c36432b4dad0c29f9a3231163fcb84b5d",
+    "crates/chematic-rxn/src/lib.rs": "5b8b1eac01ded8f2a78ba3203ff78b8885ef871831b4a7f3875b75949585821a",
+    "crates/chematic-rxn/src/cx_reaction.rs": "3216e0744bd276b42aad2b74e85eb03b99679e99d1ef8f44cffdc57a5b813556",
+    "crates/chematic-rxn/src/cx_reaction/parse.rs": "f292cd80d4dbda035dadc622f1cee3050a2569b036b848ae2e823fdcfcd06e30",
+    "crates/chematic-rxn/src/cx_reaction/write.rs": "0712c1cb1743bb5df57aa30d5dfddf9e9969716d59d9db16a8c49dc14490792f",
+    "crates/chematic-py/src/formats.rs": "1508228adc5ad014371ccbb11c4c7b2cbc903df6b40ac6c067097bd173d7a515",
+    "crates/chematic-py/src/formats/reaction_cx.rs": "f18cf0ed8db829a996969d2c591640c624d7181432be2f763a9de543956e093d",
+    "crates/chematic-py/python/chematic/__init__.pyi": "707bdcc41bf691effc3ee2a4f11186b6a119bc9dd50de11fe7254590f41f825a",
+    "crates/chematic-wasm/src/mol_reactions.rs": "195f8a154262d5ad447c5928f09cf35186e5bc0dc1b92b50f9d9cebfb93d051a",
+    "crates/chematic-wasm/src/mol_reactions/cx.rs": "6f5a9ad79ab75598409d4698a3906d8d333c17085d2b903d10221cdcce8d22db",
+    "scripts/validation/validate_reaction_cxsmiles.py": "4f3cac92fe130ed991795dbd6fa37223f24cf3856885f0a2d83a5e38214c2484",
+    "scripts/validation/validate_reaction_cxsmiles_node.mjs": "98890593bdacff4d0479d5614f357b5713ac63353c57f2f771943f9ff65e5734",
+    "validation/rdkit-9732-2026-10-24/before.json.gz": "e0ff54fd35b54c8c814c7ea19fefa5060db6795ab7bcb945826ca03c3c331b3b",
+    "validation/rdkit-9732-2026-10-24/candidate.json.gz": "943eec5868c296e3b65d6d9e52b95d792055c682a5aad6b1dc859f54b18c189b",
+    "validation/rdkit-9732-2026-10-24/cases.json": "ac61284e3299a885974a4ccb8785dcd221c84408448bbf25e1955da83f59efe2",
+    "validation/rdkit-9732-2026-10-24/observed.json.gz": "0e6f82b6a5da0fc4457cc16481f5962d58beaed0b32dc881258cb918d8a00a3b",
+    "validation/rdkit-9732-2026-10-24/rdkit.json.gz": "87d804cee42941cd0c70f2c178719e0a243ae90d64b7254c6a394a747d522608",
+    "validation/rdkit-9732-2026-10-24/upstream.json": "4461c999717ae8769ceaa36cc282163517e17c90f0edd89d47a17fc408f82d55",
+    "validation/rdkit-9732-2026-10-24/wasm.json.gz": "36eb474da13fff4ea5023ce8f972d06c5e74f40f7ae16cae331e1a45f3f3112c"
+  }
+}

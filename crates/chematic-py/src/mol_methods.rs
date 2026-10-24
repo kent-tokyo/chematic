@@ -29,6 +29,7 @@ mod fingerprints;
 mod geometry_check;
 mod graph_queries;
 mod identity;
+mod identity_helpers;
 mod layered_config;
 pub(crate) mod ogb;
 mod path_enumeration;

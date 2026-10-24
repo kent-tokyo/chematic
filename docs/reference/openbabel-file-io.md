@@ -10,11 +10,16 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [V3000 atom scalar integrity](v3000-atom-scalar-integrity.md) | Checked charge/isotope/map parsing, quoted-text controls and explicit malformed-input errors | General CTfile/query validity or broad-format superiority |
+| [V2000 isotope output](v2000-isotope-output.md) | Explicit isotope labels in regenerated MOL/SDF, checked through Python/WASM and an external reader | Superiority over Open Babel with atom-class output enabled, or general CTfile validity |
+| [V2000 property precedence](v2000-property-precedence.md) | Sparse CHG/ISO records replace their complete atom-block channels across ordinary/fast readers | Full CTfile/spin-state support or superiority over Open Babel |
+| [CML lexical meaning](cml-lexical-meaning.md) | Graph/H preservation across 16 authored XML layout and opaque-content cases, reaching Open Babel 3.2.1 on this packet | General XML/CML schema support, stereo, speed or broad-format superiority |
 | [v1.0.42 same-process record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-10-openbabel-file-io-same-process-v1.0.42.md) | Historical bounded parse/write/round-trip latency on four checked fixtures | Current-release or broad-format performance |
 | [SDF read follow-up](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-sdf-read-followup.md) | Two unfiltered 1,000-record source slices with semantic and timing gates | Published-package, second-host, or all-SDF superiority |
 | [V3000 packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-openbabel-v3000-speed.md) | Bounded native-block and controlled-profile source measurements | A rank for diverse rows whose outputs differ |
 | [stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md) | Paired RDKit-written V2000/V3000 stereo round trips | Independent proof of absolute stereo correctness |
 | [latest V2000 experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-openbabel-v2000-bond-tail.md) | Full retained evidence for a rejected source optimization and fresh Open Babel lanes | Adopted-main or release performance; the source adoption gate failed |
+| [mmCIF numeric preservation](mmcif-numeric-preservation.md) | Authored finite binary64 coordinates, occupancy, B factors and cell parameters through Rust/Python/WASM record output | Complete mmCIF metadata/schema/source-byte retention, CLI support or speed |
 
 The overview therefore reports Open Babel separately from RDKit and COSMolKit.
 File-I/O results are not used to imply descriptor, fingerprint, reaction,
@@ -141,3 +146,21 @@ to claim general Open Babel file-format superiority.
 - [Open Babel supported formats](https://openbabel.org/docs/FileFormats/Overview.html)
 - [Open Babel `obabel` CLI](https://openbabel.org/docs/Command-line_tools/babel.html)
 - [Open Babel 3.2.1 release](https://github.com/openbabel/openbabel/releases/tag/openbabel-3-2-1)
+
+## Native MOL2 numeric regeneration
+
+[The numeric preservation diagnostic](mol2-numeric-preservation.md) exercises
+editable record output, separately from exact source retention. On eight
+original inputs, RDKit 2026.09.1 reads exact coordinate/partial-charge vectors
+from the native candidate in 8/8 cases each. Open Babel 3.2.1 default MOL2
+rewrites retain them in 3/8 and 5/8 cases respectively. The linked packet
+discloses source qualification, native-only extremes and measurement limits.
+
+## Native V3000 3D regeneration
+
+[The 3D numeric diagnostic](v3000-3d-numeric-preservation.md) compares native
+conformer output with Open Babel 3.2.1 explicitly writing V3000. Through the
+same RDKit reader, exact coordinates survive in 9/9 candidate records and
+2/9 Open Babel records. Indexed graph fields and source CIP arrays survive in
+all nine records for both paths. The packet is a small numeric diagnostic
+with separate native-only extremes, not a format-wide or stereo ranking.

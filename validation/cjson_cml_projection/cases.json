@@ -1,0 +1,444 @@
+{
+  "schema": "chematic.cjson-cml-projection-cases.v1",
+  "provenance": "Original synthetic representation fixtures; not optimized geometries or chemistry oracles",
+  "valid": [
+    {
+      "id": "single",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  }\n}\n",
+      "sha256": "9170c55f937b4b8b20e859369de6de0c7d883e674b6545a88d73f5086e6d3dfc",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            0,
+            0,
+            1.25
+          ],
+          [
+            1.5,
+            0,
+            1.25
+          ]
+        ],
+        "name": null,
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "precise-double",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.123456789012345,\n        -2.34567890123456,\n        0.3333333333333333,\n        1.523456789012345,\n        -2.24567890123456,\n        0.3333333333333333\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      2\n    ]\n  },\n  \"name\": \"carbonyl\"\n}\n",
+      "sha256": "faffba1abeb92a275717e3a976982e4719780ba75147bc6c515040114d2b5f77",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coordinates": [
+          [
+            0.123456789012345,
+            -2.34567890123456,
+            0.3333333333333333
+          ],
+          [
+            1.523456789012345,
+            -2.24567890123456,
+            0.3333333333333333
+          ]
+        ],
+        "name": "carbonyl",
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "charged-triple",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        7,\n        6\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        -0.0,\n        1.25,\n        0,\n        1e-15\n      ]\n    },\n    \"formalCharges\": [\n      1,\n      -1\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      3\n    ]\n  }\n}\n",
+      "sha256": "20ea3ccf89b6b3a4dec7e56eaae89f39cf62e6b52c0bb4619d90a418af270398",
+      "expected": {
+        "numbers": [
+          7,
+          6
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            3
+          ]
+        ],
+        "coordinates": [
+          [
+            0,
+            0,
+            -0.0
+          ],
+          [
+            1.25,
+            0,
+            1e-15
+          ]
+        ],
+        "name": null,
+        "charges": [
+          1,
+          -1
+        ],
+        "isotopes": [
+          0,
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "explicit-isotopes",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        1,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        0,\n        0.5,\n        0.25,\n        0.125,\n        1.5,\n        0,\n        0\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0,\n      -1\n    ],\n    \"isotopes\": [\n      13,\n      2,\n      18\n    ]\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        0,\n        2\n      ]\n    },\n    \"order\": [\n      1,\n      1\n    ]\n  }\n}\n",
+      "sha256": "22899a5b8a524ff9d6340cbe1ea922850469ab9c4b3143dcb15a9d59ea4277f8",
+      "expected": {
+        "numbers": [
+          6,
+          1,
+          8
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            0,
+            2,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            0.5,
+            0.25,
+            0.125
+          ],
+          [
+            1.5,
+            0,
+            0
+          ]
+        ],
+        "name": null,
+        "charges": [
+          0,
+          0,
+          -1
+        ],
+        "isotopes": [
+          13,
+          2,
+          18
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "aromatic-alias",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        6,\n        6,\n        6,\n        6,\n        6\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0.0,\n        0.0,\n        0,\n        1.0,\n        1.0,\n        0,\n        2.0,\n        0.0,\n        0,\n        3.0,\n        1.0,\n        0,\n        4.0,\n        0.0,\n        0,\n        5.0,\n        1.0,\n        0\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1,\n        1,\n        2,\n        2,\n        3,\n        3,\n        4,\n        4,\n        5,\n        5,\n        0\n      ]\n    },\n    \"order\": [\n      4,\n      4,\n      4,\n      4,\n      4,\n      4\n    ]\n  }\n}\n",
+      "sha256": "83cc303240bef8af0700b03997aaee0078ca924bbee5c648f8907934855d359e",
+      "expected": {
+        "numbers": [
+          6,
+          6,
+          6,
+          6,
+          6,
+          6
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1.5
+          ],
+          [
+            1,
+            2,
+            1.5
+          ],
+          [
+            2,
+            3,
+            1.5
+          ],
+          [
+            3,
+            4,
+            1.5
+          ],
+          [
+            4,
+            5,
+            1.5
+          ],
+          [
+            5,
+            0,
+            1.5
+          ]
+        ],
+        "coordinates": [
+          [
+            0.0,
+            0.0,
+            0
+          ],
+          [
+            1.0,
+            1.0,
+            0
+          ],
+          [
+            2.0,
+            0.0,
+            0
+          ],
+          [
+            3.0,
+            1.0,
+            0
+          ],
+          [
+            4.0,
+            0.0,
+            0
+          ],
+          [
+            5.0,
+            1.0,
+            0
+          ]
+        ],
+        "name": null,
+        "charges": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "group": "compatibility"
+    },
+    {
+      "id": "absent-geometry",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        8\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"name\": \"water\"\n}\n",
+      "sha256": "38e5a29b8838a7cb90ec02980ecfa982cda64f637f866e55e3a88e495fadb8da",
+      "expected": {
+        "numbers": [
+          8
+        ],
+        "bonds": [],
+        "coordinates": null,
+        "name": "water",
+        "charges": [
+          0
+        ],
+        "isotopes": [
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "escaped-name",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        0,\n        1,\n        0,\n        1\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"name\": \"C<&>\\r\\n\\tα 🧪\"\n}\n",
+      "sha256": "14d64439a4799b65c2df322d91562296eb76b16a82bf6afbfe1d5660a75fd5b5",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            1
+          ]
+        ],
+        "name": "C<&>\r\n\tα 🧪",
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "empty-name",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        0\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": []\n    },\n    \"order\": []\n  },\n  \"name\": \"\"\n}\n",
+      "sha256": "cacd0523c92411964ca9f65ceace6e0ff99eb35354475f6f68a79399b5314251",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "bonds": [],
+        "coordinates": [
+          [
+            0,
+            0,
+            0
+          ]
+        ],
+        "name": "",
+        "charges": [
+          0
+        ],
+        "isotopes": [
+          0
+        ]
+      },
+      "group": "common"
+    },
+    {
+      "id": "name-aliases",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        0,\n        1,\n        0,\n        0\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"name\": \"same\",\n  \"properties\": {\n    \"name\": \"same\"\n  }\n}\n",
+      "sha256": "494536184d33c23a3fc2310003d7817029604676026c3867a8e8fce4df06ddbe",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ],
+        "coordinates": [
+          [
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ]
+        ],
+        "name": "same",
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          0,
+          0
+        ]
+      },
+      "group": "common"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "partial-charges",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"partialCharges\": {\n    \"USER_CHARGES\": [\n      0.1,\n      -0.1\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "stereo",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"stereo\": {\n    \"centres\": [\n      0\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "unit-cell",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"unitCell\": {\n    \"a\": 5\n  }\n}\n"
+    },
+    {
+      "id": "vendor",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"vendor\": {\n    \"keep\": true\n  }\n}\n"
+    },
+    {
+      "id": "extra-coordinate-kind",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ],\n      \"2d\": [\n        0,\n        0,\n        1,\n        1\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  }\n}\n"
+    },
+    {
+      "id": "conflicting-names",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"name\": \"first\",\n  \"properties\": {\n    \"name\": \"other\"\n  }\n}\n"
+    },
+    {
+      "id": "non-xml-name",
+      "input": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"coords\": {\n      \"3d\": [\n        0,\n        0,\n        1.25,\n        1.5,\n        0,\n        1.25\n      ]\n    }\n  },\n  \"bonds\": {\n    \"connections\": {\n      \"index\": [\n        0,\n        1\n      ]\n    },\n    \"order\": [\n      1\n    ]\n  },\n  \"name\": \"bad\\u0000name\"\n}\n"
+    },
+    {
+      "id": "empty-graph",
+      "input": "{\"atoms\":{\"elements\":{\"number\":[]}}}"
+    },
+    {
+      "id": "duplicate-key",
+      "input": "{\"atoms\":{\"elements\":{\"number\":[6]}},\"atoms\":{}}"
+    },
+    {
+      "id": "partial-coordinates",
+      "input": "{\"atoms\":{\"elements\":{\"number\":[6]},\"coords\":{\"3d\":[0,1]}}}"
+    }
+  ]
+}

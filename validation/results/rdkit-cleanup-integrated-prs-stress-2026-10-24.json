@@ -1,0 +1,204 @@
+{
+  "profile": "source_cleanup_vs_rdkit_2026_09_1",
+  "detail_scope": "all",
+  "source_commit": "87b1192147ccd2ee74cf98b1b59c4f5da42e0128",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "7b55e01acda12d0b0e68b84a6e7a6dab1845f00a44de849369bf7b4e9590a2c8",
+    "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
+    "crates/chematic-chem/src/standardize/reionize.rs": "8206cf61448859b527cb40424ef2c4fb5edc114965f30dd5f7ddc20d7bb960cb",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "90ec2721b134a375d72ab54fd09ce7bd666f55beed2058c0e9ad34d13bbe1634",
+    "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "0ac9321b9c45aa41f46e62c00f45559f11cba61846e04e5dbd2453a386c973bb",
+    "crates/chematic-chem/src/hydrogen.rs": "aec88111ce1afff2d70a43dee2385adbb13d16eda76e2c81a6cd156da542c374",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
+    "crates/chematic-core/src/molecule/builder.rs": "93f19dc5b8864ff569a1b36f4b935340734b08528ef7afd23de4dc2fe3deff5a",
+    "crates/chematic-core/src/molecule/metadata.rs": "20606bb414962cda8222913eeb17373c2d278d758c5202237ffa61acf5ddfbd0",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
+    "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "963c1c28b9a087ba80716c46e92751baab332dc9e9484fbb5eff1816665e809c",
+    "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "a6050243929b4a8e4dbddc892f3f53cc8a880dd5ce4670b19b9263dac99423b0",
+    "scripts/rdkit_cleanup_source_gate.py": "0bb222ff559690d528db0c54bd0996f96fda1464a20e349e75eb599a72ea5755"
+  },
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "source_dump_sha256": "b7e3fe883b2f4b5a3e3247927fbb2598c7f57b4db4e1f4b8500a385c59e3b379",
+  "rdkit_version": "2026.09.1",
+  "source_rows": 4072,
+  "compatible_rows": 4055,
+  "normalize_compatible_rows": 4055,
+  "normalize_exact_rows": 4055,
+  "normalize_oracle_errors": [],
+  "normalize_classification_counts": {},
+  "normalize_support_status_counts": {},
+  "normalize_mismatches": [],
+  "exact_rows": 4055,
+  "classification_counts": {},
+  "support_status_counts": {},
+  "reionize_compatible_rows": 4055,
+  "reionize_exact_rows": 4055,
+  "reionize_all_rows_exact": 4058,
+  "reionize_all_rows_oracle_errors": [],
+  "reionize_oracle_errors": [],
+  "reionize_classification_counts": {},
+  "reionize_support_status_counts": {},
+  "reionize_mismatches": [],
+  "rdkit_changed_rows": 254,
+  "oracle_nonreparseable_indices": [
+    1497,
+    1630,
+    2677
+  ],
+  "source_nonreparseable_indices": [
+    1497,
+    1630,
+    2677
+  ],
+  "excluded": [
+    {
+      "index": 1334,
+      "input": "O=P(O)(O)C(Cc1ccc2c(c1)OCO2)N[C@@H](Cc1cc#c(-c2ccccc2)cc1)c1nnn[nH]1",
+      "source_input": null,
+      "rdkit_input": "O=P(O)(O)C(Cc1ccc2c(c1)OCO2)N[C@@H](Cc1cc#c(-c2ccccc2)cc1)c1nnn[nH]1"
+    },
+    {
+      "index": 1373,
+      "input": "COc1ccc(/C=C2\\NC(=O)NC2=O)c(OC)[c-]#1",
+      "source_input": null,
+      "rdkit_input": "COc1ccc(/C=C2\\NC(=O)NC2=O)c(OC)[c-]#1"
+    },
+    {
+      "index": 1400,
+      "input": "c1ccc(Oc2ccc(-c3cc[nH]n3)cc#2)cc1",
+      "source_input": null,
+      "rdkit_input": "c1cc(-c2cc[nH]n2)ccc#1Oc1ccccc1"
+    },
+    {
+      "index": 1550,
+      "input": "CCNC(C)C(O)COc1ccc(CC(N)=O)cc#1",
+      "source_input": null,
+      "rdkit_input": "CCNC(C)C(O)COc1ccc(CC(N)=O)cc#1"
+    },
+    {
+      "index": 1904,
+      "input": "N(c1ccc(-c2ccc([O]C)#cc2)cc1)C1NCCN=1",
+      "source_input": null,
+      "rdkit_input": "COc1ccc(-c2ccc(NC3=NCCN3)cc2)cc#1"
+    },
+    {
+      "index": 2253,
+      "input": "Clc1ccc(C2(Cn3ccnc3)OCC(Cc3cc#c(Br)cc3)O2)c(Cl)c1",
+      "source_input": null,
+      "rdkit_input": "Clc1ccc(C2(Cn3ccnc3)OCC(Cc3cc#c(Br)cc3)O2)c(Cl)c1"
+    },
+    {
+      "index": 2449,
+      "input": "NS(=O)(=O)c1ccc(-n2nc(C(F)(F)F)cc2C2=CCCCC2)c[c-]#1",
+      "source_input": null,
+      "rdkit_input": "NS(=O)(=O)c1ccc(-n2nc(C(F)(F)F)cc2C2=CCCCC2)c[c-]#1"
+    },
+    {
+      "index": 2671,
+      "input": "CC1C[NH+](c2nc3c(c#c2F)c(=O)[c:40](C(=O)O)cn3C(C)(C)C)CCN1C",
+      "source_input": null,
+      "rdkit_input": "CC1C[NH+](c2nc3c(c#c2F)c(=O)[c:40](C(=O)O)cn3C(C)(C)C)CCN1C"
+    },
+    {
+      "index": 2859,
+      "input": "c1(ccc2[nH]c([S+](Cc3cc(OC)c(C)cn3)[O-])nc2c#1)OC(C(F)F)(F)F",
+      "source_input": null,
+      "rdkit_input": "COc1cc(C[S+]([O-])c2nc3c#c(OC(F)(F)C(F)F)ccc3[nH]2)ncc1C"
+    },
+    {
+      "index": 3056,
+      "input": "O=C1CCCN(c2cccc(C(F)(F)F)c#2)N1",
+      "source_input": null,
+      "rdkit_input": "O=C1CCCN(c2cccc(C(F)(F)F)c#2)N1"
+    },
+    {
+      "index": 3235,
+      "input": "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+      "source_input": null,
+      "rdkit_input": "Cc1cccc(Cn2c(-c3ccc(O)cc#3)c(C)c3cc(O)cc[c:42]32)c1"
+    },
+    {
+      "index": 3497,
+      "input": "COc1c#c(CCC(CCCc2ccccc2)O/C(S)=N/CCc2ccccc2)ccc1O.[KH]",
+      "source_input": null,
+      "rdkit_input": "COc1c#c(CCC(CCCc2ccccc2)O/C(S)=N/CCc2ccccc2)ccc1O.[KH]"
+    },
+    {
+      "index": 4019,
+      "input": "CCCCCCCCCCOc1cc#c(OCC(=O)COCc2cccc(C(=O)O)c2)cc1",
+      "source_input": null,
+      "rdkit_input": "CCCCCCCCCCOc1cc#c(OCC(=O)COCc2cccc(C(=O)O)c2)cc1"
+    },
+    {
+      "index": 4066,
+      "input": "Cc1onc(NS(->O)(=O)c2ccc(N)cc#2)c1",
+      "source_input": null,
+      "rdkit_input": "Cc1cc(NS(=O)(->O)c2ccc(N)cc#2)no1"
+    }
+  ],
+  "oracle_errors": [
+    {
+      "index": 427,
+      "input": "[C-]#[O+]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[C-]#[O+]",
+      "oracle_error": "AtomValenceException: Explicit valence for atom # 1 O, 3, is greater than permitted"
+    },
+    {
+      "index": 975,
+      "input": "[O+]#[C-]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[O+]#[C-]",
+      "oracle_error": "AtomValenceException: Explicit valence for atom # 7 O, 3, is greater than permitted"
+    },
+    {
+      "index": 1326,
+      "input": "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+      "oracle_error": "KekulizeException: Can't kekulize mol.  Unkekulized atoms: 15 16 18"
+    }
+  ],
+  "mismatches": [],
+  "baseline_comparison": {
+    "previous_source_commit": "83bbd27918334bcf8dd7eb25b2450efd633b678b",
+    "previous_report_sha256": "67c958b988eee7eeb02b83cdf9d9a383554309d5fa938fa9ebb55b259ffb12a1",
+    "previous_exact": 4057,
+    "fixed_indices": [
+      403,
+      1471,
+      1497,
+      1630,
+      2478,
+      2602,
+      2677,
+      2787,
+      3154,
+      3238,
+      3501,
+      3737
+    ],
+    "regressed_indices": [],
+    "newly_excluded_indices": [
+      1334,
+      1373,
+      1400,
+      1550,
+      1904,
+      2253,
+      2449,
+      2671,
+      2859,
+      3056,
+      3235,
+      3497,
+      4019,
+      4066
+    ],
+    "newly_compatible_indices": [],
+    "previous_reionize_exact": 4069,
+    "reionize_fixed_indices": [],
+    "reionize_regressed_indices": []
+  },
+  "limits": [
+    "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
+    "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
+    "RDKit agreement is not independent chemical truth"
+  ]
+}

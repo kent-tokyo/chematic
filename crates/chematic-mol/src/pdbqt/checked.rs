@@ -34,6 +34,11 @@ pub enum PdbqtWriteError {
         atom: usize,
         atomic_number: u8,
     },
+    /// PDBQT has no isotope field. An explicit projection can record the loss.
+    IsotopeLoss {
+        atom: usize,
+        mass_number: u16,
+    },
 }
 
 impl core::fmt::Display for PdbqtWriteError {
@@ -70,6 +75,10 @@ impl core::fmt::Display for PdbqtWriteError {
                 f,
                 "PDBQT atom {atom}: no AutoDock type for atomic number {atomic_number}"
             ),
+            Self::IsotopeLoss { atom, mass_number } => write!(
+                f,
+                "PDBQT atom {atom}: isotope {mass_number} cannot be represented; use project_pdbqt_isotopes to record omitted labels"
+            ),
         }
     }
 }
@@ -105,12 +114,25 @@ fn check_numeric(
 /// or ligand preparation. No atoms are removed/merged and no charges are
 /// calculated. Output has synthetic LIG/A/1 residue identity and no torsion tree.
 /// Ordinary accepted input produces exactly the legacy writer's bytes.
+/// Isotope annotations are refused, including labels on heavy atoms. To opt
+/// into their omission with a per-atom sidecar, use `project_pdbqt_isotopes`.
 pub fn write_pdbqt_checked(
     mol: &Molecule,
     coords: &[(f64, f64, f64)],
     charges: &[f64],
     ligand_name: &str,
 ) -> Result<String, PdbqtWriteError> {
+    validate_pdbqt(mol, coords, charges, ligand_name, true)?;
+    Ok(write_pdbqt(mol, coords, charges, ligand_name))
+}
+
+pub(super) fn validate_pdbqt(
+    mol: &Molecule,
+    coords: &[(f64, f64, f64)],
+    charges: &[f64],
+    ligand_name: &str,
+    reject_isotopes: bool,
+) -> Result<(), PdbqtWriteError> {
     let atoms = mol.atom_count();
     if atoms == 0 {
         return Err(PdbqtWriteError::EmptyMolecule);
@@ -138,6 +160,12 @@ pub fn write_pdbqt_checked(
         if a.wildcard {
             return Err(PdbqtWriteError::WildcardAtom { atom: i });
         }
+        if reject_isotopes && let Some(mass_number) = a.isotope {
+            return Err(PdbqtWriteError::IsotopeLoss {
+                atom: i,
+                mass_number,
+            });
+        }
         if autodock_atom_type(mol, idx) == "X" {
             return Err(PdbqtWriteError::UnsupportedAtom {
                 atom: i,
@@ -154,5 +182,5 @@ pub fn write_pdbqt_checked(
             check_numeric(value, width, i, field)?;
         }
     }
-    Ok(write_pdbqt(mol, coords, charges, ligand_name))
+    Ok(())
 }

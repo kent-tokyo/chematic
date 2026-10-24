@@ -296,8 +296,10 @@ class Mol:
     def rdkit_smiles(self) -> str:
         """Canonical SMILES exactly as RDKit 2026.03.1 writes it
         (``Chem.MolToSmiles(Chem.MolFromSmiles(s))`` for a molecule read with
-        :func:`from_smiles`). Raises ``ValueError`` for unsupported inputs or
-        molecules RDKit's sanitization rejects; never returns a wrong string."""
+        :func:`from_smiles`). On a Cleanup result, retains the in-memory
+        non-tetrahedral tag of a fully disconnected metal. Raises
+        ``ValueError`` for unsupported inputs or molecules RDKit's
+        sanitization rejects; never returns a wrong string."""
         ...
 
     def rdkit_smiles_with(
@@ -898,6 +900,19 @@ class Mol:
         Example::
 
             block = mol.to_mol_v3000(coords_2d, name="my_mol")
+        """
+        ...
+
+    def to_cjson(self, coords: list[list[float]] = []) -> str:
+        """Legacy lossy graph projection; prefer to_cjson_checked."""
+        ...
+
+    def to_cjson_checked(self, coords: list[list[float]] = []) -> str:
+        """Refuse unsupported in-memory graph properties and malformed XYZ.
+
+        Raises ValueError for stereo, explicit H counts, aromatic atom flags,
+        wildcards, maps, tags, CIP, zero isotope mass, and unsupported bonds.
+        Does not validate metadata or stereo discarded by a source reader.
         """
         ...
 
@@ -3416,6 +3431,16 @@ def from_mol_v3000(block: str | bytes) -> Mol:
     """
     ...
 
+def from_mol_block_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
+    """Return V2000 (Mol, name, source-order xyz in angstroms).
+
+    Requires finite values in all three fixed-width fields. Keeps tiny/flat z
+    and signed zero independently of perception and headers. Graph/stereo
+    interpretation is unchanged. Bounded to 16 MiB; metadata loss is not audited.
+    """
+    ...
+
+
 def from_mol_v3000_with_coords_3d(block: str | bytes) -> tuple[Mol, str, list[list[float]]]:
     """Return Mol, name and source-order x/y/z in Angstrom, including tiny z.
 
@@ -3581,6 +3606,26 @@ def mol2_reference_rmsds_json(
 
 def parse_mol2_record_json(text: str) -> str:
     """Return source metadata and bounded graph interpretation as MOL2 record JSON."""
+    ...
+
+def roundtrip_cml_source(text: str | bytes) -> str:
+    """Retain exact bounded XML 1.0 CML source with opaque chemistry.
+
+    Requires one namespaced molecule root; rejects DTDs, nested molecules,
+    malformed XML, unsupported encodings and resource-limit violations.
+    """
+    ...
+
+def project_cjson_to_cml(text: str | bytes) -> str:
+    """Preserve the local CJSON graph/XYZ/name profile or raise ValueError.
+
+    Refuses opaque metadata/stereo, partial charges and conflicting names.
+    Does not verify chemical validity or geometry-derived stereo.
+    """
+    ...
+
+def project_cml_to_cjson(text: str | bytes) -> str:
+    """Checked graph/XYZ/name profile; refuse unrepresented CML payload."""
     ...
 
 def project_mol2_to_cjson(text: str | bytes) -> str:
@@ -3906,7 +3951,9 @@ def to_extxyz(
     ``dict[str, str]`` of extra frame metadata (e.g. ``{"energy": "-76.4"}``).
 
     Raises:
-        ValueError: if `coords`' length doesn't match `mol`'s atom count.
+        ValueError: on invalid shapes, nonfinite values or unrepresentable names.
+        Reserved atom/position aliases and duplicate semantic columns are refused.
+        Molecular bonds, charge/isotope/stereo fields are not projected.
     """
     ...
 
@@ -3977,6 +4024,10 @@ def write_mmcif(
 ) -> str:
     """Write an mmCIF file from atom records (same dict shape as
     :func:`parse_mmcif`'s ``"atoms"``).
+
+    Retains finite binary64 coordinates, occupancy, B factors and cell
+    parameters without decimal rounding. Original spelling and uncertainty
+    suffixes are not retained. Existing identity-namespace limits still apply.
     """
     ...
 
@@ -4243,6 +4294,16 @@ def maxmin_picks(smiles: list[str], n: int) -> list[int]:
 
         picks = chematic.maxmin_picks(smiles, 100)
         diverse_set = [smiles[i] for i in picks]
+    """
+    ...
+
+def normalize_reaction_cxsmiles(text: str | bytes, *, canonical: bool = True) -> str:
+    """Preserve enhanced atom-group membership through reaction ordering.
+
+    Supports a/&n/on groups with global reactant/agent/product atom indices.
+    Other CX fields, titles, invalid references and non-tetrahedral members
+    raise ValueError. Group numbers are reaction-wide and preserved. This is
+    not a unique enhanced-stereo reaction key; legacy writers are unchanged.
     """
     ...
 
@@ -5615,6 +5676,8 @@ def convert_format(
     Coordinate, charge, name and comment overrides are refused on those paths.
     CJSON source retention validates the immutable local record profile;
     opaque fields are retained without interpreting their chemistry.
+    V2000/V3000 inputs supply source xyz for CJSON, PDB, XYZ and PDBQT output;
+    target precision/metadata limits apply. Explicit coords retains precedence.
     """
     ...
 
@@ -5902,8 +5965,19 @@ def write_pdbqt_checked(mol: Mol, coords: Sequence[Sequence[float]], charges: Se
     """Rigid PDBQT with exact counts, finite values and checked field widths.
 
     Coordinates are in angstroms, partial charges in e, per graph atom including
-    explicit H. Raises ValueError for unrepresentable input. AutoDock types use
+    explicit H. Raises ValueError for isotope labels or unrepresentable input. AutoDock types use
     the existing heuristic; no charge calculation or ligand preparation.
+    """
+    ...
+
+
+def project_pdbqt_isotopes(mol: Mol, coords: Sequence[Sequence[float]], charges: Sequence[float], name: str = "LIG") -> dict:
+    """Explicit isotope omission: returns rigid pdbqt and isotopes_omitted.
+
+    Each loss has source_atom_index (zero based), pdbqt_serial (one based),
+    atomic_number and mass_number. Every explicit atom is retained. Coordinates
+    and supplied partial charges round to three decimals. The source Mol is
+    unchanged. This is not a lossless graph round trip or ligand preparation.
     """
     ...
 

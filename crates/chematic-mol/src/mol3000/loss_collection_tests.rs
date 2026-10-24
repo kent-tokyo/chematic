@@ -1,4 +1,5 @@
-//! Frozen source-main writer; plain output and public loss fields must match.
+//! Frozen string-building profile with explicit #2429 unknown-stereo state.
+//! Plain output and public loss fields must still match.
 use super::*;
 
 fn frozen_reporting(

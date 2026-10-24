@@ -169,7 +169,12 @@ pub(super) fn from_extxyz_all<'py>(
 ///
 /// Raises:
 ///     ValueError: if `coords`' length doesn't match `mol`'s atom count,
-///     or if a `properties` column's row count doesn't match it.
+///     invalid shapes/types, nonfinite coordinates/cell/property values or
+///     unrepresentable metadata/property names. Reserved species/position aliases
+///     and colliding charge/charges columns are refused before output. Bare empty
+///     info values are refused; explicitly typed metadata strings remain raw tags.
+///     This geometry writer does not transfer molecular bonds, formal charges,
+///     isotopes or stereo; supply real-valued atom data explicitly in properties.
 #[pyfunction]
 #[pyo3(signature = (mol, coords, lattice=None, properties=None, info=None))]
 pub(super) fn to_extxyz<'py>(

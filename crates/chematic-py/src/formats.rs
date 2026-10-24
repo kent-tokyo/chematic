@@ -17,7 +17,9 @@ use cml::*;
 
 mod serialized_input;
 use serialized_input::serialized_text;
+mod reaction_cx;
 mod registration;
+use reaction_cx::normalize_reaction_cxsmiles;
 
 mod hin;
 use hin::*;
@@ -83,6 +85,8 @@ type SdfWithCoords = Vec<(Mol, String, Vec<Vec<f64>>)>;
 
 mod v3000_coordinates;
 use v3000_coordinates::*;
+mod v2000_coordinates;
+use v2000_coordinates::*;
 mod v3000_source;
 use v3000_source::*;
 mod sdf_source;
@@ -1347,6 +1351,7 @@ fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
         m,
         write_reaction_cdxml_checked,
         write_reaction,
+        normalize_reaction_cxsmiles,
         from_rxn_file,
         to_rxn_file,
         from_rxn_document_json,
@@ -1370,11 +1375,13 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         from_condensed,
         from_mol_block,
         from_mol_block_with_coords,
+        from_mol_block_with_coords_3d,
         from_mol_block_with_diagnostics,
         parse_sdf_with_coords,
         from_cml,
         from_cml_with_3d,
         from_cml_strict,
+        roundtrip_cml_source,
         from_mrv_block,
         from_mrv_block_with_coords,
         from_cjson,
@@ -1407,6 +1414,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         roundtrip_sdf_source,
         single_sdf_mol_block,
         project_mol2_to_cjson,
+        project_cjson_to_cml,
+        project_cml_to_cjson,
         kekulize_mol2_record,
         from_pdbqt,
         from_pdbqt_with_data,
@@ -1456,6 +1465,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_pqr_checked,
         pqr_to_pdbqt,
         write_pdbqt_checked,
+        project_pdbqt_isotopes,
         infer_element,
     )?;
     registration::register_quantum_formats(m)?;

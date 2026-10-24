@@ -17,8 +17,13 @@ def compact(text):
         elif c not in ' \t\r\n':result.append(c)
     return ''.join(result)
 def variants(c):return [c['input'],c['input'].replace('\n','\r\n'),compact(c['input'])]
-def common_bridge_graph(text):
+def assert_cml_return_leg_refuses_loss(text):
+    # CML output declares total H counts. The checked CJSON writer now refuses
+    # to silently discard that additional information on the return leg.
     cml=chematic.convert_format(text,'.CJSON','cml')
+    if 'order="A"' in cml:
+        with pytest.raises(ValueError):chematic.convert_format(cml,'cml','cjson')
+        return json.loads(chematic.from_cml(cml).to_cjson([]))
     return json.loads(chematic.convert_format(cml,'cml','cjson'))
 def checked_graph(data,expected):
     atoms=data['atoms'];n=len(expected['numbers']);bonds=data['bonds']
@@ -32,8 +37,8 @@ def checked_graph(data,expected):
 def test_checked_graph_and_common_bridge(case):
     for text in variants(case):
         mol,coords=chematic.from_cjson_checked(text)
-        checked_graph(json.loads(mol.to_cjson(coords)),case['expected'])
-        checked_graph(common_bridge_graph(text),case['expected'])
+        checked_graph(json.loads(mol.to_cjson_checked(coords)),case['expected'])
+        assert_cml_return_leg_refuses_loss(text)
         assert chematic.convert_format(text,'.CJSON','cjson')==text
 
 @pytest.mark.parametrize('case',PACKET['invalid'],ids=lambda c:c['id'])

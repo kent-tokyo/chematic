@@ -88,42 +88,17 @@ impl Mol {
     ///
     /// The charges are written as a ``> <PARTIAL_CHARGES>`` SD data field.
     fn to_sdf_with_charges(&self, coords: Vec<[f64; 3]>, charges: Vec<f64>) -> String {
-        use chematic_core::BondOrder;
-        let mol = &self.inner;
-        let mut out = String::new();
-        out.push_str("\n  chematic\n\n");
-        let natoms = mol.atom_count();
-        let bonds: Vec<_> = mol.bonds().collect();
-        let nbonds = bonds.len();
-        out.push_str(&format!(
-            "{:>3}{:>3}  0  0  0  0  0  0  0  0999 V2000\n",
-            natoms, nbonds
-        ));
-        for (idx, atom) in mol.atoms() {
-            let i = idx.0 as usize;
-            let (x, y, z) = if i < coords.len() {
-                (coords[i][0], coords[i][1], coords[i][2])
-            } else {
-                (0.0, 0.0, 0.0)
-            };
-            let sym = atom.element.symbol();
-            out.push_str(&format!(
-                "{:>10.4}{:>10.4}{:>10.4} {:<3} 0  0  0  0  0  0  0  0  0  0  0  0\n",
-                x, y, z, sym
-            ));
-        }
-        for (_, bond) in &bonds {
-            let a1 = bond.atom1.0 + 1;
-            let a2 = bond.atom2.0 + 1;
-            let btype = match bond.order {
-                BondOrder::Double => 2,
-                BondOrder::Triple => 3,
-                BondOrder::Aromatic => 4,
-                _ => 1,
-            };
-            out.push_str(&format!("{:>3}{:>3}{:>3}  0\n", a1, a2, btype));
-        }
-        out.push_str("M  END\n");
+        let conformer = chematic_core::Coords3D {
+            points: coords
+                .into_iter()
+                .map(|[x, y, z]| chematic_core::Point3::new(x, y, z))
+                .collect(),
+        };
+        let mut out = chematic_mol::write_mol_with_conformer(
+            &self.inner,
+            &chematic_mol::MolMetadata::default(),
+            &conformer,
+        );
         if !charges.is_empty() {
             out.push_str("> <PARTIAL_CHARGES>\n");
             let vals: Vec<String> = charges.iter().map(|q| format!("{q:.4}")).collect();

@@ -34,6 +34,7 @@ pub mod cif;
 #[cfg(feature = "crystal")]
 mod cif_symmetry;
 pub mod cjson;
+pub mod cjson_output;
 pub mod cjson_record;
 pub mod cml;
 pub mod cml_named;
@@ -96,7 +97,9 @@ pub use conversion::{
     ConversionAtomMapping, ConversionBondMapping, ConversionError, ConversionLimits,
     ConversionObservation, ConversionPolicy, ConversionReport, PreservationStatus,
     convert_with_report, convert_with_report_json, convert_with_report_with_limits,
-    project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
+    project_cjson_to_cml, project_cjson_to_cml_with_limits, project_cml_to_cjson,
+    project_cml_to_cjson_with_limits, project_mol2_to_cjson, project_mol2_to_cjson_with_limits,
+    roundtrip_cml_source, roundtrip_cml_source_with_limits,
 };
 pub use error::MolParseError;
 pub use reaction_cdxml::{ReactionCdxmlError, write_reaction_cdxml_checked};
@@ -126,6 +129,7 @@ pub use cif::{
     write_cif_periodic_structure,
 };
 pub use cjson::{CjsonError, CjsonParseLimits, parse_cjson, parse_cjson_with_limits, write_cjson};
+pub use cjson_output::{CjsonWriteError, write_cjson_checked};
 pub use cjson_record::{
     CjsonProjection, CjsonRecord, parse_cjson_checked, parse_cjson_checked_with_limits,
     parse_cjson_record, parse_cjson_record_with_limits, write_cjson_record,
@@ -195,12 +199,12 @@ pub use mol2000::{
     CoordinateDimension, GeometryRank, MolFormat, MolMetadata, MolReadReport, MolStereoLoss,
     MolStereoWriteError, SquarePlanarPerceptionDiagnostic, SquarePlanarRejectionReason,
     Stereo3DDiagnostic, UnsupportedStereoReason, parse_mol, parse_mol_with_coords,
-    parse_sdf_with_coords, read_mol_with_diagnostics, read_sdf_with_diagnostics,
-    validate_square_planar_for_write, write_laid_out_mol, write_laid_out_sdf_record_into,
-    write_mol, write_mol_with_conformer, write_mol_with_conformer_checked, write_mol_with_coords,
-    write_mol_with_stereo_report, write_sdf, write_sdf_record, write_sdf_record_v3000,
-    write_sdf_record_with_conformer, write_sdf_record_with_conformer_checked,
-    write_sdf_with_charges,
+    parse_mol_with_coords_3d, parse_sdf_with_coords, read_mol_with_diagnostics,
+    read_sdf_with_diagnostics, validate_square_planar_for_write, write_laid_out_mol,
+    write_laid_out_sdf_record_into, write_mol, write_mol_with_conformer,
+    write_mol_with_conformer_checked, write_mol_with_coords, write_mol_with_stereo_report,
+    write_sdf, write_sdf_record, write_sdf_record_v3000, write_sdf_record_with_conformer,
+    write_sdf_record_with_conformer_checked, write_sdf_with_charges,
 };
 pub use mol3000::{
     V3000SGroup, V3000SGroupKind, V3000SourceLimits, parse_mol_v3000, parse_mol_v3000_with_coords,
@@ -246,8 +250,9 @@ pub use pdb_selection::{
     select_pdb_atoms, select_pdb_atoms_with_limits,
 };
 pub use pdbqt::{
-    PdbqtError, PdbqtParseLimits, PdbqtWriteError, autodock_atom_type, parse_pdbqt,
-    parse_pdbqt_with_limits, write_pdbqt, write_pdbqt_checked,
+    PdbqtError, PdbqtIsotopeLoss, PdbqtIsotopeProjection, PdbqtParseLimits, PdbqtWriteError,
+    autodock_atom_type, parse_pdbqt, parse_pdbqt_with_limits, project_pdbqt_isotopes, write_pdbqt,
+    write_pdbqt_checked,
 };
 pub use pqr::{
     PqrAtomRecord, PqrError, PqrParseLimits, PqrResult, PqrWriteError, PqrWriteLimits,

@@ -38,7 +38,8 @@ means the operation is not exposed on that binding.
 | MOL/SDF V2000/V3000 | R/W | R/W | R/W | Use checked/source routes for stereo and SD fields |
 | MOL2 | R/W | R/W | R/W | Typed/charge/metadata preservation is profile-specific |
 | CML | R/W | R/W | R/W | Single-molecule checked profiles; unknown XML is not interpreted |
-| ChemicalJSON / MolJSON | R/W | R/W | R/W | Strict local ChemicalJSON profile |
+| ChemicalJSON | R/W | R/W | R/W | Strict local ChemicalJSON profile |
+| MolJSON | R/W | R/W | R/W | [Local atom-record dialect and non-node H counts](moljson-hydrogens.md); differs from upstream oxpig schema |
 | CDXML | bounded R/W | bounded R/W | bounded R/W | Rich editing and all ChemDraw semantics are out of scope |
 | PDB | R/W | R/W | R/W | Model/record and metadata handling is API-specific |
 | mmCIF | R/W | R/W | R/W | Molecular and crystallographic profiles are distinct |
@@ -95,8 +96,10 @@ Related records:
 - **CML:** checked source retention preserves the original XML document. The
   separate graph/coordinate projection validates the interpreted subset and
   rejects partial or conflicting coordinate declarations. Its namespace-aware
-  profile excludes foreign annotations from the graph and resolves forward IDs.
-- **V3000:** coordinate projection keeps source-order finite x/y/z values, but
+  reader excludes foreign annotations from the graph and resolves forward IDs.
+  Ordinary CML-to-CJSON conversion now checks graph/XYZ/name and local inferred H
+  counts, refusing unrepresented annotations and 2D data before output.
+- **V2000/V3000:** coordinate projection keeps source-order finite x/y/z values, but
   target formats retain only the fields they can represent.
 
 ## LAMMPS dump/trajectory
@@ -126,11 +129,15 @@ Use these pages when the short matrix is not enough:
   [Kekulé output](mol2-kekule-bond-output.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
+- [mmCIF numeric preservation](mmcif-numeric-preservation.md)
 - [PDB atom selection](pdb-atom-selection.md),
   [model splitting](pdb-model-splitting.md), and
   [checked PDBQT output](pdbqt-checked-output.md)
+  and [explicit PDBQT isotope projection](pdbqt-isotope-projection.md)
 - [CML collections](cml-collection.md) and [named atoms](cml-named-atoms.md)
 - [CML namespace-aware projection](cml-namespace-projection.md)
+- [Checked CML to CJSON projection](cml-cjson-projection.md)
+- [Extended XYZ output integrity](extxyz-output-integrity.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),
@@ -138,6 +145,7 @@ Use these pages when the short matrix is not enough:
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)
 - [XYZ precision](xyz-output-precision.md),
   [per-atom data](xyz-atom-data.md), and [GRO/LAMMPS units](gro-lammps-units.md)
+- [V2000 source coordinate projection](v2000-coordinate-projection.md)
 
 The generated [Python API reference](../api/chematic.md) is authoritative for
 current Python signatures. Rustdoc and TypeScript declarations remain the

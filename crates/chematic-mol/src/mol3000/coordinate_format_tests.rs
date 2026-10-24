@@ -1,4 +1,4 @@
-//! Differential checks against the frozen original complete 3D atom writer.
+//! Exact numeric checks plus frozen non-coordinate 3D atom-row contents.
 use super::*;
 
 fn original_atoms(out: &mut String, mol: &Molecule, metadata: &MolMetadata, conformer: &Coords3D) {
@@ -26,12 +26,76 @@ fn original_atoms(out: &mut String, mol: &Molecule, metadata: &MolMetadata, conf
     out.push_str("M  V30 END ATOM\n");
 }
 
+fn mask_coordinates(input: &str) -> String {
+    let mut active = false;
+    let mut result = String::new();
+    for line in input.lines() {
+        if line == "M  V30 BEGIN ATOM" {
+            active = true;
+        }
+        if line == "M  V30 END ATOM" {
+            active = false;
+        }
+        let mut masked = line.to_string();
+        if active && !line.contains("BEGIN ATOM") {
+            let mut cursor = 0;
+            let mut spans = Vec::new();
+            for (index, token) in line.split_whitespace().enumerate() {
+                let start = cursor + line[cursor..].find(token).unwrap();
+                cursor = start + token.len();
+                if (4..7).contains(&index) {
+                    spans.push(start..cursor);
+                }
+            }
+            assert_eq!(spans.len(), 3);
+            for span in spans.into_iter().rev() {
+                masked.replace_range(span, "<coordinate>");
+            }
+        }
+        result.push_str(&masked);
+        result.push('\n');
+    }
+    result
+}
+
+pub(super) fn assert_3d_contract(actual: &str, legacy: &str, conformer: &Coords3D) {
+    let flat = actual.replace(" -\nM  V30 ", " ");
+    let mut active = false;
+    let mut index = 0;
+    for line in flat.lines() {
+        if line == "M  V30 END ATOM" {
+            active = false;
+        }
+        if active {
+            let fields: Vec<_> = line.split_whitespace().collect();
+            let point = conformer
+                .points
+                .get(index)
+                .copied()
+                .unwrap_or(Point3::zero());
+            for (field, value) in fields[4..7].iter().zip([point.x, point.y, point.z]) {
+                if value.is_finite() {
+                    assert!(field.len() <= 24);
+                    assert_eq!(field.parse::<f64>().unwrap().to_bits(), value.to_bits());
+                } else {
+                    assert_eq!(*field, format!("{value:.4}"));
+                }
+            }
+            index += 1;
+        }
+        if line == "M  V30 BEGIN ATOM" {
+            active = true;
+        }
+    }
+    assert_eq!(mask_coordinates(&flat), mask_coordinates(legacy));
+}
+
 fn compare(mol: &Molecule, metadata: &MolMetadata, conformer: &Coords3D) {
     let mut actual = String::from("retained prefix\n");
     let mut expected = actual.clone();
     append_atoms_3d(&mut actual, mol, metadata, conformer);
     original_atoms(&mut expected, mol, metadata, conformer);
-    assert_eq!(actual, expected);
+    assert_3d_contract(&actual, &expected, conformer);
 }
 
 #[test]
@@ -100,7 +164,7 @@ fn complete_3d_rows_preserve_f64_edges_and_map_boundaries() {
 }
 
 #[test]
-fn deterministic_float_bits_and_rounding_ties_match_original() {
+fn deterministic_float_bits_and_rounding_ties_retain_values_and_other_fields() {
     let mut b = MoleculeBuilder::new();
     b.add_atom(Atom::new(Element::C));
     let mol = b.build();

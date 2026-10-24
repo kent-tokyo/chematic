@@ -1,0 +1,157 @@
+{
+  "schema": 1,
+  "scope": "Original synthetic CML single/double/triple Cartesian/name profile; not a general CML/schema/chemical validity/stereo corpus",
+  "variants": [
+    "compact",
+    "lf",
+    "crlf"
+  ],
+  "valid": [
+    {
+      "id": "cartesian_precision",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "name_unicode",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name>水 &amp; carbon &lt;O&gt;</name><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "empty_name",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name/><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "name_whitespace",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name> A&#13;B\nC\tD </name><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "title_and_name",
+      "input": "<molecule title=\"methanol\" xmlns=\"http://www.xml-cml.org/schema\"><name>methanol</name><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "title_only",
+      "input": "<molecule title=\"A &amp; B\" xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "charged_isotopes",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" isotopeNumber=\"13\" formalCharge=\"1\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" isotopeNumber=\"18\" formalCharge=\"-1\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "inferred_hydrogens",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" hydrogenCount=\"3\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" hydrogenCount=\"1\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "absent_geometry",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name>ethene</name><atomArray><atom id=\"later\" elementType=\"C\"/><atom id=\"first\" elementType=\"C\"/></atomArray><bondArray><bond atomRefs2=\"first later\" order=\"D\"/></bondArray></molecule>"
+    },
+    {
+      "id": "forward_refs_prefix",
+      "input": "<c:cml xmlns:c=\"http://www.xml-cml.org/schema\"><c:molecule><c:bondArray><c:bond atomRefs2=\"z a\" order=\"T\"/></c:bondArray><c:atomArray><c:atom id=\"a\" elementType=\"C\"/><c:atom id=\"z\" elementType=\"N\"/></c:atomArray></c:molecule></c:cml>"
+    },
+    {
+      "id": "molecule_id",
+      "input": "<molecule id=\"external-identity\" xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "hydrogenCount",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" hydrogenCount=\"0\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "spinMultiplicity",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" spinMultiplicity=\"2\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "x2",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x2=\"1\" y2=\"2\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "units",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" units=\"bohr\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "vendor",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" vendor=\"x\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "isotopeNumber",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" isotopeNumber=\"0\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "order_0",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"0\"/></bondArray></molecule>"
+    },
+    {
+      "id": "order_any",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"any\"/></bondArray></molecule>"
+    },
+    {
+      "id": "order_S/D",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"S/D\"/></bondArray></molecule>"
+    },
+    {
+      "id": "order_A",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"A\"/></bondArray></molecule>"
+    },
+    {
+      "id": "atomParity",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><atomParity>opaque</atomParity></molecule>"
+    },
+    {
+      "id": "bondStereo",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><bondStereo>opaque</bondStereo></molecule>"
+    },
+    {
+      "id": "property",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><property>opaque</property></molecule>"
+    },
+    {
+      "id": "crystal",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><crystal>opaque</crystal></molecule>"
+    },
+    {
+      "id": "molecule",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><molecule>opaque</molecule></molecule>"
+    },
+    {
+      "id": "foreign",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray><m:payload xmlns:m=\"urn:vendor\">opaque</m:payload></molecule>"
+    },
+    {
+      "id": "foreign_attr",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" xmlns:v=\"urn:vendor\" v:type=\"x\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "conflicting_names",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name>A</name><name>B</name><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "name_markup",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><name>A<scalar>B</scalar></name><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "partial_xyz",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "nonfinite",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"NaN\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "duplicate_id",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"carbon\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "dangling_ref",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon missing\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "dtd",
+      "input": "<!DOCTYPE molecule [<!ENTITY x \"a\">]><molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    },
+    {
+      "id": "xml11",
+      "input": "<?xml version=\"1.1\"?><molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"carbon\" elementType=\"C\" x3=\"-0.0\" y3=\"1.2345678901234567\" z3=\"2.5\"/><atom id=\"oxygen\" elementType=\"O\" x3=\"3.75\" y3=\"-4.125\" z3=\"0.000012345678901\"/></atomArray><bondArray><bond id=\"bond1\" atomRefs2=\"carbon oxygen\" order=\"1\"/></bondArray></molecule>"
+    }
+  ]
+}

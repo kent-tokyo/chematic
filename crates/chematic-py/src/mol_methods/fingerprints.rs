@@ -678,6 +678,26 @@ impl Mol {
         chematic_mol::write_cjson(&self.inner, &c3d)
     }
 
+    /// ChemicalJSON graph/Cartesian projection that refuses unsupported atom,
+    /// bond and stereo properties. Does not check discarded source metadata.
+    /// Coordinates are absent ([]) or exactly one finite [x,y,z] row per atom.
+    #[pyo3(signature = (coords = vec![]))]
+    fn to_cjson_checked(&self, coords: Vec<Vec<f64>>) -> PyResult<String> {
+        let points = coords
+            .iter()
+            .enumerate()
+            .map(|(index, row)| match row.as_slice() {
+                &[x, y, z] => Ok((x, y, z)),
+                _ => Err(PyValueError::new_err(format!(
+                    "CJSON: expected 3 coordinates at atom {index}, got {}",
+                    row.len()
+                ))),
+            })
+            .collect::<PyResult<Vec<_>>>()?;
+        chematic_mol::write_cjson_checked(&self.inner, &points)
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// Serialize the molecule to a MolJSON string (pretty-printed).
     ///
     /// MolJSON is a JSON-based molecular representation designed for LLM

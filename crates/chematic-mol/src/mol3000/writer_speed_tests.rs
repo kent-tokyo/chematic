@@ -2,7 +2,7 @@ use super::*;
 use chematic_core::{BondIdx, Element, MoleculeBuilder, RGroupLabel, StereoGroup, StereoGroupKind};
 
 #[test]
-fn numeric_edges_and_missing_coordinates_are_byte_identical() {
+fn numeric_edges_keep_2d_bytes_and_3d_numeric_contract() {
     let mut b = MoleculeBuilder::new();
     let mut atom = Atom::new(Element::C);
     atom.charge = -2;
@@ -36,9 +36,10 @@ fn numeric_edges_and_missing_coordinates_are_byte_identical() {
         let conformer = Coords3D {
             points: vec![Point3::new(x, -x, x)],
         };
-        assert_eq!(
-            write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
-            reference::write_mol_v3000_with_conformer(&mol, &metadata, &conformer)
+        coordinate_format_tests::assert_3d_contract(
+            &write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
+            &reference::write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
+            &conformer,
         );
     }
     assert_eq!(
@@ -53,7 +54,7 @@ fn numeric_edges_and_missing_coordinates_are_byte_identical() {
 }
 
 #[test]
-fn growing_records_and_opaque_properties_are_byte_identical() {
+fn growing_records_keep_2d_bytes_and_3d_values_and_opaque_properties() {
     for count in [0, 1, 2, 8, 64, 256, 1024] {
         let mut b = MoleculeBuilder::new();
         for i in 0..count {
@@ -93,13 +94,16 @@ fn growing_records_and_opaque_properties_are_byte_identical() {
             write_mol_v3000(&mol, &metadata, &coords),
             reference::write_mol_v3000(&mol, &metadata, &coords)
         );
-        assert_eq!(
-            write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
-            reference::write_mol_v3000_with_conformer(&mol, &metadata, &conformer)
+        coordinate_format_tests::assert_3d_contract(
+            &write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
+            &reference::write_mol_v3000_with_conformer(&mol, &metadata, &conformer),
+            &conformer,
         );
-        assert_eq!(
-            write_mol_v3000_with_conformer_checked(&mol, &metadata, &conformer).unwrap(),
-            reference::write_mol_v3000_with_conformer_checked(&mol, &metadata, &conformer).unwrap()
+        coordinate_format_tests::assert_3d_contract(
+            &write_mol_v3000_with_conformer_checked(&mol, &metadata, &conformer).unwrap(),
+            &reference::write_mol_v3000_with_conformer_checked(&mol, &metadata, &conformer)
+                .unwrap(),
+            &conformer,
         );
     }
 }

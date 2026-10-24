@@ -31,11 +31,30 @@ fn check(record: &mut Mol2Record, value: f64) {
         .lines()
         .next()
         .unwrap();
-    assert_eq!(actual, expected, "bits={:016x}", value.to_bits());
+    let fields: Vec<_> = actual.split_whitespace().collect();
+    let legacy: Vec<_> = expected.split_whitespace().collect();
+    let values = [value, -value, value * 0.5, value];
+    let columns = [2, 3, 4, 8];
+    if value.is_finite() {
+        for (column, number) in columns.into_iter().zip(values) {
+            assert_eq!(
+                fields[column].parse::<f64>().unwrap().to_bits(),
+                number.to_bits()
+            );
+        }
+    }
+    // Legacy bytes remain the contract only where four decimals retain all
+    // source bits (or for the existing non-finite compatibility behavior).
+    let exact_legacy = columns.into_iter().zip(values).all(|(column, number)| {
+        legacy[column].parse::<f64>().unwrap().to_bits() == number.to_bits()
+    });
+    if exact_legacy || !value.is_finite() {
+        assert_eq!(actual, expected, "bits={:016x}", value.to_bits());
+    }
 }
 
 #[test]
-fn atom_rows_match_original_float_formatter_including_ieee_boundaries() {
+fn atom_rows_retain_finite_bits_and_exact_four_decimal_legacy_bytes() {
     let mut record =
         parse_mol2_record(include_str!("../../../benchmarks/fixtures/ethanol.mol2")).unwrap();
     let edges = [
@@ -89,7 +108,7 @@ fn split_fields_keep_unicode_padding_oversize_names_and_optional_metadata() {
         record.atoms[0].subst_id = Some(i32::MIN);
         record.atoms[0].subst_name = Some("残基α-long".into());
         record.atoms[0].status_bits = vec!["first".into(), "長い".into()];
-        check(&mut record, -12345.67895);
+        check(&mut record, -12345.625);
         record.atoms[0].subst_id = None;
         record.atoms[0].subst_name = None;
         record.atoms[0].partial_charge = None;

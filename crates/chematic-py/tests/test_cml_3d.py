@@ -19,6 +19,9 @@ def test_cartesian_geometry_in_direct_and_common_api(case):
             assert bits(coords) == bits(case['coords'])
             assert all(isinstance(row, list) for row in coords)
             assert mol.atom_count == len(case['numbers'])
+        if case['id']=='both_2d_and_3d':
+            with pytest.raises(ValueError):chematic.convert_format(text,'.CML','cjson')
+            continue
         data = json.loads(chematic.convert_format(text, '.CML', 'cjson'))
         assert bits([data['atoms']['coords']['3d']]) == bits(case['coords'])
         assert data['atoms']['elements']['number'] == case['numbers']
@@ -29,7 +32,10 @@ def test_cartesian_geometry_in_direct_and_common_api(case):
 def test_missing_geometry_is_not_generated(case):
     for text in variants(case):
         assert chematic.from_cml_with_3d(text)[1] is None
-        assert 'coords' not in json.loads(chematic.convert_format(text,'cml','cjson'))['atoms']
+        if case['id']=='only_2d':
+            with pytest.raises(ValueError):chematic.convert_format(text,'cml','cjson')
+        else:
+            assert 'coords' not in json.loads(chematic.convert_format(text,'cml','cjson'))['atoms']
 
 @pytest.mark.parametrize('case', PACKET['invalid'], ids=lambda c:c['id'])
 def test_invalid_input_never_returns_candidate(case):
@@ -40,7 +46,7 @@ def test_invalid_input_never_returns_candidate(case):
 def test_override_and_utf8_type_boundaries():
     source = PACKET['valid'][3]['input']
     coords = [[-1.25,2.5,3.75]]
-    assert json.loads(chematic.convert_format(source,'cml','cjson',coords=coords))['atoms']['coords']['3d'] == coords[0]
+    with pytest.raises(ValueError,match='overrides'):chematic.convert_format(source,'cml','cjson',coords=coords)
     with pytest.raises(UnicodeDecodeError): chematic.from_cml_with_3d(b'\xff')
     with pytest.raises(ValueError,match='input bytes'): chematic.from_cml_with_3d(' '*(16*1024*1024+1))
 

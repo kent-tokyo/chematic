@@ -893,6 +893,8 @@ pub fn protein_from_mmcif_json(text: &str) -> Result<String, JsValue> {
 ///
 /// `cell_json`: `"null"` or `{"a":...,"b":...,"c":...,"alpha":...,"beta":...,"gamma":...}`.
 /// `space_group`: pass `""` for none.
+/// Finite numeric fields retain their binary64 values without fixed decimal
+/// rounding. This does not retain original spelling or uncertainty suffixes.
 #[wasm_bindgen]
 pub fn write_mmcif_json(
     records_json: &str,

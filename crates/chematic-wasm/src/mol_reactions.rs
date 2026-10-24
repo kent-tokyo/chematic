@@ -14,6 +14,8 @@ mod molecule_workflows;
 pub use molecule_workflows::*;
 mod rgroup_columns;
 pub use rgroup_columns::*;
+mod cx;
+pub use cx::normalize_reaction_cxsmiles;
 
 fn bounded_json_output(output: String) -> Result<String, JsValue> {
     if output.len() > WASM_MAX_OUTPUT_BYTES {

@@ -81,6 +81,12 @@ or linkage semantics are not implemented.
 `chematic.rdkit_compat` is a selected 2D compatibility layer. Matching names
 do not imply identical defaults or every RDKit option.
 
+MOL/SDF readers follow the [MDL property precedence](v2000-property-precedence.md)
+for sparse `M  CHG`/`M  ISO` records. In the bounded mixed atom-block/property
+packet, RDKit 2025.09.3 retains some old isotope labels that chematic and
+Open Babel treat as unspecified. This difference also applies to Python's
+`SDMolSupplier`; it is not full RDKit input-interpretation parity.
+
 - Native ECFP/Morgan uses a different hash and must not be mixed with RDKit
   bit positions. Use the named RDKit-compatible Morgan API when bit identity is
   required under its documented options.
@@ -92,6 +98,60 @@ do not imply identical defaults or every RDKit option.
 
 See [RDKit migration](rdkit-migration.md) for API mappings and
 [RDKit comparison](rdkit-comparison.md) for dated evidence.
+
+### Strict aromatic valence: RDKit #9735
+
+[RDKit #9735](https://github.com/rdkit/rdkit/issues/9735), confirmed open in
+the saved 2026-10-24 snapshot, reports that aromatic valence correction can
+hide a carbon with two explicit double bonds and another bond. For example,
+`Oc1cc2=[c](=O)c(cccn2)n1` was accepted and written as a SMILES that could
+not be read back. The corresponding aliphatic `[C]` form already failed.
+
+chematic's strict compatibility sanitizer now checks a lower bound before
+aromatic correction: explicit hydrogens plus integer bond-order contributions,
+counting each aromatic bond as at least one. Dative bonds retain their existing
+donor/acceptor rules. The bound is checked against the existing charge-aware
+allowed valence; it does not impose carbon's maximum on other elements.
+This prevents aromatic correction from erasing a fifth explicit valence while
+preserving normal fused aromatic atoms with 1.5-order bookkeeping.
+
+Rust `rdkit_canonical_smiles` and `rdkit_sanitized_model`, Python
+`Mol.rdkit_smiles`/`rdkit_smiles_checked` and WASM `MolHandle.rdkit_smiles`
+refuse affected graphs with a sanitization/valence error. Chemistry diagnostics
+report `AtomValenceException` with the original atom index. Ordinary graph
+parsing, reaction-template parsing and non-strict property-cache calculation
+remain unchanged. This intentionally differs from RDKit's current acceptance
+of the issue's invalid inputs; valid-input compatibility remains the goal.
+
+The authored packet `validation/rdkit-9735-2026-10-24/cases.json` covers
+13 invalid inputs (reported forms, isotope/map/charge/component variants and
+non-ring aromatic controls) and 24 valid controls, including fused rings,
+heteroaromatics, ions, N-oxide, exocyclic carbonyls and coordination. The
+measurement report and compressed raw outputs are retained in
+`validation/results/rdkit-9735-2026-10-24*`. They identify local source/binary
+artifacts, the retained baseline and RDKit wheel separately. This is a
+development result rather than a package publication or all-issue claim.
+
+In this local measurement, both the retained baseline and RDKit 2026.09.1
+accepted eight of the invalid cases; the candidate's Python/WASM surfaces
+reject all 13 with valence errors. The 24 valid controls remain accepted.
+The first 1,000 physical lines of the existing ChEMBL development corpus all
+retain exactly the same canonical result as the baseline. This fixed sample
+is a regression check, not an independent holdout or whole-corpus claim.
+The baseline is retained PR candidate `a4a2e732`, with its complete SMILES
+source tree verified equal to main `38b4c92c` and binary hashes attested against
+its prior report; it is not a separately rebuilt main/release executable.
+Four observer controls distinguish valence errors from unrelated failures,
+require the affected atom index and refuse partial results. Workers have a
+120-second timeout and 8 MiB combined pipe budget, with no process memory cap.
+
+```sh
+python3 scripts/validation/validate_rdkit_issue9735.py \
+  --python-root /path/to/candidate-python \
+  --baseline-python-root /path/to/retained-baseline-python \
+  --rdkit-python /path/to/rdkit-python \
+  --wasm-module /path/to/candidate/chematic_wasm.js
+```
 
 ## 3D, force fields, and depiction
 

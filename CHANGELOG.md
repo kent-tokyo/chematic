@@ -20,6 +20,31 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element
   or bond-order declarations, and ambiguous/self bond references are refused.
+- Checked rigid PDBQT output now refuses isotope annotations that the format
+  cannot store (Open Babel #3005). Explicit isotope projection in Rust, Python
+  and WASM returns PDBQT plus a per-atom isotope-loss sidecar, retaining every
+  explicit atom and caller-supplied charge without ligand torsion preparation.
+- V2000 MOL/SDF to ChemicalJSON conversion now retains source x/y/z values
+  instead of dropping the coordinate array. Rust and Python expose a bounded
+  source-triplet reader, refusing missing/nonfinite fields and retaining flat
+  or tiny z values independently of stereo perception. Python also supplies
+  this geometry to PDB, XYZ and PDBQT output within each writer's precision.
+- MCS stops symmetric search after a valid mapping reaches the absolute atom
+  and bond upper bounds, restoring the focused benzene/toluene case from about
+  315 µs to 3.93 µs without changing its result. Mixed chiral three-input
+  results are input-order invariant; RDKit's order-dependent oracle result is
+  recorded rather than copied.
+- RDKit-compatible Cleanup serialization now follows transformed molecules
+  through Python and pickle, so the public Python and dedicated Rust paths use
+  the same writer contract.
+
+### Validation
+
+- Advance Rust, Python/stub, WASM declaration and shared JSON compatibility
+  checks to v1.2.0.
+- Freeze and score an independent v2 holdout selected after the candidate
+  commit. SDF graph/properties/stereo passed 64/64; broad MCS and exact 3D
+  coordinate parity remain explicitly incomplete.
 
 ## [1.2.1] - 2026-10-23
 

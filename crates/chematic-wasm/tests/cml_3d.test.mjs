@@ -8,6 +8,7 @@ const packet=JSON.parse(readFileSync(new URL('../../../validation/cml_3d/cases.j
 const variants=c=>[c.input,c.input.replaceAll('\n','\r\n'),c.input.split('\n').map(s=>s.trim()).join('')];
 const bits=values=>values.flat().map(v=>{const b=Buffer.alloc(8);b.writeDoubleBE(v);return b.toString('hex')});
 for(const c of packet.valid)for(const source of variants(c)){
+ if(c.id==='both_2d_and_3d'){assert.throws(()=>wasm.convert_common_format(source,'.CML','cjson'));continue;}
  const data=JSON.parse(wasm.convert_common_format(source,'.CML','cjson'));
  assert.deepEqual(bits(data.atoms.coords['3d']),bits(c.coords),c.id);
  assert.deepEqual(data.atoms.elements.number,c.numbers,c.id);
@@ -15,6 +16,7 @@ for(const c of packet.valid)for(const source of variants(c)){
  assert.deepEqual(data.bonds.order,c.bond_orders,c.id);
 }
 for(const c of packet.absent)for(const source of variants(c)){
+ if(c.id==='only_2d'){assert.throws(()=>wasm.convert_common_format(source,'cml','cjson'));continue;}
  assert.equal(JSON.parse(wasm.convert_common_format(source,'cml','cjson')).atoms.coords,undefined,c.id);
 }
 for(const c of packet.invalid)for(const source of variants(c))assert.throws(()=>wasm.convert_common_format(source,'cml','cjson'),undefined,c.id);
@@ -24,4 +26,4 @@ assert.deepEqual(data.atoms.formalCharges,[0,0,1]);assert.deepEqual(data.atoms.i
 const many=n=>'<molecule><atomArray>'+Array.from({length:n},(_,i)=>`<atom id="a${i}" elementType="C" x3="${i}" y3="0" z3="0"/>`).join('')+'</atomArray></molecule>';
 assert.equal(JSON.parse(wasm.convert_common_format(many(10000),'cml','cjson')).atoms.elements.number.length,10000);
 assert.throws(()=>wasm.convert_common_format(many(10001),'cml','cjson'),/atom elements/);
-console.log('CML 3D: 24 source-ordered coordinate/graph cases, 6 absent, 42 invalid, charge/isotope and WASM byte/atom limits passed');
+console.log('CML 3D: 21 source-ordered coordinate/graph cases, 3 absent, 6 refused 2D, 42 invalid, charge/isotope and WASM byte/atom limits passed');

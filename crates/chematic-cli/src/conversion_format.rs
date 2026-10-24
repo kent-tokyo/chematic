@@ -19,12 +19,57 @@ pub(super) fn format_name(format: &str) -> Option<String> {
     }
 }
 
-/// Handle the source-only GJF family before entering the graph bridge.
-pub(super) fn gjf_source_conversion(
+/// Handle source retention and checked projections before the graph bridge.
+pub(super) fn source_format_conversion(
     text: &str,
     input: &str,
     output: &str,
 ) -> Option<Result<String, String>> {
+    if input == "cml" && output == "cml" {
+        return Some(
+            chematic_mol::roundtrip_cml_source_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
+    if input == "cjson" && output == "cml" {
+        return Some(
+            chematic_mol::project_cjson_to_cml_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
+    if input == "cml" && output == "cjson" {
+        return Some(
+            chematic_mol::project_cml_to_cjson_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
     if input != "gjf" && output != "gjf" {
         return None;
     }

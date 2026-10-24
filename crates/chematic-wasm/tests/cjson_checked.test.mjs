@@ -9,6 +9,13 @@ function compact(s){let result='',quoted=false,escaped=false;for(const c of s){i
 const variants=c=>[c.input,c.input.replaceAll('\n','\r\n'),compact(c.input)];
 for(const c of [...packet.valid,...packet.compatibility])for(const source of variants(c)){
  const cml=wasm.convert_common_format(source,'.CJSON','cml');
+ if(cml.includes('order="A"')){
+  assert.throws(()=>wasm.convert_common_format(cml,'cml','cjson'),undefined,c.id);
+  // The original CJSON input/legacy CML reader remain available; checked CML
+  // projection deliberately does not claim to preserve aromatic atom flags.
+  const mol=wasm.mol_from_cml(cml);assert.equal(mol.atom_count(),c.expected.numbers.length);assert.equal(mol.bond_count(),c.expected.orders.length);mol.free();
+  assert.equal(wasm.convert_common_format(source,'.CJSON','cjson'),source,c.id);continue;
+ }
  const data=JSON.parse(wasm.convert_common_format(cml,'cml','cjson')),n=c.expected.numbers.length;
  assert.deepEqual(data.atoms.elements.number,c.expected.numbers,c.id);
  assert.deepEqual(data.atoms.formalCharges??Array(n).fill(0),c.expected.charges,c.id);
@@ -22,4 +29,4 @@ const many=n=>JSON.stringify({atoms:{elements:{number:Array(n).fill(6)}}});
 assert.equal(JSON.parse(wasm.convert_common_format(many(10000),'cjson','cjson')).atoms.elements.number.length,10000);
 assert.throws(()=>wasm.convert_common_format(many(10001),'cjson','cjson'),/atom records/);
 assert.throws(()=>wasm.convert_common_format(' '.repeat(1000001),'cjson','cjson'),/input size/);
-console.log('CJSON checked: 18 common + 27 compatibility graphs, 105 invalid inputs across seven outputs, WASM byte/atom caps passed');
+console.log('CJSON checked: 45 input graphs/source retention and CML return-leg refusals, 105 invalid inputs across seven outputs, WASM byte/atom caps passed');

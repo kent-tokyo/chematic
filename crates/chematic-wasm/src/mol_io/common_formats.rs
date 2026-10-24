@@ -1,5 +1,59 @@
 use super::*;
 
+/// Exact bounded XML 1.0 CML source retention. Requires one CML-namespace
+/// molecule root; rejects nested molecules/DTDs. Chemistry, references and
+/// stereo remain opaque, with no interpretation or schema validation promised.
+#[wasm_bindgen]
+pub fn roundtrip_cml_source(text: &str) -> Result<String, JsValue> {
+    chematic_mol::roundtrip_cml_source_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Checked CML graph/Cartesian/name profile; refuses unrepresented payload.
+#[wasm_bindgen]
+pub fn project_cml_to_cjson(text: &str) -> Result<String, JsValue> {
+    chematic_mol::project_cml_to_cjson_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
+/// Checked local CJSON graph/Cartesian/name projection; throws on opaque
+/// fields, partial charges or conflicting names. No source chemistry validation.
+#[wasm_bindgen]
+pub fn project_cjson_to_cml(text: &str) -> Result<String, JsValue> {
+    chematic_mol::project_cjson_to_cml_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|error| JsValue::from_str(&error.to_string()))
+}
+
 /// Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
 /// Retains atom types and every other source byte; errors throw, no partial text.
 #[wasm_bindgen]
@@ -176,6 +230,22 @@ fn parse_common_format(text: &str, format: &str) -> Result<chematic_core::Molecu
     }
 }
 
+type CommonGeometry = (chematic_core::Molecule, Vec<(f64, f64, f64)>);
+
+fn parse_common_geometry(text: &str, input: &str, output: &str) -> Result<CommonGeometry, String> {
+    if output == "cjson" && matches!(input, "mol" | "mol_v3000") {
+        let parsed = if input == "mol" {
+            chematic_mol::parse_mol_with_coords_3d(text)
+        } else {
+            chematic_mol::parse_mol_v3000_with_coords_3d(text)
+        };
+        return parsed
+            .map(|(mol, _, coords)| (mol, coords))
+            .map_err(|e| e.to_string());
+    }
+    parse_common_format(text, input).map(|mol| (mol, Vec::new()))
+}
+
 fn write_common_format(
     mol: &chematic_core::Molecule,
     coords: &[(f64, f64, f64)],
@@ -193,7 +263,8 @@ fn write_common_format(
         }
         "mol2" => chematic_mol::write_mol2(mol, &[]),
         "cml" => chematic_mol::write_cml(mol, None),
-        "cjson" => chematic_mol::write_cjson(mol, coords),
+        "cjson" => chematic_mol::write_cjson_checked(mol, coords)
+            .map_err(|error| JsValue::from_str(&error.to_string()))?,
         "moljson" => chematic_mol::write_moljson(mol),
         "cdxml" => chematic_mol::write_cdxml(mol, &[]),
         _ => {
@@ -206,20 +277,14 @@ fn write_common_format(
 }
 
 fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option<String>, JsValue> {
+    if input == "cml" && output == "cml" {
+        return roundtrip_cml_source(text).map(Some);
+    }
+    if input == "cjson" && output == "cml" {
+        return project_cjson_to_cml(text).map(Some);
+    }
     if input == "cml" && output == "cjson" {
-        let limits = chematic_mol::CmlParseLimits {
-            max_input_bytes: WASM_MAX_INPUT_BYTES,
-            max_atoms: WASM_MAX_ATOMS,
-            ..Default::default()
-        };
-        let (mol, coords) = chematic_mol::parse_cml_with_3d_with_limits(text, &limits)
-            .map_err(|error| JsValue::from_str(&error.to_string()))?;
-        let points = coords
-            .unwrap_or_default()
-            .into_iter()
-            .map(|[x, y, z]| (x, y, z))
-            .collect::<Vec<_>>();
-        return Ok(Some(chematic_mol::write_cjson(&mol, &points)));
+        return project_cml_to_cjson(text).map(Some);
     }
     if input == "mol2" && output == "cjson" {
         let projected = chematic_mol::project_mol2_to_cjson_with_limits(
@@ -250,7 +315,11 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// GJF/COM supports only
 /// same-format retention of a bounded single Cartesian job, including opaque
 /// job sections (not a Gaussian job validator).
-/// V3000-to-CJSON also
+/// V2000/V3000-to-CJSON also
+/// CJSON-to-CML retains the local indexed graph, source XYZ and name after reparse;
+/// opaque fields/stereo/unit cells, partial charges and conflicting names throw.
+/// Source chemistry and coordinate-derived stereo are not validated.
+/// V2000/V3000-to-CJSON also
 /// carries source-order x/y/z values; it does not retain opaque metadata or
 /// verify cross-format stereo.
 /// MOL2-to-CJSON checks
@@ -260,12 +329,17 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
 /// Other conversions use
 /// the topology-only bridge and do not carry format-specific metadata.
+/// CML-to-CML retains one bounded XML 1.0 CML-namespace molecule document exactly;
+/// chemistry/references/stereo remain opaque, with no edits or validation promised.
 /// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
-/// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
-/// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
-/// That projection resolves CML namespaces and forward references; foreign
-/// subtrees and attributes never become graph records.
+/// CML-to-CJSON verifies a bounded graph/Cartesian/name profile on reparse,
+/// including inferred H counts, and refuses unrepresented payload (2D, stereo,
+/// aromatic/query/zero bonds, unknown attributes/elements).
+/// Molecule/atom/bond IDs are document-local references; their spelling and
+/// lexical XML are omitted.
+/// Graph-projected CJSON output refuses in-memory properties outside the local
+/// profile. MOL2 projection and exact CJSON retention keep separate contracts.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,
@@ -322,16 +396,8 @@ pub fn convert_common_format(
     if let Some(projected) = project_source_format(text, &input, &output)? {
         return Ok(projected);
     }
-    let (mol, coords) = if input == "mol_v3000" && output == "cjson" {
-        let (mol, _, coords) = chematic_mol::parse_mol_v3000_with_coords_3d(text)
-            .map_err(|e| JsValue::from_str(&e.to_string()))?;
-        (mol, coords)
-    } else {
-        (
-            parse_common_format(text, &input).map_err(|e| JsValue::from_str(&e))?,
-            Vec::new(),
-        )
-    };
+    let (mol, coords) =
+        parse_common_geometry(text, &input, &output).map_err(|e| JsValue::from_str(&e))?;
     if mol.atom_count() > WASM_MAX_ATOMS {
         return Err(JsValue::from_str(&format!(
             "format input exceeds maximum atom count ({WASM_MAX_ATOMS})"

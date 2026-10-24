@@ -273,7 +273,7 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
     let output = conversion_format::format_name(output_format)
         .ok_or_else(|| format!("unsupported output format: {output_format}"))?;
 
-    if let Some(result) = conversion_format::gjf_source_conversion(text, &input, &output) {
+    if let Some(result) = conversion_format::source_format_conversion(text, &input, &output) {
         return result;
     }
     if input == "mol2" && output == "mol2" {
@@ -359,7 +359,9 @@ fn convert_text(text: &str, input_format: &str, output_format: &str) -> Result<S
         }
         "mol2" => chematic_mol::write_mol2(&mol, &[]),
         "cml" => chematic_mol::write_cml(&mol, None),
-        "cjson" => chematic_mol::write_cjson(&mol, &[]),
+        "cjson" => {
+            return chematic_mol::write_cjson_checked(&mol, &[]).map_err(|error| error.to_string());
+        }
         "moljson" => chematic_mol::write_moljson(&mol),
         "cdxml" => chematic_mol::write_cdxml(&mol, &[]),
         _ => unreachable!(),

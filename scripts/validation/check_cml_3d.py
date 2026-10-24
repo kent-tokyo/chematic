@@ -114,8 +114,8 @@ def main():
         if not args.baseline:
             for label in ['python','wasm']:
                 observation = row[label]['observation']
-                if case['group']=='invalid':
-                    require(observation['outcome']=='no_output' and observation['error_status'], 'invalid input not refused')
+                if case['group']=='invalid' or case['id'].split('/')[0] in {'both_2d_and_3d','only_2d'}:
+                    require(observation['outcome']=='no_output' and observation['error_status'], 'outside-profile input not refused')
                 else:
                     require(observation['selected_graph'], 'selected graph changed')
                     metric = 'coordinate_bits' if case['group']=='valid' else 'absence_retained'

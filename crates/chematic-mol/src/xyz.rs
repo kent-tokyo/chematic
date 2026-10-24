@@ -88,16 +88,8 @@ pub enum XyzPropertyKind {
 pub enum XyzValue {
     Real(f64),
     Integer(i64),
-    /// Written as a single unquoted whitespace-delimited token (matching
-    /// how [`parse_extxyz`] reads an `S`-typed atom-row column): a value
-    /// containing whitespace round-trips through [`write_extxyz`] as *more
-    /// than one* atom-row token, desyncing every column after it on
-    /// reparse. `write_extxyz` does not check for this (only
-    /// [`XyzFrame::info`]/[`XyzProperty::name`] are validated, see
-    /// `validate_extxyz_writable`) -- avoid whitespace in `Str` property
-    /// values when hand-building a frame. Not reachable from the
-    /// Python/WASM `to_extxyz` bindings, which only accept real-valued
-    /// (`R`) properties.
+    /// A single unquoted atom-row token. The writer refuses empty values,
+    /// whitespace, controls, quotes, escapes and ambiguous delimiter syntax.
     Str(String),
     Logical(bool),
 }
@@ -229,11 +221,9 @@ pub enum XyzError {
         property: String,
         raw: String,
     },
-    /// [`write_extxyz`]/[`ExtxyzWriter::write_frame`] only: an
-    /// `XyzFrame::info` key/value or [`XyzProperty::name`] contains a
-    /// character extxyz `key=value` syntax cannot represent (see
-    /// [`validate_extxyz_writable`]) -- never produced by this module's own
-    /// parsers, only by writing a hand-built `XyzFrame`.
+    /// [`write_extxyz`]/[`ExtxyzWriter::write_frame`] only: invalid or
+    /// unrepresentable frame data, including nonfinite numbers, property shape/
+    /// type mismatches, duplicate names and unsafe metadata/token syntax.
     UnwritableMetadata { detail: String },
 }
 
@@ -1159,6 +1149,7 @@ pub fn write_xyz(frame: &XyzFrame) -> String {
 }
 
 mod extxyz;
+mod extxyz_validation;
 pub use extxyz::*;
 
 #[cfg(test)]
