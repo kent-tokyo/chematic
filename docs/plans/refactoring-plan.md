@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R27 structural-debt program is complete. Implementation history and
+The R0-R28 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -32,9 +32,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R25 | Final orchestration splits and release-grade verification | Complete |
 | R26 | Low-risk test extraction and bounded parser/CIP ownership | Complete |
 | R27 | Structural-alert catalog and test ownership | Complete |
+| R28 | InChI dedup and indexed-graph ownership | Complete |
 
-R17-R27 reduced the checked debt baseline from 14 file and 76 function
-allowances to **3 file and 50 function allowances**. The program separated:
+R17-R28 reduced the checked debt baseline from 14 file and 76 function
+allowances to **2 file and 50 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -54,9 +55,15 @@ budgets, public APIs, and fail-safe behavior are unchanged. This closes the
 `alerts.rs` file allowance without treating ordered chemistry data as runtime
 logic.
 
-R0-R26 passed the full release-grade verification stack before merge. R27 was
-validated with the affected crate's complete library-test suite,
-warnings-as-errors clippy, formatting, catalog-preservation checks, the budget
+R28 moved typed indexed-graph relation comparison and the dedup test suite out
+of the InChI candidate-grouping module. Existing public names are re-exported
+from the same `dedup` path; graph strictness, atom-map policy, diagnostic
+ordering, native-InChI evidence and feature-gated behavior are unchanged. This
+closes the `dedup.rs` file allowance.
+
+R0-R27 passed the full release-grade verification stack before merge. R28 was
+validated with the affected crate's default and native-InChI test suites,
+warnings-as-errors clippy, formatting, source-preservation checks, the budget
 scanner, and diff checks; repository-wide release and binding gates remain the
 responsibility of the PR CI before merge.
 

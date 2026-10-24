@@ -11,7 +11,6 @@
   ],
   "file_allowances": {
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
-    "crates/chematic-inchi/src/dedup.rs": 2079,
     "crates/chematic-smiles/src/rdkit/depict.rs": 2303
   },
   "function_allowances": {
