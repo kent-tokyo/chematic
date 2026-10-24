@@ -6152,3 +6152,16 @@ def parse_gjf_document_json(
     converted and no bonds are inferred. JSON output is capped at 16 MiB.
     """
     ...
+
+
+def parse_lpmd(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> dict[str, Any]:
+    """Read all frames of bounded LPMD 2.0 L, retaining column and decimal tokens."""
+    ...
+
+def write_lpmd(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> str:
+    """Write current validated fields; never replay stale source or omit frames."""
+    ...
+
+def lpmd_positions_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> list[list[list[float]]]:
+    """Explicit Cartesian positions grouped by frame, without wrapping or bonds."""
+    ...

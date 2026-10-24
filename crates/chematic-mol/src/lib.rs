@@ -54,6 +54,11 @@ pub mod hin;
 pub mod ket;
 pub mod lammps_data;
 pub mod lammps_dump;
+pub mod lpmd;
+pub use lpmd::{
+    LpmdDocument, LpmdError, LpmdFrame, LpmdParseLimits, parse_lpmd, parse_lpmd_json,
+    parse_lpmd_with_limits, write_lpmd, write_lpmd_with_limits,
+};
 pub mod mmcif;
 pub mod mmcif_pdb;
 pub mod mol2000;
