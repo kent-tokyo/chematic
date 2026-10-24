@@ -51,10 +51,9 @@ fn compare_full_corpus_to_pinned_rdkit_oracle() {
     assert_eq!(oracle.lines().count(), oracle_rows);
     assert_eq!(status.get("compared"), Some(&9_796));
     assert_eq!(status.get("typing_error"), None);
-    // Three fullerene rows retain the force-field aromatic carbon type (37)
-    // where the pinned RDKit Kekule form uses type 2. Keep that residual exact
-    // so any new row, atom count, or type-pair difference still fails the gate.
-    assert_eq!(buckets, BTreeMap::from([((2, 37), 72)]));
+    // The fused-fullerene Kekule walk now agrees with the pinned RDKit oracle.
+    // Keep the exact empty-difference gate across all comparable atoms.
+    assert!(buckets.is_empty(), "MMFF94 type differences: {buckets:?}");
     if let Ok(path) = std::env::var("SCHEMATIC_MMFF94_ATOM_ROWS_OUT") {
         std::fs::write(path, atom_rows).unwrap();
     }
