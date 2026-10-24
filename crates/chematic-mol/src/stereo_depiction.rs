@@ -1362,6 +1362,37 @@ mod layout_boundary_contract_tests {
     use super::*;
 
     #[test]
+    fn low_level_stereo_geometry_handles_missing_and_coincident_marks() {
+        let plain = chematic_smiles::parse("CC").unwrap();
+        let stripped = without_bond_marks(&plain, &HashMap::new());
+        assert_eq!(stripped.atom_count(), plain.atom_count());
+        assert!(marked_substituent(&plain, AtomIdx(0), AtomIdx(1)).is_none());
+
+        let alkene = chematic_smiles::parse("F/C=C/F").unwrap();
+        let double = alkene
+            .bonds()
+            .find_map(|(idx, bond)| (bond.order == BondOrder::Double).then_some(idx))
+            .unwrap();
+        let coincident = vec![(0.0, 0.0); alkene.atom_count()];
+        assert_ne!(
+            ez_drawn_as_declared(&alkene, &coincident, double),
+            Some(true)
+        );
+
+        let mut duplicate = vec![(0.0, 0.0); plain.atom_count()];
+        assert!(separate_coincident_atoms(&plain, &mut duplicate));
+        assert_ne!(duplicate[0], duplicate[1]);
+        assert!(!separate_coincident_atoms(
+            &plain,
+            &mut [(0.0, 0.0), (2.0, 0.0)]
+        ));
+
+        assert_eq!(permutation_is_odd(&[1, 2, 3], &[1, 2]), Some(false));
+        assert_eq!(permutation_is_odd(&[1, 2, 3], &[1, 2, 4]), None);
+        assert_eq!(permutation_is_odd(&[1, 2, 3], &[2, 1, 3]), Some(true));
+    }
+
+    #[test]
     fn reverse_order_layout_preserves_original_atom_and_bond_geometry() {
         for text in [
             "",

@@ -942,3 +942,108 @@ fn legacy_stereo_perception_impl(
     }
     ranks
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    fn model(text: &str) -> Mol {
+        let molecule = crate::parse(text).expect("test SMILES parses");
+        super::super::parse::from_chematic(&molecule).expect("RDKit model projection succeeds")
+    }
+
+    #[test]
+    fn bridgehead_detection_covers_nonring_low_degree_and_real_cage_cases() {
+        let chain = model("CCC");
+        assert!(!is_atom_bridgehead(&chain, 0));
+
+        let mut no_ring_info = chain.clone();
+        no_ring_info.rings = None;
+        assert!(!is_atom_bridgehead(&no_ring_info, 1));
+
+        let mut cage = Mol::default();
+        for _ in 0..6 {
+            cage.add_atom(super::super::mol::Atom::new(6));
+        }
+        for (a, b) in [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (2, 4),
+            (4, 0),
+            (2, 5),
+            (5, 0),
+        ] {
+            cage.add_bond(super::super::mol::Bond::new(a, b, BondType::Single));
+        }
+        cage.set_rings(vec![vec![0, 1, 2, 3], vec![0, 1, 2, 4], vec![0, 1, 2, 5]]);
+        assert!(is_atom_bridgehead(&cage, 0));
+    }
+
+    #[test]
+    fn requested_double_bond_directions_cover_cis_trans_and_tied_substituents() {
+        let mol = model("F/C(Cl)=C(/Br)I");
+        let double = mol
+            .bonds
+            .iter()
+            .position(|bond| bond.bt == BondType::Double)
+            .unwrap();
+        let (begin, end) = (mol.bonds[double].begin, mol.bonds[double].end);
+        let begin_stereo = mol.nbrs(begin).find(|&atom| atom != end).unwrap();
+        let end_stereo = mol.nbrs(end).find(|&atom| atom != begin).unwrap();
+        let ranks: Vec<u32> = (0..mol.atoms.len() as u32).collect();
+        for trans in [false, true] {
+            let (left, right) =
+                requested_neighbor_dirs(&mol, double, (begin_stereo, end_stereo, trans), &ranks);
+            assert_eq!(left.len(), 2);
+            assert_eq!(right.len(), 2);
+            assert_eq!(left[0].1 == right[0].1, !trans);
+        }
+
+        let tied = vec![0; mol.atoms.len()];
+        let (left, right) =
+            requested_neighbor_dirs(&mol, double, (begin_stereo, end_stereo, false), &tied);
+        assert!(left.is_empty());
+        assert!(right.is_empty());
+    }
+
+    #[test]
+    fn requested_stereo_and_conflicting_neighbor_marks_are_handled_explicitly() {
+        let mut requested = model("FC(Cl)=C(Br)I");
+        requested.find_rings().unwrap();
+        let double = requested
+            .bonds
+            .iter()
+            .position(|bond| bond.bt == BondType::Double)
+            .unwrap();
+        let (begin, end) = (requested.bonds[double].begin, requested.bonds[double].end);
+        let begin_stereo = requested.nbrs(begin).find(|&atom| atom != end).unwrap();
+        let end_stereo = requested.nbrs(end).find(|&atom| atom != begin).unwrap();
+        requested.bonds[double].requested = Some((begin_stereo, end_stereo, true));
+        let mut ranks = Vec::new();
+        let (_, changed) = assign_bond_stereo_codes(&mut requested, &mut ranks);
+        assert!(changed);
+        assert_eq!(requested.bonds[double].stereo, BondStereo::E);
+
+        let mut conflict = model("F/C(/Cl)=C(/Br)/I");
+        conflict.find_rings().unwrap();
+        let double = conflict
+            .bonds
+            .iter()
+            .position(|bond| bond.bt == BondType::Double)
+            .unwrap();
+        conflict.bonds[double].stereo = BondStereo::None;
+        conflict.bonds[double].stereo_atoms.clear();
+        let mut ranks = Vec::new();
+        let _ = assign_bond_stereo_codes(&mut conflict, &mut ranks);
+        assert_eq!(conflict.bonds[double].stereo, BondStereo::None);
+        assert!(
+            conflict
+                .bonds
+                .iter()
+                .filter(|bond| bond.bt == BondType::Single)
+                .any(|bond| bond.dir == BondDir::None)
+        );
+    }
+}

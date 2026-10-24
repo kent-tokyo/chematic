@@ -797,6 +797,43 @@ mod tests {
         vec![0, 1, 2, 3]
     }
 
+    #[test]
+    fn parse_failure_diagnostic_is_global_and_actionable() {
+        let diagnostic = parse_failure_diagnostic("rule:broken", "[C", "source row 3");
+        assert_eq!(
+            diagnostic.central_bond,
+            (AtomIdx(u32::MAX), AtomIdx(u32::MAX))
+        );
+        assert_eq!(
+            diagnostic.kind,
+            TorsionKnowledgeDiagnosticKind::SmartsParseFailure
+        );
+        assert_eq!(diagnostic.candidate_rule_ids, vec!["rule:broken"]);
+        assert!(diagnostic.message.contains("source row 3"));
+        assert!(diagnostic.message.contains("[C"));
+    }
+
+    #[test]
+    fn same_tier_resolution_rejects_mixed_sources_and_combines_ring_metadata() {
+        let terms = vec![FourierTorsionTerm::from_rdkit(3, 1, 4.0)];
+        let standard = fake_candidate("rule:standard", terms.clone());
+        let mut macrocycle = fake_candidate("rule:macrocycle", terms.clone());
+        macrocycle.source = TorsionKnowledgeSource::MacrocycleAdaptation;
+        assert!(matches!(
+            resolve_same_tier(&[standard, macrocycle], &dummy_ranks()),
+            ResolvedTier::Conflict { .. }
+        ));
+
+        let mut standard = fake_candidate("rule:standard", terms.clone());
+        standard.ring_size = None;
+        let mut ring = fake_candidate("rule:ring", terms);
+        ring.ring_size = Some(7);
+        match resolve_same_tier(&[standard, ring], &dummy_ranks()) {
+            ResolvedTier::Single { ring_size, .. } => assert_eq!(ring_size, Some(7)),
+            ResolvedTier::Conflict { .. } => panic!("same-source metadata must compose"),
+        }
+    }
+
     /// Negative control (spec §13, "swapping rule application order changes
     /// the result" must FAIL to occur): two candidates with genuinely
     /// different (conflicting) terms must resolve to `Conflict` regardless

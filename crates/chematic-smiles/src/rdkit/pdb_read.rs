@@ -1649,4 +1649,46 @@ CONECT    1    2    2\nCONECT    2    1    1\nEND\n";
         assert_eq!(coords[1], [1.0, 2.0, 3.5]);
         assert!(crate::rdkit_mol_from_xyz_block("1\nc\nC 1.0 2.0\n").is_err());
     }
+
+    #[test]
+    fn numeric_symbol_geometry_and_residue_helpers_cover_boundaries() {
+        assert_eq!(to_int(b"12\0bad"), Ok(12));
+        assert_eq!(to_int(b"    "), Ok(0));
+        assert_eq!(to_int(b"  +"), Ok(0));
+        assert_eq!(to_int(b"99999999999999999999"), Ok(0));
+        assert!(to_int(b"12x").is_err());
+
+        assert_eq!(to_double(b"  -1.25\0bad"), Ok(-1.25));
+        assert_eq!(to_double(b"+.5"), Ok(0.5));
+        assert_eq!(to_double(b"."), Ok(0.0));
+        assert!(to_double(b"1e3").is_err());
+
+        assert_eq!(atom_from_symbol("D").unwrap(), Some((1, 2)));
+        assert_eq!(atom_from_symbol("T").unwrap(), Some((1, 3)));
+        assert_eq!(atom_from_symbol("*").unwrap(), None);
+        assert!(atom_from_symbol("NotAnElement").is_err());
+
+        assert!(!standard_chiral_atom(b"GLY", *b" CA "));
+        assert!(standard_chiral_atom(b"ILE", *b" CB "));
+        assert!(!standard_chiral_atom(b"ILE", *b" CG1"));
+        assert!(standard_chiral_atom(b"ALA", *b" CA "));
+        assert!(!standard_chiral_atom(b"UNK", *b" CA "));
+
+        assert_eq!(
+            angle_to([1.0, 0.0, 0.0], [-1.0, 0.0, 0.0]),
+            std::f64::consts::PI
+        );
+        assert_eq!(angle_to([1.0, 0.0, 0.0], [1.0, 0.0, 0.0]), 0.0);
+
+        let entry = |x: f32, y: f32| ProximityEntry {
+            x,
+            y,
+            z: 0.0,
+            r: 0.7,
+            hash: 0,
+            next: 0,
+            elem: 6,
+        };
+        assert!(!is_bonded(&entry(0.0, 0.0), &entry(0.0, 6.0)));
+    }
 }

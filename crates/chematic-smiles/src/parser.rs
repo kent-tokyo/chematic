@@ -1281,4 +1281,74 @@ mod parse_error_boundary_contract_tests {
                 .contains("branch nesting too deep at position")
         );
     }
+
+    #[test]
+    fn ring_and_direction_helpers_cover_extended_and_reversed_forms() {
+        assert!(matches!(
+            ring_closure_unmatched_error(1, 7),
+            SmilesError::UnmatchedRingClosure {
+                ring_num: 1,
+                pos: 7
+            }
+        ));
+        assert!(matches!(
+            ring_closure_unmatched_error(256, 9),
+            SmilesError::UnmatchedExtendedRingClosure {
+                ring_num: 256,
+                pos: 9
+            }
+        ));
+        assert!(matches!(
+            ring_closure_conflict_error(2, 5),
+            SmilesError::ConflictingRingBond {
+                ring_num: 2,
+                pos: 5
+            }
+        ));
+        assert!(matches!(
+            ring_closure_conflict_error(300, 11),
+            SmilesError::ConflictingExtendedRingBond {
+                ring_num: 300,
+                pos: 11
+            }
+        ));
+
+        assert_eq!(
+            flip_direction(Some(ParsedBond::plain(BondOrder::Up))),
+            Some(ParsedBond::plain(BondOrder::Down))
+        );
+        assert_eq!(
+            flip_direction(Some(ParsedBond::plain(BondOrder::Down))),
+            Some(ParsedBond::plain(BondOrder::Up))
+        );
+        assert_eq!(
+            flip_direction(Some(ParsedBond {
+                order: BondOrder::Dative,
+                reversed: false,
+            })),
+            Some(ParsedBond {
+                order: BondOrder::Dative,
+                reversed: true,
+            })
+        );
+        assert_eq!(
+            flip_direction(Some(ParsedBond::plain(BondOrder::Double))),
+            Some(ParsedBond::plain(BondOrder::Double))
+        );
+        assert_eq!(flip_direction(None), None);
+
+        let forward = ParsedBond::plain(BondOrder::Single);
+        assert_eq!(
+            forward.endpoints(AtomIdx(1), AtomIdx(2)),
+            (AtomIdx(1), AtomIdx(2))
+        );
+        let reverse = ParsedBond {
+            order: BondOrder::Dative,
+            reversed: true,
+        };
+        assert_eq!(
+            reverse.endpoints(AtomIdx(1), AtomIdx(2)),
+            (AtomIdx(2), AtomIdx(1))
+        );
+    }
 }

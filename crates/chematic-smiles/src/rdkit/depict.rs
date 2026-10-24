@@ -2188,6 +2188,45 @@ mod fixed_fragment_boundary_tests {
     use super::*;
 
     #[test]
+    fn geometry_helpers_cover_degenerate_and_reflected_inputs() {
+        let mut zero = P::new(0.0, 0.0);
+        assert!(zero.normalize().is_err());
+        assert!(compute_normal(P::new(1.0, 1.0), P::new(1.0, 1.0)).is_err());
+        assert!(angle_to_2d(P::new(0.0, 0.0), P::new(1.0, 0.0)).is_err());
+
+        let identity = T2::align(
+            P::new(0.0, 0.0),
+            P::new(0.0, 0.0),
+            P::new(1.0, 1.0),
+            P::new(1.0, 1.0),
+        );
+        let mut point = P::new(2.0, 3.0);
+        identity.apply(&mut point);
+        assert_eq!(point, P::new(2.0, 3.0));
+
+        let rotated = T2::rotation_about(P::new(1.0, 1.0), PI);
+        rotated.apply(&mut point);
+        assert!((point.x - 0.0).abs() < 1e-10);
+        assert!((point.y + 1.0).abs() < 1e-10);
+
+        let reflected = reflect_point(P::new(1.0, 2.0), P::new(0.0, 0.0), P::new(2.0, 0.0));
+        assert!((reflected.x - 1.0).abs() < 1e-10);
+        assert!((reflected.y + 2.0).abs() < 1e-10);
+        assert_eq!(
+            rotation_dir(P::default(), P::new(1.0, 0.0), P::new(0.0, 1.0), 0.0),
+            -1
+        );
+        assert_eq!(
+            rotation_dir(P::default(), P::new(1.0, 0.0), P::new(0.0, -1.0), 0.0),
+            1
+        );
+        assert_eq!(
+            compute_bisect_point(P::default(), PI + 0.1, P::new(1.0, 0.0), P::new(0.0, 1.0)),
+            P::new(-0.5, -0.5)
+        );
+    }
+
+    #[test]
     fn partial_fixed_fragments_keep_coordinates_and_place_remaining_ligands() {
         let input = crate::parse("C(F)(Cl)(Br)I").unwrap();
         let mut mol = super::super::parse::from_chematic(&input).unwrap();

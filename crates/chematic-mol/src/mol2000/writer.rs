@@ -1136,3 +1136,90 @@ pub fn write_sdf_record_with_conformer_checked(
 #[cfg(test)]
 #[path = "zero_atom_fields_tests.rs"]
 mod zero_atom_fields_tests;
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    fn square_planar_molecule() -> (Molecule, Coords3D) {
+        let mut builder = MoleculeBuilder::new();
+        let center = builder.add_atom(Atom::new(Element::PT));
+        let ligands = [Element::CL, Element::BR, Element::I, Element::F]
+            .map(|element| builder.add_atom(Atom::new(element)));
+        for ligand in ligands {
+            builder.add_bond(center, ligand, BondOrder::Single).unwrap();
+        }
+        let mut mol = builder.build();
+        mol.set_chirality(
+            center,
+            Chirality::SquarePlanar(SquarePlanarPermutation::SP1),
+        );
+        mol.set_stereo_neighbor_order(center, vec![1, 2, 3, 4]);
+        let conformer = Coords3D {
+            points: vec![
+                Point3::new(0.0, 0.0, 0.25),
+                Point3::new(1.0, 0.0, 0.0),
+                Point3::new(0.0, 1.0, 0.0),
+                Point3::new(-1.0, 0.0, 0.0),
+                Point3::new(0.0, -1.0, 0.0),
+            ],
+        };
+        (mol, conformer)
+    }
+
+    #[test]
+    fn v2000_writer_maps_every_supported_query_bond_code() {
+        for (order, expected_code) in [
+            (BondOrder::QuerySingleOrDouble, 5),
+            (BondOrder::QuerySingleOrAromatic, 6),
+            (BondOrder::QueryDoubleOrAromatic, 7),
+            (BondOrder::QueryAny, 8),
+            (BondOrder::Zero, 8),
+            (BondOrder::Quadruple, 4),
+        ] {
+            let mut mol = chematic_smiles::parse("CC").unwrap();
+            mol.set_bond_order(BondIdx(0), order);
+            let block = write_mol_with_conformer(
+                &mol,
+                &MolMetadata::default(),
+                &Coords3D {
+                    points: vec![Point3::zero(), Point3::new(1.0, 0.0, 0.0)],
+                },
+            );
+            let bond_line = block.lines().nth(6).unwrap();
+            assert_eq!(bond_line[6..9].trim().parse::<u8>().unwrap(), expected_code);
+        }
+    }
+
+    #[test]
+    fn square_planar_writer_rejects_missing_or_malformed_neighbor_order() {
+        let (mut mol, conformer) = square_planar_molecule();
+        mol.clear_stereo_neighbor_order(AtomIdx(0));
+        assert_eq!(
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V2000)
+                .unwrap_err()
+                .reason,
+            UnsupportedStereoReason::MissingNeighborOrder
+        );
+
+        mol.set_stereo_neighbor_order(AtomIdx(0), vec![1, 2, 3]);
+        assert_eq!(
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V2000)
+                .unwrap_err()
+                .reason,
+            UnsupportedStereoReason::MissingNeighborOrder
+        );
+    }
+
+    #[test]
+    fn square_planar_writer_rejects_truncated_conformer() {
+        let (mol, mut conformer) = square_planar_molecule();
+        conformer.points.pop();
+        assert_eq!(
+            validate_square_planar_for_write(&mol, Some(&conformer), MolFormat::V3000)
+                .unwrap_err()
+                .reason,
+            UnsupportedStereoReason::MissingConformerPosition
+        );
+    }
+}

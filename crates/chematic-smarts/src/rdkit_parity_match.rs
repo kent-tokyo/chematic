@@ -1487,3 +1487,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "rdkit_parity_boundary_tests.rs"]
+mod boundary_tests;

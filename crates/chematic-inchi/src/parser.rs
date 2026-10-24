@@ -1400,4 +1400,52 @@ mod layer_update_contract_tests {
             assert_eq!(untouched.atom(idx).charge, atom.charge);
         }
     }
+
+    #[test]
+    fn layer_parsers_reject_bad_values_and_ignore_unspecified_entries() {
+        assert!(parse_charge_layer("").unwrap().is_empty());
+        let charges = parse_charge_layer(",2+1,3,4-5+2,7-1").unwrap();
+        assert_eq!(charges.get(&2), Some(&1));
+        assert!(!charges.contains_key(&3));
+        assert_eq!(charges.get(&4), Some(&2));
+        assert_eq!(charges.get(&5), Some(&2));
+        assert_eq!(charges.get(&7), Some(&-1));
+        for bad in ["x+1", "2+x", "x-y+1"] {
+            assert!(parse_charge_layer(bad).is_err(), "{bad}");
+        }
+
+        assert!(parse_isotope_layer("").unwrap().is_empty());
+        let isotopes = parse_isotope_layer(",1/13C,2/C").unwrap();
+        assert_eq!(isotopes.get(&1), Some(&13));
+        assert!(!isotopes.contains_key(&2));
+        assert!(parse_isotope_layer("x/13C").is_err());
+        assert!(parse_isotope_layer("1/999C").is_err());
+
+        assert!(parse_ez_stereo_layer("").unwrap().is_empty());
+        let ez = parse_ez_stereo_layer(",3-2+,5-6-,bad+").unwrap();
+        assert_eq!(ez.get(&(2, 3)), Some(&'+'));
+        assert_eq!(ez.get(&(5, 6)), Some(&'-'));
+        assert_eq!(ez.len(), 2);
+
+        for bad in ["1", "x-2", "1-x"] {
+            assert!(parse_bond_spec(bad).is_err(), "{bad}");
+        }
+        assert!(parse_tetrahedral_stereo_layer("x+").is_err());
+        assert!(parse_tetrahedral_stereo_layer("x-").is_err());
+
+        let molecule = chematic_smiles::parse("CC").unwrap();
+        let atom_map = HashMap::from([(1, AtomIdx(0)), (2, AtomIdx(1))]);
+        let unchanged_ez = apply_ez_stereo(molecule.clone(), &atom_map, &HashMap::new());
+        let unchanged_tetra =
+            apply_tetrahedral_stereo(molecule.clone(), &atom_map, &HashMap::new());
+        assert_eq!(unchanged_ez.atom_count(), molecule.atom_count());
+        assert_eq!(unchanged_tetra.bond_count(), molecule.bond_count());
+
+        let unknown = HashMap::from([((1, 2), '?')]);
+        let no_label = apply_ez_stereo(molecule.clone(), &atom_map, &unknown);
+        assert!(no_label.atoms().all(|(_, atom)| atom.cip_code.is_none()));
+        let unknown = HashMap::from([(1, '?')]);
+        let no_label = apply_tetrahedral_stereo(molecule, &atom_map, &unknown);
+        assert!(no_label.atoms().all(|(_, atom)| atom.cip_code.is_none()));
+    }
 }

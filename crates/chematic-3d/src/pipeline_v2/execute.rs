@@ -825,3 +825,58 @@ fn validate_final_geometry(
     run.check_timeout(PipelineStage::FinalGeometryValidationStage)?;
     Ok(validation)
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn retry_budget_and_stage_accounting_are_explicit() {
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::None);
+        config.total_timeout_ms = Some(50);
+        let retry = retry_config(&config, 2, 20).unwrap();
+        assert_eq!(retry.total_timeout_ms, Some(30));
+        assert_ne!(retry.embed.random_seed, config.embed.random_seed);
+        assert!(retry_config(&config, 1, 51).is_none());
+
+        let mut run = PipelineRun::new(&config);
+        let stages = [
+            PipelineStage::ValidateConfig,
+            PipelineStage::TorsionKnowledge,
+            PipelineStage::MacrocycleBoundAdjustment,
+            PipelineStage::DistanceGeometry,
+            PipelineStage::TorsionEnergyEvaluation,
+            PipelineStage::TorsionOptimization,
+            PipelineStage::StereoVerifyBefore,
+            PipelineStage::StereoRepair,
+            PipelineStage::StereoVerifyAfterRepair,
+            PipelineStage::ForceFieldMinimization,
+            PipelineStage::FinalStereoVerify,
+            PipelineStage::FinalGeometryValidationStage,
+        ];
+        for (value, stage) in stages.into_iter().enumerate() {
+            run.record_stage(stage, value as u64 + 1);
+        }
+        assert_eq!(run.timings.torsion_knowledge_ms, 2);
+        assert_eq!(run.timings.final_validation_ms, 12);
+    }
+
+    #[test]
+    fn timeout_and_retry_policy_fail_closed() {
+        let mut config = PipelineV2Config::minimal(ForceFieldPolicy::None);
+        config.total_timeout_ms = Some(0);
+        let mut run = PipelineRun::new(&config);
+        let failure = run.check_timeout(PipelineStage::ValidateConfig).unwrap_err();
+        assert!(matches!(failure.cause, PipelineV2FailureCause::Timeout));
+        assert!(!retries_final_stereo_violation(&config, &failure));
+
+        let mut repair = PipelineV2Config::minimal(ForceFieldPolicy::None);
+        repair.stereo_policy = StereoPolicy::RepairAndVerify;
+        let mut repair_run = PipelineRun::new(&repair);
+        let stereo_failure = repair_run.fail(
+            PipelineV2FailureCause::FinalStereoViolation,
+            PipelineStage::FinalStereoVerify,
+        );
+        assert!(retries_final_stereo_violation(&repair, &stereo_failure));
+    }
+}

@@ -966,3 +966,65 @@ pub fn parse_sdf_with_coords(
         .map(|r| (r.mol, r.metadata, r.coords))
         .collect())
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn malformed_property_records_fail_with_specific_diagnostics() {
+        let overflow = ["M", "CHG", "18446744073709551615"];
+        let error = property_pairs(&overflow, 7, "CHG")
+            .err()
+            .expect("overflowing property count must fail");
+        assert!(matches!(
+            error,
+            MolParseError::InvalidPropertyLine { line: 7, .. }
+        ));
+
+        let mut updates = PropertyUpdates::default();
+        for fields in [
+            vec!["M", "ISO", "1", "1", "0"],
+            vec!["M", "ISO", "1", "1", "not-a-mass"],
+        ] {
+            assert!(matches!(
+                parse_isotope_properties(&fields, 9, 1, &mut updates),
+                Err(MolParseError::InvalidPropertyLine { line: 9, .. })
+            ));
+        }
+        assert!(fixed_isotope_fields("M  CHG  1   1  -1").is_none());
+        assert!(fixed_isotope_fields("M  ISO  1   1  13 trailing").is_none());
+    }
+
+    #[test]
+    fn bond_parser_covers_unknown_orders_and_duplicate_bonds() {
+        let mut builder = MoleculeBuilder::new();
+        builder.add_atom(Atom::new(Element::C));
+        builder.add_atom(Atom::new(Element::N));
+
+        let (bond, unspecified) = parse_bond_line(&mut builder, "  1  2 10  0", 5, 0)
+            .expect("unknown V2000 bond types retain the historical single-bond fallback");
+        assert_eq!(builder.build().bond(bond).order, BondOrder::Single);
+        assert!(!unspecified);
+
+        let mut duplicate = MoleculeBuilder::new();
+        duplicate.add_atom(Atom::new(Element::C));
+        duplicate.add_atom(Atom::new(Element::N));
+        parse_bond_line(&mut duplicate, "  1  2  1  0", 5, 0).unwrap();
+        assert!(matches!(
+            parse_bond_line(&mut duplicate, "  1  2  1  0", 6, 1),
+            Err(MolParseError::InvalidBondLine { line: 6, .. })
+        ));
+    }
+
+    #[test]
+    fn sdf_reader_accepts_final_delimiter_without_newline_and_skips_empty_records() {
+        let empty = read_sdf_with_diagnostics("$$$$").unwrap();
+        assert!(empty.is_empty());
+
+        let mol = "ethane\n  chematic  2D\n\n  2  1  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n    1.5000    0.0000    0.0000 C   0  0  0  0  0  0  0  0  0  0  0  0\n  1  2  1  0\nM  END\n$$$$";
+        let reports = read_sdf_with_diagnostics(mol).unwrap();
+        assert_eq!(reports.len(), 1);
+        assert_eq!(reports[0].mol.atom_count(), 2);
+    }
+}

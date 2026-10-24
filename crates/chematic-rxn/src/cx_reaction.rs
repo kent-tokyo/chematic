@@ -83,3 +83,22 @@ fn group_head((kind, number): GroupKey) -> String {
         _ => format!("o{number}"),
     }
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn reaction_cx_errors_keep_their_typed_context() {
+        let parse = ReactionCxError::from(RxnError::MissingArrow);
+        assert!(parse.to_string().contains("must contain"));
+        assert_eq!(
+            ReactionCxError::Invalid("overlap".into()).to_string(),
+            "reaction CXSMILES: overlap"
+        );
+        assert_eq!(
+            ReactionCxError::Unsupported("bond group".into()).to_string(),
+            "reaction CXSMILES unsupported: bond group"
+        );
+    }
+}
