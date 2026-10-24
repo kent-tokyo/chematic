@@ -1,0 +1,14 @@
+BIOGRF 200
+DESCRP carbonyl source
+REMARK first remark
+REMARK second remark
+FORCEFIELD CUSTOM
+FORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)
+ATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345
+HETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345
+FORMAT CONECT (a6,12i6)
+CONECT     1     2
+ORDER      1     2
+CONECT     2     1
+ORDER      2     2
+END

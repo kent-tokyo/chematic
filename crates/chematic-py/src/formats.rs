@@ -21,6 +21,9 @@ mod reaction_cx;
 mod registration;
 use reaction_cx::normalize_reaction_cxsmiles;
 
+mod bgf;
+use bgf::{parse_bgf, write_bgf};
+
 mod hin;
 use hin::*;
 
@@ -1451,6 +1454,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
+        parse_bgf,
+        write_bgf,
         parse_exyz,
         write_exyz,
         parse_turbomole,

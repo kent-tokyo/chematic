@@ -14,6 +14,15 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Editable nonperiodic BIOGRF 200 records in Rust, Python, WASM/Node, and CLI,
+  retaining fixed-column atom/residue/force-field/partial-charge/lone-pair
+  fields and explicit/implicit connection orders. Unsupported records, unknown
+  JSON fields, conflicting connectivity, overflow, and precision loss refuse.
+  The original cross-binding packet and pinned Open Babel comparison document
+  the bounded profile in [BGF records](docs/reference/bgf-records.md).
+
 ### Fixed
 
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps

@@ -34,6 +34,7 @@ means the operation is not exposed on that binding.
 |---|---|---|---|---|
 | SMILES | R/W | R/W | R/W | Graph/stereo text; not an identity key |
 | SMARTS | match | validate/match | match | Query evaluation, not a general writer |
+| BGF / BIOGRF 200 | bounded R/W | bounded R/W | bounded R/W | [Editable nonperiodic atom/connectivity records](bgf-records.md); periodic/extended dialects refuse |
 | HIN | bounded R/source W | bounded R/source W | inspect/source W | No edited-graph writer |
 | MOL/SDF V2000/V3000 | R/W | R/W | R/W | Use checked/source routes for stereo and SD fields |
 | MOL2 | R/W | R/W | R/W | Typed/charge/metadata preservation is profile-specific |

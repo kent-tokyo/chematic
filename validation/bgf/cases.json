@@ -1,0 +1,1112 @@
+{
+  "schema_version": 1,
+  "scope": "nonperiodic BIOGRF 200 standard fixed-width records",
+  "valid": [
+    {
+      "id": "typed-carbonyl",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "absent-metadata",
+      "input": "BIOGRF 200\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": null,
+        "remarks": [],
+        "force_field": null,
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "blank-residues",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX                  1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX                  2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "",
+            "chain": "",
+            "residue_id": "",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "",
+            "chain": "",
+            "residue_id": "",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "opaque-atom-type",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 X9     4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "X9",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "sparse-source-ids",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM   99999 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT 99999     2\nORDER  99999     2\nCONECT     2 99999\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 99999,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 99999,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              99999
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "source-order",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     2     1\nORDER      2     2\nCONECT     1     2\nORDER      1     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          },
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "implicit-single",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nCONECT     2     1\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": null
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "explicit-zero-single",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     0\nCONECT     2     1\nORDER      2     0\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              0
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              0
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "equivalent-zero-one",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     0\nCONECT     2     1\nORDER      2     1\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              0
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "one-sided-connectivity",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "no-connectivity",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": []
+      }
+    },
+    {
+      "id": "triple-order",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     3\nCONECT     2     1\nORDER      2     3\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              3
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              3
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "default-formats",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "crlf",
+      "input": "BIOGRF 200\r\nDESCRP carbonyl source\r\nREMARK first remark\r\nREMARK second remark\r\nFORCEFIELD CUSTOM\r\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\r\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\r\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\r\nFORMAT CONECT (a6,12i6)\r\nCONECT     1     2\r\nORDER      1     2\r\nCONECT     2     1\r\nORDER      2     2\r\nEND\r\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              1.23456,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 4,
+            "lone_pairs": 0,
+            "partial_charge": 0.12345
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "field-boundaries",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R79999.99999-999.99999   0.00000 C_2  99999 99.99999\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n",
+      "expected": {
+        "version": 200,
+        "description": "carbonyl source",
+        "remarks": [
+          "first remark",
+          "second remark"
+        ],
+        "force_field": "CUSTOM",
+        "atoms": [
+          {
+            "kind": "ATOM",
+            "id": 1,
+            "name": "CX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              9999.99999,
+              -999.99999,
+              0.0
+            ],
+            "force_field_type": "C_2",
+            "max_bonds": 999,
+            "lone_pairs": 99,
+            "partial_charge": 99.99999
+          },
+          {
+            "kind": "HETATM",
+            "id": 2,
+            "name": "OX",
+            "residue_name": "LIG",
+            "chain": "Z",
+            "residue_id": "R7",
+            "position_angstrom": [
+              2.45678,
+              -2.34567,
+              0.0
+            ],
+            "force_field_type": "O_2",
+            "max_bonds": 2,
+            "lone_pairs": 2,
+            "partial_charge": -0.12345
+          }
+        ],
+        "connectivity": [
+          {
+            "atom": 1,
+            "neighbors": [
+              2
+            ],
+            "orders": [
+              2
+            ]
+          },
+          {
+            "atom": 2,
+            "neighbors": [
+              1
+            ],
+            "orders": [
+              2
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "periodic-header",
+      "input": "XTLGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "unsupported-version",
+      "input": "BIOGRF 332\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "crystx",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nCRYSTX 1 1 1 90 90 90\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "restraint",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nBOND RESTRAINT 1 2 1.0\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "unknown-record",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nUNKNOWN value\nEND\n"
+    },
+    {
+      "id": "missing-end",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\n"
+    },
+    {
+      "id": "second-structure",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\nBIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "atom-extension",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345 1\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "short-atom",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.1234\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "custom-format",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.6,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "duplicate-format",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "duplicate-description",
+      "input": "BIOGRF 200\nDESCRP one\nDESCRP two\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "metadata-after-atoms",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nREMARK misplaced\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "duplicate-id",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     1 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "unknown-neighbor",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     3\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "self-bond",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     1\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "duplicate-neighbor",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "mismatched-center",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      2     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "mismatched-count",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "conflicting-order",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     3\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "unsupported-order",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     4\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "nan-position",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7       NaN  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "implied-decimals",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7     12345  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "excess-precision",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7 0.1234567  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "misaligned-separator",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first remark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000XC_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    },
+    {
+      "id": "control-character",
+      "input": "BIOGRF 200\nDESCRP carbonyl source\nREMARK first\tremark\nREMARK second remark\nFORCEFIELD CUSTOM\nFORMAT ATOM   (a6,1x,i5,1x,a5,1x,a3,1x,a1,1x,a5,3f10.5,1x,a5,i3,i2,1x,f8.5)\nATOM       1 CX    LIG Z    R7   1.23456  -2.34567   0.00000 C_2    4 0  0.12345\nHETATM     2 OX    LIG Z    R7   2.45678  -2.34567   0.00000 O_2    2 2 -0.12345\nFORMAT CONECT (a6,12i6)\nCONECT     1     2\nORDER      1     2\nCONECT     2     1\nORDER      2     2\nEND\n"
+    }
+  ]
+}
