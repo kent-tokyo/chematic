@@ -24,6 +24,9 @@ use reaction_cx::normalize_reaction_cxsmiles;
 mod hin;
 use hin::*;
 
+mod gromos96;
+use gromos96::*;
+
 mod ccd;
 use ccd::*;
 
@@ -1453,6 +1456,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         select_pdb_atoms,
         parse_exyz,
         write_exyz,
+        parse_gromos96,
+        write_gromos96,
+        gromos96_geometry_angstrom,
         parse_turbomole,
         write_turbomole,
         parse_mmcif_residues,

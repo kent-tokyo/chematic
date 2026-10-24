@@ -47,6 +47,12 @@ pub mod fhiaims;
 pub mod gamess_zmat;
 pub mod gaussian;
 pub mod gro;
+pub mod gromos96;
+pub use gromos96::{
+    Gromos96Block, Gromos96Document, Gromos96Error, Gromos96Geometry, Gromos96Identity,
+    Gromos96LengthUnit, Gromos96ParseLimits, parse_gromos96, parse_gromos96_json,
+    parse_gromos96_with_limits, write_gromos96, write_gromos96_with_limits,
+};
 pub mod gro_lammps;
 pub mod gzmat;
 pub use gamess_zmat::{GamessZmatWriteOptions, write_gamess_zmat, xyz_to_gamess_zmat};

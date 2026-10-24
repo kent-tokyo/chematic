@@ -1,0 +1,1345 @@
+{
+  "schema_version": 1,
+  "provenance": "Original synthetic fixtures, MIT OR Apache-2.0. No external example coordinates copied. Unit context is supplied by the caller on each text read.",
+  "valid": [
+    {
+      "id": "full-nm",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "full-angstrom",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "angstrom",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "reduced",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITIONRED\n           .125            .25             .5\n          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITIONRED",
+            "leading": [],
+            "lines": [
+              "           .125            .25             .5",
+              "          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "no-box",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "full-velocity",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "VELOCITY",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1          -1e-3              0           2e-3",
+              "    1 MOL   Cl         2            .25            -.5            .75"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "reduced-velocity",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITIONRED\n           .125            .25             .5\n          -.375             .5           1.25\nEND\nVELOCITYRED\n              1              2              3\n              4              5              6\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITIONRED",
+            "leading": [],
+            "lines": [
+              "           .125            .25             .5",
+              "          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "VELOCITYRED",
+            "leading": [],
+            "lines": [
+              "              1              2              3",
+              "              4              5              6"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "timestep",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n             -5           1.25\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "TIMESTEP",
+            "leading": [],
+            "lines": [
+              "             -5           1.25"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "timestep-velocity",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n             17   1.2345678901\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "TIMESTEP",
+            "leading": [],
+            "lines": [
+              "             17   1.2345678901"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "VELOCITY",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1          -1e-3              0           2e-3",
+              "    1 MOL   Cl         2            .25            -.5            .75"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "title-utf8-spaces",
+      "text": "TITLE\n  多行タイトル  \n# title comment\n\nsecond line\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "  多行タイトル  ",
+              "# title comment",
+              "",
+              "second line"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "empty-title",
+      "text": "TITLE\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": []
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "comments-layout",
+      "text": "# preamble\n\nTITLE\nSynthetic G96\nEND\n# positions follow\n\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n# between atoms\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n# box\n              2              4              8\nEND\n\n# trailing metadata retained\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [
+              "# preamble",
+              ""
+            ],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [
+              "# positions follow",
+              ""
+            ],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "# between atoms",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "# box",
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": [
+          "",
+          "# trailing metadata retained"
+        ]
+      }
+    },
+    {
+      "id": "crlf",
+      "text": "TITLE\r\nSynthetic G96\r\nEND\r\nPOSITION\r\n    1 MOL   C          1           .125            .25             .5\r\n    1 MOL   Cl         2          -.375             .5           1.25\r\nEND\r\nBOX\r\n              2              4              8\r\nEND\r\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "no-final-newline",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "triclinic",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8            .25             .5          -.125            1.5           -.75           .125\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8            .25             .5          -.125            1.5           -.75           .125"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "left-handed",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4             -8            .25             .5          -.125            1.5           -.75           .125\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4             -8            .25             .5          -.125            1.5           -.75           .125"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "zero-box",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              0             -0              0\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              0             -0              0"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "box-precision",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n 2.123456789012              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              " 2.123456789012              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "adjacent-negative",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1 -12345.1234567 -12345.1234567 -12345.1234567\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1 -12345.1234567 -12345.1234567 -12345.1234567",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "numeric-spelling",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1     +1.2500e-1   -0.000000000         5e-324\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1     +1.2500e-1   -0.000000000         5e-324",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "precision",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1.12345678901234+.5000000000001 1.000000000001\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1.12345678901234+.5000000000001 1.000000000001",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "labels-are-not-elements",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n   -2 RES   CA         0           .125            .25             .5\n99999 OTHER QQ7  9999999              0              0              0\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "   -2 RES   CA         0           .125            .25             .5",
+              "99999 OTHER QQ7  9999999              0              0              0"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "ob-spaced-fields",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1            .125             .25              .5\n    1 MOL   Cl         2           -.375              .5            1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1            .125             .25              .5",
+              "    1 MOL   Cl         2           -.375              .5            1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "reduced-spaced-fields",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITIONRED\n            .125             .25              .5\n           -.375              .5            1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITIONRED",
+            "leading": [],
+            "lines": [
+              "            .125             .25              .5",
+              "           -.375              .5            1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "two-frames-full",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nTIMESTEP\n             17   1.2345678901\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   C          1             .5             .5             .5\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          },
+          {
+            "kind": "TIMESTEP",
+            "leading": [],
+            "lines": [
+              "             17   1.2345678901"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "VELOCITY",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1             .5             .5             .5",
+              "    1 MOL   Cl         2            .25            -.5            .75"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "two-frames-variable-count",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nPOSITIONRED\n           .125            .25             .5\nEND\nVELOCITYRED\n              1              2              3\nEND\nBOX\n              3              5              7\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          },
+          {
+            "kind": "POSITIONRED",
+            "leading": [],
+            "lines": [
+              "           .125            .25             .5"
+            ]
+          },
+          {
+            "kind": "VELOCITYRED",
+            "leading": [],
+            "lines": [
+              "              1              2              3"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              3              5              7"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "commented-timestep-velocity",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n# step context\n             17   1.2345678901\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n# velocity context\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "TIMESTEP",
+            "leading": [],
+            "lines": [
+              "# step context",
+              "             17   1.2345678901"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "VELOCITY",
+            "leading": [],
+            "lines": [
+              "# velocity context",
+              "    1 MOL   C          1          -1e-3              0           2e-3",
+              "    1 MOL   Cl         2            .25            -.5            .75"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    }
+  ],
+  "refused": [
+    {
+      "id": "missing-title",
+      "text": "POSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "repeated-title",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nTITLE\nSynthetic G96\nEND\n"
+    },
+    {
+      "id": "unknown-block",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nGENBOX\n0\nEND\n"
+    },
+    {
+      "id": "empty-positions",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n# no data\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "short-row",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "long-row",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5 \n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "zero-box-width",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\nEND\n"
+    },
+    {
+      "id": "six-box-values",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              1              1              1              1              1              1\nEND\n"
+    },
+    {
+      "id": "multiline-box",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              1              1              1\n              1              1              1\nEND\n"
+    },
+    {
+      "id": "duplicate-box",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "box-before-positions",
+      "text": "TITLE\nSynthetic G96\nEND\nBOX\n              1              1              1\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "velocity-before-positions",
+      "text": "TITLE\nSynthetic G96\nEND\nVELOCITYRED\n              1              1              1\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "mismatched-velocity-style",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITYRED\n              1              1              1\n              2              2              2\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "timestep-without-positions",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nTIMESTEP\n              1              0\nEND\n"
+    },
+    {
+      "id": "timestep-width",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n1 0\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "timestep-extra-row",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n              1              0\n              1              0\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "timestep-noninteger",
+      "text": "TITLE\nSynthetic G96\nEND\nTIMESTEP\n            1.5              0\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "blank-atom-row",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "indented-comment-row",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n # comment\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "bad-residue-number",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\njunk  MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "empty-name",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL              1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "internal-space-name",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C A        1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "bad-serial",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          -           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-NaN",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1            NaN              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-inf",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1            inf              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-1e999",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1          1e999              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-1e-999",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1         1e-999              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-1D0",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1            1D0              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-.1junk",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1         .1junk              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-−1",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1             −1              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-.1,",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1            .1,              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "decimal-word",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           word              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "velocity-count",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "velocity-label",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   N          1              0              0              0\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "duplicate-velocity",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "velocity-after-box",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nVELOCITY\n    1 MOL   C          1          -1e-3              0           2e-3\n    1 MOL   Cl         2            .25            -.5            .75\nEND\n"
+    },
+    {
+      "id": "no-END",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\n"
+    },
+    {
+      "id": "extra-END",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\nEND\n"
+    },
+    {
+      "id": "trailing-garbage",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\ngarbage\n"
+    },
+    {
+      "id": "nul-title",
+      "text": "TITLE\nSynth\u0000etic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "no-frames",
+      "text": "TITLE\nx\nEND\n"
+    },
+    {
+      "id": "preamble-garbage",
+      "text": "arbitrary\nTITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "unsupported-POSITION-code",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITIONREF\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    },
+    {
+      "id": "no-header",
+      "text": ""
+    },
+    {
+      "id": "bare-CR-title",
+      "text": "TITLE\nSynth\retic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n"
+    }
+  ],
+  "projection_refused": [
+    {
+      "id": "unspecified-unit",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "unspecified",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "position-scale-overflow",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1          1e308              0              0\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n              2              4              8\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1          1e308              0              0",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "              2              4              8"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    },
+    {
+      "id": "box-scale-overflow",
+      "text": "TITLE\nSynthetic G96\nEND\nPOSITION\n    1 MOL   C          1           .125            .25             .5\n    1 MOL   Cl         2          -.375             .5           1.25\nEND\nBOX\n          1e308              1              1\nEND\n",
+      "record": {
+        "length_unit": "nm",
+        "blocks": [
+          {
+            "kind": "TITLE",
+            "leading": [],
+            "lines": [
+              "Synthetic G96"
+            ]
+          },
+          {
+            "kind": "POSITION",
+            "leading": [],
+            "lines": [
+              "    1 MOL   C          1           .125            .25             .5",
+              "    1 MOL   Cl         2          -.375             .5           1.25"
+            ]
+          },
+          {
+            "kind": "BOX",
+            "leading": [],
+            "lines": [
+              "          1e308              1              1"
+            ]
+          }
+        ],
+        "trailing": []
+      }
+    }
+  ],
+  "writer_probes": [
+    {
+      "id": "integer",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          "0",
+          "0",
+          "0"
+        ],
+        [
+          "1",
+          "2",
+          "3"
+        ]
+      ]
+    },
+    {
+      "id": "binary-fractions",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          ".125",
+          ".25",
+          ".5"
+        ],
+        [
+          "-.375",
+          ".5",
+          "1.25"
+        ]
+      ]
+    },
+    {
+      "id": "precision",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          "1.234567890123",
+          "-2.34567890123",
+          ".345678901234"
+        ],
+        [
+          "-5.123456789012",
+          ".125",
+          ".25"
+        ]
+      ]
+    },
+    {
+      "id": "tiny",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          "1e-12",
+          "-2e-12",
+          "3e-12"
+        ],
+        [
+          ".125",
+          ".25",
+          ".5"
+        ]
+      ]
+    },
+    {
+      "id": "large",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          "1000001.125",
+          "-99999.125",
+          "12345.25"
+        ],
+        [
+          ".125",
+          ".25",
+          ".5"
+        ]
+      ]
+    },
+    {
+      "id": "signed-zero",
+      "elements": [
+        "C",
+        "Cl"
+      ],
+      "positions_angstrom": [
+        [
+          "-0.0",
+          "+0.0",
+          "0"
+        ],
+        [
+          ".125",
+          ".25",
+          ".5"
+        ]
+      ]
+    }
+  ]
+}

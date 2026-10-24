@@ -57,6 +57,7 @@ means the operation is not exposed on that binding.
 | LAMMPS data | R/W | R/W | R/W | Units and atom styles are explicit |
 | LAMMPS dump/trajectory | R/W | R/W | R/W | Streaming/materialization differs by binding |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |
+| [GROMOS96](gromos96-preservation.md) | bounded R/W | bounded R/W | bounded R/W | All supported blocks/frames and labels; caller-owned units |
 
 ## Checked conversion reports (initial adapter)
 

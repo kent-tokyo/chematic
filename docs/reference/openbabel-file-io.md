@@ -10,6 +10,7 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [GROMOS96 records](gromos96-preservation.md) | Preserved blocks, labels and explicit unit context; bounded one-way coordinate precision comparison | Full engine/external-reader compatibility, element inference, equivalent-work speed or toolkit-wide superiority |
 | [V3000 atom scalar integrity](v3000-atom-scalar-integrity.md) | Checked charge/isotope/map parsing, quoted-text controls and explicit malformed-input errors | General CTfile/query validity or broad-format superiority |
 | [V2000 isotope output](v2000-isotope-output.md) | Explicit isotope labels in regenerated MOL/SDF, checked through Python/WASM and an external reader | Superiority over Open Babel with atom-class output enabled, or general CTfile validity |
 | [V2000 property precedence](v2000-property-precedence.md) | Sparse CHG/ISO records replace their complete atom-block channels across ordinary/fast readers | Full CTfile/spin-state support or superiority over Open Babel |

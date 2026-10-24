@@ -9,6 +9,7 @@ use std::path::PathBuf;
 
 mod conversion_format;
 mod dispatch;
+mod gromos96;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -51,6 +52,25 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Retain checked GROMOS96 blocks, labels and all coordinate frames.
+    Gromos96 {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["from_json", "angstrom"])]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        /// Emit Angstrom positions and BOX vectors; requires declared source units.
+        #[arg(long)]
+        angstrom: bool,
+        /// Caller-owned unit: nm or angstrom; absence means unspecified.
+        #[arg(long, conflicts_with = "from_json")]
+        length_unit: Option<String>,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
     GjfDocument {
         #[arg(short, long)]

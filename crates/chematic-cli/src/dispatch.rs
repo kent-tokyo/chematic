@@ -4,6 +4,26 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::Gromos96 {
+            input,
+            output,
+            inspect,
+            from_json,
+            angstrom,
+            length_unit,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = gromos96::convert(
+                &text,
+                inspect,
+                from_json,
+                angstrom,
+                max_input_bytes,
+                length_unit.as_deref(),
+            )?;
+            write_output(output.as_ref(), &result)
+        }
         Command::GjfDocument {
             input,
             output,
