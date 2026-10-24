@@ -1,5 +1,22 @@
 use super::*;
 
+/// Checked CML graph/Cartesian/name profile; refuses unrepresented payload.
+#[wasm_bindgen]
+pub fn project_cml_to_cjson(text: &str) -> Result<String, JsValue> {
+    chematic_mol::project_cml_to_cjson_with_limits(
+        text,
+        &chematic_mol::ConversionLimits {
+            mol2: chematic_mol::Mol2ParseLimits {
+                max_input_bytes: WASM_MAX_INPUT_BYTES,
+                max_atoms: WASM_MAX_ATOMS,
+                ..Default::default()
+            },
+            max_output_bytes: WASM_MAX_OUTPUT_BYTES,
+        },
+    )
+    .map_err(|e| JsValue::from_str(&e.to_string()))
+}
+
 /// Replace only ar bond tokens in a bounded neutral aromatic MOL2 record.
 /// Retains atom types and every other source byte; errors throw, no partial text.
 #[wasm_bindgen]
@@ -207,19 +224,7 @@ fn write_common_format(
 
 fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option<String>, JsValue> {
     if input == "cml" && output == "cjson" {
-        let limits = chematic_mol::CmlParseLimits {
-            max_input_bytes: WASM_MAX_INPUT_BYTES,
-            max_atoms: WASM_MAX_ATOMS,
-            ..Default::default()
-        };
-        let (mol, coords) = chematic_mol::parse_cml_with_3d_with_limits(text, &limits)
-            .map_err(|error| JsValue::from_str(&error.to_string()))?;
-        let points = coords
-            .unwrap_or_default()
-            .into_iter()
-            .map(|[x, y, z]| (x, y, z))
-            .collect::<Vec<_>>();
-        return Ok(Some(chematic_mol::write_cjson(&mol, &points)));
+        return project_cml_to_cjson(text).map(Some);
     }
     if input == "mol2" && output == "cjson" {
         let projected = chematic_mol::project_mol2_to_cjson_with_limits(
@@ -262,10 +267,11 @@ fn project_source_format(text: &str, input: &str, output: &str) -> Result<Option
 /// the topology-only bridge and do not carry format-specific metadata.
 /// SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
 /// require exactly one CTAB and omit SD fields; SDF output is one framed record.
-/// CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
-/// 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
-/// That projection resolves CML namespaces and forward references; foreign
-/// subtrees and attributes never become graph records.
+/// CML-to-CJSON verifies a bounded graph/Cartesian/name profile on reparse,
+/// including inferred H counts, and refuses unrepresented payload (2D, stereo,
+/// aromatic/query/zero bonds, unknown attributes/elements).
+/// Molecule/atom/bond IDs are document-local references; their spelling and
+/// lexical XML are omitted.
 #[wasm_bindgen]
 pub fn convert_common_format(
     text: &str,

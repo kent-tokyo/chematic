@@ -11,7 +11,7 @@ fn malformed(message: impl Into<String>) -> ConversionError {
 
 // Inspect only the prolog, skipping comments/PIs instead of matching XML-like
 // text inside opaque payload. roxmltree subsequently checks the whole document.
-fn validate_prolog(text: &str) -> Result<(), ConversionError> {
+pub(super) fn validate_prolog(text: &str) -> Result<(), ConversionError> {
     let ascii = text.is_ascii();
     let mut rest = text.strip_prefix('\u{feff}').unwrap_or(text);
     loop {

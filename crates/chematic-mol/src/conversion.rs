@@ -10,6 +10,8 @@ use serde::Serialize;
 use std::collections::HashMap;
 
 mod cjson_mol2;
+mod cml_cjson;
+pub use cml_cjson::{project_cml_to_cjson, project_cml_to_cjson_with_limits};
 mod cml_source;
 mod mol2_cjson_projection;
 pub use mol2_cjson_projection::{project_mol2_to_cjson, project_mol2_to_cjson_with_limits};

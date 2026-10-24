@@ -9,6 +9,13 @@ function compact(s){let result='',quoted=false,escaped=false;for(const c of s){i
 const variants=c=>[c.input,c.input.replaceAll('\n','\r\n'),compact(c.input)];
 for(const c of [...packet.valid,...packet.compatibility])for(const source of variants(c)){
  const cml=wasm.convert_common_format(source,'.CJSON','cml');
+ if(cml.includes('order="A"')){
+  assert.throws(()=>wasm.convert_common_format(cml,'cml','cjson'),undefined,c.id);
+  // The original CJSON input/legacy CML reader remain available; checked CML
+  // projection deliberately does not claim to preserve aromatic atom flags.
+  const mol=wasm.mol_from_cml(cml);assert.equal(mol.atom_count(),c.expected.numbers.length);assert.equal(mol.bond_count(),c.expected.orders.length);mol.free();
+  assert.equal(wasm.convert_common_format(source,'.CJSON','cjson'),source,c.id);continue;
+ }
  const data=JSON.parse(wasm.convert_common_format(cml,'cml','cjson')),n=c.expected.numbers.length;
  assert.deepEqual(data.atoms.elements.number,c.expected.numbers,c.id);
  assert.deepEqual(data.atoms.formalCharges??Array(n).fill(0),c.expected.charges,c.id);

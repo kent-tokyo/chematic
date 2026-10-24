@@ -19,6 +19,9 @@ def compact(text):
 def variants(c):return [c['input'],c['input'].replace('\n','\r\n'),compact(c['input'])]
 def common_bridge_graph(text):
     cml=chematic.convert_format(text,'.CJSON','cml')
+    if 'order="A"' in cml:
+        with pytest.raises(ValueError):chematic.convert_format(cml,'cml','cjson')
+        return json.loads(chematic.from_cml(cml).to_cjson([]))
     return json.loads(chematic.convert_format(cml,'cml','cjson'))
 def checked_graph(data,expected):
     atoms=data['atoms'];n=len(expected['numbers']);bonds=data['bonds']

@@ -95,7 +95,9 @@ Related records:
 - **CML:** checked source retention preserves the original XML document. The
   separate graph/coordinate projection validates the interpreted subset and
   rejects partial or conflicting coordinate declarations. Its namespace-aware
-  profile excludes foreign annotations from the graph and resolves forward IDs.
+  reader excludes foreign annotations from the graph and resolves forward IDs.
+  Ordinary CML-to-CJSON conversion now checks graph/XYZ/name and local inferred H
+  counts, refusing unrepresented annotations and 2D data before output.
 - **V3000:** coordinate projection keeps source-order finite x/y/z values, but
   target formats retain only the fields they can represent.
 
@@ -131,6 +133,7 @@ Use these pages when the short matrix is not enough:
   [checked PDBQT output](pdbqt-checked-output.md)
 - [CML collections](cml-collection.md) and [named atoms](cml-named-atoms.md)
 - [CML namespace-aware projection](cml-namespace-projection.md)
+- [Checked CML to CJSON projection](cml-cjson-projection.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),

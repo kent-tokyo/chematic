@@ -190,11 +190,14 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     overrides are rejected. Other MOL/SDF inputs require exactly one record
     and omit its SD fields before graph conversion. Use the SDF iterators for
     batch conversion. SDF output from other formats is one framed record.
-    CML to CJSON carries complete source x3/y3/z3 coordinates. Missing 3D
-    stays missing; partial/malformed 3D and multiple molecules are refused.
-    This route resolves CML namespace prefixes and forward bond references,
-    requires unique atom IDs, and excludes foreign subtrees/attributes from the
-    graph. 2D layout and metadata are omitted.
+    CML to CJSON verifies a bounded graph/Cartesian/name profile on reparse.
+    Source atom order, elements, charges, isotope masses, single/double/triple
+    bonds, XYZ bits and consistent title/name text are preserved. Explicit H
+    counts must match local CJSON inference. 2D, stereo, aromatic/query/zero
+    bonds and unrepresented attributes/elements are refused.
+    Molecule/atom/bond IDs are document-local references; their spellings and
+    lexical XML are omitted.
+    Overrides are rejected. Use source retention for opaque CML payload.
     CJSON inputs use the checked record profile: malformed known arrays,
     duplicate keys/bonds and unsupported bond-order tokens are refused.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
@@ -240,6 +243,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("V3000 source-preserving conversion does not accept overrides")
         return roundtrip_mol_v3000_source(text)
+    if source == "cml" and target == "cjson":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CML to CJSON preserving projection does not accept overrides")
+        return project_cml_to_cjson(text)
     if source == "mol2" and target == "cjson":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
@@ -265,12 +272,7 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     elif source == "mol2":
         mol = from_mol2(text)
     elif source == "cml":
-        if target == "cjson":
-            mol, parsed_coords = from_cml_with_3d(text)
-            if coords is None:
-                coords = parsed_coords
-        else:
-            mol = from_cml(text)
+        mol = from_cml(text)
     elif source == "cjson":
         mol, parsed_coords = from_cjson_checked(text)
         if coords is None and parsed_coords:
