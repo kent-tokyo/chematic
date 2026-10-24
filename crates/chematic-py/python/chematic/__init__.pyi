@@ -6144,3 +6144,12 @@ def parse_gjf_document_json(
     converted and no bonds are inferred. JSON output is capped at 16 MiB.
     """
     ...
+
+
+def parse_fract(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read title, cell and element/fractional tokens, retaining uncertainty digits."""
+    ...
+
+def write_fract(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields; numeric entries must be decimal strings."""
+    ...
