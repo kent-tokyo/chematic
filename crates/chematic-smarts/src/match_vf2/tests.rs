@@ -120,6 +120,34 @@ fn directional_bonds_match_without_stereo_like_rdkit() {
 }
 
 #[test]
+fn directional_bonds_enforce_alkene_geometry_when_requested() {
+    // RDKit GetSubstructMatches(..., useChirality=True) on these molecules.
+    let strict = MatchConfig {
+        use_chirality: true,
+        ..MatchConfig::default()
+    };
+    for (query, target, expected) in [
+        ("F/C=C/F", "F/C=C/F", true),
+        ("F/C=C/F", "F\\C=C\\F", true),
+        ("F/C=C/F", "F/C=C\\F", false),
+        ("F/C=C/F", "FC=CF", false),
+        ("C/C=C/C", "C/C=C/C", true),
+        ("C/C=C/C", "C/C=C\\C", false),
+        ("F/C=C/F", "F/C(Cl)=C/F", true),
+        ("F/C=C/F", "F/C(Cl)=C\\F", false),
+        ("C/C", "CC", true), // a lone direction does not constrain stereo
+    ] {
+        let found = !find_matches_with_config(
+            &parse_smarts(query).unwrap(),
+            &parse(target).unwrap(),
+            &strict,
+        )
+        .is_empty();
+        assert_eq!(found, expected, "query={query}, target={target}");
+    }
+}
+
+#[test]
 fn total_valence_uses_kekule_bond_orders() {
     let count =
         |q: &str, s: &str| find_matches(&parse_smarts(q).unwrap(), &parse(s).unwrap()).len();

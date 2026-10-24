@@ -44,6 +44,19 @@ different defaults, result shapes, or supported chemistry. The
 errors and ownership. The [format matrix](format-capabilities.md) lists
 read/write coverage rather than assuming every RDKit format is supported.
 
+For CLI comparisons, select `fingerprint SMILES --algorithm rdkit_morgan`
+for RDKit's radius-2, 2048-bit Morgan profile or `--algorithm rdkit_pattern`
+for its 2048-bit Pattern profile. These names also work with `similarity`,
+`batch-fingerprints`, and `batch-similarity`. The CLI's default `ecfp4` is
+the native profile and has different bit positions. Use
+`substructure SMILES SMARTS --use-chirality` (or
+`batch-substructure --use-chirality`) to enforce tetrahedral and E/Z
+stereochemistry; without the flag, directional SMARTS bonds do not constrain
+geometry. The opt-in CLI route removes non-stereogenic atom tags and rejects
+non-stereogenic double-bond markers using the RDKit-compatible legacy
+perception port. An unsupported perception input is
+reported as an error instead of being silently counted as a nonmatch.
+
 ## Chemistry boundaries to check first
 
 - **Identity and stereo:** `canonical_smiles()` is a representation, not a

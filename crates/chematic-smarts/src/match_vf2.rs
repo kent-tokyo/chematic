@@ -45,6 +45,8 @@ struct EvalCtx<'a> {
     ring_atoms_lazy: std::cell::OnceCell<Vec<bool>>,
     /// The target's hybridization memo, looked up once per match call.
     hybridization_lazy: std::cell::OnceCell<std::sync::Arc<crate::hybridization::LazyFacts>>,
+    /// Read target E/Z markers only for stereo queries, once per search.
+    ez_facts_lazy: std::sync::OnceLock<Option<(Vec<chematic_core::ez_markers::EzFact>, bool)>>,
     config: &'a MatchConfig,
     /// Remaining visit budget shared across all recursive calls (including nested
     /// recursive-SMARTS `$(...)`).  Decremented on every `match_recursive` /
@@ -404,6 +406,7 @@ pub fn for_each_embedding(
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
         hybridization_lazy: std::cell::OnceCell::new(),
+        ez_facts_lazy: std::sync::OnceLock::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -517,6 +520,7 @@ fn exists_match(
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
         hybridization_lazy: std::cell::OnceCell::new(),
+        ez_facts_lazy: std::sync::OnceLock::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -606,6 +610,7 @@ pub fn first_anchored_match_per_atom(
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
         hybridization_lazy: std::cell::OnceCell::new(),
+        ez_facts_lazy: std::sync::OnceLock::new(),
         config: &config,
         visit_budget: std::cell::Cell::new(u64::MAX),
         budget_exhausted: std::cell::Cell::new(false),
@@ -641,6 +646,7 @@ fn run_match_recursive(
         rings_lazy: std::cell::OnceCell::new(),
         ring_atoms_lazy: std::cell::OnceCell::new(),
         hybridization_lazy: std::cell::OnceCell::new(),
+        ez_facts_lazy: std::sync::OnceLock::new(),
         config,
         visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
         budget_exhausted: std::cell::Cell::new(false),
@@ -1236,6 +1242,7 @@ fn mapped_chirality_compatible(query: &QueryMolecule, mapping: &[u32], ctx: &Eva
         mapping,
         ctx.mol,
         ctx.config.use_chirality,
+        &ctx.ez_facts_lazy,
         |primitive, target| eval_atom_primitive(primitive, target, ctx),
     )
 }

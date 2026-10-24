@@ -1,8 +1,11 @@
 //! Tetrahedral SMARTS parity checks performed after a complete atom mapping.
 
-use chematic_core::{AtomIdx, Chirality, Molecule, STEREO_H_SENTINEL};
+use chematic_core::ez_markers::EzFact;
+use chematic_core::ez_markers::{direction_is_up, read_ez_facts};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL};
+use std::sync::OnceLock;
 
-use crate::query::{AtomPrimitive, AtomQuery, QueryMolecule};
+use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
 const UNMAPPED: u32 = u32::MAX;
 
@@ -40,6 +43,7 @@ pub(crate) fn mapped_chirality_compatible(
     mapping: &[u32],
     mol: &Molecule,
     use_chirality: bool,
+    target_ez_facts: &OnceLock<Option<(Vec<EzFact>, bool)>>,
     mut eval_primitive: impl FnMut(&AtomPrimitive, AtomIdx) -> bool,
 ) -> bool {
     if !use_chirality {
@@ -62,6 +66,96 @@ pub(crate) fn mapped_chirality_compatible(
                     &mut eval_primitive,
                 )
             })
+    }) && mapped_alkene_compatible(query, mol, target_ez_facts, |query_atom| {
+        mapping
+            .get(query_atom)
+            .copied()
+            .filter(|&target| target != UNMAPPED)
+            .map(AtomIdx)
+    })
+}
+
+/// Check the relative sides encoded by two directional query bonds flanking
+/// a double bond. An isolated `/` or `\` has no E/Z meaning, just as in RDKit.
+/// Compare sides of the mapped substituents, so a reversed atom order or a
+/// marker on the other substituent cannot invert the answer.
+pub(crate) fn mapped_alkene_compatible(
+    query: &QueryMolecule,
+    mol: &Molecule,
+    target_ez_facts: &OnceLock<Option<(Vec<EzFact>, bool)>>,
+    mapped: impl Fn(usize) -> Option<AtomIdx>,
+) -> bool {
+    for bond in &query.bonds {
+        if bond.query != BondQuery::Primitive(BondPrimitive::Double) {
+            continue;
+        }
+        let (Some((left_ref, left_up)), Some((right_ref, right_up))) = (
+            query_directional_end(query, bond.atom1, bond.atom2),
+            query_directional_end(query, bond.atom2, bond.atom1),
+        ) else {
+            continue;
+        };
+        let (Some(left), Some(right)) = (mapped(bond.atom1), mapped(bond.atom2)) else {
+            return false;
+        };
+        let Some((target_double, _)) = mol.bond_between(left, right) else {
+            return false;
+        };
+        let facts = target_ez_facts.get_or_init(|| read_ez_facts(mol));
+        let Some((target_facts, _)) = facts else {
+            return false;
+        };
+        let Some(fact) = target_facts
+            .iter()
+            .find(|fact| fact.double == target_double)
+        else {
+            return false;
+        };
+        let (Some(left_ref), Some(right_ref)) = (mapped(left_ref), mapped(right_ref)) else {
+            return false;
+        };
+        let Some((left_bond, _)) = mol.bond_between(left, left_ref) else {
+            return false;
+        };
+        let Some((right_bond, _)) = mol.bond_between(right, right_ref) else {
+            return false;
+        };
+        let side = |end: AtomIdx, reference: BondIdx| {
+            fact.ends.iter().find(|part| part.atom == end).map(|part| {
+                if part.reference == reference {
+                    part.up
+                } else {
+                    !part.up
+                }
+            })
+        };
+        if side(left, left_bond)
+            .zip(side(right, right_bond))
+            .is_none_or(|(target_left, target_right)| {
+                (left_up == right_up) != (target_left == target_right)
+            })
+        {
+            return false;
+        }
+    }
+    true
+}
+
+fn query_directional_end(query: &QueryMolecule, end: usize, other: usize) -> Option<(usize, bool)> {
+    query.adj[end].iter().find_map(|&(bond_idx, reference)| {
+        if reference == other {
+            return None;
+        }
+        let bond = &query.bonds[bond_idx];
+        let direction = match bond.query {
+            BondQuery::Primitive(BondPrimitive::Up) => BondOrder::Up,
+            BondQuery::Primitive(BondPrimitive::Down) => BondOrder::Down,
+            _ => return None,
+        };
+        Some((
+            reference,
+            direction_is_up(direction, AtomIdx(bond.atom1 as u32), AtomIdx(end as u32)),
+        ))
     })
 }
 

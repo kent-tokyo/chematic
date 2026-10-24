@@ -533,6 +533,8 @@ fn atom_query_uses_ring_size(q: &AtomQuery) -> bool {
 /// computed under a budget remember it; another budget recomputes them.
 #[derive(Default)]
 struct TargetCache {
+    /// Target E/Z geometry, derived once for stereo-aware queries.
+    ez_facts: OnceLock<Option<(Vec<chematic_core::ez_markers::EzFact>, bool)>>,
     /// [`build_rdkit_parity_ring_model`] on the SSSR.
     parity_model: OnceLock<(
         RdkitRingModelBudget,
@@ -987,7 +989,12 @@ fn mapped_chirality_compatible(
         state
             .get(q)
             .is_some_and(|target| eval_atom_query_mapped(&atom.query, q, target, query, state, ctx))
-    })
+    }) && crate::match_chirality::mapped_alkene_compatible(
+        query,
+        ctx.mol,
+        &ctx.cache.ez_facts,
+        |q| state.get(q),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -1143,6 +1150,10 @@ fn eval_bond_primitive(
         BondPrimitive::DativeBackward => order == BondOrder::Dative && !forward,
     }
 }
+
+#[cfg(test)]
+#[path = "rdkit_parity_match_stereo_tests.rs"]
+mod stereo_tests;
 
 #[cfg(test)]
 mod tests {

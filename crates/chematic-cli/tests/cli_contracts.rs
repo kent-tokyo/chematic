@@ -330,7 +330,15 @@ fn conversion_supports_files_and_errors_use_stderr() {
 
 #[test]
 fn every_cli_algorithm_and_resource_limit_has_an_executable_contract() {
-    for algorithm in ["ecfp4", "ecfp6", "maccs", "rdkit_rdk", "rdkit_torsion"] {
+    for algorithm in [
+        "ecfp4",
+        "ecfp6",
+        "maccs",
+        "rdkit_morgan",
+        "rdkit_pattern",
+        "rdkit_rdk",
+        "rdkit_torsion",
+    ] {
         let fingerprint = json_output(&["fingerprint", "c1ccccc1O", "--algorithm", algorithm], "");
         assert_eq!(fingerprint["algorithm"], algorithm);
         assert!(fingerprint["popcount"].as_u64().unwrap() > 0);
@@ -373,6 +381,75 @@ fn every_cli_algorithm_and_resource_limit_has_an_executable_contract() {
             assert!(!output.status.success(), "{args:?}");
         }
     }
+}
+
+#[test]
+fn rdkit_compatible_fingerprints_match_independent_ethanol_oracle() {
+    // RDKit 2025.09.3: GetMorganGenerator(radius=2, fpSize=2048) and
+    // Chem.PatternFingerprint(mol, fpSize=2048), both on MolFromSmiles("CCO").
+    let morgan = json_output(&["fingerprint", "CCO", "--algorithm", "rdkit_morgan"], "");
+    assert_eq!(morgan["set_bits"], json!([80, 222, 294, 807, 1057, 1410]));
+    let pattern = json_output(&["fingerprint", "CCO", "--algorithm", "rdkit_pattern"], "");
+    assert_eq!(
+        pattern["set_bits"],
+        json!([
+            54, 173, 217, 429, 622, 759, 778, 874, 946, 967, 1022, 1033, 1061, 1236, 1289, 1295
+        ])
+    );
+    let batch = json_output(
+        &["batch-fingerprints", "--algorithm", "rdkit_morgan"],
+        "CCO\n",
+    );
+    assert_eq!(
+        batch["records"][0]["fingerprint"]["set_bits"],
+        morgan["set_bits"]
+    );
+}
+
+#[test]
+fn stereo_search_option_matches_rdkit_enantiomer_behavior() {
+    // RDKit GetSubstructMatches(query, useChirality=True) distinguishes these
+    // alanine enantiomers; its default useChirality=False accepts both.
+    let target = "N[C@@H](C)C(=O)O";
+    let opposite = "N[C@H](C)C(=O)O";
+    let default = json_output(&["substructure", target, opposite], "");
+    assert_eq!(default["match_count"], 1);
+    assert_eq!(default["use_chirality"], false);
+    let strict = json_output(&["substructure", target, opposite, "--use-chirality"], "");
+    assert_eq!(strict["match_count"], 0);
+    assert_eq!(strict["use_chirality"], true);
+    let same = json_output(&["substructure", target, target, "--use-chirality"], "");
+    assert_eq!(same["matches"], json!([[0, 1, 2, 3, 4, 5]]));
+
+    let batch = json_output(
+        &["batch-substructure", "--use-chirality"],
+        &format!("{target}\t{opposite}\n{target}\t{target}\n"),
+    );
+    assert_eq!(batch["records"][0]["substructure"]["match_count"], 0);
+    assert_eq!(batch["records"][1]["substructure"]["match_count"], 1);
+
+    // The same option must also enforce E/Z and reject an @ tag that RDKit
+    // removes from a symmetric cyclobutane carbon on MolFromSmiles.
+    let ez_opposite = json_output(
+        &["substructure", "F/C=C/F", "F/C=C\\F", "--use-chirality"],
+        "",
+    );
+    assert_eq!(ez_opposite["match_count"], 0);
+    let symmetric_ring = json_output(
+        &[
+            "substructure",
+            "C1[C@H](F)CC1",
+            "C1[C@H](F)CC1",
+            "--use-chirality",
+        ],
+        "",
+    );
+    assert_eq!(symmetric_ring["match_count"], 0);
+    let nonstereogenic_alkene = json_output(
+        &["substructure", "C/C=C(/C)C", "C/C=C/C", "--use-chirality"],
+        "",
+    );
+    assert_eq!(nonstereogenic_alkene["match_count"], 0);
 }
 
 #[test]
