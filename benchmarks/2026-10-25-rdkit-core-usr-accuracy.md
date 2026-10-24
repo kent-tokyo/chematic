@@ -13,11 +13,12 @@ the comparator script SHA-256 was
 
 The one remaining stress-row mismatch from the previous packet contained a
 triple bond in an aromatic ring. RDKit accepted the graph with explicit
-valence 4 at the affected carbon. CheMatic's RDKit-compatible sanitizer added
-an extra floor-sum check and rejected it. Removing that non-RDKit check lets
-the common sanitized graph reach all five fingerprint implementations.
-The separate non-aromatic valence check and a six-bond aromatic rejection
-remain in the regression tests.
+valence 4 at the affected carbon. CheMatic's strict sanitizer added a
+floor-sum check and rejected it. A narrow exception for an aromatic triple
+bond to another aromatic atom, without an explicit double bond at that atom,
+lets this RDKit-accepted graph reach all five fingerprint implementations.
+The strict lower-bound refusals for the separate RDKit #9735 invalid-input
+packet remain in place, as do non-aromatic and six-bond valence checks.
 
 | Corpus | RDKit-accepted rows | Exact per fingerprint |
 | --- | ---: | ---: |

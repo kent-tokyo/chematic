@@ -114,6 +114,11 @@ donor/acceptor rules. The bound is checked against the existing charge-aware
 allowed valence; it does not impose carbon's maximum on other elements.
 This prevents aromatic correction from erasing a fifth explicit valence while
 preserving normal fused aromatic atoms with 1.5-order bookkeeping.
+An aromatic atom bonded by a triple bond to another aromatic atom, with no
+explicit double bond at that atom, follows RDKit's corrected valence instead.
+This narrow case is needed for the accepted stress-corpus graph measured in
+[`2026-10-25-rdkit-core-usr-accuracy.md`](../../benchmarks/2026-10-25-rdkit-core-usr-accuracy.md);
+the #9735 refusal packet remains a separate strict-chemistry contract.
 
 Rust `rdkit_canonical_smiles` and `rdkit_sanitized_model`, Python
 `Mol.rdkit_smiles`/`rdkit_smiles_checked` and WASM `MolHandle.rdkit_smiles`

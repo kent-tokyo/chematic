@@ -574,8 +574,26 @@ impl Mol {
         }
         let dv = periodic::default_valence(eff);
         let valens = periodic::valence_list(eff);
+        let mut minimum_explicit = 0;
         // `unsigned int dv`: -1 never compares below `accum`.
         if dv >= 0 && accum > f64::from(dv) && self.is_aromatic_atom(a) {
+            // Keep the strict lower bound for #9735's exocyclic multiple-bond
+            // overvalence. RDKit does accept aromatic ring triples in the
+            // fingerprint stress corpus, so only that specific bond shape
+            // uses RDKit's corrected valence without the extra floor.
+            let aromatic_triple = self.atom_bonds[a].iter().any(|&b| {
+                let bond = &self.bonds[b];
+                bond.bt == BondType::Triple && self.atoms[bond.other(a)].aromatic
+            }) && !self.atom_bonds[a]
+                .iter()
+                .any(|&b| self.bonds[b].bt == BondType::Double);
+            if strict && !aromatic_triple {
+                minimum_explicit = self.atom_bonds[a]
+                    .iter()
+                    .map(|&b| self.bonds[b].valence_contrib(a).floor() as i32)
+                    .sum::<i32>()
+                    + atom.num_explicit_hs as i32;
+            }
             let mut pval = dv;
             for &val in valens {
                 if val == -1 {
@@ -593,6 +611,7 @@ impl Mol {
         accum += 0.1;
         let res = accum.round() as i32;
         if strict {
+            let checked_valence = res.max(minimum_explicit);
             let mut max_valence = i32::from(*valens.last().unwrap_or(&-1));
             let mut offset = 0;
             if self.can_be_hypervalent(a, eff) {
@@ -602,10 +621,12 @@ impl Mol {
             if atom.anum == 1 && atom.charge == -1 {
                 max_valence = 2;
             }
-            if max_valence >= 0 && *ovalens.last().unwrap_or(&-1) >= 0 && res + offset > max_valence
+            if max_valence >= 0
+                && *ovalens.last().unwrap_or(&-1) >= 0
+                && checked_valence + offset > max_valence
             {
                 return Err(RdkitSmilesError::Sanitization(format!(
-                    "Explicit valence for atom # {a} {}, {res}, is greater than permitted",
+                    "Explicit valence for atom # {a} {}, {checked_valence}, is greater than permitted",
                     periodic::symbol(atom.anum)
                 )));
             }
@@ -1007,12 +1028,17 @@ mod primitive_contract_tests {
     use super::*;
 
     #[test]
-    fn strict_aromatic_valence_uses_rdkit_correction_and_dative_direction() {
+    fn strict_aromatic_valence_keeps_overvalence_guard_and_dative_direction() {
         let mut center = Atom::new(6);
         center.aromatic = true;
         let mol = star(center, 5);
         assert_eq!(mol.calc_explicit_valence_value(0, false).unwrap(), 4);
-        assert_eq!(mol.calc_explicit_valence_value(0, true).unwrap(), 4);
+        let error = mol.calc_explicit_valence_value(0, true).unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("C, 5, is greater than permitted")
+        );
         let mut center = Atom::new(6);
         center.aromatic = true;
         let mol = star(center, 6);
@@ -1035,8 +1061,6 @@ mod primitive_contract_tests {
             let metal = mol.add_atom(Atom::new(26));
             let (begin, end) = if donor { (0, metal) } else { (metal, 0) };
             mol.add_bond(Bond::new(begin, end, BondType::Dative));
-            assert_eq!(mol.calc_explicit_valence_value(0, true), Ok(4));
-            mol.atoms[0].aromatic = false;
             assert_eq!(mol.calc_explicit_valence_value(0, true).is_ok(), donor);
         }
     }
