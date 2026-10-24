@@ -2,6 +2,7 @@
   "schema": "chematic.cml-lexical-meaning-report.v1",
   "baseline": true,
   "baseline_runtime_commit": "342d1d5f9ad09aa6ade4e3079a902cba856209e2",
+  "reader_comparison_base": "fcbf6d0a8c901dee5220cca965cf119c0a3b7b46",
   "baseline_reader_sources": [
     {
       "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/cml.rs",
@@ -25,12 +26,12 @@
     }
   ],
   "scope": "synthetic development packet; graph/H observation only; native tests cover 2D coordinates separately; no schema/stereo/aromaticity/query/speed claim",
-  "head": "fcbf6d0a8c901dee5220cca965cf119c0a3b7b46",
+  "head": "99abb16d1b708c6e06e85a8c5d37cc6f3f5b0a22",
   "sources": [],
   "runner": {
     "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_cml_lexical_meaning.py",
-    "sha256": "80f927e0afa23fc6be03d7d8eccd8acd91681a3ba18e206b5f31907c25f9f8e2",
-    "size_bytes": 10515
+    "sha256": "64973bec4c09fefd8af1887bd362c465cbdf3a6dc89d7d7d95a05fc22dc0ec6f",
+    "size_bytes": 10647
   },
   "observer": {
     "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
