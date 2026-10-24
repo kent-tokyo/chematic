@@ -3392,6 +3392,8 @@ def from_cdxml(cdxml_str: str, *, infer_nondirectional_stereo: bool = False) -> 
     Opt in to infer tetrahedral stereo from non-directional Bold/Hash/Dash
     bonds. Defaults to False; ambiguous or degenerate drawings abstain.
     Only the first molecular fragment is returned.
+    Retains quadruple and directed dative bonds. Unsupported declared bond
+    orders raise ValueError rather than becoming single; absence defaults to 1.
 
     Raises:
         ValueError: on parse failure.

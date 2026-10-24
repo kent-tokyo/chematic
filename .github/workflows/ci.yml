@@ -322,6 +322,8 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_cjson_source_conversion -q
       - name: mmCIF numeric preservation observer
         run: .venv/bin/python -m unittest scripts.tests.test_mmcif_numeric_observer -q
+      - name: CDXML bond meaning observer
+        run: .venv/bin/python -m unittest scripts.tests.test_cdxml_bond_observer -q
       - name: Run pytest (chematic-py)
         run: .venv/bin/python -m pytest crates/chematic-py/tests/ -q
       - name: PDBQT numeric preservation contract

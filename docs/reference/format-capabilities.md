@@ -140,6 +140,7 @@ Use these pages when the short matrix is not enough:
 - [Extended XYZ output integrity](extxyz-output-integrity.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
+- [CDXML bond class and direction](cdxml-bond-meaning.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),
   [MOPAC Cartesian](openbabel-mopac-cartesian.md),
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)
