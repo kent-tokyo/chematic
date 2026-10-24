@@ -297,6 +297,8 @@ jobs:
         run: .venv/bin/python -m unittest scripts.tests.test_cjson_checked_observer -q
       - name: MOL2 CJSON projection observer
         run: .venv/bin/python -m unittest scripts.tests.test_mol2_cjson_common -q
+      - name: MOL2 numeric preservation observer
+        run: .venv/bin/python -m unittest scripts.tests.test_mol2_numeric_preservation -q
       - name: CJSON/MOL2 indexed charge observer
         run: .venv/bin/python -m unittest scripts.tests.test_cjson_mol2_formal_charges -q
       - name: CJSON source-field observer contract
