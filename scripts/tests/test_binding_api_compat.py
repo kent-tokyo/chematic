@@ -1,11 +1,14 @@
 """Unit tests for release-to-release binding compatibility helpers."""
 
 import unittest
+from unittest.mock import patch
 
 from scripts.checks.check_binding_api_compat import (
+    ROOT,
     dts_surface,
     json_contract_surface,
     public_python_api,
+    tagged_text,
 )
 
 
@@ -40,6 +43,19 @@ export class Mol {
             '"bindings":["wasm","rust"]}]}'
         )
         self.assertEqual(surface, {("parse", "fixtures", ("rust", "wasm"))})
+
+    @patch("scripts.checks.check_binding_api_compat.subprocess.check_output")
+    def test_tagged_text_uses_repository_relative_path(self, check_output) -> None:
+        check_output.return_value = "declarations"
+
+        text = tagged_text("v1.2.0", ROOT / "demo/pkg/chematic_wasm.d.ts")
+
+        self.assertEqual(text, "declarations")
+        check_output.assert_called_once_with(
+            ["git", "show", "v1.2.0:demo/pkg/chematic_wasm.d.ts"],
+            cwd=ROOT,
+            text=True,
+        )
 
 
 if __name__ == "__main__":

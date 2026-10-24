@@ -20,7 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 PYI = Path("crates/chematic-py/python/chematic/__init__.pyi")
 PYPROJECT = Path("crates/chematic-py/pyproject.toml")
-WASM_BASELINE = ROOT / "demo/pkg/chematic_wasm.d.ts"
+WASM_BASELINE = Path("demo/pkg/chematic_wasm.d.ts")
 CROSS_BINDING_CONTRACT = Path("validation/cross_binding_contract.json")
 
 
@@ -123,6 +123,10 @@ def dts_surface(text: str) -> set[str]:
 
 
 def tagged_text(baseline: str, path: Path) -> str:
+    try:
+        path = path.relative_to(ROOT)
+    except ValueError:
+        pass
     return subprocess.check_output(
         ["git", "show", f"{baseline}:{path}"], cwd=ROOT, text=True
     )
