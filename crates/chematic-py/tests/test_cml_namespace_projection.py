@@ -5,7 +5,10 @@ import struct
 import pytest
 import chematic
 
-PACKET=json.loads((Path(__file__).parents[3]/"validation/cml_namespace_projection/cases.json").read_text())
+PACKET=json.loads(
+    (Path(__file__).parents[3]/"validation/cml_namespace_projection/cases.json")
+    .read_text(encoding="utf-8")
+)
 
 def layout(text,variant):
     if variant=="compact":return text
