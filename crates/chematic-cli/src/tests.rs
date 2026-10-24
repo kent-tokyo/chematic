@@ -599,3 +599,41 @@ fn gjf_document_checks_every_job_without_changing_single_job_conversion() {
         assert!(crate::conversion_format::gjf_document(source, false, cap).is_err());
     }
 }
+
+#[test]
+fn moljson_hydrogen_authority_survives_cli_conversion() {
+    let packet: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/moljson_hydrogens/cases.json"
+    ))
+    .unwrap();
+    for case in packet["cases"].as_array().unwrap() {
+        let input = case["input"].as_str().unwrap();
+        let expected = chematic_smiles::canonical_smiles(
+            &chematic_smiles::parse(case["expected_smiles"].as_str().unwrap()).unwrap(),
+        );
+        assert_eq!(
+            convert_text(input, "moljson", "smiles").unwrap(),
+            expected,
+            "{}",
+            case["id"]
+        );
+        let output = convert_text(input, "moljson", "moljson").unwrap();
+        let value: serde_json::Value = serde_json::from_str(&output).unwrap();
+        let counts: Vec<_> = value["atoms"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|a| a["hydrogens"].clone())
+            .collect();
+        assert_eq!(serde_json::json!(counts), case["expected_hydrogens"]);
+    }
+    for hydrogens in packet["invalid_hydrogens"].as_array().unwrap() {
+        let input = serde_json::json!({"atoms":[{"id":"a1","element":"C","hydrogens":hydrogens}],"bonds":[]}).to_string();
+        assert!(
+            convert_text(&input, "moljson", "smiles")
+                .unwrap_err()
+                .to_string()
+                .contains("hydrogens")
+        );
+    }
+}
