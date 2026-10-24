@@ -10,8 +10,8 @@
 //! Against RDKit 2026.09.1's generator, the pinned CLI comparison is
 //! 4,072/4,072 exact on `stress-v1.smi`, 10,000/10,000 on the browser corpus,
 //! and 5,000/5,000 on `descriptor_census_corpus.smi`. These fixed-corpus
-//! results do not establish universal bit-exactness; see the
-//! three-membered-ring limitation at [`triangle_closure_paths`].
+//! results do not establish universal bit-exactness. A separate substituted
+//! cyclopropane stress set is in `validation/results/rdkit-torsion-triangle-parity-2026-10-25.json`.
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::fmt;
@@ -446,17 +446,13 @@ fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
 /// 4-atom path can even exist) still yields exactly one nonzero torsion
 /// entry, which can only come from this closed walk.
 ///
-/// One entry per triangle, canonically starting from its lowest-`AtomIdx`
-/// member (found once, when iterating that member as `a`, by requiring
-/// `b.0 > a.0` and `c.0 > b.0`) -- [`torsion_hash`]'s own forward/reverse
-/// canonicalization handles the rest. This matches RDKit's observed output
-/// for a symmetric ring exactly; an *asymmetric* ring bearing different
-/// substituents on two or more ring atoms can add further closed-walk
-/// entries beyond this one (RDKit was observed emitting two for a
-/// 1,2-disubstituted cyclopropane) -- the exact rule for those additional
-/// entries is not yet reverse-engineered, so they are not generated here.
-/// This is a known, narrower residual: still not full bit-exact parity for
-/// molecules with an *asymmetrically substituted* 3-membered ring.
+/// One entry per triangle, starting from its lowest-`AtomIdx` member (found
+/// once, when iterating that member as `a`, by requiring `b.0 > a.0` and
+/// `c.0 > b.0`). [`torsion_hash`] canonicalizes the walk direction. RDKit's
+/// `FindAllPathsOfLengthN(mol, 4, useBonds=false)` returns this same single
+/// closure for bare and asymmetrically substituted cyclopropanes. Its other
+/// torsion entries in those molecules are four-distinct-atom paths. The
+/// pinned 343-row substituted-ring comparison checks sparse codes and bits.
 /// An atom RDKit's path search skips without `useHs` (atomic number 1).
 fn is_hydrogen(mol: &Molecule, idx: AtomIdx) -> bool {
     let a = mol.atom(idx);
@@ -542,8 +538,7 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// scheme) and this function produce structurally different bit patterns
 /// even before considering the atom-code/hashing differences.
 ///
-/// An asymmetrically substituted three-membered ring can require more than
-/// one closure entry per ring (see [`triangle_closure_paths`]).
+/// Three-membered-ring closures are enumerated by [`triangle_closure_paths`].
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     chematic_smiles::with_rdkit_model_molecule(mol, rdkit_torsion_fp_impl)
 }
@@ -937,6 +932,35 @@ mod tests {
         // so an empty fingerprint here would itself be a parity bug.
         let m = mol("C1CC1");
         assert!(rdkit_torsion_fp(&m).popcount() > 0);
+    }
+
+    #[test]
+    fn asymmetric_cyclopropane_sparse_counts_match_rdkit_2026_09_1() {
+        let m = mol("FC1C(Cl)C1");
+        assert_eq!(
+            rdkit_torsion_sparse_counts(&m),
+            vec![
+                (4572069922, 1),
+                (17188536354, 1),
+                (17188536865, 1),
+                (34368405538, 1),
+                (34368406049, 1),
+                (34368406144, 1),
+            ]
+        );
+        let m = mol("FC1C(Cl)C1Br");
+        assert_eq!(
+            rdkit_torsion_sparse_counts(&m),
+            vec![
+                (4572070434, 1),
+                (17188536866, 2),
+                (34368406050, 2),
+                (34368406144, 1),
+                (47253307938, 2),
+                (47253308032, 1),
+                (47253308160, 1),
+            ]
+        );
     }
 
     #[test]
