@@ -4,6 +4,70 @@ use chematic_core::MoleculeBuilder;
 use serde_json::Value;
 
 #[test]
+fn descriptor_distance_limits_and_diagnostics_are_explicit() {
+    use crate::descriptor_distances::{
+        DescriptorDistanceError, MAX_DESCRIPTOR_FEATURES, MAX_DESCRIPTOR_ROWS,
+        euclidean_distance_matrix_checked,
+    };
+
+    let variants = [
+        DescriptorDistanceError::RowLimit,
+        DescriptorDistanceError::FeatureLimit,
+        DescriptorDistanceError::Ragged {
+            row: 2,
+            expected: 3,
+            actual: 1,
+        },
+        DescriptorDistanceError::Nonfinite { row: 1, column: 2 },
+        DescriptorDistanceError::WorkLimit,
+        DescriptorDistanceError::Allocation,
+        DescriptorDistanceError::NumericalRange {
+            first: 3,
+            second: 1,
+        },
+    ];
+    for error in variants {
+        assert!(!error.to_string().is_empty());
+        assert!(std::error::Error::source(&error).is_none());
+    }
+
+    let too_many_rows = vec![Vec::<f64>::new(); MAX_DESCRIPTOR_ROWS + 1];
+    assert_eq!(
+        euclidean_distance_matrix_checked(&too_many_rows),
+        Err(DescriptorDistanceError::RowLimit)
+    );
+    let too_wide = vec![vec![0.0; MAX_DESCRIPTOR_FEATURES + 1]];
+    assert_eq!(
+        euclidean_distance_matrix_checked(&too_wide),
+        Err(DescriptorDistanceError::FeatureLimit)
+    );
+    assert!(matches!(
+        euclidean_distance_matrix_checked(&[vec![0.0, 1.0], vec![2.0]]),
+        Err(DescriptorDistanceError::Ragged { row: 1, .. })
+    ));
+    assert_eq!(
+        euclidean_distance_matrix_checked(&[vec![0.0], vec![f64::NAN]]),
+        Err(DescriptorDistanceError::Nonfinite { row: 1, column: 0 })
+    );
+    let costly = vec![vec![0.0; MAX_DESCRIPTOR_FEATURES]; MAX_DESCRIPTOR_ROWS];
+    assert_eq!(
+        euclidean_distance_matrix_checked(&costly),
+        Err(DescriptorDistanceError::WorkLimit)
+    );
+    assert!(matches!(
+        euclidean_distance_matrix_checked(&[vec![f64::MAX], vec![-f64::MAX]]),
+        Err(DescriptorDistanceError::NumericalRange {
+            first: 1,
+            second: 0
+        })
+    ));
+    assert_eq!(
+        euclidean_distance_matrix_checked(&[Vec::<f64>::new(), Vec::new()]).unwrap(),
+        vec![0.0]
+    );
+}
+
+#[test]
 fn carbon_distance_edges_match_closed_form_stars_and_double_stars() {
     use chematic_core::{Atom, BondOrder, Element};
     let mut graphs = Vec::new();

@@ -15,6 +15,57 @@ fn check(cases: &[(&str, &str)]) {
 }
 
 #[test]
+fn pdb_projection_covers_coordinate_validation_and_large_atom_names() {
+    let ethane = crate::parse("CC").unwrap();
+    let error = super::rdkit_pdb_block(&ethane, Some(&[[0.0; 3]])).unwrap_err();
+    assert!(error.to_string().contains("expected 2 coordinates, got 1"));
+    let block = super::rdkit_pdb_block(&ethane, Some(&[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])).unwrap();
+    assert!(block.contains("   1.000   2.000   3.000"));
+
+    for count in [100, 360] {
+        let source = std::iter::repeat_n("[C]", count)
+            .collect::<Vec<_>>()
+            .join(".");
+        let molecule = crate::parse(&source).unwrap();
+        let block = super::rdkit_pdb_block(&molecule, None).unwrap();
+        assert_eq!(
+            block
+                .lines()
+                .filter(|line| line.starts_with("HETATM"))
+                .count(),
+            count
+        );
+        assert!(block.contains(if count == 100 { " CA0 " } else { " CAA " }));
+    }
+}
+
+#[test]
+fn ogb_projection_covers_less_common_categories_and_ignores_cached_cip() {
+    let cases = [
+        "C#N",
+        "F/C=C\\F",
+        "F[C@@](Cl)(Br)I",
+        "P(F)(F)(F)(F)F",
+        "S(F)(F)(F)(F)(F)F",
+        "[Fe+6]",
+        "[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+    ];
+    for source in cases {
+        let molecule = crate::parse(source).unwrap();
+        let graph = super::ogb_graph_features_with_options(&molecule, false)
+            .unwrap_or_else(|error| panic!("{source}: {error}"));
+        assert_eq!(graph.node_feat.len(), molecule.atom_count(), "{source}");
+    }
+
+    let mut chiral = crate::parse("F[C@](Cl)(Br)I").unwrap();
+    let center = chematic_core::AtomIdx(1);
+    chiral.set_cip_code(center, Some(chematic_core::CipCode::R));
+    let cached = super::ogb_graph_features(&chiral).unwrap();
+    chiral.set_cip_code(center, None);
+    assert_eq!(cached, super::ogb_graph_features(&chiral).unwrap());
+}
+
+#[test]
 fn tetrahedral_centers() {
     check(&[
         ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O"),
@@ -213,6 +264,95 @@ fn native_canonical_smiles_is_unchanged() {
     let native = crate::canonical_smiles(&mol);
     let _ = rdkit_canonical_smiles(&mol).expect("rdkit smiles");
     assert_eq!(crate::canonical_smiles(&mol), native);
+}
+
+#[test]
+fn uncommon_models_keep_checked_rdkit_contracts() {
+    let cases = [
+        "[H][C@](F)(Cl)Br",
+        "F/C=C(/Cl)Br",
+        "N->[Pt](<-N)(Cl)Cl",
+        "F[Pt@SP1](Cl)(Br)I",
+        "C=C=C",
+        "[13CH3][2H]",
+        "[Na+].[O-]C(=O)C",
+        "[H]O[H]",
+        "c1cc[nH]c1",
+        "C1CCC2(CC1)CC2",
+    ];
+    for text in cases {
+        let mol = crate::parse(text).unwrap_or_else(|error| panic!("{text}: {error}"));
+        let canonical = rdkit_canonical_smiles(&mol)
+            .unwrap_or_else(|error| panic!("canonical {text}: {error}"));
+        assert!(!canonical.is_empty());
+        let model = super::rdkit_sanitized_model(&mol)
+            .unwrap_or_else(|error| panic!("model {text}: {error}"));
+        assert_eq!(model.atoms.len(), mol.atom_count());
+        assert_eq!(model.bonds.len(), mol.bond_count());
+        let _ = super::rdkit_cleanup_canonical_smiles(&mol);
+        let _ = super::rdkit_atom_stereocenter_counts(&mol);
+        let _ = super::rdkit_cleanup_edits(&mol);
+        let _ = super::rdkit_legacy_stereo(&mol);
+        let _ = super::rdkit_stereoisomer_smiles(&mol, 64);
+        let _ = super::rdkit_pdb_block(&mol, None);
+        let _ = super::rdkit_smarts(&mol, true, None);
+        let _ = super::rdkit_cx_smiles(&mol, &Default::default());
+        let _ = super::rdkit_fragment_smiles(&mol, &[0], None, &Default::default());
+        let _ = super::rdkit_num_atoms(&mol);
+        let _ = super::rdkit_detect_chemistry_problems(&mol);
+        let _ = super::rdkit_detect_chemistry_problems_sanitized(&mol);
+        assert_eq!(
+            super::rdkit_random_smiles(&mol, 2, 17, &Default::default())
+                .unwrap()
+                .len(),
+            2
+        );
+        assert_eq!(
+            super::rdkit_random_smiles(&mol, 1, 0, &Default::default())
+                .unwrap()
+                .len(),
+            1
+        );
+        let _ = super::rdkit_cx_smarts(&mol);
+        let _ = super::rdkit_murcko_scaffold(&mol);
+        let _ = super::rdkit_2d_coords(&mol);
+        let _ = super::rdkit_mol_block_2d(&mol);
+        let _ = super::rdkit_canonical_tautomer(&mol);
+        let _ = super::rdkit_tautomer_score(&mol);
+        let _ = super::rdkit_hydrogen_suppressed(&mol);
+        let _ = super::rdkit_hybridizations(&mol);
+        let _ = super::rdkit_crippen_contribs(&mol);
+        let _ = super::rdkit_crippen_contribs_no_hs(&mol);
+        let _ = super::rdkit_crippen_logp_mr(&mol);
+        let _ = super::rdkit_chiral_centers(&mol, true)
+            .unwrap_or_else(|error| panic!("centres {text}: {error}"));
+        let _ = super::rdkit_stereoisomer_count(&mol);
+        let _ = super::rdkit_num_pi_electrons(&mol);
+        let _ = super::rdkit_parsed_molecule(&mol);
+        let _ = super::rdkit_added_hs_molecule(&mol);
+        let _ = super::rdkit_hydrogen_suppressed_with_map(&mol);
+    }
+
+    let explicit_h = crate::parse("[H][C@](F)(Cl)Br").unwrap();
+    let (suppressed, kept) = super::rdkit_hydrogen_suppressed_with_map(&explicit_h)
+        .expect("an explicit removable hydrogen has a source map");
+    assert_eq!(suppressed.atom_count(), kept.len());
+
+    let ordinary = crate::parse("CCO").unwrap();
+    assert!(super::rdkit_hydrogen_suppressed_with_map(&ordinary).is_none());
+    let added = super::rdkit_added_hs_molecule(&ordinary).unwrap();
+    assert!(super::rdkit_parsed_molecule(&added).is_none());
+
+    let bad_ring = crate::parse_template("c1cccc1").unwrap();
+    assert!(
+        !super::rdkit_detect_chemistry_problems(&bad_ring)
+            .unwrap()
+            .is_empty()
+    );
+    assert!(super::rdkit_detect_chemistry_problems_sanitized(&bad_ring).is_err());
+
+    assert!(super::rdkit_smarts_to_smarts("[CX3](=O)[OX2H1]").is_ok());
+    assert!(super::rdkit_reaction_to_smarts("[C:1]=[O:2]>>[C:1][O:2]").is_ok());
 }
 
 #[test]

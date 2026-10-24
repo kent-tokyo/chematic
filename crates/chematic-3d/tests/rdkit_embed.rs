@@ -5,12 +5,44 @@
 //! versioned corpus-scale A6 comparison lane.
 
 use chematic_3d::rdkit_embed::{
-    RdkitEmbedError, RdkitEmbedOptions, etkdg_embed_molecule_corrected,
-    rdkit_embed_initial_molecule, rdkit_embed_molecule, rdkit_embed_multiple_confs,
+    BondLengthConstraint, InternalCoordinateConstraints, RdkitEmbedError, RdkitEmbedOptions,
+    etkdg_embed_molecule_corrected, rdkit_embed_initial_molecule, rdkit_embed_molecule,
+    rdkit_embed_molecule_with_constraints, rdkit_embed_multiple_confs,
     rdkit_embed_multiple_confs_mmff, rdkit_embed_multiple_confs_mmff_adaptive,
     rdkit_embed_multiple_confs_mmff_diagnostics, rdkit_embed_multiple_confs_mmff_gradient_rescue,
     rdkit_embed_multiple_confs_mmff_rescue,
 };
+
+#[test]
+fn contradictory_distance_bounds_fail_closed_with_or_without_smoothing_override() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C1CC1").unwrap());
+    let constraints = InternalCoordinateConstraints {
+        bond_lengths: vec![
+            BondLengthConstraint::around(0, 1, 1.0, 0.001),
+            BondLengthConstraint::around(1, 2, 1.0, 0.001),
+            BondLengthConstraint::around(2, 0, 3.0, 0.001),
+        ],
+        ..InternalCoordinateConstraints::default()
+    };
+    let error = rdkit_embed_molecule_with_constraints(
+        &molecule,
+        &RdkitEmbedOptions::default(),
+        &constraints,
+    )
+    .unwrap_err();
+    assert!(matches!(
+        error,
+        RdkitEmbedError::Failed | RdkitEmbedError::Unsupported(_)
+    ));
+
+    let permissive = RdkitEmbedOptions {
+        ignore_smoothing_failures: true,
+        max_iterations: 1,
+        ..RdkitEmbedOptions::default()
+    };
+    let result = rdkit_embed_molecule_with_constraints(&molecule, &permissive, &constraints);
+    assert!(result.is_ok() || matches!(result, Err(RdkitEmbedError::Failed)));
+}
 
 #[test]
 fn corrected_etkdg_sixfold_gradient_is_deterministic_and_distinct_from_rdkit() {

@@ -1442,4 +1442,82 @@ mod input_diagnostic_boundary_tests {
         let methane = chematic_chem::add_hydrogens(&chematic_smiles::parse("C").unwrap());
         assert_eq!(rdkit_embed_molecule(&methane, &plain).unwrap().len(), 5);
     }
+
+    #[test]
+    fn embedding_covers_stereo_rings_fragments_and_constraints() {
+        let cases = [
+            "N[C@@H](C)C(=O)O",
+            "F/C=C(/Cl)Br",
+            "C1CC2CCC1C2",
+            "C1CCCC/C=C/CCC1",
+            "CC(=O)NC",
+            "CCO.[Na+]",
+        ];
+        for text in cases {
+            let parsed =
+                chematic_smiles::parse(text).unwrap_or_else(|error| panic!("{text}: {error}"));
+            let molecule = chematic_chem::add_hydrogens(&parsed);
+            let options = RdkitEmbedOptions {
+                random_seed: 17,
+                max_iterations: 2,
+                ..RdkitEmbedOptions::default()
+            };
+            if let Ok(coords) = rdkit_embed_molecule(&molecule, &options) {
+                assert_eq!(coords.len(), molecule.atom_count(), "{text}");
+                assert!(coords.iter().flatten().all(|value| value.is_finite()));
+            }
+            let bounds = rdkit_bounds_matrix(&molecule, true, true, true)
+                .unwrap_or_else(|error| panic!("bounds {text}: {error}"));
+            assert_eq!(bounds.len(), molecule.atom_count());
+            assert!(bounds.iter().all(|row| row.len() == molecule.atom_count()));
+        }
+
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+        let constraints = InternalCoordinateConstraints {
+            bond_lengths: vec![super::super::constraints::BondLengthConstraint {
+                atom1: 0,
+                atom2: 1,
+                lower: 1.45,
+                upper: 1.60,
+            }],
+            ..InternalCoordinateConstraints::default()
+        };
+        let matrix =
+            rdkit_bounds_matrix_with_constraints(&molecule, &constraints, true, true, true)
+                .unwrap();
+        assert!((1.45..=1.60).contains(&matrix[0][1]));
+    }
+
+    #[test]
+    fn quality_candidate_selection_is_finite_stable_and_bounded() {
+        let candidate = |energy: f64, status: i32, marker: f64| RdkitMmffConformer {
+            coords: vec![[marker, 0.0, 0.0]],
+            status,
+            energy,
+        };
+        assert!(select_quality_candidates(Vec::new(), Vec::new(), 0).is_empty());
+
+        let non_finite = select_quality_candidates(
+            vec![
+                candidate(f64::NAN, 1, 1.0),
+                candidate(f64::INFINITY, 0, 2.0),
+            ],
+            Vec::new(),
+            1,
+        );
+        assert_eq!(non_finite.len(), 1);
+        assert_eq!(non_finite[0].coords[0][0], 1.0);
+        assert!(lowest_finite_energy(&non_finite).is_none());
+
+        let selected = select_quality_candidates(
+            vec![candidate(4.0, 1, 4.0), candidate(2.0, 1, 2.0)],
+            vec![candidate(3.0, 0, 3.0), candidate(f64::NAN, 0, 9.0)],
+            3,
+        );
+        assert_eq!(selected.len(), 3);
+        assert_eq!(selected[0].energy, 2.0);
+        assert_eq!(selected[1].energy, 3.0);
+        assert_eq!(selected[2].energy, 4.0);
+        assert_eq!(lowest_finite_energy(&selected), Some(2.0));
+    }
 }

@@ -4,6 +4,203 @@ use crate::orca::*;
 use crate::record::MoleculeRecord;
 
 #[test]
+fn public_projection_errors_keep_actionable_context() {
+    use crate::chemdraw::ChemDrawError;
+    use crate::cif::{CifBondWriteError, CifError};
+    use crate::cml_named::CmlNamedError;
+    use crate::mol2_kekule::Mol2KekuleError;
+    use crate::mol2_rmsd::Mol2RmsdError;
+    use crate::mol2_stream::Mol2StreamError;
+    use crate::pdb_conect::PdbConectError;
+    use chematic_core::BondOrder;
+
+    let chemdraw = [
+        ChemDrawError::Invalid {
+            offset: 4,
+            detail: "tag width",
+        },
+        ChemDrawError::Unsupported {
+            offset: 8,
+            tag: 0x1234,
+        },
+        ChemDrawError::MetadataLoss {
+            offset: 12,
+            tag: 0xabcd,
+        },
+        ChemDrawError::Limit {
+            resource: "items",
+            limit: 3,
+        },
+    ];
+    for error in chemdraw {
+        assert!(!error.to_string().is_empty());
+    }
+
+    let cml = [
+        CmlNamedError::SizeLimit,
+        CmlNamedError::IdCount,
+        CmlNamedError::InvalidId { index: 1 },
+        CmlNamedError::DuplicateId { index: 2 },
+        CmlNamedError::CoordinateCount,
+        CmlNamedError::NonFiniteCoordinate { index: 3 },
+        CmlNamedError::Unsupported("query bond".into()),
+    ];
+    for error in cml {
+        assert!(!error.to_string().is_empty());
+        assert!(std::error::Error::source(&error).is_none());
+    }
+
+    let cif = [
+        CifBondWriteError::InvalidInput(CifError::MissingCellParameters),
+        CifBondWriteError::UnsupportedBond {
+            bond: 5,
+            order: BondOrder::QueryAny,
+        },
+        CifBondWriteError::InvalidDistance {
+            bond: 6,
+            distance: f64::NAN,
+        },
+    ];
+    for (index, error) in cif.into_iter().enumerate() {
+        assert!(!error.to_string().is_empty());
+        assert_eq!(std::error::Error::source(&error).is_some(), index == 0);
+    }
+
+    let stream = [
+        Mol2StreamError::ResourceLimit {
+            resource: "records",
+            actual: 5,
+            limit: 4,
+        },
+        Mol2StreamError::ResourceLimit {
+            resource: "bytes",
+            actual: 11,
+            limit: 10,
+        },
+    ];
+    for error in stream {
+        assert!(error.to_string().contains("MOL2 stream"));
+    }
+    for error in [
+        Mol2RmsdError::EmptyReference,
+        Mol2RmsdError::NoHeavyAtoms,
+        Mol2RmsdError::IdentityMismatch { reference_index: 4 },
+        Mol2RmsdError::NonFiniteComputation { reference_index: 5 },
+    ] {
+        assert!(!error.to_string().is_empty());
+    }
+    assert!(
+        Mol2KekuleError::Unsupported("query atom".into())
+            .to_string()
+            .contains("query atom")
+    );
+
+    let pdb = [
+        PdbConectError::InvalidRecord {
+            line: 1,
+            field: "serial",
+        },
+        PdbConectError::UnsupportedRecord {
+            line: 2,
+            record: "LINK",
+        },
+        PdbConectError::DuplicateSerial { line: 3, serial: 7 },
+        PdbConectError::UnknownSerial { line: 4, serial: 8 },
+        PdbConectError::Multiplicity {
+            source: 1,
+            target: 2,
+            forward: 3,
+            reverse: 1,
+        },
+        PdbConectError::Limit {
+            resource: "bonds",
+            limit: 9,
+        },
+    ];
+    for error in pdb {
+        assert!(!error.to_string().is_empty());
+    }
+}
+
+#[test]
+fn cif_bond_projection_checks_orders_distances_and_source_errors() {
+    use crate::cif::{CifBondWriteError, write_cif_with_bonds_checked};
+    use chematic_core::{BondIdx, BondOrder};
+
+    let molecule = chematic_smiles::parse("CC").unwrap();
+    let valid =
+        write_cif_with_bonds_checked(&molecule, &[(0.0, 0.0, 0.0), (1.5, 0.0, 0.0)], None).unwrap();
+    assert!(valid.contains("_geom_bond_distance"));
+    assert!(valid.contains("C1 C2 1.5 . . S"));
+
+    let mut query = molecule.clone();
+    query.set_bond_order(BondIdx(0), BondOrder::QueryAny);
+    assert!(matches!(
+        write_cif_with_bonds_checked(&query, &[(0.0, 0.0, 0.0), (1.5, 0.0, 0.0)], None,),
+        Err(CifBondWriteError::UnsupportedBond { bond: 0, .. })
+    ));
+    assert!(matches!(
+        write_cif_with_bonds_checked(&molecule, &[(0.0, 0.0, 0.0), (0.0, 0.0, 0.0)], None,),
+        Err(CifBondWriteError::InvalidDistance { bond: 0, .. })
+    ));
+    assert!(matches!(
+        write_cif_with_bonds_checked(&molecule, &[(0.0, 0.0, 0.0)], None),
+        Err(CifBondWriteError::InvalidInput(_))
+    ));
+}
+
+#[test]
+fn named_cml_validation_rejects_ambiguous_identity_and_coordinates() {
+    use crate::cml_named::{CmlNamedError, write_cml_named_checked};
+    use chematic_core::{BondIdx, BondOrder};
+
+    let empty = chematic_core::MoleculeBuilder::new().build();
+    assert_eq!(
+        write_cml_named_checked(&empty, &[], None),
+        Err(CmlNamedError::SizeLimit)
+    );
+    let molecule = chematic_smiles::parse("CO").unwrap();
+    assert_eq!(
+        write_cml_named_checked(&molecule, &["a".into()], None),
+        Err(CmlNamedError::IdCount)
+    );
+    for (ids, expected) in [
+        (
+            vec!["1bad".into(), "o".into()],
+            CmlNamedError::InvalidId { index: 0 },
+        ),
+        (
+            vec!["a".into(), "a".into()],
+            CmlNamedError::DuplicateId { index: 1 },
+        ),
+    ] {
+        assert_eq!(
+            write_cml_named_checked(&molecule, &ids, None),
+            Err(expected)
+        );
+    }
+    let ids = vec!["c".into(), "o".into()];
+    assert_eq!(
+        write_cml_named_checked(&molecule, &ids, Some(&[[0.0; 3]])),
+        Err(CmlNamedError::CoordinateCount)
+    );
+    assert_eq!(
+        write_cml_named_checked(
+            &molecule,
+            &ids,
+            Some(&[[f64::NAN, 0.0, 0.0], [1.0, 0.0, 0.0]]),
+        ),
+        Err(CmlNamedError::NonFiniteCoordinate { index: 0 })
+    );
+    let mut query = molecule.clone();
+    query.set_bond_order(BondIdx(0), BondOrder::QueryAny);
+    assert!(matches!(
+        write_cml_named_checked(&query, &ids, None),
+        Err(CmlNamedError::Unsupported(_))
+    ));
+}
+
+#[test]
 fn cif_missing_columns_cells_and_degenerate_geometry_return_typed_diagnostics() {
     use crate::cif::*;
     let frac = "loop_\n_atom_site_type_symbol\n_atom_site_fract_x\n_atom_site_fract_y\n_atom_site_fract_z\nC 0 0 0\n";

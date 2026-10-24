@@ -226,6 +226,102 @@ fn ter_collision_is_an_error_instead_of_renumbering_atoms() {
     );
 }
 
+#[test]
+fn structural_record_boundaries_reject_each_ambiguous_pdb_spelling() {
+    let atom_rows = atoms(TEXT);
+    let atom = atom_rows[0];
+    let anisou = TEXT
+        .lines()
+        .find(|line| line.starts_with("ANISOU"))
+        .unwrap();
+    let ter = TEXT.lines().find(|line| line.starts_with("TER")).unwrap();
+
+    let mut extra_atom = atom.to_string();
+    while extra_atom.len() < 80 {
+        extra_atom.push(' ');
+    }
+    extra_atom.push('X');
+
+    let mut missing_atom_name = atom.to_string();
+    missing_atom_name.replace_range(12..16, "    ");
+    let mut missing_residue_name = atom.to_string();
+    missing_residue_name.replace_range(17..20, "   ");
+    let incomplete_occupancy = atom[..57].to_string();
+
+    let mut mismatched_anisou = anisou.to_string();
+    mismatched_anisou.replace_range(12..16, " XX ");
+    let mut extra_anisou = anisou.to_string();
+    while extra_anisou.len() < 80 {
+        extra_anisou.push(' ');
+    }
+    extra_anisou.push('X');
+
+    let mut wrong_ter = ter.to_string();
+    wrong_ter.replace_range(17..27, " BAD A   1");
+
+    let cases = [
+        (
+            format!("MODEL        1\n{atom}\nEND\n"),
+            "MODEL lacks ENDMDL",
+        ),
+        (format!("MODEL        1\n{atom}\n"), "MODEL lacks ENDMDL"),
+        (
+            format!("MODEL        1\n{atom}\nENDMDL\n{atom}\nEND\n"),
+            "outside single-model",
+        ),
+        (
+            format!("{atom}\nCONECT    1\n{atom}\nEND\n"),
+            "outside single-model",
+        ),
+        (format!("{extra_atom}\nEND\n"), "extra atom fields"),
+        (
+            format!("{missing_atom_name}\nEND\n"),
+            "atom and residue names",
+        ),
+        (
+            format!("{missing_residue_name}\nEND\n"),
+            "atom and residue names",
+        ),
+        (
+            format!("{incomplete_occupancy}\nEND\n"),
+            "incomplete occupancy",
+        ),
+        (
+            format!("{atom}\n{mismatched_anisou}\nEND\n"),
+            "ANISOU identity",
+        ),
+        (
+            format!("{atom}\n{extra_anisou}\nEND\n"),
+            "extra ANISOU fields",
+        ),
+        (
+            format!("{atom}\n{anisou}\n{anisou}\nEND\n"),
+            "duplicate ANISOU",
+        ),
+        (format!("{atom}\n{wrong_ter}\nEND\n"), "TER residue"),
+        (
+            format!("{atom}\nMODEL        2\nENDMDL\nEND\n"),
+            "only one complete",
+        ),
+        (
+            format!("{atom}\nCONECT    1    1                    2\nEND\n"),
+            "beyond four covalent",
+        ),
+        (format!("{atom}\nCONECT\nEND\n"), "CONECT source"),
+        (
+            format!("{atom}\nCONECT         1\nEND\n"),
+            "invalid positive decimal serial",
+        ),
+    ];
+    for (source, expected) in cases {
+        let error = diagnostic(select_pdb_atoms(&source, None, false)).unwrap_err();
+        assert!(
+            error.detail.contains(expected),
+            "{expected}: {error:?}\n{source}"
+        );
+    }
+}
+
 #[path = "support/upstream_diagnostics.rs"]
 mod upstream_diagnostics;
 use upstream_diagnostics::diagnostic;
