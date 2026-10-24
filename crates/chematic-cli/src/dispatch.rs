@@ -4,6 +4,34 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::NwchemGeometry {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::nwchem_geometry_from_json(&text)
+            } else {
+                chematic_mol::parse_nwchem_geometry_with_limits(
+                    &text,
+                    &chematic_mol::NwchemLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string_pretty(&record).map_err(|e| e.to_string())? + "\n"
+            } else {
+                chematic_mol::write_nwchem_geometry(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+
         Command::GjfDocument {
             input,
             output,

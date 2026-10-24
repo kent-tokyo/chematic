@@ -3,6 +3,9 @@
 //! Exposes a small, ergonomic API for parsing SMILES and computing molecular
 //! descriptors from JavaScript/TypeScript via `wasm-bindgen`.
 
+mod nwchem;
+pub use nwchem::*;
+
 use wasm_bindgen::prelude::*;
 
 /// Maximum atom count for WASM to prevent DoS via unbounded JSON output.

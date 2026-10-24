@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Editable Cartesian NWChem GEOMETRY blocks in Rust, Python, WASM/Node and CLI,
+  preserving explicit/omitted units and controls, case-sensitive center tags,
+  velocities, nuclear charges, isotope masses and nuclear models. Full job
+  decks and unsupported syntax refuse. Shared cases and a pinned same-XYZ
+  export comparison are documented in [NWChem geometry](docs/reference/nwchem-geometry.md).
+
 ### Fixed
 
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
