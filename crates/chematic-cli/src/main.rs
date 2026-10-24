@@ -723,8 +723,6 @@ fn substructure_json(
         let parity_config = chematic_smarts::RdkitParityConfig {
             base: config,
             use_rdkit_parity_aromaticity: true,
-            // Keep the CLI profile aligned with RDKit 2026.09.1's [R<n>]
-            // semantics; the library default retains its older profile.
             ring_count_model: chematic_smarts::RdkitRingCountModel::RelevantCycles,
             ..Default::default()
         };
