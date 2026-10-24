@@ -1,0 +1,812 @@
+{
+  "schema": 1,
+  "scope": "Original synthetic geometry/cell/real-column/raw-info writer cases; not chemical graph or general extxyz coverage",
+  "valid": [
+    {
+      "id": "plain_geometry",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {}
+    },
+    {
+      "id": "coordinate_precision",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          -0.0,
+          1.2345678901234567,
+          1.2345678901e-05
+        ],
+        [
+          3.75,
+          -4.125,
+          5.5
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {}
+    },
+    {
+      "id": "cell_and_vectors",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": [
+        10.0,
+        1.0,
+        2.0,
+        3.0,
+        11.0,
+        4.0,
+        5.0,
+        6.0,
+        12.0
+      ],
+      "properties": {
+        "vectors": [
+          [
+            0.125,
+            -0.0,
+            1.2345678901234567
+          ],
+          [
+            -1.5,
+            0.75,
+            -0.25
+          ]
+        ],
+        "weights": [
+          [
+            0.1
+          ],
+          [
+            0.2
+          ]
+        ]
+      },
+      "info": {
+        "note": "frame with payload"
+      }
+    },
+    {
+      "id": "metadata_backslash",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "path": "alpha\\beta"
+      }
+    },
+    {
+      "id": "metadata_apostrophe",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "note": "O'Brien"
+      }
+    },
+    {
+      "id": "metadata_brackets",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "note": "[blue]"
+      }
+    },
+    {
+      "id": "metadata_quotes_unicode",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "note": "x=\"y\" and 水",
+        "query": "a=b"
+      }
+    },
+    {
+      "id": "typed_external_metadata",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": [
+        10.0,
+        0.0,
+        0.0,
+        0.0,
+        11.0,
+        0.0,
+        0.0,
+        0.0,
+        12.0
+      ],
+      "properties": {},
+      "info": {
+        "pbc": "T F T",
+        "step": "12",
+        "active": "T"
+      }
+    },
+    {
+      "id": "explicit_empty_string",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "label": "_JSON \"\""
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "property_'species'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "species": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_'pos'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "pos": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_'bad:name'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "bad:name": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_''",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_\"a'b\"",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "a'b": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_'a\\\\b'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "a\\b": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_'x y'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "x y": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "info_'Lattice'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "Lattice": "bad"
+      }
+    },
+    {
+      "id": "info_'Properties'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "Properties": "bad"
+      }
+    },
+    {
+      "id": "info_\"a'b\"",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "a'b": "x"
+      }
+    },
+    {
+      "id": "info_'a\\\\b'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "a\\b": "x"
+      }
+    },
+    {
+      "id": "info_'bad key'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "bad key": "x"
+      }
+    },
+    {
+      "id": "info_'key'",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "key": "line\nbreak"
+      }
+    },
+    {
+      "id": "property_positions",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "positions": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_symbols",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "symbols": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_numbers",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "numbers": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "property_Z",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "Z": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "charge_alias_collision",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {
+        "charge": [
+          [
+            1.0
+          ],
+          [
+            2.0
+          ]
+        ],
+        "charges": [
+          [
+            3.0
+          ],
+          [
+            4.0
+          ]
+        ]
+      },
+      "info": {}
+    },
+    {
+      "id": "empty_info_value",
+      "elements": [
+        "C",
+        "O"
+      ],
+      "coords": [
+        [
+          0.125,
+          -0.0,
+          0.25
+        ],
+        [
+          1.5,
+          0.75,
+          -0.25
+        ]
+      ],
+      "lattice": null,
+      "properties": {},
+      "info": {
+        "empty": ""
+      }
+    }
+  ]
+}
