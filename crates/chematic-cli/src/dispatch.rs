@@ -4,6 +4,48 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        command @ (Command::Gromos96 { .. }
+        | Command::Lpmd { .. }
+        | Command::Viewmol { .. }
+        | Command::Unixyz { .. }
+        | Command::Gpr { .. }
+        | Command::Fract { .. }) => run_coordinate_records(command),
+        command @ (Command::DlpolyHistory { .. }
+        | Command::NwchemGeometry { .. }
+        | Command::TinkerXyz { .. }
+        | Command::Bgf { .. }) => run_structured_records(command),
+        command @ (Command::Molden { .. }
+        | Command::DlpolyConfig { .. }
+        | Command::GjfDocument { .. }) => run_remaining_formats(command),
+        command @ (Command::ConvertWithReport { .. } | Command::Convert { .. }) => {
+            run_conversion(command)
+        }
+        command @ (Command::Descriptors { .. }
+        | Command::Parse { .. }
+        | Command::Cxsmiles { .. }
+        | Command::Fingerprint { .. }
+        | Command::Similarity { .. }
+        | Command::Substructure { .. }
+        | Command::Standardize { .. }
+        | Command::Report { .. }) => run_molecule(command),
+        command @ (Command::Reaction { .. }
+        | Command::ReactionMatch { .. }
+        | Command::ReactionBalance { .. }
+        | Command::ReactionFingerprint { .. }
+        | Command::ReactionSimilarity { .. }) => run_reaction(command),
+        command @ (Command::BatchReport { .. }
+        | Command::BatchDescriptors { .. }
+        | Command::BatchCanonicalize { .. }
+        | Command::BatchFingerprints { .. }
+        | Command::BatchStandardize { .. }
+        | Command::BatchSimilarity { .. }
+        | Command::BatchSubstructure { .. }
+        | Command::BatchReactions { .. }) => run_batch(command),
+    }
+}
+
+fn run_coordinate_records(command: Command) -> Result<(), String> {
+    match command {
         Command::Gromos96 {
             input,
             output,
@@ -81,6 +123,12 @@ pub(super) fn run(cli: Cli) -> Result<(), String> {
             let result = fract::convert(&text, inspect, from_json, max_input_bytes)?;
             write_output(output.as_ref(), &result)
         }
+        _ => unreachable!("coordinate-record dispatcher received another command"),
+    }
+}
+
+fn run_structured_records(command: Command) -> Result<(), String> {
+    match command {
         Command::DlpolyHistory {
             input,
             output,
@@ -191,6 +239,12 @@ pub(super) fn run(cli: Cli) -> Result<(), String> {
             };
             write_output(output.as_ref(), &result)
         }
+        _ => unreachable!("structured-record dispatcher received another command"),
+    }
+}
+
+fn run_remaining_formats(command: Command) -> Result<(), String> {
+    match command {
         Command::Molden {
             input,
             output,
@@ -260,30 +314,7 @@ pub(super) fn run(cli: Cli) -> Result<(), String> {
             let result = conversion_format::gjf_document(&text, inspect, max_jobs)?;
             write_output(output.as_ref(), &result)
         }
-        command @ (Command::ConvertWithReport { .. } | Command::Convert { .. }) => {
-            run_conversion(command)
-        }
-        command @ (Command::Descriptors { .. }
-        | Command::Parse { .. }
-        | Command::Cxsmiles { .. }
-        | Command::Fingerprint { .. }
-        | Command::Similarity { .. }
-        | Command::Substructure { .. }
-        | Command::Standardize { .. }
-        | Command::Report { .. }) => run_molecule(command),
-        command @ (Command::Reaction { .. }
-        | Command::ReactionMatch { .. }
-        | Command::ReactionBalance { .. }
-        | Command::ReactionFingerprint { .. }
-        | Command::ReactionSimilarity { .. }) => run_reaction(command),
-        command @ (Command::BatchReport { .. }
-        | Command::BatchDescriptors { .. }
-        | Command::BatchCanonicalize { .. }
-        | Command::BatchFingerprints { .. }
-        | Command::BatchStandardize { .. }
-        | Command::BatchSimilarity { .. }
-        | Command::BatchSubstructure { .. }
-        | Command::BatchReactions { .. }) => run_batch(command),
+        _ => unreachable!("remaining-format dispatcher received another command"),
     }
 }
 
