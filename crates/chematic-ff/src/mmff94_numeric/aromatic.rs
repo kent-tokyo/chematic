@@ -446,3 +446,31 @@ fn find_alpha_beta_heteroatoms(
         alpha_or_beta_in_same_ring,
     }
 }
+
+#[cfg(test)]
+mod fullerene_tests {
+    use super::*;
+
+    #[test]
+    fn mmff_fused_fullerene_uses_rdkit_kekule_walk() {
+        // RDKit 2026.09.1 assigns 24 aromatic cage carbons (type 37) and
+        // 28 non-aromatic sp2 cage carbons (type 2) to each structure.
+        // These are the three distinct fullerene derivatives in the 10k
+        // RDKit-browser corpus. A Kekule walk that skips a spent atom's
+        // neighbours incorrectly makes all 48 aromatic cage carbons type 37.
+        let smiles_cases = [
+            "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1COCCOCCOC",
+            "COCCOCCOCC1N(C)CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C713",
+            "COCCOCCOCCN1CC23C4=C5C6=C7c8c9c%10c%11c%12c%13c%14c(c2c2c%15c%16c%17c%18c%19c(c5c5c%20c%21c%22c%23c(c8C%22C65)c%10c5c%11c6c%13c8c(c%15%14)c%16c%10c%18c%11c(c%20%19)c%21c%13c%23c5c5c%13c%11c%10c8c65)C%17C42)C%12C9C73C1",
+        ];
+        for smiles in smiles_cases {
+            let mol = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+            let rings = chematic_perception::rdkit_sssr_ring_order(&mol).unwrap();
+            let view = compute_mmff94_aromatic_view(&mol, &rings).unwrap();
+            assert_eq!(view.atoms().filter(|(_, atom)| atom.aromatic).count(), 24);
+            let types = assign_mmff94_numeric_types(&mol).unwrap();
+            assert_eq!(types.iter().filter(|&&ty| ty == 37).count(), 24);
+            assert_eq!(types.iter().filter(|&&ty| ty == 2).count(), 28);
+        }
+    }
+}

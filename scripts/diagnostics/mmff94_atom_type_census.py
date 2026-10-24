@@ -208,18 +208,17 @@ def main() -> int:
              if item["element"] == "C" and item["rdkit_type"] == 37 and item["chematic_type"] == 2),
             0,
         )
-        # The current source candidate chooses a different Kekule form for
-        # three fullerene cages than the pinned RDKit wheel. Keep that known,
-        # bounded residual explicit instead of weakening the gate for other
-        # atom types or rows.
+        # The fused-fullerene Kekule walk now matches the pinned RDKit wheel.
+        # Keep the historical type-2/type-37 bucket explicit so a recurrence
+        # fails this exact source-wheel gate.
         fullerene_bucket = next(
             (item["count"] for item in summary["heavy"]["by_key"]
              if item["element"] == "C" and item["rdkit_type"] == 2 and item["chematic_type"] == 37),
             0,
         )
-        expected_heavy_differences = 72
-        expected_heavy_rows = 3
-        expected_fullerene_bucket = 72
+        expected_heavy_differences = 0
+        expected_heavy_rows = 0
+        expected_fullerene_bucket = 0
         expected_corpus_sha = "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
         if (summary["corpus"]["sha256"] != expected_corpus_sha
                 or summary["corpus"]["rows"] != 10_000

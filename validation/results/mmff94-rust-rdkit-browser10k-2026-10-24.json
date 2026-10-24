@@ -1,0 +1,29 @@
+{
+  "atoms_compared": {
+    "heavy": 215565,
+    "hydrogen": 191148
+  },
+  "binary": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/target/debug/examples/mmff94_type_probe",
+    "sha256": "2175c0a70582d99728acd46bf029ae6d4c385b36a00d98c474a01eb05f2c1277"
+  },
+  "corpus": {
+    "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+    "rows": 10000,
+    "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f"
+  },
+  "difference_categories": [],
+  "differing_atoms": 0,
+  "differing_rows": [],
+  "host": {
+    "machine": "arm64",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+  },
+  "profile": "mmff94_source_rust_vs_rdkit_atom_types",
+  "rdkit_version": "2026.09.1",
+  "row_status": {
+    "compared": 9796,
+    "rdkit_mmff_unsupported": 204
+  },
+  "schema_version": 1
+}
