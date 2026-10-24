@@ -298,6 +298,9 @@ pub(super) fn parse_mmcif<'py>(
 }
 
 /// Write an mmCIF file from atom records.
+/// Finite coordinates, occupancy, B factors and cell parameters retain their
+/// binary64 values without fixed decimal rounding. Original numeric spelling
+/// and uncertainty suffixes are not retained.
 ///
 /// Args:
 ///     atoms: list of dicts, same shape as :func:`parse_mmcif`'s

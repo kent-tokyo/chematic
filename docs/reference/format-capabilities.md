@@ -126,6 +126,7 @@ Use these pages when the short matrix is not enough:
   [Kekulé output](mol2-kekule-bond-output.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
+- [mmCIF numeric preservation](mmcif-numeric-preservation.md)
 - [PDB atom selection](pdb-atom-selection.md),
   [model splitting](pdb-model-splitting.md), and
   [checked PDBQT output](pdbqt-checked-output.md)

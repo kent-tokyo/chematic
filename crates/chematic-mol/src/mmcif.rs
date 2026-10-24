@@ -44,6 +44,9 @@
 //!   -- per the mmCIF dictionary, `_atom_site.Cartn_*` is always given in
 //!   orthogonal Ångströms already (unlike small-molecule CIF's
 //!   `_atom_site_fract_x`, which this module's sibling does convert).
+//! - The writer uses round-trip decimal representations for finite Cartesian
+//!   coordinates, occupancy, B factors and cell parameters. It preserves the
+//!   parsed binary64 values, not original decimal spelling or uncertainties.
 //! - Only the first `data_` block is read (matches `crate::cif`'s existing
 //!   scope note).
 //! - **Judgment call:** `label_*` and `auth_*` variants of `atom_id`/
@@ -755,6 +758,17 @@ fn parse_int(s: &str, column: &'static str) -> Result<i64, MmcifError> {
 // Writer
 // ---------------------------------------------------------------------------
 
+/// Keep round-trip digits without expanding tiny/huge values into hundreds of
+/// characters. A shortest binary64 scientific token fits within 24 characters.
+fn numeric_token(value: f64) -> String {
+    let decimal = value.to_string();
+    if decimal.len() <= 24 {
+        decimal
+    } else {
+        format!("{value:e}")
+    }
+}
+
 /// Quote a CIF value if required (contains whitespace, is empty, or starts
 /// with a character that is otherwise syntactically significant). Prefers
 /// an unquoted token; falls back to single quotes, then double quotes if
@@ -789,6 +803,8 @@ fn quote_cif_value(s: &str) -> String {
 /// "Judgment call" note in the module docs). `data_block_name` becomes the
 /// `data_<name>` header; non-alphanumeric characters are not sanitized
 /// (callers should pass a valid mmCIF data-block name).
+/// Finite numeric values use enough decimal digits to round-trip exactly;
+/// this writer does not impose PDB's fixed-column precision on mmCIF.
 pub fn write_mmcif(
     atoms: &[MmcifAtomRecord],
     cell: Option<&UnitCell>,
@@ -799,13 +815,18 @@ pub fn write_mmcif(
 
     if let Some(c) = cell {
         out.push_str(&format!(
-            "_cell.length_a      {:.4}\n\
-             _cell.length_b      {:.4}\n\
-             _cell.length_c      {:.4}\n\
-             _cell.angle_alpha   {:.3}\n\
-             _cell.angle_beta    {:.3}\n\
-             _cell.angle_gamma   {:.3}\n#\n",
-            c.a, c.b, c.c, c.alpha, c.beta, c.gamma
+            "_cell.length_a      {}\n\
+             _cell.length_b      {}\n\
+             _cell.length_c      {}\n\
+             _cell.angle_alpha   {}\n\
+             _cell.angle_beta    {}\n\
+             _cell.angle_gamma   {}\n#\n",
+            numeric_token(c.a),
+            numeric_token(c.b),
+            numeric_token(c.c),
+            numeric_token(c.alpha),
+            numeric_token(c.beta),
+            numeric_token(c.gamma)
         ));
     }
     if let Some(sg) = space_group {
@@ -868,7 +889,7 @@ pub fn write_mmcif(
 
         out.push_str(&format!(
             "{group} {serial} {sym} {name} {alt} {comp} {asym} {entity} {label_seq} {icode} \
-             {x:.3} {y:.3} {z:.3} {occ:.2} {biso:.2} {charge} \
+             {x} {y} {z} {occ} {biso} {charge} \
              {auth_seq} {comp} {asym} {name} {model}\n",
             group = quote_cif_value(&a.group_pdb),
             serial = a.serial,
@@ -880,11 +901,11 @@ pub fn write_mmcif(
             entity = entity,
             label_seq = label_seq,
             icode = icode,
-            x = a.x,
-            y = a.y,
-            z = a.z,
-            occ = a.occupancy,
-            biso = a.b_iso,
+            x = numeric_token(a.x),
+            y = numeric_token(a.y),
+            z = numeric_token(a.z),
+            occ = numeric_token(a.occupancy),
+            biso = numeric_token(a.b_iso),
             charge = charge,
             auth_seq = a.res_seq,
             model = a.model_num,

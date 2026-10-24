@@ -3977,6 +3977,10 @@ def write_mmcif(
 ) -> str:
     """Write an mmCIF file from atom records (same dict shape as
     :func:`parse_mmcif`'s ``"atoms"``).
+
+    Retains finite binary64 coordinates, occupancy, B factors and cell
+    parameters without decimal rounding. Original spelling and uncertainty
+    suffixes are not retained. Existing identity-namespace limits still apply.
     """
     ...
 

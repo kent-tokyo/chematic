@@ -91,6 +91,7 @@ nav:
     - Validation Report: reference/validation.md
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
+    - mmCIF Numeric Preservation: reference/mmcif-numeric-preservation.md
     - Open Babel File I/O: reference/openbabel-file-io.md
   - API Reference:
     - Python: api/chematic.md
