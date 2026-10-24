@@ -1039,17 +1039,14 @@ fn decode_mass_difference(element: Element, field: &str) -> Option<u16> {
     (mass > 0).then_some(mass as u16)
 }
 
-/// Encode an isotope mass number for the fixed-width V2000 mass-difference
-/// field. The field is three characters wide; values outside that representable
-/// range cannot be faithfully written by V2000 and are left absent. Callers
-/// requiring arbitrary isotope masses should use V3000 (`MASS=`).
+/// Encode the legacy two-column V2000 mass difference (-3..=4).
+/// Absolute masses, including an explicitly labelled most-common isotope,
+/// are also emitted in M ISO records by both V2000 writers.
 fn encode_mass_difference(element: Element, isotope: Option<u16>) -> Option<i16> {
     let isotope = isotope? as i32;
     let base = element.atomic_mass().round() as i32;
     let difference = isotope.checked_sub(base)?;
-    (i16::MIN as i32..=i16::MAX as i32)
-        .contains(&difference)
-        .then_some(difference as i16)
+    (-3..=4).contains(&difference).then_some(difference as i16)
 }
 
 // ---------------------------------------------------------------------------

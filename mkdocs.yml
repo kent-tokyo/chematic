@@ -94,6 +94,7 @@ nav:
     - RDKit Comparison: reference/rdkit-comparison.md
     - Open Babel File I/O: reference/openbabel-file-io.md
     - V3000 Atom Scalar Integrity: reference/v3000-atom-scalar-integrity.md
+    - V2000 Isotope Output: reference/v2000-isotope-output.md
   - API Reference:
     - Python: api/chematic.md
   - Project:

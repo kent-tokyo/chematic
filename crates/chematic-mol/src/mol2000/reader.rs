@@ -431,6 +431,26 @@ fn parse_isotope_properties(
     Ok(())
 }
 
+// Fixed-width M ISO pairs can touch when the mass occupies all four columns.
+// Keep accepting historical whitespace-separated records through the caller.
+fn fixed_isotope_fields(line: &str) -> Option<Vec<&str>> {
+    if !line.starts_with("M  ISO") {
+        return None;
+    }
+    let count = line.get(6..9)?.trim().parse::<usize>().ok()?;
+    let end = 9usize.checked_add(count.checked_mul(8)?)?;
+    if !line.get(end..)?.trim().is_empty() {
+        return None;
+    }
+    let mut fields = vec!["M", "ISO", line.get(6..9)?.trim()];
+    for i in 0..count {
+        let start = 9 + i * 8;
+        fields.push(line.get(start..start + 4)?.trim());
+        fields.push(line.get(start + 4..start + 8)?.trim());
+    }
+    Some(fields)
+}
+
 fn parse_rgroup_properties(
     fields: &[&str],
     line_number: usize,
@@ -465,7 +485,13 @@ fn parse_property_block(
                 parse_charge_properties(&fields, line_number, atom_count, &mut updates)?
             }
             Some(["M", "ISO"]) => {
-                parse_isotope_properties(&fields, line_number, atom_count, &mut updates)?
+                let fixed = fixed_isotope_fields(line);
+                parse_isotope_properties(
+                    fixed.as_deref().unwrap_or(&fields),
+                    line_number,
+                    atom_count,
+                    &mut updates,
+                )?
             }
             Some(["M", "RGP"]) => {
                 parse_rgroup_properties(&fields, line_number, atom_count, &mut updates)?
