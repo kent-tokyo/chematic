@@ -939,4 +939,39 @@ mod tests {
             mmff94_charges_bci(&ethanol)
         );
     }
+
+    #[test]
+    fn typed_bci_covers_polarized_bond_families_with_charge_conservation() {
+        let cases = [
+            "C=C",
+            "C=N",
+            "CC(=O)NC",
+            "COC",
+            "CC(=O)OC",
+            "c1ccccc1O",
+            "c1ccccc1F",
+            "c1ccccc1Cl",
+            "c1ccccc1Br",
+            "c1ccccc1I",
+            "FC=CCl",
+            "CP(=O)(O)O",
+            "C[N+](=O)[O-]",
+            "CS(=O)(=O)C",
+            "c1ccncc1",
+            "c1cc[nH]c1",
+            "c1ccoc1",
+            "c1ccsc1",
+            "CS",
+        ];
+        for smiles in cases {
+            let molecule = parse(smiles).unwrap_or_else(|error| panic!("{smiles}: {error}"));
+            for model in [&molecule, &crate::add_hydrogens(&molecule)] {
+                let charges = mmff94_charges_typed(model);
+                assert_eq!(charges.len(), model.atom_count(), "{smiles}");
+                assert!(charges.iter().all(|charge| charge.is_finite()), "{smiles}");
+                let formal: f64 = model.atoms().map(|(_, atom)| atom.charge as f64).sum();
+                assert!((total_q(&charges) - formal).abs() < 1e-9, "{smiles}");
+            }
+        }
+    }
 }
