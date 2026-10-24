@@ -1,5 +1,7 @@
 use super::*;
 
+mod isotope_output;
+
 // ---------------------------------------------------------------------------
 // Writer
 // ---------------------------------------------------------------------------
@@ -574,6 +576,7 @@ fn write_v2000_reporting(
     write_bond_rows(out, mol, depiction.as_ref(), either);
 
     write_v2000_rgroups(out, mol);
+    isotope_output::write_isotopes(out, mol);
 
     // Terminator
     out.push_str("M  END\n");
@@ -673,6 +676,7 @@ pub fn write_mol_with_conformer(
     }
 
     write_v2000_rgroups(&mut out, mol);
+    isotope_output::write_isotopes(&mut out, mol);
     out.push_str("M  END\n");
     out
 }

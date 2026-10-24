@@ -92,6 +92,7 @@ nav:
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
     - Open Babel File I/O: reference/openbabel-file-io.md
+    - V2000 Isotope Output: reference/v2000-isotope-output.md
   - API Reference:
     - Python: api/chematic.md
   - Project:

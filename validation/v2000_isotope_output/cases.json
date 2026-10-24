@@ -1,0 +1,505 @@
+{
+  "schema": "chematic.v2000-isotope-output.v1",
+  "provenance": "Original synthetic MIT fixtures authored for chematic on 2026-10-24. Ordinary molecules and explicitly separate hypothetical isotope-storage controls. Not a holdout or physical-validity corpus.",
+  "cases": [
+    {
+      "id": "unlabelled_control",
+      "scope": "ordinary",
+      "smiles": "CCO",
+      "expected": {
+        "numbers": [
+          6,
+          6,
+          8
+        ],
+        "isotopes": [
+          0,
+          0,
+          0
+        ],
+        "charges": [
+          0,
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "carbon12",
+      "scope": "ordinary",
+      "smiles": "[12CH4]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          12
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "nitrogen14",
+      "scope": "ordinary",
+      "smiles": "[14NH3]",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "isotopes": [
+          14
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "oxygen16",
+      "scope": "ordinary",
+      "smiles": "[16OH2]",
+      "expected": {
+        "numbers": [
+          8
+        ],
+        "isotopes": [
+          16
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "chlorine35",
+      "scope": "ordinary",
+      "smiles": "[35Cl-]",
+      "expected": {
+        "numbers": [
+          17
+        ],
+        "isotopes": [
+          35
+        ],
+        "charges": [
+          -1
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "bromine79",
+      "scope": "ordinary",
+      "smiles": "[79Br-]",
+      "expected": {
+        "numbers": [
+          35
+        ],
+        "isotopes": [
+          79
+        ],
+        "charges": [
+          -1
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "uranium238",
+      "scope": "ordinary",
+      "smiles": "[238U]",
+      "expected": {
+        "numbers": [
+          92
+        ],
+        "isotopes": [
+          238
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "carbon13_control",
+      "scope": "ordinary",
+      "smiles": "[13CH4]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          13
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "uranium235_control",
+      "scope": "ordinary",
+      "smiles": "[235U]",
+      "expected": {
+        "numbers": [
+          92
+        ],
+        "isotopes": [
+          235
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "heavy_water_control",
+      "scope": "ordinary",
+      "smiles": "[2H]O[2H]",
+      "expected": {
+        "numbers": [
+          1,
+          8,
+          1
+        ],
+        "isotopes": [
+          2,
+          0,
+          2
+        ],
+        "charges": [
+          0,
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "mixed_isotopes",
+      "scope": "ordinary",
+      "smiles": "[12CH3][13CH2][16OH]",
+      "expected": {
+        "numbers": [
+          6,
+          6,
+          8
+        ],
+        "isotopes": [
+          12,
+          13,
+          16
+        ],
+        "charges": [
+          0,
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "mixed_natural_and_labelled",
+      "scope": "ordinary",
+      "smiles": "[13CH3]O",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "isotopes": [
+          13,
+          0
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "labelled_salt",
+      "scope": "ordinary",
+      "smiles": "[NH4+].[35Cl-]",
+      "expected": {
+        "numbers": [
+          7,
+          17
+        ],
+        "isotopes": [
+          0,
+          35
+        ],
+        "charges": [
+          1,
+          -1
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "mapped_labels",
+      "scope": "ordinary",
+      "smiles": "[14NH3+:7][12CH3:9]",
+      "expected": {
+        "numbers": [
+          7,
+          6
+        ],
+        "isotopes": [
+          14,
+          12
+        ],
+        "charges": [
+          1,
+          0
+        ],
+        "atom_maps": [
+          7,
+          9
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "nine_labels",
+      "scope": "ordinary",
+      "smiles": "[12CH4].[13CH4].[14NH3].[16OH2].[35Cl-].[79Br-].[238U].[2H][2H]",
+      "expected": {
+        "numbers": [
+          6,
+          6,
+          7,
+          8,
+          17,
+          35,
+          92,
+          1,
+          1
+        ],
+        "isotopes": [
+          12,
+          13,
+          14,
+          16,
+          35,
+          79,
+          238,
+          2,
+          2
+        ],
+        "charges": [
+          0,
+          0,
+          0,
+          0,
+          -1,
+          -1,
+          0,
+          0,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            7,
+            8,
+            1
+          ]
+        ]
+      }
+    },
+    {
+      "id": "storage_mass_1",
+      "scope": "storage_boundary",
+      "smiles": "[1CH4]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          1
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "storage_mass_112",
+      "scope": "storage_boundary",
+      "smiles": "[112CH4:7]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          112
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          7
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "storage_mass_999",
+      "scope": "storage_boundary",
+      "smiles": "[999CH4]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          999
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": []
+      }
+    },
+    {
+      "id": "storage_mass_9999",
+      "scope": "storage_boundary",
+      "smiles": "[9999CH4:999]",
+      "expected": {
+        "numbers": [
+          6
+        ],
+        "isotopes": [
+          9999
+        ],
+        "charges": [
+          0
+        ],
+        "atom_maps": [
+          999
+        ],
+        "bonds": []
+      }
+    }
+  ]
+}
