@@ -4253,6 +4253,14 @@ def shape_screen(query: Mol, smiles_list: list[str]) -> list[tuple[int, float]]:
     """
     ...
 
+def rdkit_usr_descriptors(coords: list[tuple[float, float, float]]) -> list[float]:
+    """Return RDKit-compatible 12-value USR moments for supplied coordinates.
+
+    Include explicit hydrogen coordinates when the reference conformer has
+    them. Raises ValueError for fewer than three atoms or nonfinite geometry.
+    """
+    ...
+
 def top_k_similar(query: str, smiles: list[str], k: int = 10) -> list[tuple[int, float]]:
     """Find the top-K ECFP4 matches for a query SMILES.
 

@@ -1,0 +1,96 @@
+{
+  "rdkit_version": "2026.09.1",
+  "stereo_search_pairs": 324,
+  "stereo_search_mismatches": [],
+  "fingerprint_cases": 50,
+  "fingerprint_mismatches": [],
+  "stereo_self_corpus_sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+  "stereo_self_cases": 1653,
+  "stereo_self_mismatches": [],
+  "fingerprint_corpora": [
+    {
+      "path": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+      "sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+      "records": 4072,
+      "rdkit_rejected": 0,
+      "algorithms": {
+        "rdkit_morgan": {
+          "comparable": 4072,
+          "mismatches": []
+        },
+        "rdkit_pattern": {
+          "comparable": 4072,
+          "mismatches": []
+        },
+        "rdkit_rdk": {
+          "comparable": 4072,
+          "mismatches": []
+        },
+        "rdkit_torsion": {
+          "comparable": 4072,
+          "mismatches": []
+        },
+        "rdkit_atom_pair": {
+          "comparable": 4072,
+          "mismatches": []
+        }
+      }
+    },
+    {
+      "path": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+      "sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+      "records": 10000,
+      "rdkit_rejected": 0,
+      "algorithms": {
+        "rdkit_morgan": {
+          "comparable": 10000,
+          "mismatches": []
+        },
+        "rdkit_pattern": {
+          "comparable": 10000,
+          "mismatches": []
+        },
+        "rdkit_rdk": {
+          "comparable": 10000,
+          "mismatches": []
+        },
+        "rdkit_torsion": {
+          "comparable": 10000,
+          "mismatches": []
+        },
+        "rdkit_atom_pair": {
+          "comparable": 10000,
+          "mismatches": []
+        }
+      }
+    },
+    {
+      "path": "scripts/fixtures/descriptor_census_corpus.smi",
+      "sha256": "d6f2ba3f128296f935007f0b0813aa97b6ebcc2457e014ddca2213ddd655276c",
+      "records": 5000,
+      "rdkit_rejected": 0,
+      "algorithms": {
+        "rdkit_morgan": {
+          "comparable": 5000,
+          "mismatches": []
+        },
+        "rdkit_pattern": {
+          "comparable": 5000,
+          "mismatches": []
+        },
+        "rdkit_rdk": {
+          "comparable": 5000,
+          "mismatches": []
+        },
+        "rdkit_torsion": {
+          "comparable": 5000,
+          "mismatches": []
+        },
+        "rdkit_atom_pair": {
+          "comparable": 5000,
+          "mismatches": []
+        }
+      }
+    }
+  ]
+}

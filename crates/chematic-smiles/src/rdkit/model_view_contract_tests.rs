@@ -81,6 +81,25 @@ fn core_model_keeps_hydrogens_cleanup_and_error_boundaries() {
 }
 
 #[test]
+fn aromatic_ring_triple_keeps_rdkit_accepted_valence_and_bond_type() {
+    // RDKit 2026.09.1 accepts this stress-corpus row. Atom 15 has an
+    // aromatic bond and a ring triple bond, but its sanitized valence is 4.
+    let molecule = crate::parse("Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1").unwrap();
+    let model = super::rdkit_sanitized_model(&molecule).unwrap();
+    assert_eq!(model.atoms[15], Some((true, 0, 0)));
+    let triple = molecule
+        .bonds()
+        .find(|(_, bond)| bond.order == chematic_core::BondOrder::Triple)
+        .unwrap()
+        .0;
+    assert_eq!(
+        model.bonds[triple.0 as usize],
+        Some(chematic_core::BondOrder::Triple)
+    );
+    same_core_view(&molecule);
+}
+
+#[test]
 fn model_callbacks_keep_stereo_after_graph_edits() {
     let mut mol = crate::parse("[H][C@](F)(Cl)Br").unwrap();
     same_core_view(&mol);

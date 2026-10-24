@@ -127,7 +127,10 @@ pub use torsion_motif::{
     extract_torsion_motifs, fit_von_mises_mixture, motif_angles_deg, torsion_distance_symmetric,
     torsion_profile_distance, torsion_profile_to_json,
 };
-pub use usr::{shape_screen, usr_descriptors, usr_from_dg, usr_similarity};
+pub use usr::{
+    RdkitUsrError, rdkit_usr_descriptors, shape_screen, usr_descriptors, usr_from_dg,
+    usr_similarity,
+};
 pub use xyz::{XyzError, XyzParseLimits, parse_xyz, parse_xyz_with_limits, write_xyz};
 
 // ---------------------------------------------------------------------------

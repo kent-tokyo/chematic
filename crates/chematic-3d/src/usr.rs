@@ -1,8 +1,10 @@
 //! Ultrafast Shape Recognition (USR) 3D similarity descriptors.
 //!
-//! Implements Ballester & Richards (2007): each molecule is summarised by 12
-//! moments (mean, variance, skewness) of four distance distributions measured
-//! from four reference points:
+//! The existing [`usr_descriptors`] profile summarises four distance
+//! distributions with unstandardized moments (mean, variance, third central
+//! moment). [`rdkit_usr_descriptors`] is a separate RDKit-compatible profile
+//! using mean, standard deviation, and cube-root standardized skewness. Both
+//! use four reference points:
 //!
 //! 1. **ctd** — centroid of all atoms
 //! 2. **cst** — atom closest to ctd
@@ -15,6 +17,102 @@
 //! Reference: Ballester, P.J.; Richards, W.G. (2007). *Ultrafast shape
 //! recognition to search compound databases for similar molecular shapes*.
 //! J. Comput. Chem. 28, 1711–1723.
+
+/// An invalid input to [`rdkit_usr_descriptors`].
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RdkitUsrError {
+    TooFewAtoms { count: usize },
+    NonFiniteCoordinate { atom_index: usize },
+    NonFiniteResult,
+}
+
+impl std::fmt::Display for RdkitUsrError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::TooFewAtoms { count } => {
+                write!(f, "RDKit USR needs at least three atoms, got {count}")
+            }
+            Self::NonFiniteCoordinate { atom_index } => {
+                write!(f, "RDKit USR coordinate {atom_index} is not finite")
+            }
+            Self::NonFiniteResult => f.write_str("RDKit USR moments are not finite"),
+        }
+    }
+}
+
+impl std::error::Error for RdkitUsrError {}
+
+/// RDKit 2026.09.1 `GetUSR` moments for caller-supplied coordinates.
+///
+/// RDKit uses every atom in its conformer, including explicit hydrogens. The
+/// four reference points are the centroid, its closest and farthest atoms,
+/// and the atom farthest from the latter. Exact distance ties keep the first
+/// atom in input order. Each triplet is mean distance, population standard
+/// deviation, and the signed cube root of standardized skewness. This named
+/// profile leaves [`usr_descriptors`] and its existing screening scores intact.
+pub fn rdkit_usr_descriptors(coords: &[[f64; 3]]) -> Result<[f64; 12], RdkitUsrError> {
+    if coords.len() < 3 {
+        return Err(RdkitUsrError::TooFewAtoms {
+            count: coords.len(),
+        });
+    }
+    for (atom_index, point) in coords.iter().enumerate() {
+        if !point.iter().all(|value| value.is_finite()) {
+            return Err(RdkitUsrError::NonFiniteCoordinate { atom_index });
+        }
+    }
+
+    let ctd = centroid(coords);
+    let d_ctd: Vec<f64> = coords.iter().map(|point| dist(point, &ctd)).collect();
+    let cst = coords[rdkit_extreme_idx(&d_ctd, Extreme::Min)];
+    let fct = coords[rdkit_extreme_idx(&d_ctd, Extreme::Max)];
+    let d_fct: Vec<f64> = coords.iter().map(|point| dist(point, &fct)).collect();
+    let ftf = coords[rdkit_extreme_idx(&d_fct, Extreme::Max)];
+
+    let mut out = [0.0; 12];
+    for (offset, point) in [(0, ctd), (3, cst), (6, fct), (9, ftf)] {
+        let distances: Vec<f64> = coords.iter().map(|coord| dist(coord, &point)).collect();
+        let moments = rdkit_moments(&distances);
+        out[offset..offset + 3].copy_from_slice(&moments);
+    }
+    if !out.iter().all(|value| value.is_finite()) {
+        return Err(RdkitUsrError::NonFiniteResult);
+    }
+    Ok(out)
+}
+
+fn rdkit_extreme_idx(values: &[f64], which: Extreme) -> usize {
+    let mut best = 0;
+    for index in 1..values.len() {
+        let better = match which {
+            Extreme::Min => values[index] < values[best],
+            Extreme::Max => values[index] > values[best],
+        };
+        if better {
+            best = index;
+        }
+    }
+    best
+}
+
+fn rdkit_moments(distances: &[f64]) -> [f64; 3] {
+    let n = distances.len() as f64;
+    let mean = distances.iter().sum::<f64>() / n;
+    let mut second = 0.0;
+    let mut third = 0.0;
+    for &distance in distances {
+        let diff = distance - mean;
+        second += diff * diff;
+        third += diff * diff * diff;
+    }
+    let stddev = (second / n).sqrt();
+    let skew_root = if stddev == 0.0 {
+        0.0
+    } else {
+        (third / n / (stddev * stddev * stddev)).cbrt()
+    };
+    [mean, stddev, skew_root]
+}
 
 // ---------------------------------------------------------------------------
 // Public API

@@ -52,6 +52,10 @@ Pure Rust 3D coordinate generation, geometry optimization, shape analysis — **
 ### Shape Descriptors
 - **RMSD** (Root Mean Square Deviation): Geometric similarity
 - **Alignment**: Kabsch algorithm, rotation matrices
+- **RDKit USR profile**: `rdkit_usr_descriptors` computes the 12 RDKit 2026.09.1
+  moments from caller-supplied coordinates, including explicit H atoms. The
+  existing `usr_descriptors` retains its previous moment scheme. Python exposes
+  the same profile as `chematic.rdkit_usr_descriptors(coords)`.
 - **Shape Metrics**:
   - Radius of Gyration (Rg)
   - Principal Moments of Inertia (PMI)
