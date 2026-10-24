@@ -141,3 +141,12 @@ to claim general Open Babel file-format superiority.
 - [Open Babel supported formats](https://openbabel.org/docs/FileFormats/Overview.html)
 - [Open Babel `obabel` CLI](https://openbabel.org/docs/Command-line_tools/babel.html)
 - [Open Babel 3.2.1 release](https://github.com/openbabel/openbabel/releases/tag/openbabel-3-2-1)
+
+## Native V3000 3D regeneration
+
+[The 3D numeric diagnostic](v3000-3d-numeric-preservation.md) compares native
+conformer output with Open Babel 3.2.1 explicitly writing V3000. Through the
+same RDKit reader, exact coordinates survive in 9/9 candidate records and
+2/9 Open Babel records. Indexed graph fields and source CIP arrays survive in
+all nine records for both paths. The packet is a small numeric diagnostic
+with separate native-only extremes, not a format-wide or stereo ranking.
