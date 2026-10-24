@@ -5943,6 +5943,18 @@ def write_unixyz(record: dict[str, Any], *, max_input_bytes: Optional[int] = Non
     """Write current validated fields in Angstrom; unknown fields refuse."""
     ...
 
+def parse_viewmol(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read geometry with raw conversion factor, coordinate decimals and fixed axes."""
+    ...
+
+def write_viewmol(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields without rescaling or metadata inference."""
+    ...
+
+def viewmol_positions_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> list[list[float]]:
+    """Explicit binary64 projection; overflow and underflow to zero refuse."""
+    ...
+
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""

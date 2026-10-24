@@ -10,6 +10,7 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [ViewMol geometry](viewmol-preservation.md) | New bounded vmol R/W across Rust/Python/WASM/CLI, raw scale/precision/constraints and checked Angstrom projection on 28 authored records | All project/data-group semantics, external ViewMol execution, isolated parser accuracy, released-package or broad toolkit superiority |
 | [UniChem XYZ records](unixyz-preservation.md) | New bounded unixyz R/W across Rust/Python/WASM/CLI; title/order/coordinate-token retention on 15 authored records | Every dialect, multiple records, isolated parser accuracy, released-package or broad toolkit superiority |
 | [Ghemical GPR records](gpr-preservation.md) | New bounded gpr 100 R/W across Rust/Python/WASM/CLI; graph, raw nm precision and optional partial-charge records on 16 authored inputs | All Ghemical project/dialect support, isolated parser accuracy, released-package or broad toolkit superiority |
 | [Free Form Fractional](fract-preservation.md) | New bounded fract R/W across Rust/Python/WASM/CLI, decimal and uncertainty token retention on 17 authored records | All crystallographic dialects, isolated parser accuracy, released-package or broad-format superiority |

@@ -48,6 +48,8 @@ mod gpr;
 use gpr::*;
 mod unixyz;
 use unixyz::*;
+mod viewmol;
+use viewmol::*;
 mod dmol3;
 use dmol3::*;
 mod dlpoly;
@@ -1472,6 +1474,9 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_gpr,
         parse_unixyz,
         write_unixyz,
+        parse_viewmol,
+        write_viewmol,
+        viewmol_positions_angstrom,
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,

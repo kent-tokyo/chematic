@@ -65,6 +65,7 @@ means the operation is not exposed on that binding.
 | DL-POLY HISTORY, Classic text | bounded R/W | bounded R/W | bounded R/W | [All-frame records in raw source units](dlpoly-history.md); modern/binary layouts refuse |
 | LAMMPS data | R/W | R/W | R/W | Units and atom styles are explicit |
 | LAMMPS dump/trajectory | R/W | R/W | R/W | Streaming/materialization differs by binding |
+| ViewMol (`vmol`) | bounded R/W | bounded R/W | bounded R/W | [Raw unit factor, fixed axes, title and explicit Angstrom projection](viewmol-preservation.md); CLI also available |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |
 
 ## Checked conversion reports (initial adapter)
@@ -140,6 +141,7 @@ Use these pages when the short matrix is not enough:
 - [Free Form Fractional precision and uncertainty](fract-preservation.md)
 - [Ghemical GPR records](gpr-preservation.md)
 - [UniChem XYZ record preservation](unixyz-preservation.md)
+- [ViewMol geometry, units and fixed axes](viewmol-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
 - [mmCIF numeric preservation](mmcif-numeric-preservation.md)

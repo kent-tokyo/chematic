@@ -38,6 +38,8 @@ mod gpr;
 pub use gpr::*;
 mod unixyz;
 pub use unixyz::*;
+mod viewmol;
+pub use viewmol::*;
 mod tinker;
 pub use dlpoly::*;
 pub use tinker::*;

@@ -4,6 +4,18 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::Viewmol {
+            input,
+            output,
+            inspect,
+            from_json,
+            angstrom,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = viewmol::convert(&text, inspect, from_json, angstrom, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
         Command::Unixyz {
             input,
             output,

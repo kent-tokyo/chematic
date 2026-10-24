@@ -92,6 +92,7 @@ pub mod gro;
 pub mod gro_lammps;
 pub mod gzmat;
 pub mod unixyz;
+pub mod viewmol;
 pub use gamess_zmat::{GamessZmatWriteOptions, write_gamess_zmat, xyz_to_gamess_zmat};
 pub mod hin;
 pub mod ket;
@@ -426,4 +427,8 @@ pub use gpr::{
 pub use unixyz::{
     UnixyzAtom, UnixyzError, UnixyzParseLimits, UnixyzRecord, parse_unixyz, parse_unixyz_json,
     parse_unixyz_with_limits, unixyz_nominal_value, write_unixyz, write_unixyz_with_limits,
+};
+pub use viewmol::{
+    ViewmolAtom, ViewmolError, ViewmolParseLimits, ViewmolRecord, parse_viewmol,
+    parse_viewmol_json, parse_viewmol_with_limits, write_viewmol, write_viewmol_with_limits,
 };
