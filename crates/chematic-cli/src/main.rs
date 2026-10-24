@@ -51,6 +51,21 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Read/write one Tinker XYZ frame, preserving names, force-field types and connectivity.
+    TinkerXyz {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit an editable JSON record instead of Tinker XYZ text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read an edited JSON record and write Tinker XYZ text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
     GjfDocument {
         #[arg(short, long)]

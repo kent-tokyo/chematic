@@ -1,0 +1,1463 @@
+{
+  "schema_version": 1,
+  "scope": "single-frame Tinker XYZ; exact declared fields; original synthetic packet",
+  "case_count": 12,
+  "commands": {
+    "chematic": [
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+      "tinker-xyz"
+    ],
+    "openbabel": [
+      "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "-itxyz",
+      "-otxyz",
+      "-as",
+      "-xc"
+    ]
+  },
+  "versions": {
+    "chematic": "chematic 1.2.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "packet_sha256": "8ba05b4a5b7ae8aa9f068267112c271cb98dca81e012019fdf6704eced728dbb",
+  "binary_sha256": {
+    "chematic": "131f6b00320eb8e323b06c64077a4e04c6d7a06d7162f41133ebc7ccb7460d2d",
+    "openbabel": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+  },
+  "source_sha256": {
+    "crates/chematic-mol/src/tinker.rs": "7ac8cd2d640411e2389e13e45810eedcd27d338fa720ef5e48bb647a3118402a",
+    "crates/chematic-mol/src/tinker/reader.rs": "e1062b854ec39a29bdf415efa417b090bade7cb75bc0405f3cff7ce85b826a14",
+    "crates/chematic-cli/src/main.rs": "a45cbd9a3b14e4039fc7e360c30a0d3f40010c041d088f558a722289258387cb",
+    "crates/chematic-cli/src/dispatch.rs": "d316050b76345712cd9b84e79440ae4b2c3cad05daa1b43c79af0e7da5a12c92"
+  },
+  "preserved_counts": {
+    "chematic": {
+      "title": 12,
+      "indices": 12,
+      "names": 12,
+      "atom_types": 12,
+      "coordinates": 12,
+      "connectivity": 12,
+      "cell": 12
+    },
+    "openbabel": {
+      "title": 0,
+      "indices": 10,
+      "names": 9,
+      "atom_types": 9,
+      "coordinates": 1,
+      "connectivity": 10,
+      "cell": 10
+    }
+  },
+  "cases": [
+    {
+      "id": "water_unsorted_neighbors",
+      "input_sha256": "26d9d8f45aef83145733a51b556a8fc32033046f9d20dbbb00219018ab015e9b",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.000000    0.000000    0.000000    41     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "water_sorted_neighbors",
+      "input_sha256": "ef8a7db4e60170479435532a74d6e51aa75044adfa4de2374b394ec52149c071",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 2 3\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.000000    0.000000    0.000000    41     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "empty_title",
+      "input_sha256": "4cbec4a058800bff64ef3e3e9bb4d332a91bf304fa7bd2aa1296a28133e02d3d",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  \n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3                        Custom parameters\n     1  O      0.000000    0.000000    0.000000    41     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "unicode_title",
+      "input_sha256": "4657b444e5c18097687e95d0bb12b03f6e3bb639d30d810a8ac8adc401635eb9",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "水 / typed coordinates",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  水 / typed coordinates\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "水 / typed coordinates   Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 水 / typed coordinates   Custom parameters\n     1  O      0.000000    0.000000    0.000000    41     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "opaque_names",
+      "input_sha256": "38c89edadb87f4cff89eebd4e3f92cda7aca3aa29643900b7ea8566443c163c7",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "OW",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "HW",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "HW",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 OW 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 HW 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 HW -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "*",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "*",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "*",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  *      0.000000    0.000000    0.000000    41     2     3\n     2  *      0.957200    0.000000    0.000000    42     1\n     3  *     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": false,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "unassigned_type",
+      "input_sha256": "4519413146bf35854d06262f3722853876facfa1cec7908ade96c5b755432c6b",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 0,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 0 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 0,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.000000    0.000000    0.000000     0     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "custom_type",
+      "input_sha256": "89385eb43803de6c2f7a5e5106939f6f5e16ca563d1afd52913fee4ca655be63",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 90123,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 90123 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 90123,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.000000    0.000000    0.000000 90123     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "u32_type",
+      "input_sha256": "179c754d32ac5f5b7af810ef3e1f5448fb943b15b8de07cd8f49bfb4948faa3f",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 4294967295,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 4294967295 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 0,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.000000    0.000000    0.000000     0     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": false,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "precise_coordinates",
+      "input_sha256": "447f958bd75db247122fe68c60534439277b8e114ba88444ff2b2ec4ce060f97",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.12345678901234566,
+                -1.23456789e-13,
+                12.345678901234567
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1 O 1.23456789012345663e-1 -1.23456789000000002e-13 1.23456789012345673e1 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "water                  Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.123457,
+                -0.0,
+                12.345679
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                2,
+                3
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.239987,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     3 water                  Custom parameters\n     1  O      0.123457   -0.000000   12.345679    41     2     3\n     2  H      0.957200    0.000000    0.000000    42     1\n     3  H     -0.239987    0.927297    0.000000    42     1\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": false,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "disconnected_ions",
+      "input_sha256": "1af3350bd0157deeabb636d59ef3f760e9fd86aa75d1846f9fbd5750493dece2",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "disconnected",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "Na",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 1,
+              "neighbors": []
+            },
+            {
+              "index": 2,
+              "name": "Cl",
+              "position_angstrom": [
+                10.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 2,
+              "neighbors": []
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "2  disconnected\n1 Na 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 1\n2 Cl 1.00000000000000000e1 0.00000000000000000e0 0.00000000000000000e0 2\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "disconnected           Custom parameters",
+          "cell": null,
+          "atoms": [
+            {
+              "index": 1,
+              "name": "Na",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 1,
+              "neighbors": []
+            },
+            {
+              "index": 2,
+              "name": "Cl",
+              "position_angstrom": [
+                10.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 2,
+              "neighbors": []
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "     2 disconnected           Custom parameters\n     1 Na      0.000000    0.000000    0.000000     1\n     2 Cl     10.000000    0.000000    0.000000     2\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": false,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      }
+    },
+    {
+      "id": "orthorhombic",
+      "input_sha256": "3cde795cabb08d12cfb90842b3008cffa8541fd6d8f01a29b3bf19fceffec547",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": {
+            "lengths_angstrom": [
+              10.0,
+              20.0,
+              30.0
+            ],
+            "angles_degrees": [
+              90.0,
+              90.0,
+              90.0
+            ]
+          },
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1.00000000000000000e1 2.00000000000000000e1 3.00000000000000000e1 9.00000000000000000e1 9.00000000000000000e1 9.00000000000000000e1\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "unobservable",
+        "error": "pop from empty list",
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "0 molecules converted\n",
+        "preserved": {
+          "title": false,
+          "indices": false,
+          "names": false,
+          "atom_types": false,
+          "coordinates": false,
+          "connectivity": false,
+          "cell": false
+        }
+      }
+    },
+    {
+      "id": "triclinic",
+      "input_sha256": "524629e76017b1cc6caed966ba8721badc1b7279121704f6cfd525e1b654b020",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "water",
+          "cell": {
+            "lengths_angstrom": [
+              10.123456789012344,
+              11.23456789012345,
+              12.34567890123456
+            ],
+            "angles_degrees": [
+              71.123456789,
+              82.234567891,
+              93.345678912
+            ]
+          },
+          "atoms": [
+            {
+              "index": 1,
+              "name": "O",
+              "position_angstrom": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "atom_type": 41,
+              "neighbors": [
+                3,
+                2
+              ]
+            },
+            {
+              "index": 2,
+              "name": "H",
+              "position_angstrom": [
+                0.9572,
+                0.0,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            },
+            {
+              "index": 3,
+              "name": "H",
+              "position_angstrom": [
+                -0.2399872,
+                0.927297,
+                0.0
+              ],
+              "atom_type": 42,
+              "neighbors": [
+                1
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "3  water\n1.01234567890123444e1 1.12345678901234507e1 1.23456789012345602e1 7.11234567890000022e1 8.22345678909999975e1 9.33456789119999968e1\n1 O 0.00000000000000000e0 0.00000000000000000e0 0.00000000000000000e0 41 3 2\n2 H 9.57200000000000051e-1 0.00000000000000000e0 0.00000000000000000e0 42 1\n3 H -2.39987200000000012e-1 9.27297000000000038e-1 0.00000000000000000e0 42 1\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "indices": true,
+          "names": true,
+          "atom_types": true,
+          "coordinates": true,
+          "connectivity": true,
+          "cell": true
+        }
+      },
+      "openbabel": {
+        "status": "unobservable",
+        "error": "pop from empty list",
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "0 molecules converted\n",
+        "preserved": {
+          "title": false,
+          "indices": false,
+          "names": false,
+          "atom_types": false,
+          "coordinates": false,
+          "connectivity": false,
+          "cell": false
+        }
+      }
+    }
+  ]
+}
