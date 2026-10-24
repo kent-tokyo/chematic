@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R29 structural-debt program is complete. Implementation history and
+The R0-R30 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -34,9 +34,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R27 | Structural-alert catalog and test ownership | Complete |
 | R28 | InChI dedup and indexed-graph ownership | Complete |
 | R29 | RDKit depiction geometry and fragment ownership | Complete |
+| R30 | Avalon fingerprint orchestration ownership | Complete |
 
-R17-R29 reduced the checked debt baseline from 14 file and 76 function
-allowances to **1 file and 50 function allowances**. The program separated:
+R17-R30 reduced the checked debt baseline from 14 file and 76 function
+allowances to **0 file and 50 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -67,17 +68,23 @@ into physical include files under the existing depiction module. This keeps
 floating-point operation order, private visibility, and the public facade
 unchanged while closing the `depict.rs` file allowance.
 
-R0-R28 passed their affected suites and PR gates before merge. R29 was
+R30 moved Avalon's operation-order-sensitive pattern-counting function into a
+bounded physical include file. Hash insertion order, wrapping arithmetic,
+branch order, public flags and fingerprint output remain unchanged. This
+closes the final production-file allowance.
+
+R0-R29 passed their affected suites and PR gates before merge. R30 was
 validated with the affected crate's complete test suite, warnings-as-errors
-clippy, formatting, source-preservation and coordinate-digest checks, the
+clippy, formatting, source-preservation and fingerprint fixture checks, the
 budget scanner, and diff checks; repository-wide release and binding gates
 remain the responsibility of the PR CI before merge.
 
 ## Retained debt
 
-The remaining allowances are ordered chemistry data, bounded graph/search
-algorithms, format state machines, or compatibility ports whose branch and
-accumulation order is observable. They are reviewed debt, not exemptions.
+The remaining function allowances are ordered chemistry data, bounded
+graph/search algorithms, format state machines, or compatibility ports whose
+branch and accumulation order is observable. They are reviewed debt, not
+exemptions. No production Rust file exceeds the checked limit.
 
 Remove one bounded stage at a time with its domain corpus. Do not split tables
 or reorder chemistry merely to reduce line count. A new phase is warranted

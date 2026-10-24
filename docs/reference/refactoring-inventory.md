@@ -1,6 +1,6 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the completed R9-R29
+This inventory records the R8 cleanup review and the completed R9-R30
 structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
@@ -9,13 +9,12 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The completed R29 program contains 1 file allowance and 50 function
+The completed R30 program contains 0 file allowances and 50 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
-The retained large files contain one reviewed group:
-
-- ordered chemistry rules and perception engines: Avalon `fingerprint.rs`.
+No handwritten production Rust file remains above the checked 1,500-line
+limit.
 
 The retained function allowances use the same classification: ordered or
 generated chemistry, bounded graph/search algorithms, format state machines,
@@ -54,6 +53,9 @@ R29 physically separates RDKit depiction geometry and embedded-fragment state
 without creating new Rust module visibility boundaries. The include-based
 layout preserves source order and floating-point accumulation while reducing
 the orchestration file below the scanner limit.
+R30 physically separates Avalon's ordered pattern-counting function from its
+hash, valence and walk helpers. The include-based layout preserves the port's
+source order and wrapping arithmetic while closing the last file allowance.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 

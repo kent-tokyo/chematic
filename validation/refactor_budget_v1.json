@@ -9,9 +9,7 @@
     "crates/chematic-smiles/src/rdkit/crippen_params.rs",
     "crates/chematic-smiles/src/rdkit/periodic.rs"
   ],
-  "file_allowances": {
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092
-  },
+  "file_allowances": {},
   "function_allowances": {
     "crates/chematic-3d/src/etkdg_knowledge.rs::get_torsion_preference#1": {
       "decisions": 211,
@@ -69,7 +67,7 @@
       "decisions": 58,
       "lines": 277
     },
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs::count_fingerprint_patterns#1": {
+    "crates/chematic-fp/src/rdkit_avalon/fingerprint/count_patterns.rs::count_fingerprint_patterns#1": {
       "decisions": 375,
       "lines": 1485
     },
