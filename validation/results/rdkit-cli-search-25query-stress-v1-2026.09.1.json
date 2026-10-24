@@ -1,0 +1,296 @@
+{
+  "operation": "HasSubstructMatch boolean, default chirality off",
+  "rdkit_version": "2026.09.1",
+  "binary": "target/debug/chematic",
+  "binary_sha256": "e31007547ba4d059120e1fbcc21733732a2c5490e35a15936c6a66deb5edf05b",
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "input_count": 4072,
+  "rdkit_rejected": 0,
+  "queries": [
+    "[OH]",
+    "c",
+    "[#7]",
+    "C=O",
+    "[NX3;H2,H1;!$(NC=O)]",
+    "[r5]",
+    "[r6]",
+    "c1ccccc1",
+    "[CX4]",
+    "[!#6;!#1]",
+    "C(=O)[OH]",
+    "[nH]",
+    "[#6]=[#6]",
+    "[F,Cl,Br,I]",
+    "[OX2H]",
+    "[#16]",
+    "[c+]",
+    "[C]",
+    "[as]",
+    "[R2]",
+    "[x2]",
+    "[D3]",
+    "[H1]",
+    "[N;H2]",
+    "[C;X3]"
+  ],
+  "comparisons": 101800,
+  "native": {
+    "agree": 96225,
+    "mismatch": 5575,
+    "rejected": 0,
+    "by_query": {
+      "c": {
+        "mismatch": 1626,
+        "rejected": 0
+      },
+      "[#6]=[#6]": {
+        "mismatch": 1307,
+        "rejected": 0
+      },
+      "[C]": {
+        "mismatch": 100,
+        "rejected": 0
+      },
+      "[C;X3]": {
+        "mismatch": 576,
+        "rejected": 0
+      },
+      "c1ccccc1": {
+        "mismatch": 1583,
+        "rejected": 0
+      },
+      "[c+]": {
+        "mismatch": 18,
+        "rejected": 0
+      },
+      "[NX3;H2,H1;!$(NC=O)]": {
+        "mismatch": 72,
+        "rejected": 0
+      },
+      "[nH]": {
+        "mismatch": 163,
+        "rejected": 0
+      },
+      "C=O": {
+        "mismatch": 103,
+        "rejected": 0
+      },
+      "[H1]": {
+        "mismatch": 1,
+        "rejected": 0
+      },
+      "[D3]": {
+        "mismatch": 13,
+        "rejected": 0
+      },
+      "[CX4]": {
+        "mismatch": 1,
+        "rejected": 0
+      },
+      "[R2]": {
+        "mismatch": 8,
+        "rejected": 0
+      },
+      "[as]": {
+        "mismatch": 4,
+        "rejected": 0
+      }
+    },
+    "examples": [
+      {
+        "index": 1,
+        "smiles": "c1ccc1",
+        "query": "c",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 1,
+        "smiles": "c1ccc1",
+        "query": "[#6]=[#6]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 1,
+        "smiles": "c1ccc1",
+        "query": "[C]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 1,
+        "smiles": "c1ccc1",
+        "query": "[C;X3]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 6,
+        "smiles": "C1=CC=CC=C1",
+        "query": "c",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 6,
+        "smiles": "C1=CC=CC=C1",
+        "query": "c1ccccc1",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 6,
+        "smiles": "C1=CC=CC=C1",
+        "query": "[#6]=[#6]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 6,
+        "smiles": "C1=CC=CC=C1",
+        "query": "[C]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 6,
+        "smiles": "C1=CC=CC=C1",
+        "query": "[C;X3]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 9,
+        "smiles": "c1ccccccc1",
+        "query": "c",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 9,
+        "smiles": "c1ccccccc1",
+        "query": "[#6]=[#6]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 9,
+        "smiles": "c1ccccccc1",
+        "query": "[C]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 9,
+        "smiles": "c1ccccccc1",
+        "query": "[C;X3]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 14,
+        "smiles": "C1=CC=CC=CC=CC=C1",
+        "query": "c",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 14,
+        "smiles": "C1=CC=CC=CC=CC=C1",
+        "query": "[#6]=[#6]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 14,
+        "smiles": "C1=CC=CC=CC=CC=C1",
+        "query": "[C]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 14,
+        "smiles": "C1=CC=CC=CC=CC=C1",
+        "query": "[C;X3]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 17,
+        "smiles": "c1ccccccccccc1",
+        "query": "c",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 17,
+        "smiles": "c1ccccccccccc1",
+        "query": "[#6]=[#6]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      },
+      {
+        "index": 17,
+        "smiles": "c1ccccccccccc1",
+        "query": "[C]",
+        "rdkit": true,
+        "chematic": false,
+        "error": null
+      }
+    ]
+  },
+  "rdkit_parity": {
+    "agree": 101798,
+    "mismatch": 2,
+    "rejected": 0,
+    "by_query": {
+      "[#6]=[#6]": {
+        "mismatch": 1,
+        "rejected": 0
+      },
+      "[C;X3]": {
+        "mismatch": 1,
+        "rejected": 0
+      }
+    },
+    "examples": [
+      {
+        "index": 3235,
+        "smiles": "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+        "query": "[#6]=[#6]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      },
+      {
+        "index": 3235,
+        "smiles": "Cc1cccc(Cn2:C(c3ccc(O)cc#3):c(C)c3cc(O)cc[c:42]23)c1",
+        "query": "[C;X3]",
+        "rdkit": false,
+        "chematic": true,
+        "error": null
+      }
+    ]
+  }
+}

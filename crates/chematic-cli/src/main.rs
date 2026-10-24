@@ -143,7 +143,7 @@ enum Command {
         /// Enforce atom and bond stereochemistry in the SMARTS query.
         #[arg(long)]
         use_chirality: bool,
-        /// Use the experimental RDKit-aligned aromaticity and ring-query model.
+        /// Use RDKit 2026.09.1-aligned aromaticity and ring-query models.
         #[arg(long)]
         rdkit_parity: bool,
     },
@@ -257,7 +257,7 @@ enum Command {
         /// Enforce atom and bond stereochemistry in each SMARTS query.
         #[arg(long)]
         use_chirality: bool,
-        /// Use the experimental RDKit-aligned aromaticity and ring-query model.
+        /// Use RDKit 2026.09.1-aligned aromaticity and ring-query models.
         #[arg(long)]
         rdkit_parity: bool,
         #[command(flatten)]
@@ -723,6 +723,7 @@ fn substructure_json(
         let parity_config = chematic_smarts::RdkitParityConfig {
             base: config,
             use_rdkit_parity_aromaticity: true,
+            ring_count_model: chematic_smarts::RdkitRingCountModel::RelevantCycles,
             ..Default::default()
         };
         let (matches, budget_exhausted) =
