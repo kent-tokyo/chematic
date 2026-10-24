@@ -287,6 +287,8 @@ jobs:
         run: python3 -m unittest discover -s scripts/tests -p 'test_gjf_cartesian_validation.py' -v
       - name: V3000 coordinate projection observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_coordinate_projection -q
+      - name: V3000 atom scalar observer
+        run: .venv/bin/python -m unittest scripts.tests.test_v3000_atom_scalars -q
       - name: V3000 source coordinate observer
         run: .venv/bin/python -m unittest scripts.tests.test_v3000_source_roundtrip -q
       - name: SDF document framing observer
