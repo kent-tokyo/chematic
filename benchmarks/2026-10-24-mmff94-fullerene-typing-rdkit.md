@@ -22,6 +22,9 @@ browser inputs (indices 3837, 3976 and 4004), and zero differences on ChEMBL.
 Every browser difference was fullerene carbon type 2 in RDKit versus type 37
 in CheMatic. The source diagnostic before the fix gave 48 MMFF-aromatic atoms
 on each cage; after the fix it gives RDKit's 24.
+The CI source-wheel census against its pinned RDKit 2026.03.6 comparator
+also produced zero atom-type differences on the 9,796 comparable browser
+inputs; its exact-count gate now requires zero rather than the former 72.
 
 The cause was in the RDKit-compatible Kekulé walk: CheMatic stopped expanding
 neighbors once the current atom had spent its double-bond candidacy. RDKit
