@@ -4,6 +4,17 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
+        Command::Gpr {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = gpr::convert(&text, inspect, from_json, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
         Command::GjfDocument {
             input,
             output,

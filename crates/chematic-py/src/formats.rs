@@ -35,6 +35,8 @@ mod cdjson;
 use cdjson::*;
 mod fhiaims;
 use fhiaims::*;
+mod gpr;
+use gpr::*;
 mod dmol3;
 use dmol3::*;
 mod exyz;
@@ -1448,6 +1450,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         rdfile_to_smiles,
         parse_fhiaims,
         write_fhiaims,
+        parse_gpr,
+        write_gpr,
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
