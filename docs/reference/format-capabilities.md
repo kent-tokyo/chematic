@@ -48,6 +48,7 @@ means the operation is not exposed on that binding.
 | Free Form Fractional (`fract`) | bounded R/W | bounded R/W | bounded R/W | [Single-cell decimal/uncertainty record](fract-preservation.md); CLI also available |
 | CIF, small molecule | R/W | R | — | No Python writer or WASM surface |
 | PQR | R/W | R/W | R/W | Numeric atom fields are checked |
+| UniChem XYZ (`unixyz`) | bounded R/W | bounded R/W | bounded R/W | [Single-record title, atomic numbers and exact coordinate decimals](unixyz-preservation.md); CLI also available |
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ has no bonds; Python typed ExtXYZ R/I/S/L columns; WASM writes R only |
 | [Tinker XYZ (`txyz`)](tinker-xyz.md) | bounded R/W | bounded R/W | bounded R/W | Single typed frame with explicit connectivity and optional cell; no bond-order perception |
 | [DL-POLY CONFIG/REVCON](dlpoly-config.md) | bounded R/W | bounded R/W | bounded R/W | Single record; source-unit positions/velocities/forces and cell; imcon 0..3 |
@@ -138,6 +139,7 @@ Use these pages when the short matrix is not enough:
   [Kekulé output](mol2-kekule-bond-output.md)
 - [Free Form Fractional precision and uncertainty](fract-preservation.md)
 - [Ghemical GPR records](gpr-preservation.md)
+- [UniChem XYZ record preservation](unixyz-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
 - [mmCIF numeric preservation](mmcif-numeric-preservation.md)

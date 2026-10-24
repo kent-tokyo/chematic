@@ -36,6 +36,8 @@ mod fract;
 pub use fract::*;
 mod gpr;
 pub use gpr::*;
+mod unixyz;
+pub use unixyz::*;
 mod tinker;
 pub use dlpoly::*;
 pub use tinker::*;

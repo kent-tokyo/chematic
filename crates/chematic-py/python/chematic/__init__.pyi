@@ -5935,6 +5935,14 @@ def write_gpr(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, 
     """Write current checked fields; absent partial charges remain absent."""
     ...
 
+def parse_unixyz(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read one UniChem XYZ record: exact title, atomic numbers and coordinate decimal strings."""
+    ...
+
+def write_unixyz(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current validated fields in Angstrom; unknown fields refuse."""
+    ...
+
 
 def parse_mopac_cartesian(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read checked MOPAC Cartesian geometry, including bounded standalone + keyword continuations."""

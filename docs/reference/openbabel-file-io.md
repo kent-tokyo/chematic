@@ -10,6 +10,7 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [UniChem XYZ records](unixyz-preservation.md) | New bounded unixyz R/W across Rust/Python/WASM/CLI; title/order/coordinate-token retention on 15 authored records | Every dialect, multiple records, isolated parser accuracy, released-package or broad toolkit superiority |
 | [Ghemical GPR records](gpr-preservation.md) | New bounded gpr 100 R/W across Rust/Python/WASM/CLI; graph, raw nm precision and optional partial-charge records on 16 authored inputs | All Ghemical project/dialect support, isolated parser accuracy, released-package or broad toolkit superiority |
 | [Free Form Fractional](fract-preservation.md) | New bounded fract R/W across Rust/Python/WASM/CLI, decimal and uncertainty token retention on 17 authored records | All crystallographic dialects, isolated parser accuracy, released-package or broad-format superiority |
 | [V3000 atom scalar integrity](v3000-atom-scalar-integrity.md) | Checked charge/isotope/map parsing, quoted-text controls and explicit malformed-input errors | General CTfile/query validity or broad-format superiority |

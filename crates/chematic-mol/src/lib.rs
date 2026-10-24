@@ -91,6 +91,7 @@ pub mod gpr;
 pub mod gro;
 pub mod gro_lammps;
 pub mod gzmat;
+pub mod unixyz;
 pub use gamess_zmat::{GamessZmatWriteOptions, write_gamess_zmat, xyz_to_gamess_zmat};
 pub mod hin;
 pub mod ket;
@@ -421,4 +422,8 @@ pub use gpr::{
     GprAtom, GprBond, GprBondOrder, GprCoordinate, GprError, GprParseLimits, GprPartialCharge,
     GprRecord, gpr_nominal_value, parse_gpr, parse_gpr_json, parse_gpr_with_limits, write_gpr,
     write_gpr_with_limits,
+};
+pub use unixyz::{
+    UnixyzAtom, UnixyzError, UnixyzParseLimits, UnixyzRecord, parse_unixyz, parse_unixyz_json,
+    parse_unixyz_with_limits, unixyz_nominal_value, write_unixyz, write_unixyz_with_limits,
 };
