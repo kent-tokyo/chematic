@@ -159,6 +159,16 @@ def test_etkdg_torsion_search_exposes_bounded_quality_mode():
     assert min(row[1] for row in searched if row[0] == 0) <= min(
         row[1] for row in baseline if row[0] == 0
     ) + 1e-6
+    assert mol.etkdg_embed_multiple_confs_mmff_torsion_search(
+        4, candidate_confs=4
+    ) == searched
+    pooled = mol.etkdg_embed_multiple_confs_mmff_torsion_search(
+        4, candidate_confs=8
+    )
+    assert len(pooled) == 4
+    assert any(status == 0 for status, _, _ in pooled)
+    with pytest.raises(ValueError, match="candidate_confs"):
+        mol.etkdg_embed_multiple_confs_mmff_torsion_search(4, candidate_confs=3)
 
 
 def test_rdkit_embed_multiple_confs_mmff_diagnostics_preserve_results():
