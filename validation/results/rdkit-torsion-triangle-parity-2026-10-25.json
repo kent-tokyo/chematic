@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "rdkit_version": "2026.09.1",
+  "selection": "All 7^3 choices from unsubstituted/C/N/O/F/Cl/Br at each cyclopropane carbon, each rooted at atoms 0, 1, and 2; unique SMILES sorted",
+  "rows": 343,
+  "sparse_and_bit_exact": 343,
+  "mismatches": [],
+  "hashes": {
+    "binary_sha256": "bce7ee14d3325132a73bb489cc431dd3af002097e0195ddb8329933f4cbc6d1e",
+    "script_sha256": "d4b2806b81194333c30b9b18b4c6c28e4870b6d0772f3108b3641a5c15a5449c",
+    "selected_smiles_sha256": "3e483095fb2a9f2c56186e2b560a621383e1ec19d5c78f4d3b2756ae70fba6fe"
+  }
+}
