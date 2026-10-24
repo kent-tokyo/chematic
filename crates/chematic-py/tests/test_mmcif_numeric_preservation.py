@@ -7,7 +7,7 @@ import chematic
 import pytest
 
 CASES = json.loads((Path(__file__).parents[3] /
-                    "validation/mmcif_numeric_preservation/cases.json").read_text())["cases"]
+                    "validation/mmcif_numeric_preservation/cases.json").read_text(encoding="utf-8"))["cases"]
 
 
 def bits(values):

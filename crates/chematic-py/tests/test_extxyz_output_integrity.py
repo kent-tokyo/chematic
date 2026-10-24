@@ -5,7 +5,7 @@ from pathlib import Path
 import struct
 import pytest
 import chematic
-P=json.loads((Path(__file__).parents[3]/'validation/extxyz_output_integrity/cases.json').read_text())
+P=json.loads((Path(__file__).parents[3]/'validation/extxyz_output_integrity/cases.json').read_text(encoding="utf-8"))
 def bits(values):return [struct.pack('>d',float(v)) for row in values for v in row]
 def write(c):return chematic.to_extxyz(chematic.from_smiles('CO'),c['coords'],lattice=c['lattice'],properties=c['properties'],info=c['info'])
 @pytest.mark.parametrize('c',P['valid'],ids=lambda c:c['id'])

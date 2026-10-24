@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 import pytest
 import chematic
 
-PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/cjson_cml_projection/cases.json').read_text())
+PACKET=json.loads((Path(__file__).resolve().parents[3]/'validation/cjson_cml_projection/cases.json').read_text(encoding="utf-8"))
 NS='{http://www.xml-cml.org/schema}'
 
 

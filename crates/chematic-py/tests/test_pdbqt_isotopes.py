@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-CASES = json.loads((Path(__file__).resolve().parents[3] / "validation/openbabel_issues/pdbqt-isotopes/cases.json").read_text())
+CASES = json.loads((Path(__file__).resolve().parents[3] / "validation/openbabel_issues/pdbqt-isotopes/cases.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c["name"])

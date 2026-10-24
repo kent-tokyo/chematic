@@ -8,7 +8,7 @@ from pathlib import Path
 import chematic
 import pytest
 
-CASES=json.loads((Path(__file__).parents[3]/'validation/orca-checked-2026-10-24/cases.json').read_text())['cases']
+CASES=json.loads((Path(__file__).parents[3]/'validation/orca-checked-2026-10-24/cases.json').read_text(encoding="utf-8"))['cases']
 
 
 @pytest.mark.parametrize('case',[c for c in CASES if c['lane']!='transport'],ids=lambda c:c['id'])

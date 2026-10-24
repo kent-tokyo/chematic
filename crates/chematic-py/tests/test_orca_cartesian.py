@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-CASES=json.loads((Path(__file__).parents[3]/'validation/orca-cartesian-2026-10-22/cases.json').read_text())['cases']
+CASES=json.loads((Path(__file__).parents[3]/'validation/orca-cartesian-2026-10-22/cases.json').read_text(encoding="utf-8"))['cases']
 
 
 @pytest.mark.parametrize('case',CASES,ids=lambda c:c['id'])

@@ -6,7 +6,7 @@ import struct
 import pytest
 import chematic
 
-PACKET = json.loads((Path(__file__).parents[3] / "validation/v2000_coordinate_projection/cases.json").read_text())
+PACKET = json.loads((Path(__file__).parents[3] / "validation/v2000_coordinate_projection/cases.json").read_text(encoding="utf-8"))
 
 
 def bits(values):

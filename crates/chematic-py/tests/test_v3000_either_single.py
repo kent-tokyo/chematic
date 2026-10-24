@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import chematic
 
-SOURCE = (Path(__file__).resolve().parents[3] / "validation/openbabel-2429-2026-10-24/either-single.mol").read_text()
+SOURCE = (Path(__file__).resolve().parents[3] / "validation/openbabel-2429-2026-10-24/either-single.mol").read_text(encoding="utf-8")
 COORDS = [[-1, 1], [0, 0], [1, 0], [2, -1]]
 
 
