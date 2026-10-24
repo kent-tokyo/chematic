@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R25 structural-debt program is complete. Implementation history and
+The R0-R26 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -30,9 +30,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R21-R23 | Search/reaction internals, compatibility ports, bindings, and MCP | Complete |
 | R24 | Shared validation and CI harnesses | Complete |
 | R25 | Final orchestration splits and release-grade verification | Complete |
+| R26 | Low-risk test extraction and bounded parser/CIP ownership | Complete |
 
-R17-R25 reduced the checked debt baseline from 14 file and 76 function
-allowances to **8 file and 50 function allowances**. The program separated:
+R17-R26 reduced the checked debt baseline from 14 file and 76 function
+allowances to **4 file and 50 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -41,9 +42,16 @@ allowances to **8 file and 50 function allowances**. The program separated:
 - MMFF, InChI, PDB, valence, ring-stereo, and RDKit-compatibility branches;
 - CLI, Python, WASM, MCP transport/schema, and validation-script boundaries.
 
-The final stacked result passed the affected crate tests, doctests, warnings-
-as-errors clippy, budget scanner, release-document checks, Python/WASM gates,
-security checks, CodeQL, and Rust coverage before merge.
+R26 moved PDB, POSCAR, reaction-SMARTS, SMARTS-parity and SMILES-writer tests
+out of production modules, isolated the reaction-SMARTS parser, and gave E/Z
+completeness its own CIP module. This closed the PDB, POSCAR, reaction-SMARTS
+and CIP file allowances without changing public paths or chemistry behavior.
+
+R0-R25 passed the full release-grade verification stack before merge. R26 was
+validated with the four affected crates' complete library-test suites,
+warnings-as-errors clippy, formatting, the budget scanner, and diff checks;
+repository-wide release and binding gates remain the responsibility of the PR
+CI before merge.
 
 ## Retained debt
 
