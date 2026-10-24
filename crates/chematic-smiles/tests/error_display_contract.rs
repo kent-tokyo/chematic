@@ -1,6 +1,6 @@
 use chematic_smiles::{
-    RdkitSmilesError, SmilesBatchCanonicalizer, SmilesBatchReaderError, SmilesParseLimits,
-    StreamTerminalReason,
+    RdkitHashFunction, RdkitSmilesError, SmilesBatchCanonicalizer, SmilesBatchReaderError,
+    SmilesParseLimits, StreamTerminalReason,
 };
 
 #[test]
@@ -44,4 +44,21 @@ fn batch_terminal_reasons_limits_and_io_errors_are_stable() {
     };
     assert!(error.to_string().contains("input index 4"));
     assert!(std::error::Error::source(&error).is_some());
+}
+
+#[test]
+fn rdkit_checked_writers_refuse_enhanced_stereo_without_dropping_it() {
+    use chematic_core::{AtomIdx, StereoGroup, StereoGroupKind};
+
+    let mut molecule = chematic_smiles::parse("C[C@H](O)F").unwrap();
+    molecule.add_stereo_group(StereoGroup::new(StereoGroupKind::And(1), vec![AtomIdx(1)]));
+
+    assert!(chematic_smiles::rdkit_stereoisomer_smiles(&molecule, 64).is_err());
+    assert!(chematic_smiles::rdkit_cx_smiles(&molecule, &Default::default()).is_err());
+    assert!(chematic_smiles::rdkit_cx_smarts(&molecule).is_err());
+    assert!(
+        chematic_smiles::rdkit_mol_hash(&molecule, RdkitHashFunction::CanonicalSmiles, true,)
+            .is_err()
+    );
+    assert!(chematic_smiles::rdkit_stereoisomer_count(&molecule).is_err());
 }
