@@ -1,6 +1,6 @@
 # Refactoring closeout and maintenance rules
 
-The R0-R28 structural-debt program is complete. Implementation history and
+The R0-R29 structural-debt program is complete. Implementation history and
 the reasons for retained exceptions are in the
 [refactoring inventory](../reference/refactoring-inventory.md); user-visible changes belong
 in the changelog.
@@ -33,9 +33,10 @@ contracts, output digests, and paired performance gates remain authoritative.
 | R26 | Low-risk test extraction and bounded parser/CIP ownership | Complete |
 | R27 | Structural-alert catalog and test ownership | Complete |
 | R28 | InChI dedup and indexed-graph ownership | Complete |
+| R29 | RDKit depiction geometry and fragment ownership | Complete |
 
-R17-R28 reduced the checked debt baseline from 14 file and 76 function
-allowances to **2 file and 50 function allowances**. The program separated:
+R17-R29 reduced the checked debt baseline from 14 file and 76 function
+allowances to **1 file and 50 function allowances**. The program separated:
 
 - standardization stages, reaction projection, SMARTS/VF2/MCS ownership, and
   CIP/canonical/ring orchestration;
@@ -61,11 +62,16 @@ from the same `dedup` path; graph strictness, atom-map policy, diagnostic
 ordering, native-InChI evidence and feature-gated behavior are unchanged. This
 closes the `dedup.rs` file allowance.
 
-R0-R27 passed the full release-grade verification stack before merge. R28 was
-validated with the affected crate's default and native-InChI test suites,
-warnings-as-errors clippy, formatting, source-preservation checks, the budget
-scanner, and diff checks; repository-wide release and binding gates remain the
-responsibility of the PR CI before merge.
+R29 moved RDKit-compatible 2D geometry primitives and embedded-fragment state
+into physical include files under the existing depiction module. This keeps
+floating-point operation order, private visibility, and the public facade
+unchanged while closing the `depict.rs` file allowance.
+
+R0-R28 passed their affected suites and PR gates before merge. R29 was
+validated with the affected crate's complete test suite, warnings-as-errors
+clippy, formatting, source-preservation and coordinate-digest checks, the
+budget scanner, and diff checks; repository-wide release and binding gates
+remain the responsibility of the PR CI before merge.
 
 ## Retained debt
 

@@ -10,8 +10,7 @@
     "crates/chematic-smiles/src/rdkit/periodic.rs"
   ],
   "file_allowances": {
-    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
-    "crates/chematic-smiles/src/rdkit/depict.rs": 2303
+    "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092
   },
   "function_allowances": {
     "crates/chematic-3d/src/etkdg_knowledge.rs::get_torsion_preference#1": {
@@ -142,7 +141,7 @@
       "decisions": 29,
       "lines": 134
     },
-    "crates/chematic-smiles/src/rdkit/depict.rs::remove_collisions_shorten_bonds#1": {
+    "crates/chematic-smiles/src/rdkit/depict/embedded_frag.rs::remove_collisions_shorten_bonds#1": {
       "decisions": 28,
       "lines": 83
     },
