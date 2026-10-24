@@ -616,6 +616,37 @@ pub fn etkdg_embed_multiple_confs_mmff_torsion_search(
     Ok(refine_best_with_torsion_moves(mh, candidates, max_iters))
 }
 
+/// Search a larger ETKDG/MMFF94 candidate pool while returning at most
+/// `num_confs` conformers. The candidate count controls the seed batches in
+/// the quality profile; the returned ensemble is ranked by finite energy and
+/// convergence. This is an explicit accuracy-versus-work choice: increasing
+/// `candidate_confs` can lower the minimum but costs more embedding and MMFF
+/// optimizations. The result matches [`etkdg_embed_multiple_confs_mmff_torsion_search`]
+/// when both counts are equal.
+pub fn etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(
+    mh: &Molecule,
+    num_confs: usize,
+    candidate_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    if candidate_confs < num_confs {
+        return Err(RdkitEmbedError::Unsupported(
+            "candidate_confs must be at least num_confs".into(),
+        )
+        .into());
+    }
+    if num_confs == 0 {
+        return Ok(Vec::new());
+    }
+    let candidates =
+        etkdg_embed_multiple_confs_mmff_torsion_search(mh, candidate_confs, o, max_iters)?;
+    if candidate_confs == num_confs {
+        return Ok(candidates);
+    }
+    Ok(select_quality_candidates(candidates, Vec::new(), num_confs))
+}
+
 fn lowest_finite_energy(candidates: &[RdkitMmffConformer]) -> Option<f64> {
     candidates
         .iter()

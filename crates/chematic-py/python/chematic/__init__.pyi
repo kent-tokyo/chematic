@@ -431,9 +431,12 @@ class Mol:
         random_seed: int = 42,
         max_iterations: int = 0,
         max_mmff_iters: int = 200,
+        candidate_confs: int | None = None,
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Extend the quality ensemble with bounded, stereo-checked
-        rotatable-bond moves and MMFF94 minimizations.
+        rotatable-bond moves and MMFF94 minimizations. A larger
+        ``candidate_confs`` searches more ETKDG seeds while returning at most
+        ``num_confs`` optimized conformers.
         """
         ...
 

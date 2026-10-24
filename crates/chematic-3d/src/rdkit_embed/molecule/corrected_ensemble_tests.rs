@@ -110,6 +110,39 @@ fn torsion_search_recovers_lower_converged_minimum() {
 }
 
 #[test]
+fn torsion_search_pool_preserves_output_count_and_legacy_result() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CCCO").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let legacy =
+        etkdg_embed_multiple_confs_mmff_torsion_search(&molecule, 4, &options, 200).unwrap();
+    let same =
+        etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(&molecule, 4, 4, &options, 200)
+            .unwrap();
+    assert_eq!(
+        legacy
+            .iter()
+            .map(|row| (row.status, row.energy))
+            .collect::<Vec<_>>(),
+        same.iter()
+            .map(|row| (row.status, row.energy))
+            .collect::<Vec<_>>()
+    );
+    let pooled =
+        etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(&molecule, 4, 8, &options, 200)
+            .unwrap();
+    assert_eq!(pooled.len(), 4);
+    assert!(
+        pooled
+            .iter()
+            .any(|row| row.status == 0 && row.energy.is_finite())
+    );
+    assert!(
+        etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(&molecule, 4, 3, &options, 200,)
+            .is_err()
+    );
+}
+
+#[test]
 fn quality_profile_extends_search_after_third_batch_improves() {
     let molecule = chematic_chem::add_hydrogens(
         &chematic_smiles::parse(

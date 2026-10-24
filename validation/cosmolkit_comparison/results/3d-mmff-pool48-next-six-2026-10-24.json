@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "metric": "lowest converged MMFF94 kcal/mol; 0.01 kcal/mol threshold",
+  "conditions": "explicit H; ETKDGv3 seed 42; one COSMolKit thread; 24 conformers per seed batch; 1000 MMFF iterations; 100 A nonbonded threshold; CheMatic torsion arm up to 24 additional MMFF minimizations",
+  "candidate_confs": 48,
+  "selection": {
+    "source_manifest": "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json",
+    "manifest_sha256": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
+    "source_indices_at_least": 48,
+    "single_fragment": true,
+    "exclude_macrocycles": true,
+    "heavy_atoms": [
+      8,
+      25
+    ],
+    "rotatable_bonds": [
+      3,
+      8
+    ],
+    "mmff94_parameters_required": true,
+    "eligible": 35,
+    "order": "SHA-256 of source SMILES ascending",
+    "offset": 24,
+    "limit": 6,
+    "selected_indices": [
+      74,
+      161,
+      64,
+      97,
+      115,
+      168
+    ]
+  },
+  "versions": {
+    "cosmolkit": "0.5.0",
+    "rdkit": "2026.09.1",
+    "python": "3.13.6",
+    "host": "macOS-27.0.1-arm64-arm-64bit-Mach-O"
+  },
+  "hashes": {
+    "binary": "956a8526cd86bee28131e22d5feae2d01cb2b8c5bea422dfae0cd30ca7fb1c61",
+    "script": "617a7f3584d7f9550515281f22a98d606a83da58afb512a9bd37c243c8bdcbed",
+    "source_stream": "b9c2ca535d5b727d442b9bddd5004222e88864b603676a38498169f01f960c9f",
+    "torsion_source": "9943569c5f571c8076c92b9a84af3fd1aee4038a504bb7c91c42492f73bee651",
+    "cosmolkit_extension": "9a413ff2700f6266fa2192a8687dd073d31e2f9079912374e2c9f48a969177d7"
+  },
+  "summary": {
+    "quality": {
+      "chematic_lower": 2,
+      "cosmolkit_lower": 1,
+      "within_0.01": 3
+    },
+    "torsion": {
+      "chematic_lower": 4,
+      "cosmolkit_lower": 1,
+      "within_0.01": 1
+    },
+    "pool": {
+      "chematic_lower": 5,
+      "cosmolkit_lower": 0,
+      "within_0.01": 1
+    }
+  },
+  "torsion_improved_over_quality": 4,
+  "rows": [
+    {
+      "name": "chembl_tier_b_0074",
+      "smiles": "CN1CCC[C@H]1CN1CCN(Cc2cccnc2)CC1",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 115.8320441970432,
+        "rdkit_rescore_error": 2.842170943040401e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 115.5729278277179,
+        "rdkit_rescore_error": -4.263256414560601e-14
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 111.87015588121307,
+        "rdkit_rescore_error": 0.0
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 111.6663049497884,
+        "rdkit_rescore_error": 1.4210854715202004e-14
+      },
+      "pool_vs_cosmolkit": "chematic_lower",
+      "quality_vs_cosmolkit": "cosmolkit_lower",
+      "torsion_vs_cosmolkit": "cosmolkit_lower"
+    },
+    {
+      "name": "chembl_tier_b_0161",
+      "smiles": "CON(C)C(=O)/C=C/CC1C(=O)N2[C@@H]1[S+]([O-])C(C)(C)[C@@H]2C(=O)O",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 4.155459598340187,
+        "rdkit_rescore_error": -2.4868995751603507e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 2.8704797703016,
+        "rdkit_rescore_error": -7.105427357601002e-15
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 4.155459598244249,
+        "rdkit_rescore_error": -1.7763568394002505e-14
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 2.7234865127551977,
+        "rdkit_rescore_error": 3.197442310920451e-14
+      },
+      "pool_vs_cosmolkit": "chematic_lower",
+      "quality_vs_cosmolkit": "within_0.01",
+      "torsion_vs_cosmolkit": "chematic_lower"
+    },
+    {
+      "name": "chembl_tier_b_0064",
+      "smiles": "c1cc(CN2CCN(CC3CCCCN3)CC2)ccn1",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 100.00163934575478,
+        "rdkit_rescore_error": -1.4210854715202004e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 99.9432550787715,
+        "rdkit_rescore_error": 2.842170943040401e-14
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 101.31387174852043,
+        "rdkit_rescore_error": 2.842170943040401e-14
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 99.9432550787715,
+        "rdkit_rescore_error": 2.842170943040401e-14
+      },
+      "pool_vs_cosmolkit": "chematic_lower",
+      "quality_vs_cosmolkit": "chematic_lower",
+      "torsion_vs_cosmolkit": "chematic_lower"
+    },
+    {
+      "name": "chembl_tier_b_0097",
+      "smiles": "c1cc(CN2CCN(C[C@@H]3CCCN3)CC2)ccn1",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 103.65925196841874,
+        "rdkit_rescore_error": -1.4210854715202004e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 103.65925196841874,
+        "rdkit_rescore_error": -1.4210854715202004e-14
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 105.15190201467564,
+        "rdkit_rescore_error": -1.4210854715202004e-14
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 102.73302931825722,
+        "rdkit_rescore_error": 0.0
+      },
+      "pool_vs_cosmolkit": "chematic_lower",
+      "quality_vs_cosmolkit": "chematic_lower",
+      "torsion_vs_cosmolkit": "chematic_lower"
+    },
+    {
+      "name": "chembl_tier_b_0115",
+      "smiles": "Cn1c(CC(=O)O)cc(CO)c1C(=O)c1ccc(Cl)cc1",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 54.92355397804004,
+        "rdkit_rescore_error": 5.684341886080802e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 53.74929207617791,
+        "rdkit_rescore_error": 7.105427357601002e-15
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 54.9235539750867,
+        "rdkit_rescore_error": -7.105427357601002e-15
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": 53.74929208626914,
+        "rdkit_rescore_error": 2.1316282072803006e-14
+      },
+      "pool_vs_cosmolkit": "chematic_lower",
+      "quality_vs_cosmolkit": "within_0.01",
+      "torsion_vs_cosmolkit": "chematic_lower"
+    },
+    {
+      "name": "chembl_tier_b_0168",
+      "smiles": "CC(=O)/C=C/CC1C(=O)N2[C@@H](C(=O)O)C(C)(C)S(=O)(=O)[C@H]12",
+      "quality": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": -8.556083037358903,
+        "rdkit_rescore_error": -1.0658141036401503e-14
+      },
+      "torsion": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": -8.556083037358903,
+        "rdkit_rescore_error": -1.0658141036401503e-14
+      },
+      "cosmolkit": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": -8.556083038124786,
+        "rdkit_rescore_error": 3.552713678800501e-15
+      },
+      "pool": {
+        "returned": 24,
+        "converged": 24,
+        "best_converged_energy": -8.556083037358903,
+        "rdkit_rescore_error": -1.0658141036401503e-14
+      },
+      "pool_vs_cosmolkit": "within_0.01",
+      "quality_vs_cosmolkit": "within_0.01",
+      "torsion_vs_cosmolkit": "within_0.01"
+    }
+  ]
+}

@@ -30,7 +30,7 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def selected_rows() -> tuple[list[int], list[dict[str, str]], int]:
+def selected_rows(offset: int = 0, limit: int = 12) -> tuple[list[int], list[dict[str, str]], int]:
     rows = json.loads(MANIFEST.read_text())["molecules"]
     eligible = []
     for index, row in enumerate(rows[48:], 48):
@@ -49,7 +49,7 @@ def selected_rows() -> tuple[list[int], list[dict[str, str]], int]:
     eligible.sort()
     if len(eligible) != 35:
         raise ValueError(f"the pinned eligible count changed: {len(eligible)}")
-    chosen = eligible[:12]
+    chosen = eligible[offset:offset + limit]
     return [index for _, index, _ in chosen], [row for _, _, row in chosen], len(eligible)
 
 
@@ -202,15 +202,29 @@ def main() -> None:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--source-output", required=True, type=Path)
     parser.add_argument("--source-results", type=Path)
+    parser.add_argument("--selection-offset", type=int, default=0)
+    parser.add_argument("--selection-limit", type=int, default=12)
+    parser.add_argument("--candidate-confs", type=int,
+                        help="CheMatic seed-batch candidate count; returns 24")
     args = parser.parse_args()
+    if args.selection_offset < 0 or args.selection_limit <= 0:
+        parser.error("selection offset must be nonnegative and limit positive")
+    if args.candidate_confs is not None and args.candidate_confs < 24:
+        parser.error("candidate conformers must be at least the 24 returned conformers")
     if ck.__version__ != "0.5.0" or rdBase.rdkitVersion != "2026.09.1":
         parser.error("expected COSMolKit 0.5.0 and RDKit 2026.09.1")
     RDLogger.DisableLog("rdApp.*")
-    indices, selected, eligible_count = selected_rows()
+    indices, selected, eligible_count = selected_rows(
+        args.selection_offset, args.selection_limit
+    )
+    if len(selected) != args.selection_limit:
+        parser.error("selection exceeds the eligible rows")
     payload = "".join(
         json.dumps({
             "name": row["name"], "smiles": row["smiles"],
             "num_confs": 24, "max_iters": 1000,
+            **({"candidate_confs": args.candidate_confs}
+               if args.candidate_confs is not None else {}),
         }) + "\n"
         for row in selected
     )
@@ -231,6 +245,8 @@ def main() -> None:
             raise ValueError("CheMatic source order differs")
         if source["num_confs"] != 24 or source["max_iters"] != 1000:
             raise ValueError("CheMatic settings differ")
+        if source.get("candidate_confs") != args.candidate_confs:
+            raise ValueError("CheMatic candidate count differs")
         input_mol = Chem.MolFromSmiles(expected["smiles"])
         rd_mol = Chem.AddHs(input_mol)
         cos_mol = ck.Molecule.from_smiles(expected["smiles"]).with_hydrogens()
@@ -251,12 +267,21 @@ def main() -> None:
         torsion = score_source_arm(
             source["torsion"], rd_mol, expected_cip, expected_bonds
         )
+        pool = (
+            score_source_arm(source["pool"], rd_mol, expected_cip, expected_bonds)
+            if args.candidate_confs is not None else None
+        )
         if torsion["best_converged_energy"] > quality["best_converged_energy"] + 1e-6:
             raise ValueError("torsion search regressed the quality minimum")
         cosmolkit = score_cosmolkit(cos_mol, rd_mol, expected_cip, expected_bonds)
         rows.append({
             "name": expected["name"], "smiles": expected["smiles"],
             "quality": quality, "torsion": torsion, "cosmolkit": cosmolkit,
+            **({"pool": pool,
+                "pool_vs_cosmolkit": classify(
+                    pool["best_converged_energy"],
+                    cosmolkit["best_converged_energy"],
+                )} if pool is not None else {}),
             "quality_vs_cosmolkit": classify(
                 quality["best_converged_energy"],
                 cosmolkit["best_converged_energy"],
@@ -268,7 +293,9 @@ def main() -> None:
         })
         print(
             f"{expected['name']}: {rows[-1]['quality_vs_cosmolkit']} -> "
-            f"{rows[-1]['torsion_vs_cosmolkit']}", flush=True
+            f"{rows[-1]['torsion_vs_cosmolkit']}"
+            + (f" -> {rows[-1]['pool_vs_cosmolkit']}" if pool is not None else ""),
+            flush=True,
         )
     args.source_output.parent.mkdir(parents=True, exist_ok=True)
     args.source_output.write_text(source_text)
@@ -277,7 +304,8 @@ def main() -> None:
             label: sum(row[f"{arm}_vs_cosmolkit"] == label for row in rows)
             for label in ("chematic_lower", "cosmolkit_lower", "within_0.01")
         }
-        for arm in ("quality", "torsion")
+        for arm in (("quality", "torsion", "pool") if args.candidate_confs is not None
+                    else ("quality", "torsion"))
     }
     extension = next(Path(ck.__file__).parent.glob("cosmolkit*.so"))
     report = {
@@ -289,6 +317,7 @@ def main() -> None:
             "100 A nonbonded threshold; CheMatic torsion arm up to "
             "24 additional MMFF minimizations"
         ),
+        "candidate_confs": args.candidate_confs,
         "selection": {
             "source_manifest": str(MANIFEST.relative_to(ROOT)),
             "manifest_sha256": sha256(MANIFEST),
@@ -300,6 +329,8 @@ def main() -> None:
             "mmff94_parameters_required": True,
             "eligible": eligible_count,
             "order": "SHA-256 of source SMILES ascending",
+            "offset": args.selection_offset,
+            "limit": args.selection_limit,
             "selected_indices": indices,
         },
         "versions": {

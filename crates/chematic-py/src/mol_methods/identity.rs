@@ -443,9 +443,10 @@ impl Mol {
     /// Extend the quality profile with up to 24 MMFF94 minimizations of
     /// ±120-degree moves around the best converged conformer's rotatable
     /// bonds. A move is retained only if it converges, lowers energy, and
-    /// preserves declared stereochemistry.
+    /// preserves declared stereochemistry. `candidate_confs` may exceed the
+    /// returned count to spend a larger, explicit seed-search budget.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
-                        max_mmff_iters = 200))]
+                        max_mmff_iters = 200, candidate_confs = None))]
     fn etkdg_embed_multiple_confs_mmff_torsion_search(
         &self,
         py: Python<'_>,
@@ -453,9 +454,10 @@ impl Mol {
         random_seed: i32,
         max_iterations: u32,
         max_mmff_iters: u32,
+        candidate_confs: Option<usize>,
     ) -> PyResult<Vec<PyRdkitMmffConformer>> {
         use chematic_3d::rdkit_embed::{
-            RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_torsion_search,
+            RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_torsion_search_with_pool,
         };
         let options = RdkitEmbedOptions {
             random_seed,
@@ -464,9 +466,10 @@ impl Mol {
         };
         let mol = self.inner.clone();
         py.detach(move || {
-            etkdg_embed_multiple_confs_mmff_torsion_search(
+            etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(
                 &mol,
                 num_confs,
+                candidate_confs.unwrap_or(num_confs),
                 &options,
                 max_mmff_iters,
             )

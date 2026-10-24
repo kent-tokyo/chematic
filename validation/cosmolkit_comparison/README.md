@@ -17,6 +17,9 @@ the candidate-budget limitation.
 The [bounded torsion-search follow-up](3d-mmff-torsion-search-2026-10-24.md)
 adds a disjoint 12-molecule selection, indexed-graph and stereochemistry
 checks, and independent RDKit MMFF94 re-scoring of both engines' coordinates.
+The [candidate-pool follow-up](3d-mmff-pool48-2026-10-24.md) separates the
+returned conformer count from the seed-search budget and closes one measured
+COSMolKit energy gap on 11 additional selected molecules.
 
 The focused mixed V2000/V3000 SDF recognition fixture is
 `corpora/mixed-v2000-v3000-v1.sdf`. With RDKit 2025.09.3 and COSMolKit 0.5.0

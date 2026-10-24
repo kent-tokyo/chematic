@@ -5,6 +5,7 @@ use std::io::{self, BufRead};
 use chematic_3d::rdkit_embed::{
     RdkitEmbedOptions, RdkitMmffConformer, etkdg_embed_multiple_confs_mmff_best_gradient,
     etkdg_embed_multiple_confs_mmff_torsion_search,
+    etkdg_embed_multiple_confs_mmff_torsion_search_with_pool,
 };
 use serde_json::{Value, json};
 
@@ -57,11 +58,19 @@ fn main() {
             &molecule, num_confs, &options, max_iters,
         )
         .expect("torsion search ensemble");
+        let candidate_confs = row["candidate_confs"].as_u64().map(|value| value as usize);
+        let pooled = candidate_confs.map(|count| {
+            etkdg_embed_multiple_confs_mmff_torsion_search_with_pool(
+                &molecule, num_confs, count, &options, max_iters,
+            )
+            .expect("pooled torsion search ensemble")
+        });
         println!(
             "{}",
             json!({"name":name,"smiles":smiles,"atomic_numbers":atomic_numbers,
                 "bonds":bonds,"num_confs":num_confs,
-                "max_iters":max_iters,"quality":best(&original),"torsion":best(&searched)})
+                "max_iters":max_iters,"quality":best(&original),"torsion":best(&searched),
+                "candidate_confs":candidate_confs,"pool":pooled.as_deref().map(best)})
         );
     }
 }
