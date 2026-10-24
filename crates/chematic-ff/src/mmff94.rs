@@ -568,6 +568,97 @@ mod tests {
     use chematic_smiles::parse;
 
     #[test]
+    fn public_diagnostics_cover_every_atom_type_family() {
+        use MMFF94Type::*;
+
+        let variants = [
+            C_sp3,
+            C_sp2_Alkene,
+            C_sp_Alkyne,
+            C_Aromatic,
+            C_Carbonyl,
+            C_Carboxylic,
+            C_Carbamate,
+            C_Ester,
+            C_Amide,
+            C_Imide,
+            C_CarbamideN,
+            N_sp3_Amine,
+            N_sp3_AmineAromatic,
+            N_sp2_Imine,
+            N_sp2_Aromatic,
+            N_sp2_Carbonyl,
+            N_sp_Nitrile,
+            N_Amide,
+            N_Carbamate,
+            N_Ester,
+            N_Imide,
+            N_Aromatic_5ring,
+            N_Aromatic_6ring,
+            N_Aromatic_Pyridine,
+            N_Aromatic_Pyrrole,
+            N_Aromatic_Imidazole,
+            N_Aromatic_Triazole,
+            N_Aromatic_Tetrazole,
+            N_Aromatic_Pyrimidine,
+            N_Aromatic_Pyrazine,
+            O_Alcohol,
+            O_Phenol,
+            O_Ether,
+            O_Carbonyl,
+            O_Carboxylic,
+            O_Carbamate,
+            O_Ester,
+            O_Amide,
+            O_Imide,
+            O_CarbamideN,
+            O_Sulfoxide,
+            O_Sulfone,
+            S_Thiol,
+            S_Thioether,
+            S_Disulfide,
+            S_Sulfoxide,
+            S_Sulfone,
+            S_Aromatic,
+            P_sp3,
+            P_Oxide,
+            Si_sp3,
+            Si_sp2,
+            F,
+            Cl,
+            Br,
+            I,
+            H_Carbon,
+            H_Nitrogen,
+            H_Oxygen,
+            H_Sulfur,
+            H_Halogen,
+            H_Aromatic,
+            Generic,
+        ];
+        for atom_type in variants {
+            assert!(!atom_type.to_string().is_empty());
+        }
+        assert!(
+            AssignError::UnsupportedElement("Na".into())
+                .to_string()
+                .contains("Na")
+        );
+        assert_eq!(
+            AssignError::ComplexAromaticity.to_string(),
+            "Complex aromaticity pattern"
+        );
+        assert_eq!(
+            AssignError::CoordinateMismatch.to_string(),
+            "Coordinate count mismatch with atom count"
+        );
+        assert!(matches!(
+            assign_mmff94_types(&parse("[Na+]").unwrap()),
+            Err(AssignError::UnsupportedElement(_))
+        ));
+    }
+
+    #[test]
     fn test_mmff94_ethane_types() {
         let mol = parse("CC").unwrap();
         let types = assign_mmff94_types(&mol).unwrap();

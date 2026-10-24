@@ -473,4 +473,34 @@ mod fullerene_tests {
             assert_eq!(types.iter().filter(|&&ty| ty == 2).count(), 28);
         }
     }
+
+    #[test]
+    fn rebuilding_aromatic_view_preserves_topology_and_marks_selected_ring() {
+        let molecule = chematic_smiles::parse("C1CC1").unwrap();
+        let ring = vec![AtomIdx(0), AtomIdx(1), AtomIdx(2)];
+        let rebuilt = rebuild_mmff_aromatic_view(
+            &molecule,
+            std::slice::from_ref(&ring),
+            &[true, true, true],
+            &[true],
+        );
+
+        assert_eq!(rebuilt.atom_count(), molecule.atom_count());
+        assert_eq!(rebuilt.bond_count(), molecule.bond_count());
+        assert!(rebuilt.atoms().all(|(_, atom)| atom.aromatic));
+        assert!(rebuilt
+            .bonds()
+            .all(|(_, bond)| bond.order == BondOrder::Aromatic));
+
+        let unchanged = rebuild_mmff_aromatic_view(
+            &molecule,
+            std::slice::from_ref(&ring),
+            &[false, false, false],
+            &[false],
+        );
+        assert!(unchanged.atoms().all(|(_, atom)| !atom.aromatic));
+        assert!(unchanged
+            .bonds()
+            .all(|(_, bond)| bond.order == BondOrder::Single));
+    }
 }

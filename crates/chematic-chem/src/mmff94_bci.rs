@@ -974,4 +974,37 @@ mod tests {
             }
         }
     }
+
+    #[test]
+    fn typed_bci_table_covers_rare_parameter_families_and_direction() {
+        use MmffType::*;
+
+        let cases = [
+            (Hcarbon, Caromatic, BondOrder::Single, 0.020),
+            (Hamine, NarH, BondOrder::Single, 0.160),
+            (Hoxygen, Ohydroxyl, BondOrder::Single, 0.310),
+            (Csp3, Csp2, BondOrder::Single, 0.0),
+            (Csp3, Caromatic, BondOrder::Single, 0.008),
+            (Csp2, Caromatic, BondOrder::Single, 0.006),
+            (Csp3, Nsp2, BondOrder::Double, 0.190),
+            (Csp2, Oether, BondOrder::Single, 0.050),
+            (Csp2, Ocarbonyl, BondOrder::Double, 0.470),
+            (Csp2, Ssulfonyl, BondOrder::Single, 0.100),
+            (Namine, Ocarbonyl, BondOrder::Double, 0.350),
+            (Namine, Ocarbonyl, BondOrder::Single, 0.200),
+            (Ocarbonyl, Ssulfonyl, BondOrder::Double, 0.400),
+            (Ocarbonyl, Ssulfonyl, BondOrder::Single, 0.250),
+            (Ocarbonyl, P, BondOrder::Double, 0.400),
+            (Nar, Nar, BondOrder::Aromatic, 0.0),
+            (NarH, NarH, BondOrder::Aromatic, 0.0),
+        ];
+
+        for (left, right, order, expected) in cases {
+            assert_eq!(bci_typed(left, right, order), expected);
+            assert_eq!(bci_typed(right, left, order), -expected);
+        }
+
+        let isolated_hydrogen = parse("[H]").unwrap();
+        assert_eq!(h_type_for(&isolated_hydrogen, AtomIdx(0)), Hcarbon);
+    }
 }

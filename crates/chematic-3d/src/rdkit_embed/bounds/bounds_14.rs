@@ -861,3 +861,38 @@ pub(super) fn set14_bounds(
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+
+    #[test]
+    fn chain_decisions_record_cis_trans_custom_and_flexible_contracts() {
+        let mut data = ComputedData::new(4, 3);
+
+        let cis = pin_chain14_type(Path14Type::Cis, &mut data, 3, [0, 1, 2]);
+        assert!(matches!(cis.kind, Some(Path14BoundsKind::Cis { .. })));
+        assert!(cis.ty == Path14Type::Cis);
+        assert!(cis.forced);
+        assert_eq!(data.cis_paths.len(), 2);
+
+        let trans = pin_chain14_type(Path14Type::Trans, &mut data, 3, [2, 1, 0]);
+        assert!(matches!(trans.kind, Some(Path14BoundsKind::Trans { .. })));
+        assert!(trans.ty == Path14Type::Trans);
+        assert!(trans.forced);
+        assert_eq!(data.trans_paths.len(), 2);
+
+        let custom = pin_chain14_type(Path14Type::Other, &mut data, 3, [0, 1, 2]);
+        assert!(matches!(
+            custom.kind,
+            Some(Path14BoundsKind::Custom { torsion }) if torsion == M_PI / 2.0
+        ));
+        assert!(custom.ty == Path14Type::Other);
+        assert!(custom.forced);
+
+        let flexible = flexible_chain14();
+        assert!(matches!(flexible.kind, Some(Path14BoundsKind::Flexible)));
+        assert!(flexible.ty == Path14Type::Other);
+        assert!(!flexible.forced);
+    }
+}

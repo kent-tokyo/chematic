@@ -385,4 +385,105 @@ mod tests {
             assert_eq!(s0 == s1, f.ends[0].up == f.ends[1].up);
         }
     }
+
+    #[test]
+    fn unmarkable_reference_moves_to_the_other_substituent_or_refuses() {
+        let mut builder = MoleculeBuilder::new();
+        let atoms = [Element::C, Element::C, Element::O, Element::F, Element::CL]
+            .into_iter()
+            .map(|element| builder.add_atom(Atom::new(element)))
+            .collect::<Vec<_>>();
+        let double = builder
+            .add_bond(atoms[0], atoms[1], BondOrder::Double)
+            .unwrap();
+        let zero = builder
+            .add_bond(atoms[0], atoms[2], BondOrder::Zero)
+            .unwrap();
+        let sibling = builder
+            .add_bond(atoms[0], atoms[3], BondOrder::Single)
+            .unwrap();
+        let right = builder
+            .add_bond(atoms[1], atoms[4], BondOrder::Single)
+            .unwrap();
+        let mut mol = builder.build();
+        let fact = EzFact {
+            double,
+            ends: [
+                EzFactEnd {
+                    atom: atoms[0],
+                    reference: zero,
+                    up: true,
+                },
+                EzFactEnd {
+                    atom: atoms[1],
+                    reference: right,
+                    up: false,
+                },
+            ],
+        };
+        assert!(write_ez_facts(&mut mol, &[fact]));
+        assert!(marker_side(&mol, sibling, atoms[0]).is_some());
+        assert!(marker_side(&mol, right, atoms[1]).is_some());
+
+        let mut blocked = mol.clone();
+        blocked.set_bond_order(sibling, BondOrder::Zero);
+        assert!(!write_ez_facts(&mut blocked, &[fact]));
+    }
+
+    #[test]
+    fn stored_directions_and_unattributable_conflicts_fail_closed() {
+        let mut stored = diene(&[]);
+        let left = stored.bond_between(AtomIdx(0), AtomIdx(1)).unwrap().0;
+        let shared = stored.bond_between(AtomIdx(2), AtomIdx(3)).unwrap().0;
+        let right = stored.bond_between(AtomIdx(4), AtomIdx(5)).unwrap().0;
+        let first_double = stored.bond_between(AtomIdx(1), AtomIdx(2)).unwrap().0;
+        stored.set_bond_direction(shared, BondOrder::Up);
+        stored.set_bond_direction_anchor(shared, AtomIdx(2));
+        let fact = EzFact {
+            double: first_double,
+            ends: [
+                EzFactEnd {
+                    atom: AtomIdx(1),
+                    reference: left,
+                    up: true,
+                },
+                EzFactEnd {
+                    atom: AtomIdx(2),
+                    reference: shared,
+                    up: false,
+                },
+            ],
+        };
+        assert!(!write_ez_facts(&mut stored, &[fact]));
+        assert_eq!(
+            raw_direction(&stored, shared),
+            Some((BondOrder::Up, AtomIdx(2)))
+        );
+        assert!(!direction_is_up(BondOrder::Single, AtomIdx(2), AtomIdx(2)));
+        assert_eq!(raw_direction(&stored, right), None);
+
+        let mut conflict = diene(&[
+            (0, 1, BondOrder::Down),
+            (2, 3, BondOrder::Up),
+            (4, 5, BondOrder::Down),
+        ]);
+        // Add a second marked substituent to the left end of the first
+        // double. Neither points at another double-bond end, so attribution
+        // must fail rather than silently choosing one.
+        let extra = conflict.add_atom(Atom::new(Element::CL));
+        conflict.add_bond(AtomIdx(1), extra, BondOrder::Up).unwrap();
+        assert_eq!(read_ez_facts(&conflict), None);
+        let before = conflict
+            .bonds()
+            .map(|(_, bond)| bond.order)
+            .collect::<Vec<_>>();
+        assert!(!reconcile_ez_markers(&mut conflict));
+        assert_eq!(
+            conflict
+                .bonds()
+                .map(|(_, bond)| bond.order)
+                .collect::<Vec<_>>(),
+            before
+        );
+    }
 }

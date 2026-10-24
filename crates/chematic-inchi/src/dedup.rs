@@ -1724,7 +1724,6 @@ pub fn compare_indexed_graph_relation(
 #[cfg(test)]
 mod tests {
     use super::*;
-
     #[test]
     fn group_candidates_partitions_by_canonical_smiles() {
         use chematic_smiles::parse;
@@ -2076,4 +2075,5 @@ mod tests {
             }
         }
     }
+    include!("dedup_boundary_tests.rs");
 }

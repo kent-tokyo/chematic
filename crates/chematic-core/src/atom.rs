@@ -353,4 +353,17 @@ mod tests {
         assert_eq!(RGroupLabel::numbered(2).unwrap().number(), Some(2));
         assert_eq!(RGroupLabel::unnumbered().number(), None);
     }
+
+    #[test]
+    #[allow(deprecated)]
+    fn bracket_display_and_context_only_allene_contracts() {
+        let bracket = Atom::bracket(Element::N, Some(15), Chirality::Clockwise, 2, 1, Some(9));
+        assert_eq!(bracket.explicit_hcount(), Some(2));
+        assert_eq!(format!("{bracket}"), "[15N]");
+        assert!(!bracket.chirality.is_allene());
+
+        let aromatic = Atom::aromatic(Element::N);
+        assert_eq!(format!("{aromatic}"), "n");
+        assert_eq!(format!("{}", Atom::organic(Element::CL)), "Cl");
+    }
 }

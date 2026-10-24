@@ -1206,6 +1206,88 @@ mod numerical_contract_tests {
     }
 
     #[test]
+    fn public_torsion_entrypoint_and_linear_improper_restraint_are_exercised() {
+        let molecule = chematic_smiles::parse("C1CCC1").unwrap();
+        let view = chematic_smiles::rdkit_mol_view(&molecule).unwrap();
+        let details = get_experimental_torsions(&view, true, true, true, true, 2);
+        assert_eq!(
+            details.exp_torsion_atoms.len(),
+            details.exp_torsion_angles.len()
+        );
+
+        let linear = CrystalFfDetails {
+            bonds_angles: BondsAndAngles {
+                bonds: vec![],
+                angles: vec![[0, 1, 2, 1]],
+            },
+            ..Default::default()
+        };
+        let field = construct_3d_improper_force_field(3, &linear);
+        assert!(matches!(
+            field.contribs.as_slice(),
+            [Contrib::Angles(angles)] if angles.len() == 1
+        ));
+        assert_eq!(
+            field.energy(&[1.0, 0.0, 0.0, 0.0, 0.0, 0.0, -1.0, 0.0, 0.0]),
+            0.0
+        );
+    }
+
+    #[test]
+    fn complete_force_field_builder_covers_every_contribution_family() {
+        let mut bounds = BoundsMatrix::new(4);
+        for i in 0..4 {
+            for j in i + 1..4 {
+                bounds.set_lower(i, j, 0.8);
+                bounds.set_upper(i, j, 3.0);
+            }
+        }
+        let details = CrystalFfDetails {
+            exp_torsion_atoms: vec![[0, 1, 2, 3]],
+            exp_torsion_angles: vec![([1; 6], [1.0; 6])],
+            improper_atoms: vec![[0, 1, 2, 3, 6, 0]],
+            bonds_angles: BondsAndAngles {
+                bonds: vec![(0, 1)],
+                angles: vec![[0, 1, 2, 1], [0, 1, 3, 0], [1, 2, 3, 0]],
+            },
+            bounds_mat_force_scaling: 2.0,
+        };
+        let positions = [
+            0.0, 0.0, 0.0, // atom 0
+            1.0, 0.0, 0.0, // atom 1
+            1.0, 1.0, 0.0, // atom 2
+            1.0, 1.0, 1.0, // atom 3
+        ];
+        let field = construct_3d_force_field(&bounds, &positions, &details);
+
+        assert!(field.energy(&positions).is_finite());
+        assert!(
+            field
+                .contribs
+                .iter()
+                .any(|entry| matches!(entry, Contrib::Torsions(_)))
+        );
+        assert!(
+            field
+                .contribs
+                .iter()
+                .any(|entry| matches!(entry, Contrib::Inversions(_)))
+        );
+        assert!(
+            field
+                .contribs
+                .iter()
+                .any(|entry| matches!(entry, Contrib::Angles(_)))
+        );
+        assert!(
+            field
+                .contribs
+                .iter()
+                .any(|entry| matches!(entry, Contrib::Distances(_)))
+        );
+    }
+
+    #[test]
     fn inversion_normal_and_degenerate_geometry_contracts() {
         let field = Etk3dField {
             contribs: vec![Contrib::Inversions(vec![Inversion {

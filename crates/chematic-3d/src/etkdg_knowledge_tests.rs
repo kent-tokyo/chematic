@@ -228,6 +228,50 @@ mod tests {
         let _ = pref_ester;
     }
 
+    #[test]
+    fn uncommon_torsion_families_are_classified_without_falling_back() {
+        fn preferences(smiles: &str) -> Vec<TorsionPreference> {
+            let mol = parse(smiles).unwrap();
+            let mut out = Vec::new();
+            for b in 0..mol.atom_count() as u32 {
+                for (a, _) in mol.neighbors(AtomIdx(b)) {
+                    for (c, _) in mol.neighbors(AtomIdx(b)) {
+                        if c == a {
+                            continue;
+                        }
+                        for (d, _) in mol.neighbors(c) {
+                            if d != AtomIdx(b)
+                                && let Some(pref) =
+                                    get_torsion_preference(&mol, a, AtomIdx(b), c, d)
+                            {
+                                out.push(pref);
+                            }
+                        }
+                    }
+                }
+            }
+            out
+        }
+
+        for smiles in [
+            "n1ccccc1OC",
+            "c1ccsc1-c1ccccn1",
+            "c1ccoc1-c1ccccn1",
+            "CC(=O)C=C",
+            "CCC#N",
+            "CC(=O)NC",
+            "CN=C=O",
+            "c1ccccc1N=C=O",
+            "CC(=S)NC",
+            "OCCO",
+            "O=P(O)(O)OC",
+            "O=CC=O",
+            "c1ccccc1Cl",
+        ] {
+            assert!(!preferences(smiles).is_empty(), "{smiles}");
+        }
+    }
+
     // ── SMARTS torsion map tests ───────────────────────────────────────────────
 
     #[test]

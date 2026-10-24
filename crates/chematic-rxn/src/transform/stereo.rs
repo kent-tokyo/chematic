@@ -784,3 +784,59 @@ pub(super) fn correct_product_stereo(
 
     product
 }
+
+#[cfg(test)]
+mod coverage_boundary_tests {
+    use super::*;
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    fn molecule_with_bond(order: BondOrder) -> Molecule {
+        let mut builder = MoleculeBuilder::new();
+        let a = builder.add_atom(Atom::new(Element::C));
+        let b = builder.add_atom(Atom::new(Element::N));
+        builder.add_bond(a, b, order).unwrap();
+        builder.build()
+    }
+
+    #[test]
+    fn query_projection_handles_every_nonordinary_bond_kind() {
+        for order in [
+            BondOrder::Triple,
+            BondOrder::Aromatic,
+            BondOrder::QuerySingleOrDouble,
+            BondOrder::QuerySingleOrAromatic,
+            BondOrder::QueryDoubleOrAromatic,
+            BondOrder::Quadruple,
+            BondOrder::Zero,
+            BondOrder::QueryAny,
+        ] {
+            let query = mol_to_query(&molecule_with_bond(order));
+            assert_eq!(query.atom_count(), 2, "{order:?}");
+            assert_eq!(query.bonds.len(), 1, "{order:?}");
+        }
+    }
+
+    #[test]
+    fn stereo_order_validation_rejects_duplicate_sentinel_and_wrong_topology() {
+        let mol = molecule_with_bond(BondOrder::Single);
+        assert!(!order_matches_final_topology(
+            &mol,
+            AtomIdx(0),
+            &[STEREO_H_SENTINEL, STEREO_H_SENTINEL]
+        ));
+        assert!(!order_matches_final_topology(&mol, AtomIdx(0), &[1, 1]));
+        assert!(!order_matches_final_topology(&mol, AtomIdx(0), &[]));
+        assert!(order_matches_final_topology(&mol, AtomIdx(0), &[1]));
+    }
+
+    #[test]
+    fn remapping_fails_closed_for_removed_atoms_and_preserves_implicit_h() {
+        let mut mapping = FxHashMap::default();
+        mapping.insert((0, AtomIdx(2)), AtomIdx(7));
+        assert_eq!(
+            remap_reactant_stereo_order(&[STEREO_H_SENTINEL, 2], 0, &mapping),
+            Some(vec![STEREO_H_SENTINEL, 7])
+        );
+        assert_eq!(remap_reactant_stereo_order(&[3], 0, &mapping), None);
+    }
+}
