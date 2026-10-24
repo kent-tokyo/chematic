@@ -1,0 +1,2728 @@
+{
+  "schema": "chematic.mmcif-numeric-preservation-report.v1",
+  "baseline": true,
+  "baseline_runtime_commit": "342d1d5f9ad09aa6ade4e3079a902cba856209e2",
+  "reader_comparison_base": "fcbf6d0a8c901dee5220cca965cf119c0a3b7b46",
+  "head": "fcbf6d0a8c901dee5220cca965cf119c0a3b7b46",
+  "scope": "authored development packet; parsed finite binary64 numeric values, ordered atom id/element; no uncertainty/source bytes/full namespace/schema/bond/stereo/speed claim; storage group is arithmetic only",
+  "sources": [],
+  "baseline_sources": [
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-mol/src/mmcif.rs",
+      "sha256": "385cf2e1dc452ea72974278d13b1597afcbaa0627d847a582e59416f3ed18ad4",
+      "size_bytes": 50855
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-py/src/formats/materials.rs",
+      "sha256": "c5d1c32bf1c4b1cef08be3652511a59e69a8a786ec6ff5f5353d97125387bd7b",
+      "size_bytes": 43898
+    },
+    {
+      "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/crates/chematic-wasm/src/format_io.rs",
+      "sha256": "3b2ca5034c968f518d7a3c67670263c210733f23a7fff07f8ba9409c89006bb5",
+      "size_bytes": 58049
+    }
+  ],
+  "runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_mmcif_numeric_preservation.py",
+    "sha256": "131c4f6c3d3b189677061f59f9e8396f957656b04a4189ae9c4d20a46b2295f1",
+    "size_bytes": 6336
+  },
+  "observer": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/mmcif_numeric_observer.py",
+    "sha256": "3788a3349d2a0edcd4dd7e9eb4b774320352da489564653cdbb15949d5b7aa4e",
+    "size_bytes": 5146
+  },
+  "process_bounds": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
+    "sha256": "83870c344f0195cd5f502e06c23379fb50bb7a07a40e7420e89ce997981ef5b5",
+    "size_bytes": 28676
+  },
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/validation/mmcif_numeric_preservation/cases.json",
+    "sha256": "85a9792d1785c8ee5a7ef52516799efb1ed08e9f95793273462fafcf8ce68ca6",
+    "size_bytes": 28143
+  },
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "python_package": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-python/chematic/__init__.py",
+    "sha256": "8d3b3eefb018b54adb3a8fbdb10ec686a2c4eb76cc16a31da33b7fa98a690d81",
+    "size_bytes": 30215
+  },
+  "python_extension": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "b42bbc04a9f9c327e5ab8e21d58dffd2cd5849462bbc8ec9a6f5882115cbf6ba",
+    "size_bytes": 45487360
+  },
+  "node_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "v24.5.0\n",
+    "stderr": ""
+  },
+  "wasm_module": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-wasm/chematic_wasm.js",
+    "sha256": "43f17606a67b04ecb1aefbb4ac5e463d3c6703c0e4c6cf2b9fb1cdacbe91f1e3",
+    "size_bytes": 376697
+  },
+  "wasm_binary": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/baseline-wasm/chematic_wasm_bg.wasm",
+    "sha256": "ee90f6fee21bbf468a6f4665879a1c08e80533a361b1e1c6afc6ec5a57ca7518",
+    "size_bytes": 46299595
+  },
+  "openbabel_binary": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_command": [
+    "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "-immcif",
+    "-ommcif",
+    "-ab"
+  ],
+  "process_limits": {
+    "node_seconds": 10,
+    "openbabel_seconds_per_case": 60,
+    "combined_output_bytes": 1048576
+  },
+  "openbabel_version": {
+    "resource_status": "completed",
+    "exit_code": 0,
+    "stdout": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27\n",
+    "stderr": ""
+  },
+  "summary": {
+    "python": {
+      "control": {
+        "count": 3,
+        "all_numeric": 3,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "cartesian": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "occupancy": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "b_iso": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "cell": {
+            "eligible": 1,
+            "preserved": 1
+          }
+        }
+      },
+      "reproduction": {
+        "count": 12,
+        "all_numeric": 0,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 12,
+            "preserved": 12
+          },
+          "cartesian": {
+            "eligible": 12,
+            "preserved": 4
+          },
+          "occupancy": {
+            "eligible": 12,
+            "preserved": 9
+          },
+          "b_iso": {
+            "eligible": 12,
+            "preserved": 9
+          },
+          "cell": {
+            "eligible": 3,
+            "preserved": 0
+          }
+        }
+      },
+      "storage": {
+        "count": 4,
+        "all_numeric": 1,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 4,
+            "preserved": 4
+          },
+          "cartesian": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "occupancy": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "b_iso": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "cell": {
+            "eligible": 0,
+            "preserved": 0
+          }
+        }
+      }
+    },
+    "wasm": {
+      "control": {
+        "count": 3,
+        "all_numeric": 3,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "cartesian": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "occupancy": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "b_iso": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "cell": {
+            "eligible": 1,
+            "preserved": 1
+          }
+        }
+      },
+      "reproduction": {
+        "count": 12,
+        "all_numeric": 0,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 12,
+            "preserved": 12
+          },
+          "cartesian": {
+            "eligible": 12,
+            "preserved": 4
+          },
+          "occupancy": {
+            "eligible": 12,
+            "preserved": 9
+          },
+          "b_iso": {
+            "eligible": 12,
+            "preserved": 9
+          },
+          "cell": {
+            "eligible": 3,
+            "preserved": 0
+          }
+        }
+      },
+      "storage": {
+        "count": 4,
+        "all_numeric": 1,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 4,
+            "preserved": 4
+          },
+          "cartesian": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "occupancy": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "b_iso": {
+            "eligible": 4,
+            "preserved": 2
+          },
+          "cell": {
+            "eligible": 0,
+            "preserved": 0
+          }
+        }
+      }
+    },
+    "openbabel": {
+      "control": {
+        "count": 3,
+        "all_numeric": 0,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "cartesian": {
+            "eligible": 3,
+            "preserved": 3
+          },
+          "occupancy": {
+            "eligible": 3,
+            "preserved": 0
+          },
+          "b_iso": {
+            "eligible": 3,
+            "preserved": 0
+          },
+          "cell": {
+            "eligible": 1,
+            "preserved": 1
+          }
+        }
+      },
+      "reproduction": {
+        "count": 12,
+        "all_numeric": 0,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 12,
+            "preserved": 12
+          },
+          "cartesian": {
+            "eligible": 12,
+            "preserved": 4
+          },
+          "occupancy": {
+            "eligible": 12,
+            "preserved": 0
+          },
+          "b_iso": {
+            "eligible": 12,
+            "preserved": 0
+          },
+          "cell": {
+            "eligible": 3,
+            "preserved": 0
+          }
+        }
+      },
+      "storage": {
+        "count": 4,
+        "all_numeric": 0,
+        "no_output": 0,
+        "channels": {
+          "atom_identity": {
+            "eligible": 4,
+            "preserved": 4
+          },
+          "cartesian": {
+            "eligible": 4,
+            "preserved": 1
+          },
+          "occupancy": {
+            "eligible": 4,
+            "preserved": 0
+          },
+          "b_iso": {
+            "eligible": 4,
+            "preserved": 0
+          },
+          "cell": {
+            "eligible": 0,
+            "preserved": 0
+          }
+        }
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "integer_grid",
+      "group": "control",
+      "input": "data_integer_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.0 -2.0 3.0 1.0 10.0 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.0,
+            "y": -2.0,
+            "z": 3.0,
+            "occupancy": 1.0,
+            "b_iso": 10.0,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_integer_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.000 -2.000 3.000 1.00 10.00 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c000000000000000",
+              "4008000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4024000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_integer_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.000 -2.000 3.000 1.00 10.00 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c000000000000000",
+              "4008000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4024000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_INTEGER_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tINTEGER_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tINTEGER_GRID\n_chemical.name_common\t'integer_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tINTEGER_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1\t-2\t3\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_INTEGER_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tINTEGER_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tINTEGER_GRID\n_chemical.name_common\t'integer_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tINTEGER_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1\t-2\t3\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c000000000000000",
+              "4008000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "legacy_decimal_grid",
+      "group": "control",
+      "input": "data_legacy_decimal_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 10.001 -2.125 3.75 0.25 10.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 10.001,
+            "y": -2.125,
+            "z": 3.75,
+            "occupancy": 0.25,
+            "b_iso": 10.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_legacy_decimal_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 10.001 -2.125 3.750 0.25 10.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "40240083126e978d",
+              "c001000000000000",
+              "400e000000000000"
+            ],
+            "occupancy": [
+              "3fd0000000000000"
+            ],
+            "b_iso": [
+              "4025000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_legacy_decimal_grid\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 10.001 -2.125 3.750 0.25 10.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "40240083126e978d",
+              "c001000000000000",
+              "400e000000000000"
+            ],
+            "occupancy": [
+              "3fd0000000000000"
+            ],
+            "b_iso": [
+              "4025000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_LEGACY_DECIMAL_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tLEGACY_DECIMAL_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tLEGACY_DECIMAL_GRID\n_chemical.name_common\t'legacy_decimal_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tLEGACY_DECIMAL_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t10.001\t-2.125\t3.75\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_LEGACY_DECIMAL_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tLEGACY_DECIMAL_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tLEGACY_DECIMAL_GRID\n_chemical.name_common\t'legacy_decimal_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tLEGACY_DECIMAL_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t10.001\t-2.125\t3.75\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "40240083126e978d",
+              "c001000000000000",
+              "400e000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cell_grid",
+      "group": "control",
+      "input": "data_cell_grid\n#\n_cell.length_a 61.25\n_cell.length_b 62.125\n_cell.length_c 63.5\n_cell.angle_alpha 90.0\n_cell.angle_beta 90.0\n_cell.angle_gamma 90.0\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": {
+          "a": 61.25,
+          "b": 62.125,
+          "c": 63.5,
+          "alpha": 90.0,
+          "beta": 90.0,
+          "gamma": 90.0
+        }
+      },
+      "wasm": {
+        "output": "data_cell_grid\n#\n_cell.length_a      61.2500\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   90.000\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": true
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_cell_grid\n#\n_cell.length_a      61.2500\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   90.000\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": true
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_GRID\n_chemical.name_common\t'cell_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_GRID\n_cell.length_a\t61.25\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t90\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_GRID\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_GRID\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_GRID\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_GRID\n_chemical.name_common\t'cell_grid'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_GRID\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_GRID\n_cell.length_a\t61.25\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t90\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_GRID\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": true
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null,
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_x",
+      "group": "reproduction",
+      "input": "data_coordinate_x\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.123456789 -2.875 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.123456789,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_x\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_x\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_X\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_X\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_X\n_chemical.name_common\t'coordinate_x'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_X\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_X\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_X\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_X\n_chemical.name_common\t'coordinate_x'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_X\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f9b13165d399",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_y",
+      "group": "reproduction",
+      "input": "data_coordinate_y\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.987654321 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.987654321,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_y\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.988 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007e76c8b439581",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_y\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.988 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007e76c8b439581",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_Y\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_Y\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_Y\n_chemical.name_common\t'coordinate_y'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_Y\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.98765\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_Y\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_Y\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_Y\n_chemical.name_common\t'coordinate_y'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_Y\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.98765\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007e6b50b0f27bb",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_z",
+      "group": "reproduction",
+      "input": "data_coordinate_z\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.141592653589793 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.141592653589793,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_z\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.142 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_z\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.142 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_Z\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_Z\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_Z\n_chemical.name_common\t'coordinate_z'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_Z\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.14159\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_Z\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_Z\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_Z\n_chemical.name_common\t'coordinate_z'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_Z\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.14159\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400921f9f01b866e"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_triplet",
+      "group": "reproduction",
+      "input": "data_coordinate_triplet\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.123456789 -2.987654321 3.141592653589793 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.123456789,
+            "y": -2.987654321,
+            "z": 3.141592653589793,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_triplet\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.988 3.142 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007e76c8b439581",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_triplet\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.988 3.142 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007e76c8b439581",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_TRIPLET\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_TRIPLET\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_TRIPLET\n_chemical.name_common\t'coordinate_triplet'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_TRIPLET\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.98765\t3.14159\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_TRIPLET\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_TRIPLET\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_TRIPLET\n_chemical.name_common\t'coordinate_triplet'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_TRIPLET\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.98765\t3.14159\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f9b13165d399",
+              "c007e6b50b0f27bb",
+              "400921f9f01b866e"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_small",
+      "group": "reproduction",
+      "input": "data_coordinate_small\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.23456789e-07 -2.34567891e-06 3.45678912e-05 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.23456789e-07,
+            "y": -2.34567891e-06,
+            "z": 3.45678912e-05,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_small\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 0.000 -0.000 0.000 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "0000000000000000",
+              "8000000000000000",
+              "0000000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_small\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 0.000 -0.000 0.000 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "0000000000000000",
+              "8000000000000000",
+              "0000000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_SMALL\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_SMALL\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_SMALL\n_chemical.name_common\t'coordinate_small'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_SMALL\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.23457e-07\t-2.34568e-06\t3.45679e-05\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_SMALL\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_SMALL\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_SMALL\n_chemical.name_common\t'coordinate_small'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_SMALL\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.23457e-07\t-2.34568e-06\t3.45679e-05\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3e8091f341991fae",
+              "bec3ad4f37af7183",
+              "3f021f9ffffb7d83"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coordinate_large",
+      "group": "reproduction",
+      "input": "data_coordinate_large\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 123456.789123456 -234567.891234567 345678.912345678 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 123456.789123456,
+            "y": -234567.891234567,
+            "z": 345678.912345678,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_coordinate_large\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 123456.789 -234567.891 345678.912 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "40fe240c9fbe76c9",
+              "c10ca23f20c49ba6",
+              "4115193ba5e353f8"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_coordinate_large\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 123456.789 -234567.891 345678.912 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "40fe240c9fbe76c9",
+              "c10ca23f20c49ba6",
+              "4115193ba5e353f8"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_LARGE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_LARGE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_LARGE\n_chemical.name_common\t'coordinate_large'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_LARGE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t123457\t-234568\t345679\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_COORDINATE_LARGE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCOORDINATE_LARGE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCOORDINATE_LARGE\n_chemical.name_common\t'coordinate_large'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCOORDINATE_LARGE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t123457\t-234568\t345679\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "40fe241000000000",
+              "c10ca24000000000",
+              "4115193c00000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "occupancy",
+      "group": "reproduction",
+      "input": "data_occupancy\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 0.3333333333333333 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 0.3333333333333333,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_occupancy\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 0.33 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_occupancy\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 0.33 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_OCCUPANCY\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tOCCUPANCY\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tOCCUPANCY\n_chemical.name_common\t'occupancy'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tOCCUPANCY\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_OCCUPANCY\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tOCCUPANCY\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tOCCUPANCY\n_chemical.name_common\t'occupancy'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tOCCUPANCY\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "b_iso",
+      "group": "reproduction",
+      "input": "data_b_iso\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 1.0 12.3456789123456 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.3456789123456,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_b_iso\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.35 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4028b33333333333"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_b_iso\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.35 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4028b33333333333"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_B_ISO\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tB_ISO\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tB_ISO\n_chemical.name_common\t'b_iso'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tB_ISO\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_B_ISO\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tB_ISO\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tB_ISO\n_chemical.name_common\t'b_iso'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tB_ISO\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cell_lengths",
+      "group": "reproduction",
+      "input": "data_cell_lengths\n#\n_cell.length_a 61.2345678912345\n_cell.length_b 62.3456789123456\n_cell.length_c 63.4567891234567\n_cell.angle_alpha 90.0\n_cell.angle_beta 90.0\n_cell.angle_gamma 90.0\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": {
+          "a": 61.2345678912345,
+          "b": 62.3456789123456,
+          "c": 63.4567891234567,
+          "alpha": 90.0,
+          "beta": 90.0,
+          "gamma": 90.0
+        }
+      },
+      "wasm": {
+        "output": "data_cell_lengths\n#\n_cell.length_a      61.2346\n_cell.length_b      62.3457\n_cell.length_c      63.4568\n_cell.angle_alpha   90.000\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404e9e075f6fd220",
+              "404f2c3fe5c91d15",
+              "404fba786c22680a",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_cell_lengths\n#\n_cell.length_a      61.2346\n_cell.length_b      62.3457\n_cell.length_c      63.4568\n_cell.angle_alpha   90.000\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404e9e075f6fd220",
+              "404f2c3fe5c91d15",
+              "404fba786c22680a",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_LENGTHS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_LENGTHS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_LENGTHS\n_chemical.name_common\t'cell_lengths'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_LENGTHS\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_LENGTHS\n_cell.length_a\t61.2346\n_cell.length_b\t62.3457\n_cell.length_c\t63.4568\n_cell.angle_alpha\t90\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_LENGTHS\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_LENGTHS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_LENGTHS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_LENGTHS\n_chemical.name_common\t'cell_lengths'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_LENGTHS\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_LENGTHS\n_cell.length_a\t61.2346\n_cell.length_b\t62.3457\n_cell.length_c\t63.4568\n_cell.angle_alpha\t90\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_LENGTHS\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null,
+            "cell": [
+              "404e9e075f6fd220",
+              "404f2c3fe5c91d15",
+              "404fba786c22680a",
+              "4056800000000000",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "cell_angles",
+      "group": "reproduction",
+      "input": "data_cell_angles\n#\n_cell.length_a 61.25\n_cell.length_b 62.125\n_cell.length_c 63.5\n_cell.angle_alpha 89.1234567891234\n_cell.angle_beta 91.2345678912345\n_cell.angle_gamma 93.3456789123456\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": {
+          "a": 61.25,
+          "b": 62.125,
+          "c": 63.5,
+          "alpha": 89.1234567891234,
+          "beta": 91.2345678912345,
+          "gamma": 93.3456789123456
+        }
+      },
+      "wasm": {
+        "output": "data_cell_angles\n#\n_cell.length_a      61.2500\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   89.123\n_cell.angle_beta    91.235\n_cell.angle_gamma   93.346\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647df3b645a1d",
+              "4056cf0a3d70a3d7",
+              "40575624dd2f1aa0"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_cell_angles\n#\n_cell.length_a      61.2500\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   89.123\n_cell.angle_beta    91.235\n_cell.angle_gamma   93.346\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ],
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647df3b645a1d",
+              "4056cf0a3d70a3d7",
+              "40575624dd2f1aa0"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_ANGLES\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_ANGLES\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_ANGLES\n_chemical.name_common\t'cell_angles'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_ANGLES\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_ANGLES\n_cell.length_a\t61.25\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t89.1235\n_cell.angle_beta\t91.2346\n_cell.angle_gamma\t93.3457\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_ANGLES\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_CELL_ANGLES\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tCELL_ANGLES\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tCELL_ANGLES\n_chemical.name_common\t'cell_angles'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tCELL_ANGLES\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tCELL_ANGLES\n_cell.length_a\t61.25\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t89.1235\n_cell.angle_beta\t91.2346\n_cell.angle_gamma\t93.3457\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tCELL_ANGLES\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null,
+            "cell": [
+              "404ea00000000000",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647e76c8b4396",
+              "4056cf03afb7e910",
+              "4057561ff2e48e8a"
+            ]
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "all_numeric",
+      "group": "reproduction",
+      "input": "data_all_numeric\n#\n_cell.length_a 61.2345678912345\n_cell.length_b 62.125\n_cell.length_c 63.5\n_cell.angle_alpha 89.1234567891234\n_cell.angle_beta 90.0\n_cell.angle_gamma 90.0\n_symmetry.space_group_name_H-M 'P 1'\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.123456789 -2.987654321 3.141592653589793 0.3333333333333333 12.3456789123456 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.123456789,
+            "y": -2.987654321,
+            "z": 3.141592653589793,
+            "occupancy": 0.3333333333333333,
+            "b_iso": 12.3456789123456,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": {
+          "a": 61.2345678912345,
+          "b": 62.125,
+          "c": 63.5,
+          "alpha": 89.1234567891234,
+          "beta": 90.0,
+          "gamma": 90.0
+        }
+      },
+      "wasm": {
+        "output": "data_all_numeric\n#\n_cell.length_a      61.2346\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   89.123\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.988 3.142 0.33 12.35 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007e76c8b439581",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f"
+            ],
+            "b_iso": [
+              "4028b33333333333"
+            ],
+            "cell": [
+              "404e9e075f6fd220",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647df3b645a1d",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_all_numeric\n#\n_cell.length_a      61.2346\n_cell.length_b      62.1250\n_cell.length_c      63.5000\n_cell.angle_alpha   89.123\n_cell.angle_beta    90.000\n_cell.angle_gamma   90.000\n#\n_symmetry.space_group_name_H-M   'P 1'\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.988 3.142 0.33 12.35 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007e76c8b439581",
+              "400922d0e5604189"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f"
+            ],
+            "b_iso": [
+              "4028b33333333333"
+            ],
+            "cell": [
+              "404e9e075f6fd220",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647df3b645a1d",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_ALL_NUMERIC\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tALL_NUMERIC\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tALL_NUMERIC\n_chemical.name_common\t'all_numeric'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tALL_NUMERIC\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.98765\t3.14159\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tALL_NUMERIC\n_cell.length_a\t61.2346\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t89.1235\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tALL_NUMERIC\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_ALL_NUMERIC\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tALL_NUMERIC\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tALL_NUMERIC\n_chemical.name_common\t'all_numeric'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tALL_NUMERIC\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.98765\t3.14159\n\n##########\n## CELL ##\n##########\n\n_cell.entry_id\tALL_NUMERIC\n_cell.length_a\t61.2346\n_cell.length_b\t62.125\n_cell.length_c\t63.5\n_cell.angle_alpha\t89.1235\n_cell.angle_beta\t90\n_cell.angle_gamma\t90\n\n#################\n## SPACE GROUP ##\n#################\n\n_space_group.id\tALL_NUMERIC\n_space_group.IT_number\t1\n_space_group.name_Hall\t'P 1'\n_space_group_name_H-M_alt 'P 1'\n\n####################\n## SYMMETRY EQUIV ##\n####################\n\nloop_\n_symmetry_equiv.id\n_symmetry_equiv.pos_as_xyz\n\t1\t'x,y,z'\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": false
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f9b13165d399",
+              "c007e6b50b0f27bb",
+              "400921f9f01b866e"
+            ],
+            "occupancy": null,
+            "b_iso": null,
+            "cell": [
+              "404e9e075f6fd220",
+              "404f100000000000",
+              "404fc00000000000",
+              "405647e76c8b4396",
+              "4056800000000000",
+              "4056800000000000"
+            ]
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "multiple_atoms",
+      "group": "reproduction",
+      "input": "data_multiple_atoms\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.123456789 -2.875 3.5 0.3333333333333333 12.3456789123456 ? 1 GLY A N 1\nATOM 2 O O . GLY A 1 1 ? -3.456789123 4.567891234 5.678912345 0.555555555 23.456789123 ? 1 GLY A O 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.123456789,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 0.3333333333333333,
+            "b_iso": 12.3456789123456,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          },
+          {
+            "group_pdb": "ATOM",
+            "serial": 2,
+            "element": "O",
+            "atom_name": "O",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": -3.456789123,
+            "y": 4.567891234,
+            "z": 5.678912345,
+            "occupancy": 0.555555555,
+            "b_iso": 23.456789123,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_multiple_atoms\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.875 3.500 0.33 12.35 . 1 GLY A N 1\nATOM 2 O O . GLY A 1 1 . -3.457 4.568 5.679 0.56 23.46 . 1 GLY A O 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007000000000000",
+              "400c000000000000",
+              "c00ba7ef9db22d0e",
+              "401245a1cac08312",
+              "4016b74bc6a7ef9e"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f",
+              "3fe1eb851eb851ec"
+            ],
+            "b_iso": [
+              "4028b33333333333",
+              "403775c28f5c28f6"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_multiple_atoms\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.123 -2.875 3.500 0.33 12.35 . 1 GLY A N 1\nATOM 2 O O . GLY A 1 1 . -3.457 4.568 5.679 0.56 23.46 . 1 GLY A O 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f7ced916872b",
+              "c007000000000000",
+              "400c000000000000",
+              "c00ba7ef9db22d0e",
+              "401245a1cac08312",
+              "4016b74bc6a7ef9e"
+            ],
+            "occupancy": [
+              "3fd51eb851eb851f",
+              "3fe1eb851eb851ec"
+            ],
+            "b_iso": [
+              "4028b33333333333",
+              "403775c28f5c28f6"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_MULTIPLE_ATOMS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tMULTIPLE_ATOMS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tMULTIPLE_ATOMS\n_chemical.name_common\t'multiple_atoms'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tMULTIPLE_ATOMS\n_chemical_formula.structural\t'NO'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.875\t3.5\n\t2\tO\tO\tGLY\t1\t1\n\t-3.45679\t4.56789\t5.67891\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_MULTIPLE_ATOMS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tMULTIPLE_ATOMS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tMULTIPLE_ATOMS\n_chemical.name_common\t'multiple_atoms'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tMULTIPLE_ATOMS\n_chemical_formula.structural\t'NO'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.12346\t-2.875\t3.5\n\t2\tO\tO\tGLY\t1\t1\n\t-3.45679\t4.56789\t5.67891\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff1f9b13165d399",
+              "c007000000000000",
+              "400c000000000000",
+              "c00ba78183f91e64",
+              "40124584f4c6e6da",
+              "4016b7342edbb59e"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "subnormal_coordinate",
+      "group": "storage",
+      "input": "data_subnormal_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 5e-324 2.2250738585072014e-308 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 5e-324,
+            "y": 2.2250738585072014e-308,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_subnormal_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 0.000 0.000 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "0000000000000000",
+              "0000000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_subnormal_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 0.000 0.000 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "0000000000000000",
+              "0000000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_SUBNORMAL_COORDINATE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tSUBNORMAL_COORDINATE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tSUBNORMAL_COORDINATE\n_chemical.name_common\t'subnormal_coordinate'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tSUBNORMAL_COORDINATE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t4.94066e-324\t2.22507e-308\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_SUBNORMAL_COORDINATE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tSUBNORMAL_COORDINATE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tSUBNORMAL_COORDINATE\n_chemical.name_common\t'subnormal_coordinate'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tSUBNORMAL_COORDINATE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t4.94066e-324\t2.22507e-308\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "0000000000000001",
+              "000ffffe2e8159d0",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "large_finite_coordinate",
+      "group": "storage",
+      "input": "data_large_finite_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.7976931348623157e+308 -2.875 3.5 1.0 12.5 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.7976931348623157e+308,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1.0,
+            "b_iso": 12.5,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_large_finite_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "7fefffffffffffff",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_large_finite_coordinate\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000 -2.875 3.500 1.00 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": true,
+            "b_iso": true,
+            "cell": null
+          },
+          "preserved": true,
+          "actual_bits": {
+            "cartesian": [
+              "7fefffffffffffff",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3ff0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_LARGE_FINITE_COORDINATE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tLARGE_FINITE_COORDINATE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tLARGE_FINITE_COORDINATE\n_chemical.name_common\t'large_finite_coordinate'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tLARGE_FINITE_COORDINATE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.79769e+308\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_LARGE_FINITE_COORDINATE\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tLARGE_FINITE_COORDINATE\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tLARGE_FINITE_COORDINATE\n_chemical.name_common\t'large_finite_coordinate'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tLARGE_FINITE_COORDINATE\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.79769e+308\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "7feffffc57ca82ae",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "tiny_scalars",
+      "group": "storage",
+      "input": "data_tiny_scalars\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.125 -2.875 3.5 1e-250 1e-200 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.125,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 1e-250,
+            "b_iso": 1e-200,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_tiny_scalars\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 0.00 0.00 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "0000000000000000"
+            ],
+            "b_iso": [
+              "0000000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_tiny_scalars\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.125 -2.875 3.500 0.00 0.00 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "0000000000000000"
+            ],
+            "b_iso": [
+              "0000000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_TINY_SCALARS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tTINY_SCALARS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tTINY_SCALARS\n_chemical.name_common\t'tiny_scalars'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tTINY_SCALARS\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_TINY_SCALARS\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tTINY_SCALARS\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tTINY_SCALARS\n_chemical.name_common\t'tiny_scalars'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tTINY_SCALARS\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1.125\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": true,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff2000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    },
+    {
+      "id": "adjacent_binary64",
+      "group": "storage",
+      "input": "data_adjacent_binary64\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 ? 1.0000000000000002 -2.875 3.5 0.5000000000000001 12.500000000000002 ? 1 GLY A N 1\n#\n",
+      "expected": {
+        "atoms": [
+          {
+            "group_pdb": "ATOM",
+            "serial": 1,
+            "element": "N",
+            "atom_name": "N",
+            "alt_loc": null,
+            "res_name": "GLY",
+            "chain_id": "A",
+            "entity_id": "1",
+            "label_seq_id": 1,
+            "icode": null,
+            "x": 1.0000000000000002,
+            "y": -2.875,
+            "z": 3.5,
+            "occupancy": 0.5000000000000001,
+            "b_iso": 12.500000000000002,
+            "formal_charge": null,
+            "res_seq": 1,
+            "model_num": 1
+          }
+        ],
+        "cell": null
+      },
+      "wasm": {
+        "output": "data_adjacent_binary64\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.000 -2.875 3.500 0.50 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3fe0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "python": {
+        "output": "data_adjacent_binary64\n#\nloop_\n_atom_site.group_PDB\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_alt_id\n_atom_site.label_comp_id\n_atom_site.label_asym_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.pdbx_PDB_ins_code\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.occupancy\n_atom_site.B_iso_or_equiv\n_atom_site.pdbx_formal_charge\n_atom_site.auth_seq_id\n_atom_site.auth_comp_id\n_atom_site.auth_asym_id\n_atom_site.auth_atom_id\n_atom_site.pdbx_PDB_model_num\nATOM 1 N N . GLY A 1 1 . 1.000 -2.875 3.500 0.50 12.50 . 1 GLY A N 1\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": [
+              "3fe0000000000000"
+            ],
+            "b_iso": [
+              "4029000000000000"
+            ]
+          },
+          "missing_fields": []
+        }
+      },
+      "openbabel": {
+        "resource_status": "completed",
+        "exit_code": 0,
+        "stdout": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_ADJACENT_BINARY64\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tADJACENT_BINARY64\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tADJACENT_BINARY64\n_chemical.name_common\t'adjacent_binary64'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tADJACENT_BINARY64\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1\t-2.875\t3.5\n\n",
+        "stderr": "1 molecule converted\n",
+        "output": "# --------------------------------------------------------------------------\n#\n# CIF file generated by openbabel 3.2.1 http://openbabel.org/\n# to comply with the Macromolecular CIF Dictionary  (cif_mm.dic) version  2.0.11 http://mmcif.pdb.org/\n# The contents of this file were derived from \n#\n#---------------------------------------------------------------------------\n\ndata_ADJACENT_BINARY64\n\n###########\n## ENTRY ##\n###########\n\n_entry.id\tADJACENT_BINARY64\n\n##############\n## CHEMICAL ##\n##############\n\n_chemical.entry_id\tADJACENT_BINARY64\n_chemical.name_common\t'adjacent_binary64'\n\n######################\n## CHEMICAL FORMULA ##\n######################\n\n_chemical_formula.entry_id\tADJACENT_BINARY64\n_chemical_formula.structural\t'N'\n\n###############\n## ATOM_SITE ##\n###############\n\nloop_\n_atom_site.id\n_atom_site.type_symbol\n_atom_site.label_atom_id\n_atom_site.label_comp_id\n_atom_site.label_entity_id\n_atom_site.label_seq_id\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n\t1\tN\tN\tGLY\t1\t1\n\t1\t-2.875\t3.5\n\n",
+        "observation": {
+          "outcome": "cif_output",
+          "fields": {
+            "atom_identity": true,
+            "cartesian": false,
+            "occupancy": false,
+            "b_iso": false,
+            "cell": null
+          },
+          "preserved": false,
+          "actual_bits": {
+            "cartesian": [
+              "3ff0000000000000",
+              "c007000000000000",
+              "400c000000000000"
+            ],
+            "occupancy": null,
+            "b_iso": null
+          },
+          "missing_fields": [
+            "_atom_site.b_iso_or_equiv",
+            "_atom_site.occupancy"
+          ]
+        }
+      }
+    }
+  ]
+}
