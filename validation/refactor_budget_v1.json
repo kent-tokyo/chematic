@@ -11,13 +11,9 @@
   ],
   "file_allowances": {
     "crates/chematic-chem/src/alerts.rs": 2579,
-    "crates/chematic-chem/src/cip.rs": 2766,
-    "crates/chematic-crystal/src/poscar.rs": 1644,
     "crates/chematic-fp/src/rdkit_avalon/fingerprint.rs": 2092,
     "crates/chematic-inchi/src/dedup.rs": 2079,
-    "crates/chematic-smiles/src/rdkit/depict.rs": 2303,
-    "crates/chematic-smiles/src/rdkit/pdb_read.rs": 1710,
-    "crates/chematic-smiles/src/rdkit/rxn_smarts.rs": 1680
+    "crates/chematic-smiles/src/rdkit/depict.rs": 2303
   },
   "function_allowances": {
     "crates/chematic-3d/src/etkdg_knowledge.rs::get_torsion_preference#1": {
@@ -204,11 +200,11 @@
       "decisions": 33,
       "lines": 136
     },
-    "crates/chematic-smiles/src/rdkit/rxn_smarts.rs::atom_query#1": {
+    "crates/chematic-smiles/src/rdkit/rxn_smarts/parser.rs::atom_query#1": {
       "decisions": 29,
       "lines": 136
     },
-    "crates/chematic-smiles/src/rdkit/rxn_smarts.rs::mol#1": {
+    "crates/chematic-smiles/src/rdkit/rxn_smarts/parser.rs::mol#1": {
       "decisions": 35,
       "lines": 169
     },

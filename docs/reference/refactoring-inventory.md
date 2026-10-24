@@ -1,6 +1,6 @@
 # Refactoring inventory
 
-This inventory records the R8 cleanup review and the completed R9-R25
+This inventory records the R8 cleanup review and the completed R9-R26
 structural program.
 It distinguishes removable debt from compatibility code that only looks
 obsolete. Public behavior and published binding contracts take precedence over
@@ -9,17 +9,16 @@ reducing line count.
 ## R9-R16 closeout
 
 The second pass removed two file allowances and eight function allowances.
-The completed R25 program contains 8 file allowances and 50 function
+The completed R26 program contains 4 file allowances and 50 function
 allowances; CI rejects new entries, growth beyond a recorded limit, and stale
 entries whose code has moved below the limit.
 
-The retained large files fall into four reviewed groups:
+The retained large files fall into three reviewed groups:
 
-- ordered chemistry rules and perception engines: `alerts.rs`, `cip.rs`,
-  and Avalon `fingerprint.rs`;
-- crystallography algorithms: `poscar.rs`;
+- ordered chemistry rules and perception engines: `alerts.rs` and Avalon
+  `fingerprint.rs`;
 - compatibility ports whose branch and accumulation order is observable:
-  RDKit depiction, PDB, and reaction-SMARTS modules;
+  RDKit depiction;
 - native compatibility infrastructure: InChI deduplication.
 
 The retained function allowances use the same classification: ordered or
@@ -42,8 +41,10 @@ discovery rules.
 R25 closes ten additional orchestration allowances in reaction validation and
 stoichiometry, scaffold selection, CIP expansion, periodic-neighbor indexing,
 POSCAR writing, depiction checks/rendering and canonical orbit comparison.
-The retained POSCAR parser remains an explicit file allowance, while its write
-planning is now isolated in a small private module.
+R26 then extracts PDB, POSCAR, reaction-SMARTS, SMARTS-parity and SMILES-writer
+tests, isolates the reaction-SMARTS parser, and moves E/Z completeness behind
+the existing CIP facade. The public APIs and the two moved parser function
+allowances retain their previous contracts and ratchet values.
 These changes preserve public APIs and chemistry outputs while making ownership
 and failure boundaries visible.
 
