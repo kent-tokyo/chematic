@@ -29,6 +29,8 @@ pub(crate) mod fmath;
 #[cfg(test)]
 mod geometry_boundary_contract_tests;
 pub mod geometry_check;
+#[cfg(test)]
+mod geometry_check_coverage_tests;
 pub mod hydrogen_coords;
 #[cfg(test)]
 mod issue256_255_phase2_evaluation_tests;

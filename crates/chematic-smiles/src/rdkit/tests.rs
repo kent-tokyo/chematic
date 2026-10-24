@@ -15,6 +15,57 @@ fn check(cases: &[(&str, &str)]) {
 }
 
 #[test]
+fn pdb_projection_covers_coordinate_validation_and_large_atom_names() {
+    let ethane = crate::parse("CC").unwrap();
+    let error = super::rdkit_pdb_block(&ethane, Some(&[[0.0; 3]])).unwrap_err();
+    assert!(error.to_string().contains("expected 2 coordinates, got 1"));
+    let block = super::rdkit_pdb_block(&ethane, Some(&[[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])).unwrap();
+    assert!(block.contains("   1.000   2.000   3.000"));
+
+    for count in [100, 360] {
+        let source = std::iter::repeat_n("[C]", count)
+            .collect::<Vec<_>>()
+            .join(".");
+        let molecule = crate::parse(&source).unwrap();
+        let block = super::rdkit_pdb_block(&molecule, None).unwrap();
+        assert_eq!(
+            block
+                .lines()
+                .filter(|line| line.starts_with("HETATM"))
+                .count(),
+            count
+        );
+        assert!(block.contains(if count == 100 { " CA0 " } else { " CAA " }));
+    }
+}
+
+#[test]
+fn ogb_projection_covers_less_common_categories_and_ignores_cached_cip() {
+    let cases = [
+        "C#N",
+        "F/C=C\\F",
+        "F[C@@](Cl)(Br)I",
+        "P(F)(F)(F)(F)F",
+        "S(F)(F)(F)(F)(F)F",
+        "[Fe+6]",
+        "[Pt@SP1](Cl)(Cl)([NH3])[NH3]",
+    ];
+    for source in cases {
+        let molecule = crate::parse(source).unwrap();
+        let graph = super::ogb_graph_features_with_options(&molecule, false)
+            .unwrap_or_else(|error| panic!("{source}: {error}"));
+        assert_eq!(graph.node_feat.len(), molecule.atom_count(), "{source}");
+    }
+
+    let mut chiral = crate::parse("F[C@](Cl)(Br)I").unwrap();
+    let center = chematic_core::AtomIdx(1);
+    chiral.set_cip_code(center, Some(chematic_core::CipCode::R));
+    let cached = super::ogb_graph_features(&chiral).unwrap();
+    chiral.set_cip_code(center, None);
+    assert_eq!(cached, super::ogb_graph_features(&chiral).unwrap());
+}
+
+#[test]
 fn tetrahedral_centers() {
     check(&[
         ("N[C@@H](C)C(=O)O", "C[C@H](N)C(=O)O"),

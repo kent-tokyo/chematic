@@ -1,6 +1,7 @@
 //! Original MIT OR Apache-2.0 RDFile fixtures, with manifest in validation/openbabel_issues/rdfile.
 use chematic_mol::{
-    RdfileData, RdfileParseLimits, parse_rdfile, parse_rdfile_with_limits, write_rdfile,
+    RdfileData, RdfileDocument, RdfileKind, RdfileParseLimits, RdfileRecord, RdfileWriteOptions,
+    parse_rdfile, parse_rdfile_with_limits, write_rdfile, write_rdfile_with_options,
 };
 const FIXTURE: &str = include_str!("../../../validation/openbabel_issues/rdfile/mixed-records.rdf");
 #[test]
@@ -260,6 +261,93 @@ fn writer_record_limit_and_ambiguous_literal_continuation_are_checked() {
         )
         .is_err()
     );
+}
+
+#[test]
+fn writer_validates_headers_fields_registries_and_output_limits() {
+    fn reference(registry: Option<&str>) -> RdfileDocument {
+        RdfileDocument {
+            date_comment: String::new(),
+            records: vec![RdfileRecord {
+                kind: RdfileKind::Molecule,
+                internal_registry: registry.map(str::to_owned),
+                external_registry: None,
+                structure: None,
+                data: Vec::new(),
+            }],
+            source_text: String::new(),
+        }
+    }
+
+    for date in ["non-ascii 🧪", "line\nbreak", "nul\0byte"] {
+        let mut document = reference(Some("1"));
+        document.date_comment = date.into();
+        assert!(write_rdfile(&document).is_err(), "{date:?}");
+    }
+
+    for registry in ["", "1a", "-1", "１２"] {
+        assert!(write_rdfile(&reference(Some(registry))).is_err());
+    }
+    assert!(write_rdfile(&reference(None)).is_err());
+
+    let mut document = reference(Some("1"));
+    document.records[0].external_registry = Some("other".into());
+    assert!(write_rdfile(&document).is_err());
+
+    for name in ["", "non-ascii 🧪", "line\nbreak", "nul\0byte"] {
+        let mut document = reference(Some("1"));
+        document.records[0].data.push(RdfileData {
+            name: name.into(),
+            value: "ok".into(),
+        });
+        assert!(write_rdfile(&document).is_err(), "{name:?}");
+    }
+
+    let mut document = reference(Some("1"));
+    document.records[0].data.push(RdfileData {
+        name: "x".repeat(80),
+        value: "ok".into(),
+    });
+    assert!(write_rdfile(&document).is_err());
+
+    let mut document = reference(Some("1"));
+    document.records[0].data = (0..1001)
+        .map(|index| RdfileData {
+            name: format!("f{index}"),
+            value: String::new(),
+        })
+        .collect();
+    assert!(write_rdfile(&document).is_err());
+}
+
+#[test]
+fn writer_handles_structure_newlines_and_rejects_reserved_continuations() {
+    let mut document = diagnostic(parse_rdfile(FIXTURE)).unwrap();
+    let structure = document.records[0].structure.as_mut().unwrap();
+    while structure.ends_with('\n') {
+        structure.pop();
+    }
+    let output = diagnostic(write_rdfile(&document)).unwrap();
+    assert!(output.contains("M  END\n$DTYPE"));
+
+    for value in ["first\n$SECOND", "first\n$DATUM second"] {
+        let mut document = diagnostic(parse_rdfile(FIXTURE)).unwrap();
+        document.records[0].data[0].value = value.into();
+        assert!(write_rdfile(&document).is_err(), "{value:?}");
+    }
+
+    let mut document = diagnostic(parse_rdfile(FIXTURE)).unwrap();
+    document.records[0].data[0].value = format!("{}$keyword", "a".repeat(73));
+    assert!(write_rdfile(&document).is_err());
+
+    let mut document = diagnostic(parse_rdfile(FIXTURE)).unwrap();
+    document.records[0].data[0].value = "x".repeat(256);
+    let output = diagnostic(write_rdfile_with_options(
+        &document,
+        RdfileWriteOptions { wrap_data: false },
+    ))
+    .unwrap();
+    assert!(output.contains(&format!("$DATUM {}", "x".repeat(256))));
 }
 
 #[path = "support/upstream_diagnostics.rs"]

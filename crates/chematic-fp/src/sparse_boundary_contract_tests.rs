@@ -4,6 +4,56 @@ use crate::{
 };
 
 #[test]
+fn sparse_matrix_limits_metrics_and_diagnostics_are_explicit() {
+    use crate::sparse_matrix::{
+        MAX_SPARSE_BITS_PER_FINGERPRINT, MAX_SPARSE_FINGERPRINTS, SparseMatrixError,
+        SparseTanimotoMetric, sparse_tanimoto_matrix_checked,
+    };
+
+    let variants = [
+        SparseMatrixError::RowLimit,
+        SparseMatrixError::BitsPerFingerprint { row: 7 },
+        SparseMatrixError::TotalIds,
+        SparseMatrixError::WorkLimit,
+        SparseMatrixError::Allocation,
+    ];
+    for error in variants {
+        assert!(!error.to_string().is_empty());
+        assert!(std::error::Error::source(&error).is_none());
+    }
+
+    assert_eq!(
+        sparse_tanimoto_matrix_checked(
+            &vec![Vec::new(); MAX_SPARSE_FINGERPRINTS + 1],
+            SparseTanimotoMetric::Similarity,
+        ),
+        Err(SparseMatrixError::RowLimit)
+    );
+    assert_eq!(
+        sparse_tanimoto_matrix_checked(
+            &[vec![0; MAX_SPARSE_BITS_PER_FINGERPRINT + 1]],
+            SparseTanimotoMetric::Similarity,
+        ),
+        Err(SparseMatrixError::BitsPerFingerprint { row: 0 })
+    );
+    let total_limit = vec![vec![0; MAX_SPARSE_BITS_PER_FINGERPRINT]; 16];
+    assert_eq!(
+        sparse_tanimoto_matrix_checked(&total_limit, SparseTanimotoMetric::Similarity),
+        Err(SparseMatrixError::TotalIds)
+    );
+
+    let rows = vec![vec![], vec![3, 1, 3], vec![1, 2], vec![]];
+    assert_eq!(
+        sparse_tanimoto_matrix_checked(&rows, SparseTanimotoMetric::Similarity).unwrap(),
+        vec![0.0, 0.0, 1.0 / 3.0, 1.0, 0.0, 0.0]
+    );
+    assert_eq!(
+        sparse_tanimoto_matrix_checked(&rows, SparseTanimotoMetric::Distance).unwrap(),
+        vec![1.0, 1.0, 1.0 - 1.0 / 3.0, 0.0, 1.0, 1.0]
+    );
+}
+
+#[test]
 fn fallible_similarity_search_keeps_identical_ties_stable_and_respects_limits() {
     use crate::search::{FpType, PreparedFingerprintIndex, try_nearest_neighbors};
     let db: Vec<_> = ["CCO", "CCO", "CCN", "c1ccccc1"]
