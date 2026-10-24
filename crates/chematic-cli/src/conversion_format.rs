@@ -19,8 +19,8 @@ pub(super) fn format_name(format: &str) -> Option<String> {
     }
 }
 
-/// Handle source-only CML and GJF routes before entering the graph bridge.
-pub(super) fn source_only_conversion(
+/// Handle checked source projections before entering the generic graph bridge.
+pub(super) fn source_format_conversion(
     text: &str,
     input: &str,
     output: &str,
@@ -28,6 +28,21 @@ pub(super) fn source_only_conversion(
     if input == "cml" && output == "cml" {
         return Some(
             chematic_mol::roundtrip_cml_source_with_limits(
+                text,
+                &chematic_mol::ConversionLimits {
+                    mol2: chematic_mol::Mol2ParseLimits {
+                        max_atoms: super::MAX_SMILES_ATOMS,
+                        ..Default::default()
+                    },
+                    ..Default::default()
+                },
+            )
+            .map_err(|error| error.to_string()),
+        );
+    }
+    if input == "cjson" && output == "cml" {
+        return Some(
+            chematic_mol::project_cjson_to_cml_with_limits(
                 text,
                 &chematic_mol::ConversionLimits {
                     mol2: chematic_mol::Mol2ParseLimits {

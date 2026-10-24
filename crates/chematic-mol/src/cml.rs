@@ -669,10 +669,35 @@ fn is_element_tag(line: &str, name: &str) -> bool {
 /// Every atom receives a total `hydrogenCount`, combining non-node H with
 /// explicit H neighbors, so the reader never adds or drops H through inference.
 pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
+    write_cml_geometry(mol, coords, None, None)
+}
+
+// The checked CJSON projector validates coordinate counts/numerics and XML
+// characters in the name before calling this internal writer.
+pub(crate) fn write_cml_geometry(
+    mol: &Molecule,
+    coords: Option<&[(f64, f64)]>,
+    cartesian: Option<&[(f64, f64, f64)]>,
+    name: Option<&str>,
+) -> String {
     let mut out = String::from(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\
-         <molecule xmlns=\"http://www.xml-cml.org/schema\">\n  <atomArray>\n",
+         <molecule xmlns=\"http://www.xml-cml.org/schema\">\n",
     );
+    if let Some(name) = name {
+        out.push_str("  <name>");
+        for character in name.chars() {
+            match character {
+                '&' => out.push_str("&amp;"),
+                '<' => out.push_str("&lt;"),
+                '>' => out.push_str("&gt;"),
+                '\r' => out.push_str("&#13;"),
+                _ => out.push(character),
+            }
+        }
+        out.push_str("</name>\n");
+    }
+    out.push_str("  <atomArray>\n");
 
     for (i, (idx, atom)) in mol.atoms().enumerate() {
         let sym = atom.element.symbol();
@@ -685,6 +710,11 @@ pub fn write_cml(mol: &Molecule, coords: Option<&[(f64, f64)]>) -> String {
         {
             parts.push(format!("x2=\"{x}\""));
             parts.push(format!("y2=\"{y}\""));
+        }
+        if let Some(cs) = cartesian
+            && let Some(&(x, y, z)) = cs.get(i)
+        {
+            parts.push(format!("x3=\"{x:.17e}\" y3=\"{y:.17e}\" z3=\"{z:.17e}\""));
         }
         if atom.charge != 0 {
             parts.push(format!("formalCharge=\"{}\"", atom.charge));

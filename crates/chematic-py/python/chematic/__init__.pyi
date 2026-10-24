@@ -3616,6 +3616,14 @@ def roundtrip_cml_source(text: str | bytes) -> str:
     """
     ...
 
+def project_cjson_to_cml(text: str | bytes) -> str:
+    """Preserve the local CJSON graph/XYZ/name profile or raise ValueError.
+
+    Refuses opaque metadata/stereo, partial charges and conflicting names.
+    Does not verify chemical validity or geometry-derived stereo.
+    """
+    ...
+
 def project_mol2_to_cjson(text: str | bytes) -> str:
     """Project selected MOL2 fields to CJSON with mapped reparse checks.
 

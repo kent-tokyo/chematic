@@ -207,6 +207,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
     flags and nonstandard bonds) raise ValueError. This does not detect fields
     already discarded by a source reader. MOL2 projection and exact CJSON
     retention keep their separate contracts.
+    CJSON to CML verifies the indexed graph, source 3D coordinates and name
+    after reparse. Opaque fields (including stereo/unit cells), partial charges,
+    conflicting names and overrides are refused. Generated CML atom IDs follow
+    source order; source chemistry and coordinate stereo are not validated.
     MOL2 to CJSON checks the projected graph, source xyz, parsed name and
     complete declared partial charges on reparse. Incomplete/undeclared charge
     columns and overrides are rejected. Other MOL2 metadata and stereo are
@@ -254,6 +258,10 @@ def convert_format(text, input_format, output_format, /, *, coords=None,
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("V3000 source-preserving conversion does not accept overrides")
         return roundtrip_mol_v3000_source(text)
+    if source == "cjson" and target == "cml":
+        if coords is not None or charges is not None or name != "LIG" or comment:
+            raise ValueError("CJSON to CML preserving projection does not accept overrides")
+        return project_cjson_to_cml(text)
     if source == "mol2" and target == "cjson":
         if coords is not None or charges is not None or name != "LIG" or comment:
             raise ValueError("MOL2 to CJSON preserving projection does not accept overrides")
