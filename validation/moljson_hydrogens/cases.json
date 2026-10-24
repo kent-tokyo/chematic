@@ -1,0 +1,133 @@
+{
+  "schema": "chematic.moljson-hydrogens.v1",
+  "provenance": "Original synthetic atom-record inputs authored for chematic, 2026-10-24. MIT.",
+  "scope": "Existing chematic atom-record MolJSON dialect, not the upstream oxpig schema. Authored non-node H counts and expected achiral SMILES; no Open Babel same-format comparison.",
+  "cases": [
+    {
+      "id": "methane_control",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":4}],\"bonds\":[]}",
+      "expected_smiles": "C",
+      "expected_hydrogens": [
+        4
+      ]
+    },
+    {
+      "id": "methyl",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":3}],\"bonds\":[]}",
+      "expected_smiles": "[CH3]",
+      "expected_hydrogens": [
+        3
+      ]
+    },
+    {
+      "id": "carbon_zero_h",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0}],\"bonds\":[]}",
+      "expected_smiles": "[C]",
+      "expected_hydrogens": [
+        0
+      ]
+    },
+    {
+      "id": "oxygen_zero_h",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"O\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0}],\"bonds\":[]}",
+      "expected_smiles": "[O]",
+      "expected_hydrogens": [
+        0
+      ]
+    },
+    {
+      "id": "hydroxyl",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"O\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":1}],\"bonds\":[]}",
+      "expected_smiles": "[OH]",
+      "expected_hydrogens": [
+        1
+      ]
+    },
+    {
+      "id": "amino",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"N\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":2}],\"bonds\":[]}",
+      "expected_smiles": "[NH2]",
+      "expected_hydrogens": [
+        2
+      ]
+    },
+    {
+      "id": "isotope_methylene",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":13,\"hydrogens\":2}],\"bonds\":[]}",
+      "expected_smiles": "[13CH2]",
+      "expected_hydrogens": [
+        2
+      ]
+    },
+    {
+      "id": "carbon_anion",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":-1,\"aromatic\":false,\"isotope\":null,\"hydrogens\":2}],\"bonds\":[]}",
+      "expected_smiles": "[CH2-]",
+      "expected_hydrogens": [
+        2
+      ]
+    },
+    {
+      "id": "pyrrole",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":true,\"isotope\":null,\"hydrogens\":1},{\"id\":\"a2\",\"element\":\"C\",\"charge\":0,\"aromatic\":true,\"isotope\":null,\"hydrogens\":1},{\"id\":\"a3\",\"element\":\"C\",\"charge\":0,\"aromatic\":true,\"isotope\":null,\"hydrogens\":1},{\"id\":\"a4\",\"element\":\"C\",\"charge\":0,\"aromatic\":true,\"isotope\":null,\"hydrogens\":1},{\"id\":\"a5\",\"element\":\"N\",\"charge\":0,\"aromatic\":true,\"isotope\":null,\"hydrogens\":1}],\"bonds\":[{\"id\":\"b1\",\"source_id\":\"a1\",\"target_id\":\"a2\",\"order\":1.5,\"aromatic\":true},{\"id\":\"b2\",\"source_id\":\"a2\",\"target_id\":\"a3\",\"order\":1.5,\"aromatic\":true},{\"id\":\"b3\",\"source_id\":\"a3\",\"target_id\":\"a4\",\"order\":1.5,\"aromatic\":true},{\"id\":\"b4\",\"source_id\":\"a4\",\"target_id\":\"a5\",\"order\":1.5,\"aromatic\":true},{\"id\":\"b5\",\"source_id\":\"a5\",\"target_id\":\"a1\",\"order\":1.5,\"aromatic\":true}]}",
+      "expected_smiles": "c1ccc[nH]1",
+      "expected_hydrogens": [
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "ammonium_control",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"N\",\"charge\":1,\"aromatic\":false,\"isotope\":null,\"hydrogens\":4}],\"bonds\":[]}",
+      "expected_smiles": "[NH4+]",
+      "expected_hydrogens": [
+        4
+      ]
+    },
+    {
+      "id": "one_h_node",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":3},{\"id\":\"a2\",\"element\":\"H\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0}],\"bonds\":[{\"id\":\"b1\",\"source_id\":\"a1\",\"target_id\":\"a2\",\"order\":1,\"aromatic\":false}]}",
+      "expected_smiles": "[H]C",
+      "expected_hydrogens": [
+        3,
+        0
+      ]
+    },
+    {
+      "id": "four_h_nodes",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0},{\"id\":\"a2\",\"element\":\"H\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0},{\"id\":\"a3\",\"element\":\"H\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0},{\"id\":\"a4\",\"element\":\"H\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0},{\"id\":\"a5\",\"element\":\"H\",\"charge\":0,\"aromatic\":false,\"isotope\":null,\"hydrogens\":0}],\"bonds\":[{\"id\":\"b1\",\"source_id\":\"a1\",\"target_id\":\"a2\",\"order\":1,\"aromatic\":false},{\"id\":\"b2\",\"source_id\":\"a1\",\"target_id\":\"a3\",\"order\":1,\"aromatic\":false},{\"id\":\"b3\",\"source_id\":\"a1\",\"target_id\":\"a4\",\"order\":1,\"aromatic\":false},{\"id\":\"b4\",\"source_id\":\"a1\",\"target_id\":\"a5\",\"order\":1,\"aromatic\":false}]}",
+      "expected_smiles": "[H]C([H])([H])[H]",
+      "expected_hydrogens": [
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "missing_h_legacy",
+      "input": "{\"atoms\":[{\"id\":\"a1\",\"element\":\"C\",\"charge\":0,\"aromatic\":false,\"isotope\":null}],\"bonds\":[]}",
+      "expected_smiles": "C",
+      "expected_hydrogens": [
+        4
+      ]
+    }
+  ],
+  "invalid_hydrogens": [
+    -1,
+    256,
+    1.5,
+    "3",
+    null,
+    true,
+    {},
+    [
+      1
+    ],
+    18446744073709551616
+  ]
+}

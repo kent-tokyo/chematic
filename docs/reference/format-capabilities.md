@@ -38,7 +38,8 @@ means the operation is not exposed on that binding.
 | MOL/SDF V2000/V3000 | R/W | R/W | R/W | Use checked/source routes for stereo and SD fields |
 | MOL2 | R/W | R/W | R/W | Typed/charge/metadata preservation is profile-specific |
 | CML | R/W | R/W | R/W | Single-molecule checked profiles; unknown XML is not interpreted |
-| ChemicalJSON / MolJSON | R/W | R/W | R/W | Strict local ChemicalJSON profile |
+| ChemicalJSON | R/W | R/W | R/W | Strict local ChemicalJSON profile |
+| MolJSON | R/W | R/W | R/W | [Local atom-record dialect and non-node H counts](moljson-hydrogens.md); differs from upstream oxpig schema |
 | CDXML | bounded R/W | bounded R/W | bounded R/W | Rich editing and all ChemDraw semantics are out of scope |
 | PDB | R/W | R/W | R/W | Model/record and metadata handling is API-specific |
 | mmCIF | R/W | R/W | R/W | Molecular and crystallographic profiles are distinct |

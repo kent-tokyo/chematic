@@ -5,6 +5,10 @@
 //! bonds, and connectivity explicit without requiring domain-specific parsing
 //! rules, which makes it easier for LLMs to generate and interpret.
 //!
+//! The atom-record dialect below is chematic's existing representation; it
+//! differs from the upstream oxpig schema (which uses `charges` and
+//! `aromatic_n_h`). This API does not implement that upstream schema.
+//!
 //! ## Format overview
 //!
 //! ```json
@@ -110,10 +114,29 @@ impl std::error::Error for MolJsonError {}
 ///
 /// Atom IDs (`"a1"`, `"a2"`, …) are used only internally during parsing to
 /// resolve bond references; they are not stored on the returned molecule.
-/// The `hydrogens` field is informational and is ignored during parsing —
-/// implicit H counts are recomputed from valence rules by chematic-core.
+/// A present `hydrogens` field is an integer in 0..=255 giving the atom's
+/// non-node H count, including an explicit zero. H atoms present as graph
+/// nodes are additional and are not counted here. When the field is absent,
+/// the existing valence-based inference remains in effect. This is not a
+/// valence or radical-state validator.
 pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
     parse_moljson_with_limits(input, &MolJsonParseLimits::default())
+}
+
+fn hydrogen_count(value: &serde_json::Value) -> Result<Option<u8>, MolJsonError> {
+    value
+        .get("hydrogens")
+        .map(|count| {
+            count
+                .as_u64()
+                .and_then(|count| u8::try_from(count).ok())
+                .ok_or_else(|| {
+                    MolJsonError::InvalidJson(
+                        "atoms[].hydrogens must be an integer in 0..=255".into(),
+                    )
+                })
+        })
+        .transpose()
 }
 
 fn parse_moljson_atoms(
@@ -134,6 +157,7 @@ fn parse_moljson_atoms(
         let element = Element::from_symbol(symbol)
             .ok_or_else(|| MolJsonError::UnknownElement(symbol.to_owned()))?;
         let mut atom = Atom::new(element);
+        atom.hydrogen_count = hydrogen_count(value)?;
         atom.charge = value
             .get("charge")
             .and_then(|value| value.as_i64())
@@ -452,13 +476,12 @@ mod tests {
 
     #[test]
     fn roundtrip_aromatic_nh() {
-        // Verify aromaticity flag and atom count survive roundtrip.
-        // Note: bracket H notation ([nH]) is not stored explicitly and is
-        // recomputed from valence rules; SMILES string may differ.
+        // The pyrrolic N-H count is semantic data, not a valence hint.
         let mol = parse("c1cc[nH]c1").unwrap();
         let json_str = write_moljson(&mol);
         let mol2 = parse_moljson(&json_str).unwrap();
         assert_eq!(mol2.atom_count(), 5);
+        assert_eq!(canonical_smiles(&mol2), canonical_smiles(&mol));
         // All atoms should retain their aromatic flags
         for (idx, atom) in mol.atoms() {
             assert_eq!(
