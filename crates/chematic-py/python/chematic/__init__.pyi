@@ -3392,6 +3392,8 @@ def from_cdxml(cdxml_str: str, *, infer_nondirectional_stereo: bool = False) -> 
     Opt in to infer tetrahedral stereo from non-directional Bold/Hash/Dash
     bonds. Defaults to False; ambiguous or degenerate drawings abstain.
     Only the first molecular fragment is returned.
+    Retains quadruple and directed dative bonds. Unsupported declared bond
+    orders raise ValueError rather than becoming single; absence defaults to 1.
 
     Raises:
         ValueError: on parse failure.
@@ -3896,10 +3898,12 @@ def write_xyz_checked(elements: Iterable[str], positions_angstrom: Iterable[Iter
 def from_xyz(xyz_str: str) -> tuple[Mol, list[list[float]]]:
     """Parse an XYZ string and return ``(Mol, coords)``.
 
-    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per heavy atom.
+    ``coords`` is a list of ``[x, y, z]`` lists (Å), one per listed atom (including H).
 
     Raises:
-        ValueError: on parse failure.
+        ValueError: on parse failure, nonfinite coordinates or a nonzero
+        decimal that rounds to binary64 zero. Literal signed zero and finite
+        subnormals remain valid.
 
     Example::
 
@@ -3922,7 +3926,9 @@ def from_extxyz(text: str) -> dict:
         complete dict to ``to_extxyz(**result)`` to retain supported typed data.
 
     Raises:
-        ValueError: on malformed input.
+        ValueError: on malformed input, nonfinite numeric data or nonzero
+        coordinates/cell/R atom values that round to binary64 zero. Literal
+        signed zero and finite subnormals remain valid.
 
     Example::
 
@@ -5872,6 +5878,30 @@ def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[f
     ...
 
 
+def parse_tinker_xyz(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read one Tinker XYZ frame with names, types, neighbors and optional cell."""
+    ...
+
+def write_tinker_xyz(record: dict[str, Any]) -> str:
+    """Write an edited Tinker record; refuse invalid or unknown fields."""
+    ...
+
+def parse_dlpoly_config(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read CONFIG/REVCON retaining source-unit vectors, names, IDs and cell."""
+    ...
+
+def write_dlpoly_config(record: dict[str, Any]) -> str:
+    """Write an edited CONFIG record; refuse unknown or inconsistent data."""
+    ...
+
+def parse_molden(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read the Molden geometry/vibration profile; refuse unsupported sections."""
+    ...
+
+def write_molden(record: dict[str, Any]) -> str:
+    """Write edited Molden geometry/vibration data with explicit source units."""
+    ...
+
 def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
     ...
@@ -5887,6 +5917,66 @@ def parse_fhiaims(text: str, *, max_input_bytes: Optional[int] = None, max_atoms
 
 def write_fhiaims(elements: Sequence[str], coordinates: Sequence[Sequence[float]], *, coordinate_kinds: Optional[Sequence[str]] = None, lattice_angstrom: Optional[Sequence[Sequence[float]]] = None, constraints: Optional[Sequence[Sequence[bool]]] = None, initial_charges: Optional[Sequence[Optional[float]]] = None, initial_moments: Optional[Sequence[Optional[float]]] = None, lattice_constraints: Optional[Sequence[Sequence[bool]]] = None) -> str:
     """Write current explicit geometry without discarding fractional kinds or metadata."""
+    ...
+
+def parse_fract(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read title, cell and element/fractional tokens, retaining uncertainty digits."""
+    ...
+
+def write_fract(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields; numeric entries must be decimal strings."""
+    ...
+
+def parse_gpr(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_bonds: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read gpr 100: consecutive atom IDs, bond codes, nm/partial-charge decimal strings."""
+    ...
+
+def write_gpr(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_bonds: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields; absent partial charges remain absent."""
+    ...
+
+def parse_unixyz(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read one UniChem XYZ record: exact title, atomic numbers and coordinate decimal strings."""
+    ...
+
+def write_unixyz(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current validated fields in Angstrom; unknown fields refuse."""
+    ...
+
+def parse_viewmol(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
+    """Read geometry with raw conversion factor, coordinate decimals and fixed axes."""
+    ...
+
+def write_viewmol(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> str:
+    """Write current checked fields without rescaling or metadata inference."""
+    ...
+
+def viewmol_positions_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> list[list[float]]:
+    """Explicit binary64 projection; overflow and underflow to zero refuse."""
+    ...
+
+def parse_lpmd(text: str | bytes, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> dict[str, Any]:
+    """Read all frames of bounded LPMD 2.0 L, retaining column and decimal tokens."""
+    ...
+
+def write_lpmd(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> str:
+    """Write current validated fields; never replay stale source or omit frames."""
+    ...
+
+def lpmd_positions_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> list[list[list[float]]]:
+    """Explicit Cartesian positions grouped by frame, without wrapping or bonds."""
+    ...
+
+def parse_gromos96(text: str | bytes, *, length_unit: str = "unspecified", max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> dict[str, Any]:
+    """Read bounded GROMOS96 blocks, retaining source labels/comments/fields and external unit context."""
+    ...
+
+def write_gromos96(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> str:
+    """Validate and write current blocks. Unit context is external to the unmarked text format."""
+    ...
+
+def gromos96_geometry_angstrom(record: dict[str, Any], *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None, max_frames: Optional[int] = None) -> list[dict[str, Any]]:
+    """Project every frame's positions and BOX together, refusing unspecified units or overflow."""
     ...
 
 
@@ -6188,3 +6278,15 @@ def parse_gjf_document_json(
     converted and no bonds are inferred. JSON output is capped at 16 MiB.
     """
     ...
+
+# Classic formatted DL-POLY HISTORY; raw source units, all frames.
+def parse_dlpoly_history(text: str | bytes) -> dict[str, Any]: ...
+def write_dlpoly_history(record: dict[str, Any]) -> str: ...
+
+# Cartesian GEOMETRY blocks, not full NWChem calculation decks.
+def parse_nwchem_geometry(text: str | bytes) -> dict[str, Any]: ...
+def write_nwchem_geometry(record: dict[str, Any]) -> str: ...
+
+# Nonperiodic BIOGRF 200 records (no inferred element or formal charge).
+def parse_bgf(text: str | bytes) -> dict[str, Any]: ...
+def write_bgf(record: dict[str, Any]) -> str: ...

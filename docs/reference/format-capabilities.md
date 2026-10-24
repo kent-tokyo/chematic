@@ -34,6 +34,8 @@ means the operation is not exposed on that binding.
 |---|---|---|---|---|
 | SMILES | R/W | R/W | R/W | Graph/stereo text; not an identity key |
 | SMARTS | match | validate/match | match | Query evaluation, not a general writer |
+| BGF / BIOGRF 200 | bounded R/W | bounded R/W | bounded R/W | [Editable nonperiodic atom/connectivity records](bgf-records.md); periodic/extended dialects refuse |
+| Ghemical (`gpr`) | bounded R/W | bounded R/W | bounded R/W | [Version 100, one nm coordinate set and optional partial charges](gpr-preservation.md); CLI also available |
 | HIN | bounded R/source W | bounded R/source W | inspect/source W | No edited-graph writer |
 | MOL/SDF V2000/V3000 | R/W | R/W | R/W | Use checked/source routes for stereo and SD fields |
 | MOL2 | R/W | R/W | R/W | Typed/charge/metadata preservation is profile-specific |
@@ -43,20 +45,30 @@ means the operation is not exposed on that binding.
 | CDXML | bounded R/W | bounded R/W | bounded R/W | Rich editing and all ChemDraw semantics are out of scope |
 | PDB | R/W | R/W | R/W | Model/record and metadata handling is API-specific |
 | mmCIF | R/W | R/W | R/W | Molecular and crystallographic profiles are distinct |
+| Free Form Fractional (`fract`) | bounded R/W | bounded R/W | bounded R/W | [Single-cell decimal/uncertainty record](fract-preservation.md); CLI also available |
 | CIF, small molecule | R/W | R | — | No Python writer or WASM surface |
 | PQR | R/W | R/W | R/W | Numeric atom fields are checked |
+| UniChem XYZ (`unixyz`) | bounded R/W | bounded R/W | bounded R/W | [Single-record title, atomic numbers and exact coordinate decimals](unixyz-preservation.md); CLI also available |
 | XYZ / Extended XYZ | R/W | R/bounded W | R/W | Plain XYZ has no bonds; Python typed ExtXYZ R/I/S/L columns; WASM writes R only |
+| [Tinker XYZ (`txyz`)](tinker-xyz.md) | bounded R/W | bounded R/W | bounded R/W | Single typed frame with explicit connectivity and optional cell; no bond-order perception |
+| [DL-POLY CONFIG/REVCON](dlpoly-config.md) | bounded R/W | bounded R/W | bounded R/W | Single record; source-unit positions/velocities/forces and cell; imcon 0..3 |
+| [Molden geometry/vibrations](molden-vibrations.md) | bounded R/W | bounded R/W | bounded R/W | Explicit units and IR/Raman/modes; refuses GTO/MO and trajectories |
 | PDBQT | R/W | R/W | R/W | Rigid checked-output profile |
 | QCSchema | R/W | R/W | validate/read | No general WASM AtomicInput/Result writer |
+| NWChem input (`nw`), Cartesian GEOMETRY block | bounded R/W | bounded R/W | bounded R/W | [Units, center tags and nuclear attributes](nwchem-geometry.md); full calculation decks refuse |
 | ORCA input | R/W | R/W | R/W | Explicit units; checked xyz output retains represented fields and numeric bits |
 | ORCA output | R | R | R | No writer |
 | Gaussian input/log | R/W or R | R/W or R | bounded | Input and output are separate APIs |
 | Gaussian Cube | R/W | R/W | R/W | Volumetric grid profile |
 | OpenDX | R/W | R/W | R/W | Strict and explicitly lossy writers |
 | ChemDoodle JSON | bounded R/W | bounded R/W | — | Molecular graph subset |
+| DL-POLY HISTORY, Classic text | bounded R/W | bounded R/W | bounded R/W | [All-frame records in raw source units](dlpoly-history.md); modern/binary layouts refuse |
 | LAMMPS data | R/W | R/W | R/W | Units and atom styles are explicit |
 | LAMMPS dump/trajectory | R/W | R/W | R/W | Streaming/materialization differs by binding |
+| ViewMol (`vmol`) | bounded R/W | bounded R/W | bounded R/W | [Raw unit factor, fixed axes, title and explicit Angstrom projection](viewmol-preservation.md); CLI also available |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |
+| [LPMD 2.0 L](lpmd-preservation.md) | bounded R/W | bounded R/W | bounded R/W | All frames, oriented cells, raw columns; explicit Cartesian projection |
+| [GROMOS96](gromos96-preservation.md) | bounded R/W | bounded R/W | bounded R/W | All supported blocks/frames and labels; caller-owned units |
 
 ## Checked conversion reports (initial adapter)
 
@@ -125,8 +137,14 @@ with single bonds.
 
 Use these pages when the short matrix is not enough:
 
+- [MolJSON graph input integrity](moljson-graph-input.md)
 - [MOL2 hydrogen order](mol2-hydrogen-order.md) and
   [Kekulé output](mol2-kekule-bond-output.md)
+- [Free Form Fractional precision and uncertainty](fract-preservation.md)
+- [Ghemical GPR records](gpr-preservation.md)
+- [GROMOS96 records and explicit units](gromos96-preservation.md)
+- [UniChem XYZ record preservation](unixyz-preservation.md)
+- [ViewMol geometry, units and fixed axes](viewmol-preservation.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and
   [mmCIF chain records](mmcif-chain-records.md)
 - [mmCIF numeric preservation](mmcif-numeric-preservation.md)
@@ -140,9 +158,11 @@ Use these pages when the short matrix is not enough:
 - [Extended XYZ output integrity](extxyz-output-integrity.md)
 - [ChemDraw block formats](chemdraw-block.md) and
   [CDXML stereo options](cdxml-stereo-options.md)
+- [CDXML bond class and direction](cdxml-bond-meaning.md)
 - [ORCA Cartesian integrity](orca-cartesian-integrity.md),
   [MOPAC Cartesian](openbabel-mopac-cartesian.md),
   [DMol3](openbabel-dmol3.md), and [FHI-aims](openbabel-fhiaims.md)
+- [XYZ numeric reads](xyz-numeric-read.md),
 - [XYZ precision](xyz-output-precision.md),
   [per-atom data](xyz-atom-data.md), and [GRO/LAMMPS units](gro-lammps-units.md)
 - [V2000 source coordinate projection](v2000-coordinate-projection.md)

@@ -1,0 +1,1180 @@
+{
+  "schema": "chematic.xyz-numeric-read-observation.v1",
+  "baseline": true,
+  "scope": "Authored binary64 numeric read/refusal packet. Refusals are separate from preserved values. Open Babel is observed through plain XYZ rewrite output; parser and writer are not isolated. No speed, arbitrary precision, general format or toolkit superiority claim.",
+  "parent_commit": "6f0691195fd2a774f9720df3794dbeea63422981",
+  "fixture": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/validation/xyz_numeric_read/cases.json",
+    "sha256": "5b7c5acc948b70e6f42c1bbb7be2068dbfdfd39bc7d0c9269fdc314d6f2117b5",
+    "size_bytes": 4347
+  },
+  "python_version": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "python_runtime": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/history-candidate-python/chematic/chematic.cpython-313-darwin.so",
+    "sha256": "02a62046e22f25cff2397135daa0b8400f8eabfc6c9b3a789407fac7fa2ccd2f",
+    "size_bytes": 46002096
+  },
+  "binding_sources": {
+    "reference": "d6de9d6e70ed8662fa1b21c31fec281aee55b375",
+    "matches_parent_sources": true,
+    "files": [
+      {
+        "path": "crates/chematic-3d/src/xyz.rs",
+        "sha256": "3626740e9256f448a03443587538ecbf9f9b13b94ed440f2ac4b73a7342eac55",
+        "size_bytes": 9299
+      },
+      {
+        "path": "crates/chematic-mol/src/xyz.rs",
+        "sha256": "14b77705d1ebc9b515c5b0721da77b307ffa4e10f6c8bc6939ef97fdfa6130eb",
+        "size_bytes": 39974
+      },
+      {
+        "path": "crates/chematic-mol/src/xyz/extxyz.rs",
+        "sha256": "b5258ef62693048e2741ce2c374fd8141af0b62c14afd9c41d2156654871d815",
+        "size_bytes": 23443
+      },
+      {
+        "path": "crates/chematic-py/src/formats/xyz.rs",
+        "sha256": "8023fefea9601d8cf597393eafe0915358a2062353ece35d41494718c2a9b2af",
+        "size_bytes": 10858
+      }
+    ]
+  },
+  "harness": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/validation/check_xyz_numeric_read.py",
+    "sha256": "b78fb6ad5765fe3e38a24ae200dd537e4b84a98123d39feb3e8524919a0d09e5",
+    "size_bytes": 7339
+  },
+  "process_runner": {
+    "path": "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/scripts/checks/check_interchange_preservation.py",
+    "sha256": "83870c344f0195cd5f502e06c23379fb50bb7a07a40e7420e89ce997981ef5b5",
+    "size_bytes": 28676
+  },
+  "openbabel": {
+    "path": "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+    "sha256": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5",
+    "size_bytes": 75728
+  },
+  "openbabel_version": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27",
+  "summary": {
+    "python_xyz": {
+      "valid_count": 14,
+      "exact_finite": 14,
+      "refusal_count": 16,
+      "explicit_refusals": 5,
+      "unsafe_acceptances": 11,
+      "no_record_or_unobservable": 0
+    },
+    "python_extxyz": {
+      "valid_count": 14,
+      "exact_finite": 14,
+      "refusal_count": 16,
+      "explicit_refusals": 11,
+      "unsafe_acceptances": 5,
+      "no_record_or_unobservable": 0
+    },
+    "openbabel_xyz_rewrite": {
+      "valid_count": 14,
+      "exact_finite": 8,
+      "refusal_count": 16,
+      "explicit_refusals": 0,
+      "unsafe_acceptances": 15,
+      "no_record_or_unobservable": 1
+    }
+  },
+  "records": [
+    {
+      "id": "positive_zero",
+      "token": "0",
+      "bits": "0000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 0 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "negative_zero",
+      "token": "-0.0",
+      "bits": "8000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC -0.0 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC         -0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "zero_large_negative_exponent",
+      "token": "-0e-999999",
+      "bits": "8000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC -0e-999999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC         -0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "zero_large_positive_exponent",
+      "token": "0e+999999",
+      "bits": "0000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 0e+999999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "zero_uppercase_exponent",
+      "token": "-0.000E+999999",
+      "bits": "8000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC -0.000E+999999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC         -0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "minimum_subnormal",
+      "token": "4.9406564584124654e-324",
+      "bits": "0000000000000001",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 4.9406564584124654e-324 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "rounds_up_to_minimum_subnormal",
+      "token": "2.5e-324",
+      "bits": "0000000000000001",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 2.5e-324 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "negative_subnormal",
+      "token": "-5e-324",
+      "bits": "8000000000000001",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC -5e-324 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000001",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000001",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC         -0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "largest_subnormal",
+      "token": "2.225073858507201e-308",
+      "bits": "000fffffffffffff",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 2.225073858507201e-308 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "000fffffffffffff",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "000fffffffffffff",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "minimum_normal",
+      "token": "2.2250738585072014e-308",
+      "bits": "0010000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 2.2250738585072014e-308 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0010000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0010000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "ordinary_decimal",
+      "token": "0.1",
+      "bits": "3fb999999999999a",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 0.1 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3fb999999999999a",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3fb999999999999a",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3fb999999999999a",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.10000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "maximum_finite",
+      "token": "1.7976931348623157e308",
+      "bits": "7fefffffffffffff",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 1.7976931348623157e308 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "7fefffffffffffff",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "7fefffffffffffff",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "7fefffffffffffff",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC  179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "fixed_zero",
+      "token": "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "bits": "0000000000000000",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": true
+      }
+    },
+    {
+      "id": "fixed_subnormal",
+      "token": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "bits": "0000000000000001",
+      "expected": "accept",
+      "input": "1\nnumeric read\nC 0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000001",
+        "exact": true
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "positive_underflow",
+      "token": "1e-9999",
+      "reason": "underflow",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 1e-9999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "negative_underflow",
+      "token": "-1E-9999",
+      "reason": "underflow",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC -1E-9999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "8000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC         -0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "rounds_down_to_zero",
+      "token": "2.4e-324",
+      "reason": "underflow",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 2.4e-324 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "fixed_underflow",
+      "token": "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+      "reason": "underflow",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "leading_dot_underflow",
+      "token": "+.1e-9999",
+      "reason": "underflow",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC +.1e-9999 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "nan",
+      "token": "NaN",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC NaN 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff8000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate 'NaN' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff8000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC              nan        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "signed_nan",
+      "token": "-NaN",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC -NaN 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "fff8000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate '-NaN' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff8000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC              nan        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "infinity",
+      "token": "+inf",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC +inf 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff0000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate '+inf' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC              inf        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "negative_infinity",
+      "token": "-Infinity",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC -Infinity 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "fff0000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate '-Infinity' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "fff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC             -inf        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "positive_overflow",
+      "token": "1e309",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 1e309 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff0000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate '1e309' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "7ff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC              inf        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "negative_overflow",
+      "token": "-1e309",
+      "reason": "nonfinite",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC -1e309 0 0\n",
+      "python_xyz": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "fff0000000000000",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "non-finite x coordinate '-1e309' at line 3",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": false,
+        "bits": "fff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC             -inf        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "underscore",
+      "token": "1_0",
+      "reason": "invalid",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 1_0 0 0\n",
+      "python_xyz": {
+        "status": "refused",
+        "error": "invalid XYZ coordinate line 3",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "invalid atom line 3: cannot parse x coordinate '1_0'",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3ff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "hex",
+      "token": "0x0",
+      "reason": "invalid",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 0x0 0 0\n",
+      "python_xyz": {
+        "status": "refused",
+        "error": "invalid XYZ coordinate line 3",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "invalid atom line 3: cannot parse x coordinate '0x0'",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "0000000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          0.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "fortran_exponent",
+      "token": "1D-4",
+      "reason": "invalid",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 1D-4 0 0\n",
+      "python_xyz": {
+        "status": "refused",
+        "error": "invalid XYZ coordinate line 3",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "invalid atom line 3: cannot parse x coordinate '1D-4'",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3ff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "dot",
+      "token": ".",
+      "reason": "invalid",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC . 0 0\n",
+      "python_xyz": {
+        "status": "refused",
+        "error": "invalid XYZ coordinate line 3",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "invalid atom line 3: cannot parse x coordinate '.'",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "no_record_or_unobservable",
+        "error": "not exactly one XYZ record",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "",
+          "stderr": "==============================\n*** Open Babel Warning  in ReadMolecule\n  Problems reading an XYZ file: Could not read line #3.\nOpenBabel found the line 'C . 0 0'\nAccording to the specifications, this line should contain exactly 4 entries, separated by white space.\nOpenBabel could not interpret item #1 as a number.\n0 molecules converted\n"
+        },
+        "exact": false
+      }
+    },
+    {
+      "id": "missing_exponent",
+      "token": "1e",
+      "reason": "invalid",
+      "expected": "refuse",
+      "input": "1\nnumeric read\nC 1e 0 0\n",
+      "python_xyz": {
+        "status": "refused",
+        "error": "invalid XYZ coordinate line 3",
+        "exact": false
+      },
+      "python_extxyz": {
+        "status": "refused",
+        "error": "invalid atom line 3: cannot parse x coordinate '1e'",
+        "exact": false
+      },
+      "openbabel_xyz_rewrite": {
+        "status": "accepted",
+        "finite": true,
+        "bits": "3ff0000000000000",
+        "command": [
+          "/opt/homebrew/bin/obabel",
+          "-ixyz",
+          "-oxyz",
+          "-ab"
+        ],
+        "process": {
+          "resource_status": "completed",
+          "exit_code": 0,
+          "stdout": "1\nnumeric read\nC          1.00000        0.00000        0.00000\n",
+          "stderr": "1 molecule converted\n"
+        },
+        "exact": false
+      }
+    }
+  ]
+}

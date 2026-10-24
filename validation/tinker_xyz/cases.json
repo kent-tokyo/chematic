@@ -1,0 +1,677 @@
+{
+  "schema_version": 1,
+  "license": "MIT",
+  "provenance": "Original synthetic records authored for this repository; numeric values are test data, not a chemical reference corpus.",
+  "cases": [
+    {
+      "id": "water_unsorted_neighbors",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "water_sorted_neighbors",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 2 3\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              2,
+              3
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty_title",
+      "input": "3  \n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unicode_title",
+      "input": "3  水 / typed coordinates\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "水 / typed coordinates",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "opaque_names",
+      "input": "3  water\n1 OW 0.0 0.0 0.0 41 3 2\n2 HW 0.9572 0.0 0.0 42 1\n3 HW -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "OW",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "HW",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "HW",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unassigned_type",
+      "input": "3  water\n1 O 0.0 0.0 0.0 0 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 0,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "custom_type",
+      "input": "3  water\n1 O 0.0 0.0 0.0 90123 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 90123,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "u32_type",
+      "input": "3  water\n1 O 0.0 0.0 0.0 4294967295 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 4294967295,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_coordinates",
+      "input": "3  water\n1 O 0.12345678901234566 -1.23456789e-13 12.345678901234567 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.12345678901234566,
+              -1.23456789e-13,
+              12.345678901234567
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "disconnected_ions",
+      "input": "2  disconnected\n1 Na 0.0 0.0 0.0 1\n2 Cl 10.0 0.0 0.0 2\n",
+      "expected": {
+        "title": "disconnected",
+        "cell": null,
+        "atoms": [
+          {
+            "index": 1,
+            "name": "Na",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 1,
+            "neighbors": []
+          },
+          {
+            "index": 2,
+            "name": "Cl",
+            "position_angstrom": [
+              10.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 2,
+            "neighbors": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "orthorhombic",
+      "input": "3  water\n10.0 20.0 30.0 90.0 90.0 90.0\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": {
+          "lengths_angstrom": [
+            10.0,
+            20.0,
+            30.0
+          ],
+          "angles_degrees": [
+            90.0,
+            90.0,
+            90.0
+          ]
+        },
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "triclinic",
+      "input": "3  water\n10.123456789012344 11.23456789012345 12.34567890123456 71.123456789 82.234567891 93.345678912\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n",
+      "expected": {
+        "title": "water",
+        "cell": {
+          "lengths_angstrom": [
+            10.123456789012344,
+            11.23456789012345,
+            12.34567890123456
+          ],
+          "angles_degrees": [
+            71.123456789,
+            82.234567891,
+            93.345678912
+          ]
+        },
+        "atoms": [
+          {
+            "index": 1,
+            "name": "O",
+            "position_angstrom": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "atom_type": 41,
+            "neighbors": [
+              3,
+              2
+            ]
+          },
+          {
+            "index": 2,
+            "name": "H",
+            "position_angstrom": [
+              0.9572,
+              0.0,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          },
+          {
+            "index": 3,
+            "name": "H",
+            "position_angstrom": [
+              -0.2399872,
+              0.927297,
+              0.0
+            ],
+            "atom_type": 42,
+            "neighbors": [
+              1
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "refusals": [
+    {
+      "id": "empty",
+      "input": ""
+    },
+    {
+      "id": "zero_atoms",
+      "input": "0\n"
+    },
+    {
+      "id": "truncated",
+      "input": "2\n1 C 0 0 0 1\n"
+    },
+    {
+      "id": "nonsequential",
+      "input": "3  water\n4 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "dangling",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 4 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "self",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 1 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "duplicate",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 3 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "asymmetric",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "nan",
+      "input": "3  water\n1 O nan 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "infinite",
+      "input": "3  water\n1 O 1e400 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "negative_type",
+      "input": "3  water\n1 O 0.0 0.0 0.0 -1 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "type_overflow",
+      "input": "3  water\n1 O 0.0 0.0 0.0 4294967296 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "trailing_frame",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n3  water\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\n"
+    },
+    {
+      "id": "extra_field",
+      "input": "3  water\n1 O 0.0 0.0 0.0 41 3 2\n2 H 0.9572 0.0 0.0 42 1\n3 H -0.2399872 0.927297 0.0 42 1\nunknown metadata\n"
+    },
+    {
+      "id": "bad_cell",
+      "input": "1 cell\n10 10 10 10 10 170\n1 C 0 0 0 1\n"
+    },
+    {
+      "id": "long_name",
+      "input": "1\n1 CARBON 0 0 0 1\n"
+    }
+  ]
+}

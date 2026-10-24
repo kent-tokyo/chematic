@@ -70,7 +70,7 @@
 
 use std::collections::HashSet;
 
-use chematic_3d::xyz::element_from_xyz_symbol;
+use chematic_3d::xyz::{XyzRealError, element_from_xyz_symbol, parse_xyz_real};
 use chematic_core::{Atom, Element, Molecule, MoleculeBuilder};
 
 /// The declared type of an extended-XYZ `Properties=` column
@@ -385,6 +385,7 @@ pub fn parse_xyz(text: &str) -> Result<XyzFrame, XyzError> {
 }
 
 /// Parse a single XYZ frame while enforcing resource limits.
+/// Coordinates must be finite; nonzero decimals that round to zero are refused.
 pub fn parse_xyz_with_limits(text: &str, limits: &XyzParseLimits) -> Result<XyzFrame, XyzError> {
     validate_xyz_limits(text, limits)?;
     parse_one_frame(text).map(|(frame, _rest)| frame)
@@ -409,6 +410,21 @@ fn next_line(text: &str) -> Option<(&str, &str)> {
         Some(nl) => Some((text[..nl].trim_end_matches('\r'), &text[nl + 1..])),
         None => Some((text.trim_end_matches('\r'), "")),
     }
+}
+
+/// Share the coordinate contract with the 3D reader and preserve error variants.
+fn parse_coordinate(raw: &str, axis: &'static str, line: usize) -> Result<f64, XyzError> {
+    parse_xyz_real(raw).map_err(|error| match error {
+        XyzRealError::NonFinite => XyzError::NonFiniteCoordinate {
+            line,
+            axis,
+            raw: raw.to_owned(),
+        },
+        _ => XyzError::InvalidAtomLine {
+            line,
+            detail: format!("{axis} coordinate '{raw}': {error}"),
+        },
+    })
 }
 
 /// Parse one frame starting at `text`, returning the frame and the
@@ -449,23 +465,9 @@ fn parse_one_frame(text: &str) -> Result<(XyzFrame, &str), XyzError> {
                 line: lineno,
             })?;
 
-        let parse_coord = |raw: &str, axis: &'static str| -> Result<f64, XyzError> {
-            let v: f64 = raw.parse().map_err(|_| XyzError::InvalidAtomLine {
-                line: lineno,
-                detail: format!("cannot parse {axis} coordinate '{raw}'"),
-            })?;
-            if !v.is_finite() {
-                return Err(XyzError::NonFiniteCoordinate {
-                    line: lineno,
-                    axis,
-                    raw: raw.to_string(),
-                });
-            }
-            Ok(v)
-        };
-        let x = parse_coord(parts[1], "x")?;
-        let y = parse_coord(parts[2], "y")?;
-        let z = parse_coord(parts[3], "z")?;
+        let x = parse_coordinate(parts[1], "x", lineno)?;
+        let y = parse_coordinate(parts[2], "y", lineno)?;
+        let z = parse_coordinate(parts[3], "z", lineno)?;
         atoms.push(XyzAtom { element, x, y, z });
     }
 

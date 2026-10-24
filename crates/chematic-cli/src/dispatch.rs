@@ -4,17 +4,19 @@ use super::*;
 
 pub(super) fn run(cli: Cli) -> Result<(), String> {
     match cli.command {
-        Command::GjfDocument {
-            input,
-            output,
-            inspect,
-            max_input_bytes,
-            max_jobs,
-        } => {
-            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
-            let result = conversion_format::gjf_document(&text, inspect, max_jobs)?;
-            write_output(output.as_ref(), &result)
-        }
+        command @ (Command::Gromos96 { .. }
+        | Command::Lpmd { .. }
+        | Command::Viewmol { .. }
+        | Command::Unixyz { .. }
+        | Command::Gpr { .. }
+        | Command::Fract { .. }) => run_coordinate_records(command),
+        command @ (Command::DlpolyHistory { .. }
+        | Command::NwchemGeometry { .. }
+        | Command::TinkerXyz { .. }
+        | Command::Bgf { .. }) => run_structured_records(command),
+        command @ (Command::Molden { .. }
+        | Command::DlpolyConfig { .. }
+        | Command::GjfDocument { .. }) => run_remaining_formats(command),
         command @ (Command::ConvertWithReport { .. } | Command::Convert { .. }) => {
             run_conversion(command)
         }
@@ -39,6 +41,280 @@ pub(super) fn run(cli: Cli) -> Result<(), String> {
         | Command::BatchSimilarity { .. }
         | Command::BatchSubstructure { .. }
         | Command::BatchReactions { .. }) => run_batch(command),
+    }
+}
+
+fn run_coordinate_records(command: Command) -> Result<(), String> {
+    match command {
+        Command::Gromos96 {
+            input,
+            output,
+            inspect,
+            from_json,
+            angstrom,
+            length_unit,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = gromos96::convert(
+                &text,
+                inspect,
+                from_json,
+                angstrom,
+                max_input_bytes,
+                length_unit.as_deref(),
+            )?;
+            write_output(output.as_ref(), &result)
+        }
+        Command::Lpmd {
+            input,
+            output,
+            inspect,
+            from_json,
+            angstrom,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = lpmd::convert(&text, inspect, from_json, angstrom, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
+        Command::Viewmol {
+            input,
+            output,
+            inspect,
+            from_json,
+            angstrom,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = viewmol::convert(&text, inspect, from_json, angstrom, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
+        Command::Unixyz {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = unixyz::convert(&text, inspect, from_json, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
+        Command::Gpr {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = gpr::convert(&text, inspect, from_json, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
+        Command::Fract {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = fract::convert(&text, inspect, from_json, max_input_bytes)?;
+            write_output(output.as_ref(), &result)
+        }
+        _ => unreachable!("coordinate-record dispatcher received another command"),
+    }
+}
+
+fn run_structured_records(command: Command) -> Result<(), String> {
+    match command {
+        Command::DlpolyHistory {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::dlpoly_history_from_json(&text)
+            } else {
+                chematic_mol::parse_dlpoly_history_with_limits(
+                    &text,
+                    &chematic_mol::DlpolyHistoryLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string_pretty(&record).map_err(|e| e.to_string())? + "\n"
+            } else {
+                chematic_mol::write_dlpoly_history(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        Command::NwchemGeometry {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::nwchem_geometry_from_json(&text)
+            } else {
+                chematic_mol::parse_nwchem_geometry_with_limits(
+                    &text,
+                    &chematic_mol::NwchemLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string_pretty(&record).map_err(|e| e.to_string())? + "\n"
+            } else {
+                chematic_mol::write_nwchem_geometry(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        Command::TinkerXyz {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::tinker_xyz_from_json(&text)
+            } else {
+                chematic_mol::parse_tinker_xyz_with_limits(
+                    &text,
+                    &chematic_mol::TinkerParseLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string(&record)
+                    .map(|s| format!("{s}\n"))
+                    .map_err(|e| e.to_string())?
+            } else {
+                chematic_mol::write_tinker_xyz(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        Command::Bgf {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::bgf_record_from_json(&text)
+            } else {
+                chematic_mol::parse_bgf_with_limits(
+                    &text,
+                    &chematic_mol::BgfLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string_pretty(&record).map_err(|e| e.to_string())? + "\n"
+            } else {
+                chematic_mol::write_bgf(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        _ => unreachable!("structured-record dispatcher received another command"),
+    }
+}
+
+fn run_remaining_formats(command: Command) -> Result<(), String> {
+    match command {
+        Command::Molden {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::molden_record_from_json(&text)
+            } else {
+                chematic_mol::parse_molden_with_limits(
+                    &text,
+                    &chematic_mol::MoldenLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string(&record)
+                    .map(|s| format!("{s}\n"))
+                    .map_err(|e| e.to_string())?
+            } else {
+                chematic_mol::write_molden(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        Command::DlpolyConfig {
+            input,
+            output,
+            inspect,
+            from_json,
+            max_input_bytes,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let record = if from_json {
+                chematic_mol::dlpoly_config_from_json(&text)
+            } else {
+                chematic_mol::parse_dlpoly_config_with_limits(
+                    &text,
+                    &chematic_mol::DlpolyConfigLimits {
+                        max_input_bytes,
+                        ..Default::default()
+                    },
+                )
+            }
+            .map_err(|e| e.to_string())?;
+            let result = if inspect {
+                serde_json::to_string(&record)
+                    .map(|s| format!("{s}\n"))
+                    .map_err(|e| e.to_string())?
+            } else {
+                chematic_mol::write_dlpoly_config(&record).map_err(|e| e.to_string())?
+            };
+            write_output(output.as_ref(), &result)
+        }
+        Command::GjfDocument {
+            input,
+            output,
+            inspect,
+            max_input_bytes,
+            max_jobs,
+        } => {
+            let text = read_limited_input(input.as_ref(), max_input_bytes)?;
+            let result = conversion_format::gjf_document(&text, inspect, max_jobs)?;
+            write_output(output.as_ref(), &result)
+        }
+        _ => unreachable!("remaining-format dispatcher received another command"),
     }
 }
 

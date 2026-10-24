@@ -66,7 +66,9 @@ unknown fields and duplicate decoded keys fail instead of being ignored.
 `null` optional fields still mean absence. The WASM signature is unchanged.
 
 These are deliberate producer-side refusals of previously accepted unsafe data.
-Native readers can accept a wider profile than the writer. Python additionally
+Native readers can accept a wider token and metadata profile than the writer.
+The [XYZ numeric read contract](xyz-numeric-read.md) additionally refuses
+nonzero real decimals that round to binary64 zero. Python also
 refuses duplicate property names before constructing a dictionary, preventing
 silent overwrite. Molecular
 bonds, formal charges, isotope identity and stereo are not transferred by these

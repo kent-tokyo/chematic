@@ -1,0 +1,459 @@
+{
+  "schema_version": 1,
+  "provenance": "Original authored single-record UniChem XYZ packet. Canonical title/count/atomic-number layout verified using installed Open Babel; no external fixtures or implementation copied.",
+  "valid": [
+    {
+      "id": "ordinary",
+      "text": "example\n2\n6 0 .125 .25\n8 .5 .75 1\n",
+      "expected": {
+        "title": "example",
+        "atoms": [
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0",
+              ".125",
+              ".25"
+            ]
+          },
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              ".5",
+              ".75",
+              "1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "empty-title",
+      "text": "\n1\n2 0 .5 1\n",
+      "expected": {
+        "title": "",
+        "atoms": [
+          {
+            "atomic_number": 2,
+            "position_angstrom": [
+              "0",
+              ".5",
+              "1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "space-title",
+      "text": "  exact title  \n1\n10 .125 .25 .5\n",
+      "expected": {
+        "title": "  exact title  ",
+        "atoms": [
+          {
+            "atomic_number": 10,
+            "position_angstrom": [
+              ".125",
+              ".25",
+              ".5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "unicode-title",
+      "text": "分子 α Å\r\n1\r\n26 .125 .25 .5\r\n",
+      "expected": {
+        "title": "分子 α Å",
+        "atoms": [
+          {
+            "atomic_number": 26,
+            "position_angstrom": [
+              ".125",
+              ".25",
+              ".5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "numeric-title",
+      "text": "123\n1\n1 .125 .25 .5\n",
+      "expected": {
+        "title": "123",
+        "atoms": [
+          {
+            "atomic_number": 1,
+            "position_angstrom": [
+              ".125",
+              ".25",
+              ".5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "precision",
+      "text": "precision\n1\n6 0.12345678901234567 -0.23456789012345678 0.34567890123456789\n",
+      "expected": {
+        "title": "precision",
+        "atoms": [
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0.12345678901234567",
+              "-0.23456789012345678",
+              "0.34567890123456789"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "scientific",
+      "text": "scientific\n1\n7 +1.2345678901234567e-1 2.5E-1 3.75e-1\n",
+      "expected": {
+        "title": "scientific",
+        "atoms": [
+          {
+            "atomic_number": 7,
+            "position_angstrom": [
+              "+1.2345678901234567e-1",
+              "2.5E-1",
+              "3.75e-1"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "signed-zero",
+      "text": "zeros\n1\n18 -0 -0.000 +0E-9999\n",
+      "expected": {
+        "title": "zeros",
+        "atoms": [
+          {
+            "atomic_number": 18,
+            "position_angstrom": [
+              "-0",
+              "-0.000",
+              "+0E-9999"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "subnormal",
+      "text": "subnormal\n1\n2 4.9406564584124654e-324 -4.9406564584124654e-324 2.2250738585072014e-308\n",
+      "expected": {
+        "title": "subnormal",
+        "atoms": [
+          {
+            "atomic_number": 2,
+            "position_angstrom": [
+              "4.9406564584124654e-324",
+              "-4.9406564584124654e-324",
+              "2.2250738585072014e-308"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-decimal",
+      "text": "lexeme\n1\n36 0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890 0.000000000000000000000000001 1.0000000000000000000000001\n",
+      "expected": {
+        "title": "lexeme",
+        "atoms": [
+          {
+            "atomic_number": 36,
+            "position_angstrom": [
+              "0.1234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890",
+              "0.000000000000000000000000001",
+              "1.0000000000000000000000001"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "large-finite",
+      "text": "finite\n1\n2 1.7976931348623157e308 -1.7976931348623157e308 1e100\n",
+      "expected": {
+        "title": "finite",
+        "atoms": [
+          {
+            "atomic_number": 2,
+            "position_angstrom": [
+              "1.7976931348623157e308",
+              "-1.7976931348623157e308",
+              "1e100"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "heavy-elements",
+      "text": "elements\n2\n118 .125 0 0\n92 .25 0 0\n",
+      "expected": {
+        "title": "elements",
+        "atoms": [
+          {
+            "atomic_number": 118,
+            "position_angstrom": [
+              ".125",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atomic_number": 92,
+            "position_angstrom": [
+              ".25",
+              "0",
+              "0"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "source-order",
+      "text": "O C O\n3\n8 -.125 0 0\n6 0 0 0\n8 .125 0 0\n",
+      "expected": {
+        "title": "O C O",
+        "atoms": [
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              "-.125",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atomic_number": 6,
+            "position_angstrom": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atomic_number": 8,
+            "position_angstrom": [
+              ".125",
+              "0",
+              "0"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "no-final-newline",
+      "text": "no newline\n1\n17 .125 .25 .5",
+      "expected": {
+        "title": "no newline",
+        "atoms": [
+          {
+            "atomic_number": 17,
+            "position_angstrom": [
+              ".125",
+              ".25",
+              ".5"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "tabs",
+      "text": "\ttitle\t\n1\n\t054\t.125\t.25\t.5  \n",
+      "expected": {
+        "title": "\ttitle\t",
+        "atoms": [
+          {
+            "atomic_number": 54,
+            "position_angstrom": [
+              ".125",
+              ".25",
+              ".5"
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "refused": [
+    {
+      "id": "empty",
+      "text": ""
+    },
+    {
+      "id": "missing-count",
+      "text": "title\n"
+    },
+    {
+      "id": "normal-xyz-order",
+      "text": "1\ntitle\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "zero-atoms",
+      "text": "test\n0\n"
+    },
+    {
+      "id": "negative-count",
+      "text": "test\n-1\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "count-suffix",
+      "text": "test\n1xyz\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "count-float",
+      "text": "test\n1.0\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "count-limit",
+      "text": "test\n1000001\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "count-overflow",
+      "text": "test\n184467440737095516160000\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "truncated",
+      "text": "test\n2\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "blank-atom",
+      "text": "test\n1\n\n"
+    },
+    {
+      "id": "extra-atom",
+      "text": "test\n1\n6 .1 .2 .3\n8 .5 .6 .7\n"
+    },
+    {
+      "id": "second-record",
+      "text": "test\n1\n6 .1 .2 .3\ntest\n1\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "trailing-blank",
+      "text": "test\n1\n6 .1 .2 .3\n\n"
+    },
+    {
+      "id": "extra-property",
+      "text": "test\n1\n6 .1 .2 .3 charge=1\n"
+    },
+    {
+      "id": "short-atom",
+      "text": "test\n1\n6 .1 .2\n"
+    },
+    {
+      "id": "symbol-instead-of-number",
+      "text": "test\n1\nC .1 .2 .3\n"
+    },
+    {
+      "id": "dummy",
+      "text": "test\n1\n0 .1 .2 .3\n"
+    },
+    {
+      "id": "above-table",
+      "text": "test\n1\n119 .1 .2 .3\n"
+    },
+    {
+      "id": "negative-number",
+      "text": "test\n1\n-6 .1 .2 .3\n"
+    },
+    {
+      "id": "fractional-number",
+      "text": "test\n1\n6.5 .1 .2 .3\n"
+    },
+    {
+      "id": "atomic-number-overflow",
+      "text": "test\n1\n256 .1 .2 .3\n"
+    },
+    {
+      "id": "title-nul",
+      "text": "te\u0000st\n1\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "bare-cr",
+      "text": "te\rst\n1\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "line-limit",
+      "text": "ttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttttt\n1\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "comment-extension",
+      "text": "test\n1\n6 .1 .2 .3\n# comment\n"
+    },
+    {
+      "id": "count-extra-column",
+      "text": "test\n1 units=nm\n6 .1 .2 .3\n"
+    },
+    {
+      "id": "numeric-27",
+      "text": "test\n1\n6 NaN .2 .3\n"
+    },
+    {
+      "id": "numeric-28",
+      "text": "test\n1\n6 inf .2 .3\n"
+    },
+    {
+      "id": "numeric-29",
+      "text": "test\n1\n6 -inf .2 .3\n"
+    },
+    {
+      "id": "numeric-30",
+      "text": "test\n1\n6 1e999 .2 .3\n"
+    },
+    {
+      "id": "numeric-31",
+      "text": "test\n1\n6 1e-999 .2 .3\n"
+    },
+    {
+      "id": "numeric-32",
+      "text": "test\n1\n6 -1e-999 .2 .3\n"
+    },
+    {
+      "id": "numeric-33",
+      "text": "test\n1\n6 1e .2 .3\n"
+    },
+    {
+      "id": "numeric-34",
+      "text": "test\n1\n6 0x1 .2 .3\n"
+    },
+    {
+      "id": "numeric-35",
+      "text": "test\n1\n6 1D-2 .2 .3\n"
+    },
+    {
+      "id": "numeric-36",
+      "text": "test\n1\n6 . .2 .3\n"
+    },
+    {
+      "id": "numeric-37",
+      "text": "test\n1\n6 1.2(3) .2 .3\n"
+    },
+    {
+      "id": "numeric-38",
+      "text": "test\n1\n6 1.2junk .2 .3\n"
+    },
+    {
+      "id": "numeric-39",
+      "text": "test\n1\n6 １.２ .2 .3\n"
+    },
+    {
+      "id": "numeric-40",
+      "text": "test\n1\n6 0.111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 .2 .3\n"
+    }
+  ]
+}

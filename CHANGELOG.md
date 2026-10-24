@@ -14,13 +14,57 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Editable formatted DL-POLY Classic HISTORY trajectories in Rust, Python,
+  WASM/Node and CLI, retaining all frames, source atom IDs/order, changing cells,
+  masses, charges, positions, velocities, forces and integration timesteps in
+  raw source units. Modern/binary layouts, inconsistent metadata and numeric
+  values that cannot fit exact fixed-width output refuse. See
+  [HISTORY records](docs/reference/dlpoly-history.md) for the bounded profile
+  and the separate Open Babel all-frame coordinate comparison.
+- Editable Cartesian NWChem GEOMETRY blocks in Rust, Python, WASM/Node and CLI,
+  preserving explicit/omitted units and controls, case-sensitive center tags,
+  velocities, nuclear charges, isotope masses and nuclear models. Full job
+  decks and unsupported syntax refuse. Shared cases and a pinned same-XYZ
+  export comparison are documented in [NWChem geometry](docs/reference/nwchem-geometry.md).
+- Tinker XYZ (`txyz`) single-frame read/write in Rust, Python, WASM/Node and
+  the CLI. Editable records retain opaque atom names, force-field type numbers,
+  declared connectivity, Cartesian coordinates and optional periodic cells.
+  Invalid topology, extra frames and unrepresentable JSON fields are refused.
+- DL-POLY CONFIG/REVCON single-record read/write in Rust, Python, WASM/Node
+  and the CLI, retaining source-unit positions, velocities, forces, cell vectors,
+  opaque names/suffixes and optional IDs/counts. Unsupported boundary modes,
+  inconsistent levels, unknown JSON fields and precision-losing output are refused.
+- Molden geometry/vibration record read/write in Rust, Python, WASM/Node and
+  the CLI. Explicit atom units, Bohr vibration coordinates/displacements,
+  frequency signs, mode/atom IDs and optional IR/Raman data survive edits.
+  Electronic, convergence and trajectory sections are refused rather than
+  discarded. This is a bounded profile, not a general orbital-file reader.
+- Editable nonperiodic BIOGRF 200 records in Rust, Python, WASM/Node, and CLI,
+  retaining fixed-column atom/residue/force-field/partial-charge/lone-pair
+  fields and explicit/implicit connection orders. Unsupported records, unknown
+  JSON fields, conflicting connectivity, overflow, and precision loss refuse.
+  The original cross-binding packet and pinned Open Babel comparison document
+  the bounded profile in [BGF records](docs/reference/bgf-records.md).
+
 ### Fixed
 
+- XYZ and ASE-style ExtXYZ real reads now share finite binary64 validation
+  across Rust, Python and WASM. Nonzero decimal coordinates, cell entries and
+  real atom data that round to zero are refused; literal signed zero and finite
+  subnormals remain readable. The 3D XYZ path also refuses NaN, infinities and
+  overflow. String columns/raw info and existing writer precision are unchanged.
 - Python Extended XYZ dictionaries now retain declared R/I/S/L atom-column
   kinds, widths and original comments for typed read/write round trips,
   including empty frames and signed 64-bit identifiers. The writer accepts an
   explicit property schema and refuses lossy integer-to-real coercion;
   duplicate reader columns are refused before dictionary overwrite.
+- The local atom-record MolJSON reader now keeps order 4 as a quadruple bond
+  and validates charge/isotope ranges, boolean fields and exact supported bond
+  orders. Duplicate JSON keys/IDs, self/duplicate bonds, conflicting aromatic
+  declarations and malformed present bond arrays are refused instead of being
+  narrowed, overwritten, rounded or ignored across Rust/Python/WASM/CLI reads.
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element

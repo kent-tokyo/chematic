@@ -1,0 +1,1039 @@
+{
+  "schema_version": 1,
+  "provenance": "Original authored gpr 100 / Info 1 records, independently rendered from declared fields. No external fixture corpus copied.",
+  "valid": [
+    {
+      "id": "isolated-no-charges",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 2\n!Bonds 0\n!Coord\n0 0.125 0.25 0.5\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 2
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0.125",
+              "0.25",
+              "0.5"
+            ]
+          }
+        ],
+        "partial_charges": null
+      }
+    },
+    {
+      "id": "explicit-zero-charges",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 2\n!Bonds 0\n!Coord\n0 0 0 0\n!Charges\n0 0\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 2
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "0"
+          }
+        ]
+      }
+    },
+    {
+      "id": "single-bond",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 0 0 0\n1 .125 0 0\n!Charges\n0 .25\n1 -.25\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 8
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "S"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": ".25"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.25"
+          }
+        ]
+      }
+    },
+    {
+      "id": "double-bond",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 D\n!Coord\n0 0 0 0\n1 .125 0 0\n!Charges\n0 .125\n1 -.125\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 8
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "D"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": ".125"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.125"
+          }
+        ]
+      }
+    },
+    {
+      "id": "triple-bond",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 7\n!Bonds 1\n1 0 T\n!Coord\n0 0 0 0\n1 .125 0 0\n!Charges\n0 .125\n1 -.125\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 7
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              1,
+              0
+            ],
+            "order": "T"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": ".125"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.125"
+          }
+        ]
+      }
+    },
+    {
+      "id": "aromatic-ring",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 6\n0 6\n1 6\n2 6\n3 6\n4 6\n5 6\n!Bonds 6\n0 1 C\n1 2 C\n2 3 C\n3 4 C\n4 5 C\n5 0 C\n!Coord\n0 .14 0 0\n1 .07 .12 0\n2 -.07 .12 0\n3 -.14 0 0\n4 -.07 -.12 0\n5 .07 -.12 0\n!Charges\n0 -.1\n1 -.1\n2 -.1\n3 -.1\n4 -.1\n5 -.1\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 6
+          },
+          {
+            "id": 2,
+            "atomic_number": 6
+          },
+          {
+            "id": 3,
+            "atomic_number": 6
+          },
+          {
+            "id": 4,
+            "atomic_number": 6
+          },
+          {
+            "id": 5,
+            "atomic_number": 6
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "C"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "C"
+          },
+          {
+            "atoms": [
+              2,
+              3
+            ],
+            "order": "C"
+          },
+          {
+            "atoms": [
+              3,
+              4
+            ],
+            "order": "C"
+          },
+          {
+            "atoms": [
+              4,
+              5
+            ],
+            "order": "C"
+          },
+          {
+            "atoms": [
+              5,
+              0
+            ],
+            "order": "C"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              ".14",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".07",
+              ".12",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 2,
+            "position_nm": [
+              "-.07",
+              ".12",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 3,
+            "position_nm": [
+              "-.14",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 4,
+            "position_nm": [
+              "-.07",
+              "-.12",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 5,
+            "position_nm": [
+              ".07",
+              "-.12",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-.1"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.1"
+          },
+          {
+            "atom_id": 2,
+            "value": "-.1"
+          },
+          {
+            "atom_id": 3,
+            "value": "-.1"
+          },
+          {
+            "atom_id": 4,
+            "value": "-.1"
+          },
+          {
+            "atom_id": 5,
+            "value": "-.1"
+          }
+        ]
+      }
+    },
+    {
+      "id": "mixed-bonds",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 4\n0 6\n1 6\n2 6\n3 7\n!Bonds 3\n2 3 T\n1 0 D\n1 2 S\n!Coord\n0 0 0 0\n1 .125 0 0\n2 .25 0 0\n3 .375 0 0\n!Charges\n0 .1\n1 -.2\n2 .3\n3 -.4\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 6
+          },
+          {
+            "id": 2,
+            "atomic_number": 6
+          },
+          {
+            "id": 3,
+            "atomic_number": 7
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              2,
+              3
+            ],
+            "order": "T"
+          },
+          {
+            "atoms": [
+              1,
+              0
+            ],
+            "order": "D"
+          },
+          {
+            "atoms": [
+              1,
+              2
+            ],
+            "order": "S"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 2,
+            "position_nm": [
+              ".25",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 3,
+            "position_nm": [
+              ".375",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": ".1"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.2"
+          },
+          {
+            "atom_id": 2,
+            "value": ".3"
+          },
+          {
+            "atom_id": 3,
+            "value": "-.4"
+          }
+        ]
+      }
+    },
+    {
+      "id": "high-precision",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n1 0 S\n!Coord\n0 0.12345678901234567 -0.23456789012345678 0.34567890123456789\n1 .012345678901234567 0 0\n!Charges\n0 0.12345678901234567\n1 -0.12345678901234567\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 6
+          },
+          {
+            "id": 1,
+            "atomic_number": 8
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              1,
+              0
+            ],
+            "order": "S"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0.12345678901234567",
+              "-0.23456789012345678",
+              "0.34567890123456789"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".012345678901234567",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "0.12345678901234567"
+          },
+          {
+            "atom_id": 1,
+            "value": "-0.12345678901234567"
+          }
+        ]
+      }
+    },
+    {
+      "id": "signed-zero",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 10\n!Bonds 0\n!Coord\n0 -0 -0.000 +0E-9999\n!Charges\n0 -0.000\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 10
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "-0",
+              "-0.000",
+              "+0E-9999"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-0.000"
+          }
+        ]
+      }
+    },
+    {
+      "id": "scientific",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 18\n!Bonds 0\n!Coord\n0 +1.2345678901234567e-1 2.5E-1 3.75e-1\n!Charges\n0 -1.2345678901234567e-2\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 18
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "+1.2345678901234567e-1",
+              "2.5E-1",
+              "3.75e-1"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-1.2345678901234567e-2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "subnormal",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 2\n!Bonds 0\n!Coord\n0 4.9406564584124654e-324 -4.9406564584124654e-324 2.2250738585072014e-308\n!Charges\n0 4.9406564584124654e-324\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 2
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "4.9406564584124654e-324",
+              "-4.9406564584124654e-324",
+              "2.2250738585072014e-308"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "4.9406564584124654e-324"
+          }
+        ]
+      }
+    },
+    {
+      "id": "long-decimals",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1\n0 36\n!Bonds 0\n!Coord\n0 0.12345678901234567890123456789012345678901234567890123456789012345678901234567890 0.000000000000000000000000001 1.0000000000000000000000001\n!Charges\n0 0.12345678901234567890123456789012345678901234567890123456789012345678901234567890\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 36
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "0.12345678901234567890123456789012345678901234567890123456789012345678901234567890",
+              "0.000000000000000000000000001",
+              "1.0000000000000000000000001"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "0.12345678901234567890123456789012345678901234567890123456789012345678901234567890"
+          }
+        ]
+      }
+    },
+    {
+      "id": "heavy-elements",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 118\n1 92\n!Bonds 0\n!Coord\n0 .125 0 0\n1 .25 0 0\n!Charges\n0 .25\n1 -.25\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 118
+          },
+          {
+            "id": 1,
+            "atomic_number": 92
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              ".25",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": ".25"
+          },
+          {
+            "atom_id": 1,
+            "value": "-.25"
+          }
+        ]
+      }
+    },
+    {
+      "id": "repeated-elements",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 3\n0 8\n1 6\n2 8\n!Bonds 2\n2 1 D\n0 1 D\n!Coord\n0 -.125 0 0\n1 0 0 0\n2 .125 0 0\n!Charges\n0 -.2\n1 .4\n2 -.2\n!End\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 8
+          },
+          {
+            "id": 1,
+            "atomic_number": 6
+          },
+          {
+            "id": 2,
+            "atomic_number": 8
+          }
+        ],
+        "bonds": [
+          {
+            "atoms": [
+              2,
+              1
+            ],
+            "order": "D"
+          },
+          {
+            "atoms": [
+              0,
+              1
+            ],
+            "order": "D"
+          }
+        ],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              "-.125",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 1,
+            "position_nm": [
+              "0",
+              "0",
+              "0"
+            ]
+          },
+          {
+            "atom_id": 2,
+            "position_nm": [
+              ".125",
+              "0",
+              "0"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-.2"
+          },
+          {
+            "atom_id": 1,
+            "value": ".4"
+          },
+          {
+            "atom_id": 2,
+            "value": "-.2"
+          }
+        ]
+      }
+    },
+    {
+      "id": "crlf-tabs",
+      "text": "!Header\tgpr\t100\r\n!Info\t1\r\n!Atoms\t1\r\n0\t2\r\n!Bonds\t0\r\n!Coord\r\n0\t.1\t.2\t.3\r\n!Charges\r\n0\t-.125\r\n!End\r\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 2
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              ".1",
+              ".2",
+              ".3"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-.125"
+          }
+        ]
+      }
+    },
+    {
+      "id": "blank-lines",
+      "text": "\n!Header gpr 100\n!Info 1\n!Atoms 1\n0 2\n!Bonds 0\n\n!Coord\n\n0 .1 .2 .3\n!Charges\n0 -.125\n!End\n\n",
+      "expected": {
+        "atoms": [
+          {
+            "id": 0,
+            "atomic_number": 2
+          }
+        ],
+        "bonds": [],
+        "coordinates": [
+          {
+            "atom_id": 0,
+            "position_nm": [
+              ".1",
+              ".2",
+              ".3"
+            ]
+          }
+        ],
+        "partial_charges": [
+          {
+            "atom_id": 0,
+            "value": "-.125"
+          }
+        ]
+      }
+    }
+  ],
+  "refused": [
+    {
+      "id": "empty",
+      "text": ""
+    },
+    {
+      "id": "version",
+      "text": "!Header gpr 111\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "old-dialect",
+      "text": "!Header mm1gp 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "two-coordinate-sets",
+      "text": "!Header gpr 100\n!Info 2\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "zero-coordinate-sets",
+      "text": "!Header gpr 100\n!Info 0\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "zero-atoms",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 0\n"
+    },
+    {
+      "id": "negative-count",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms -2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "huge-count",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 1000001\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "count-suffix",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2junk\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "huge-bonds",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 2000001\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "unknown-atomic-number",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 0\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "above-table",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 119\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "duplicate-atom-id",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n0 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "sparse-atom-id",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n2 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "permuted-atom-ids",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n1 8\n0 6\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "atom-extra-field",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6 charge=1\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "unknown-bond-code",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 X\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "numeric-bond-code",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 1\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "self-bond",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 0 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "unknown-endpoint",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 2 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "duplicate-bond",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 2\n0 1 S\n1 0 D\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "missing-coord",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "duplicate-coord-id",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n0 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "permuted-coordinate-ids",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n1 .4 .5 .6\n0 .1 .2 .3\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "short-coordinate",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "long-coordinate",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3 .4\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "duplicate-charge-id",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n0 -.25\n!End\n"
+    },
+    {
+      "id": "missing-charge",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n!End\n"
+    },
+    {
+      "id": "charge-extra-column",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25 e\n1 -.25\n!End\n"
+    },
+    {
+      "id": "unknown-section",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!PartialCharges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "force-extension",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!Forces\n0 0 0 0\n1 0 0 0\n!End\n"
+    },
+    {
+      "id": "missing-end",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n"
+    },
+    {
+      "id": "trailing-record",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "trailing-comment",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n# comment\n"
+    },
+    {
+      "id": "nul",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\u0000\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "long-line",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           \n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "truncated",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n"
+    },
+    {
+      "id": "coordinate-number-37",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 NaN .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-38",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 inf .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-39",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 -inf .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-40",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1e999 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-41",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1e-999 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-42",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 -1e-999 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-43",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1e .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-44",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 0x1 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-45",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1D-2 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-46",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 . .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-47",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1.2(3) .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-48",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 1.2junk .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-49",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 １.２ .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "coordinate-number-50",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 0.1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111 .2 .3\n1 .4 .5 .6\n!Charges\n0 .25\n1 -.25\n!End\n"
+    },
+    {
+      "id": "charge-number-51",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 NaN\n1 -.25\n!End\n"
+    },
+    {
+      "id": "charge-number-52",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 1e999\n1 -.25\n!End\n"
+    },
+    {
+      "id": "charge-number-53",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 1e-999\n1 -.25\n!End\n"
+    },
+    {
+      "id": "charge-number-54",
+      "text": "!Header gpr 100\n!Info 1\n!Atoms 2\n0 6\n1 8\n!Bonds 1\n0 1 S\n!Coord\n0 .1 .2 .3\n1 .4 .5 .6\n!Charges\n0 1.2x\n1 -.25\n!End\n"
+    }
+  ]
+}

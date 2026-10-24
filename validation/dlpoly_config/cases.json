@@ -1,0 +1,1017 @@
+{
+  "schema_version": 1,
+  "license": "MIT",
+  "provenance": "Original synthetic CONFIG records authored for this repository; not copied from a simulation or manual.",
+  "cases": [
+    {
+      "id": "level_0",
+      "input": "Original CONFIG test\n0 0 2\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 0,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "level_1",
+      "input": "Original CONFIG test\n1 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 1,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": null,
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": null,
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "level_2",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "legacy_count_omitted",
+      "input": "Original CONFIG test\n0 0\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 0,
+        "imcon": 0,
+        "declared_atom_count": null,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "classic_name_only",
+      "input": "Original CONFIG test\n0 0\nO\n0.0 0.0 0.0\nH\n1.0 0.0 0.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 0,
+        "imcon": 0,
+        "declared_atom_count": null,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": null,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": null,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": null,
+            "force": null,
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "source_order_by_id",
+      "input": "Original CONFIG test\n2 0 2\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "opaque_names",
+      "input": "Original CONFIG test\n2 0 2\nOW 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nHW 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "OW",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "HW",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "cubic",
+      "input": "Original CONFIG test\n2 1 2\n10.0 0.0 0.0\n0.0 10.0 0.0\n0.0 0.0 10.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 1,
+        "declared_atom_count": 2,
+        "cell_vectors": [
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            10.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            10.0
+          ]
+        ],
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "orthorhombic",
+      "input": "Original CONFIG test\n2 2 2\n10.0 0.0 0.0\n0.0 20.0 0.0\n0.0 0.0 30.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 2,
+        "declared_atom_count": 2,
+        "cell_vectors": [
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            20.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            30.0
+          ]
+        ],
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "triclinic",
+      "input": "Original CONFIG test\n2 3 2\n10.0 1.0 2.0\n3.0 11.0 4.0\n5.0 6.0 12.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 3,
+        "declared_atom_count": 2,
+        "cell_vectors": [
+          [
+            10.0,
+            1.0,
+            2.0
+          ],
+          [
+            3.0,
+            11.0,
+            4.0
+          ],
+          [
+            5.0,
+            6.0,
+            12.0
+          ]
+        ],
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "left_handed",
+      "input": "Original CONFIG test\n2 3 2\n10.0 0.0 0.0\n0.0 11.0 0.0\n0.0 0.0 -12.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 3,
+        "declared_atom_count": 2,
+        "cell_vectors": [
+          [
+            10.0,
+            0.0,
+            0.0
+          ],
+          [
+            0.0,
+            11.0,
+            0.0
+          ],
+          [
+            0.0,
+            0.0,
+            -12.0
+          ]
+        ],
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_positions",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.12345678901234566,
+              -0.9876543210987654,
+              1.2345678901234567
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_velocities",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.12345678901234566,
+              -0.9876543210987654,
+              1.2345678901234567
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_forces",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              0.12345678901234566,
+              -0.9876543210987654,
+              1.2345678901234567
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "precise_cell",
+      "input": "Original CONFIG test\n2 3 2\n10.123456789012344 1.0 2.0\n3.0 11.23456789012345 4.0\n5.0 6.0 12.345678901234567\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 3,
+        "declared_atom_count": 2,
+        "cell_vectors": [
+          [
+            10.123456789012344,
+            1.0,
+            2.0
+          ],
+          [
+            3.0,
+            11.23456789012345,
+            4.0
+          ],
+          [
+            5.0,
+            6.0,
+            12.345678901234567
+          ]
+        ],
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "fortran_d_exponents",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n1.0D-1 2.0d-1 3.0D-1\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": []
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    },
+    {
+      "id": "opaque_atom_metadata",
+      "input": "Original CONFIG test\n2 0 2\nO 1 16.0 -0.5\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n",
+      "expected": {
+        "title": "Original CONFIG test",
+        "levcfg": 2,
+        "imcon": 0,
+        "declared_atom_count": 2,
+        "cell_vectors": null,
+        "atoms": [
+          {
+            "name": "O",
+            "index": 1,
+            "position": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              0.1,
+              0.2,
+              0.3
+            ],
+            "force": [
+              1.0,
+              2.0,
+              3.0
+            ],
+            "header_extra": [
+              "16.0",
+              "-0.5"
+            ]
+          },
+          {
+            "name": "H",
+            "index": 2,
+            "position": [
+              1.0,
+              0.0,
+              0.0
+            ],
+            "velocity": [
+              -0.1,
+              -0.2,
+              -0.3
+            ],
+            "force": [
+              -1.0,
+              -2.0,
+              -3.0
+            ],
+            "header_extra": []
+          }
+        ]
+      }
+    }
+  ],
+  "refusals": [
+    {
+      "id": "empty",
+      "input": ""
+    },
+    {
+      "id": "bad_level",
+      "input": "Original CONFIG test\n3 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "unsupported_pbc",
+      "input": "Original CONFIG test\n2 6 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "count_mismatch",
+      "input": "Original CONFIG test\n2 0 3\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "excess_atoms",
+      "input": "Original CONFIG test\n2 0 1\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "extended_header",
+      "input": "Original CONFIG test\n2 0 2 1.0\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "duplicate_id",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 1\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "invalid_id",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 0\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "mixed_ids",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "nan",
+      "input": "Original CONFIG test\n2 0 2\nO 1\nnan 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "inf",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n1e400 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n-1.0 -2.0 -3.0\n"
+    },
+    {
+      "id": "missing_force",
+      "input": "Original CONFIG test\n2 0 2\nO 1\n0.0 0.0 0.0\n0.1 0.2 0.3\n1.0 2.0 3.0\nH 2\n1.0 0.0 0.0\n-0.1 -0.2 -0.3\n"
+    },
+    {
+      "id": "extra_vector",
+      "input": "Original CONFIG test\n0 0 2\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n0 0 0\n"
+    },
+    {
+      "id": "extra_column",
+      "input": "Original CONFIG test\n0 0 2\nO 1\n0.0 0.0 0.0 2\nH 2\n1.0 0.0 0.0\n"
+    },
+    {
+      "id": "long_name",
+      "input": "Original CONFIG test\n0 0 2\nTOOLONGXX 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n"
+    },
+    {
+      "id": "long_title",
+      "input": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n0 0\nO\n0 0 0\n"
+    },
+    {
+      "id": "blank_record",
+      "input": "Original CONFIG test\n0 0 2\n\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n"
+    },
+    {
+      "id": "comment",
+      "input": "Original CONFIG test\n0 0 2\n# comment\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n"
+    },
+    {
+      "id": "singular",
+      "input": "Original CONFIG test\n0 3 2\n1.0 0.0 0.0\n2.0 0.0 0.0\n0.0 0.0 1.0\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n"
+    },
+    {
+      "id": "cubic_mismatch",
+      "input": "Original CONFIG test\n0 1 2\n1.0 0.0 0.0\n0.0 2.0 0.0\n0.0 0.0 3.0\nO 1\n0.0 0.0 0.0\nH 2\n1.0 0.0 0.0\n"
+    }
+  ]
+}

@@ -83,6 +83,12 @@ nav:
     - RDKit Support Matrix: reference/rdkit-migration.md
   - Formats & Bindings:
     - Format Capability Matrix: reference/format-capabilities.md
+    - DL-POLY HISTORY: reference/dlpoly-history.md
+    - NWChem Geometry: reference/nwchem-geometry.md
+    - Tinker XYZ: reference/tinker-xyz.md
+    - DL-POLY CONFIG: reference/dlpoly-config.md
+    - Molden Geometry & Vibrations: reference/molden-vibrations.md
+    - BGF Atom Records: reference/bgf-records.md
     - Language Bindings: reference/language-bindings.md
     - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md
@@ -93,6 +99,7 @@ nav:
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
     - mmCIF Numeric Preservation: reference/mmcif-numeric-preservation.md
+    - CDXML Bond Meaning: reference/cdxml-bond-meaning.md
     - Open Babel File I/O: reference/openbabel-file-io.md
     - V3000 Atom Scalar Integrity: reference/v3000-atom-scalar-integrity.md
     - V2000 Isotope Output: reference/v2000-isotope-output.md

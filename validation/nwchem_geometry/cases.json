@@ -1,0 +1,1403 @@
+{
+  "schema_version": 1,
+  "scope": "single Cartesian NWChem GEOMETRY block; no full job deck",
+  "valid": [
+    {
+      "id": "implicit-options",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-angstroms",
+      "input": "geometry units angstroms\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-an",
+      "input": "geometry units an\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "an",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-au",
+      "input": "geometry units au\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "au",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-atomic",
+      "input": "geometry units atomic\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "atomic",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-bohr",
+      "input": "geometry units bohr\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "bohr",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-nm",
+      "input": "geometry units nm\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "nm",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-nanometers",
+      "input": "geometry units nanometers\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "nanometers",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-pm",
+      "input": "geometry units pm\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "pm",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "units-picometers",
+      "input": "geometry units picometers\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "picometers",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "rich-center",
+      "input": "# first # remark\ngeometry Water_1 units bohr ang2au 1.8897261246257702 nocenter autosym 1D-6 noautoz print xyz bqbq nucleus fi\nO_ether 0.12345678901234566 -2.345678901234567 0 0.01 -0.02 0.03 mass 17.999159612 charge 6.5 nuc pt # center-specific settings\nend\n# after block\n",
+      "expected": {
+        "name": "Water_1",
+        "units": "bohr",
+        "angstrom_to_au": 1.8897261246257702,
+        "center": false,
+        "autosym": true,
+        "symmetry_tolerance": 1e-06,
+        "autoz": false,
+        "print": "xyz",
+        "bqbq": true,
+        "nucleus": "finite",
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": [
+              0.01,
+              -0.02,
+              0.03
+            ],
+            "nuclear_charge": 6.5,
+            "mass_amu": 17.999159612,
+            "nucleus": "point"
+          }
+        ],
+        "comments": [
+          " first # remark",
+          " center-specific settings",
+          " after block"
+        ]
+      }
+    },
+    {
+      "id": "explicit-controls",
+      "input": "geometry center noautosym autoz noprint nucl point\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": true,
+        "autosym": false,
+        "symmetry_tolerance": null,
+        "autoz": true,
+        "print": "none",
+        "bqbq": false,
+        "nucleus": "point",
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "normal-print",
+      "input": "geometry print\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": "normal",
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "dummy-and-element-tags",
+      "input": "geometry\nbqH 0.12345678901234566 -2.345678901234567 0 charge 0.0\nx1 0.12345678901234566 -2.345678901234567 0 charge -0.25\nXe1 0.12345678901234566 -2.345678901234567 0\nOxygen-ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "bqH",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": 0.0,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "x1",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": -0.25,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "Xe1",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "Oxygen-ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "repeated-tag",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "crlf",
+      "input": "geometry\r\n  O_ether 0.12345678901234566 -2.345678901234567 0\r\nend\r\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "keyword-case-and-tabs",
+      "input": "GEOMETRY\n\tO_ether 0.12345678901234566 -2.345678901234567 0\nEND\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "fortran-exponents",
+      "input": "geometry\nO_ether 1D-100 -2d100 0D0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              1e-100,
+              -2e+100,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "explicit-zero-velocity",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 0 0 0\nend\n",
+      "expected": {
+        "name": null,
+        "units": null,
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "O_ether",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": [
+              0.0,
+              0.0,
+              0.0
+            ],
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-exact-binary",
+      "input": "geometry units angstroms\nC 0.125 -2.0 0.0\nO 1.25 0.5 0.0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              0.125,
+              -2.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.25,
+              0.5,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-seventeen-digits",
+      "input": "geometry units angstroms\nC 0.12345678901234566 -2.345678901234567 0.0\nO 1.9876543210987654 0.0 0.0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.9876543210987654,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-small-components",
+      "input": "geometry units angstroms\nC 1.23456789e-08 -2.3456789e-08 0.0\nO 1.2 0.0 0.0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              1.23456789e-08,
+              -2.3456789e-08,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.2,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-large-components",
+      "input": "geometry units angstroms\nC 12345.123456789 -2345.987654321 0.0\nO 12346.123456789 -2345.987654321 0.0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              12345.123456789,
+              -2345.987654321,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              12346.123456789,
+              -2345.987654321,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-half-last-place",
+      "input": "geometry units angstroms\nC 5e-06 1.5e-05 -2.5e-05\nO 1.000005 0.0 0.0\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              5e-06,
+              1.5e-05,
+              -2.5e-05
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.000005,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "xyz-export-mixed-scales",
+      "input": "geometry units angstroms\nC 1e-20 1e-05 100000.0\nO 1.25 2.5 -3.75\nend\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              1e-20,
+              1e-05,
+              100000.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.25,
+              2.5,
+              -3.75
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    }
+  ],
+  "invalid": [
+    {
+      "id": "missing-end",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\n"
+    },
+    {
+      "id": "empty-geometry",
+      "input": "geometry\nend\n"
+    },
+    {
+      "id": "multiple-blocks",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "job-basis",
+      "input": "basis\n * library sto-3g\nend\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "job-task",
+      "input": "task scf energy\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "job-charge",
+      "input": "charge -1\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "job-start",
+      "input": "start job\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "job-include",
+      "input": "include data.nw\ngeometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-units",
+      "input": "geometry units\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-units-meters",
+      "input": "geometry units meters\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-units-au-units-nm",
+      "input": "geometry units au units nm\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-center-nocenter",
+      "input": "geometry center nocenter\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-autosym-noautosym",
+      "input": "geometry autosym noautosym\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-autoz-noautoz",
+      "input": "geometry autoz noautoz\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-print-noprint",
+      "input": "geometry print noprint\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-nucleus",
+      "input": "geometry nucleus\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-nucleus-gaussian",
+      "input": "geometry nucleus gaussian\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-ang2au-0",
+      "input": "geometry ang2au 0\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-ang2au--1",
+      "input": "geometry ang2au -1\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-ang2au-nan",
+      "input": "geometry ang2au nan\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-ang2au-2-angstrom_to_au-3",
+      "input": "geometry ang2au 2 angstrom_to_au 3\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-autosym--1",
+      "input": "geometry autosym -1\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-bqbq-bqbq",
+      "input": "geometry bqbq bqbq\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-adjust",
+      "input": "geometry adjust\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-units-au-unsupported",
+      "input": "geometry units au unsupported\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-symmetry",
+      "input": "geometry symmetry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-load",
+      "input": "geometry load\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "header-zmatrix",
+      "input": "geometry zmatrix\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "center-charge",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 charge\nend\n"
+    },
+    {
+      "id": "center-charge-nan",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 charge nan\nend\n"
+    },
+    {
+      "id": "center-mass-0",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 mass 0\nend\n"
+    },
+    {
+      "id": "center-mass--1",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 mass -1\nend\n"
+    },
+    {
+      "id": "center-mass-inf",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 mass inf\nend\n"
+    },
+    {
+      "id": "center-charge-1-charge-2",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 charge 1 charge 2\nend\n"
+    },
+    {
+      "id": "center-nuc-point-nucleus-finite",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 nuc point nucleus finite\nend\n"
+    },
+    {
+      "id": "center-nucleus-unknown",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 nucleus unknown\nend\n"
+    },
+    {
+      "id": "center-1-2",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 1 2\nend\n"
+    },
+    {
+      "id": "center-1-2-3-4",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 1 2 3 4\nend\n"
+    },
+    {
+      "id": "center-other-4",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0 other 4\nend\n"
+    },
+    {
+      "id": "tag-Qnonsense",
+      "input": "geometry\n  Qnonsense 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-0123",
+      "input": "geometry\n  0123 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-include",
+      "input": "geometry\n  include 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-eof",
+      "input": "geometry\n  eof 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-symmetry",
+      "input": "geometry\n  symmetry 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-system",
+      "input": "geometry\n  system 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-12345678901234567",
+      "input": "geometry\n  12345678901234567 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-C;task",
+      "input": "geometry\n  C;task 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "tag-C\"tag",
+      "input": "geometry\n  C\"tag 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "nonfinite-coordinate",
+      "input": "geometry\n  O_ether NaN -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "overflow-coordinate",
+      "input": "geometry\n  O_ether 1e999 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "underflow-coordinate",
+      "input": "geometry\n  O_ether 1e-999 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "line-continuation",
+      "input": "geometry\\\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "semicolon",
+      "input": "geometry;  O_ether 0.12345678901234566 -2.345678901234567 0;end;"
+    },
+    {
+      "id": "quoted-name",
+      "input": "geometry \"name with spaces\"\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\n"
+    },
+    {
+      "id": "end-arguments",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend extra\n"
+    },
+    {
+      "id": "trailing-code",
+      "input": "geometry\n  O_ether 0.12345678901234566 -2.345678901234567 0\nend\ntitle job\n"
+    },
+    {
+      "id": "non-ascii",
+      "input": "geometry\n  O_\u00e9ther 0.12345678901234566 -2.345678901234567 0\nend\n"
+    }
+  ],
+  "xyz_exports": [
+    {
+      "id": "exact-binary",
+      "xyz_input": "2\nexact-binary\nC 0.125 -2.0 0.0\nO 1.25 0.5 0.0\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              0.125,
+              -2.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.25,
+              0.5,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "seventeen-digits",
+      "xyz_input": "2\nseventeen-digits\nC 0.12345678901234566 -2.345678901234567 0.0\nO 1.9876543210987654 0.0 0.0\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.9876543210987654,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "small-components",
+      "xyz_input": "2\nsmall-components\nC 1.23456789e-08 -2.3456789e-08 0.0\nO 1.2 0.0 0.0\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              1.23456789e-08,
+              -2.3456789e-08,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.2,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "large-components",
+      "xyz_input": "2\nlarge-components\nC 12345.123456789 -2345.987654321 0.0\nO 12346.123456789 -2345.987654321 0.0\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              12345.123456789,
+              -2345.987654321,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              12346.123456789,
+              -2345.987654321,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "half-last-place",
+      "xyz_input": "2\nhalf-last-place\nC 5e-06 1.5e-05 -2.5e-05\nO 1.000005 0.0 0.0\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              5e-06,
+              1.5e-05,
+              -2.5e-05
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.000005,
+              0.0,
+              0.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    },
+    {
+      "id": "mixed-scales",
+      "xyz_input": "2\nmixed-scales\nC 1e-20 1e-05 100000.0\nO 1.25 2.5 -3.75\n",
+      "expected": {
+        "name": null,
+        "units": "angstroms",
+        "angstrom_to_au": null,
+        "center": null,
+        "autosym": null,
+        "symmetry_tolerance": null,
+        "autoz": null,
+        "print": null,
+        "bqbq": false,
+        "nucleus": null,
+        "centers": [
+          {
+            "tag": "C",
+            "position": [
+              1e-20,
+              1e-05,
+              100000.0
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          },
+          {
+            "tag": "O",
+            "position": [
+              1.25,
+              2.5,
+              -3.75
+            ],
+            "velocity_au": null,
+            "nuclear_charge": null,
+            "mass_amu": null,
+            "nucleus": null
+          }
+        ],
+        "comments": []
+      }
+    }
+  ]
+}

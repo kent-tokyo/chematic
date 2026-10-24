@@ -1,0 +1,158 @@
+{
+  "schema": "chematic.xyz-numeric-read.v1",
+  "scope": "Decimal real token acceptance/refusal, binary64 bits; other decimal rounding is unchanged",
+  "valid": [
+    {
+      "id": "positive_zero",
+      "token": "0",
+      "bits": "0000000000000000"
+    },
+    {
+      "id": "negative_zero",
+      "token": "-0.0",
+      "bits": "8000000000000000"
+    },
+    {
+      "id": "zero_large_negative_exponent",
+      "token": "-0e-999999",
+      "bits": "8000000000000000"
+    },
+    {
+      "id": "zero_large_positive_exponent",
+      "token": "0e+999999",
+      "bits": "0000000000000000"
+    },
+    {
+      "id": "zero_uppercase_exponent",
+      "token": "-0.000E+999999",
+      "bits": "8000000000000000"
+    },
+    {
+      "id": "minimum_subnormal",
+      "token": "4.9406564584124654e-324",
+      "bits": "0000000000000001"
+    },
+    {
+      "id": "rounds_up_to_minimum_subnormal",
+      "token": "2.5e-324",
+      "bits": "0000000000000001"
+    },
+    {
+      "id": "negative_subnormal",
+      "token": "-5e-324",
+      "bits": "8000000000000001"
+    },
+    {
+      "id": "largest_subnormal",
+      "token": "2.225073858507201e-308",
+      "bits": "000fffffffffffff"
+    },
+    {
+      "id": "minimum_normal",
+      "token": "2.2250738585072014e-308",
+      "bits": "0010000000000000"
+    },
+    {
+      "id": "ordinary_decimal",
+      "token": "0.1",
+      "bits": "3fb999999999999a"
+    },
+    {
+      "id": "maximum_finite",
+      "token": "1.7976931348623157e308",
+      "bits": "7fefffffffffffff"
+    },
+    {
+      "id": "fixed_zero",
+      "token": "0.0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "bits": "0000000000000000"
+    },
+    {
+      "id": "fixed_subnormal",
+      "token": "0.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005",
+      "bits": "0000000000000001"
+    }
+  ],
+  "invalid": [
+    {
+      "id": "positive_underflow",
+      "token": "1e-9999",
+      "reason": "underflow"
+    },
+    {
+      "id": "negative_underflow",
+      "token": "-1E-9999",
+      "reason": "underflow"
+    },
+    {
+      "id": "rounds_down_to_zero",
+      "token": "2.4e-324",
+      "reason": "underflow"
+    },
+    {
+      "id": "fixed_underflow",
+      "token": "0.00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001",
+      "reason": "underflow"
+    },
+    {
+      "id": "leading_dot_underflow",
+      "token": "+.1e-9999",
+      "reason": "underflow"
+    },
+    {
+      "id": "nan",
+      "token": "NaN",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "signed_nan",
+      "token": "-NaN",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "infinity",
+      "token": "+inf",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "negative_infinity",
+      "token": "-Infinity",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "positive_overflow",
+      "token": "1e309",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "negative_overflow",
+      "token": "-1e309",
+      "reason": "nonfinite"
+    },
+    {
+      "id": "underscore",
+      "token": "1_0",
+      "reason": "invalid"
+    },
+    {
+      "id": "hex",
+      "token": "0x0",
+      "reason": "invalid"
+    },
+    {
+      "id": "fortran_exponent",
+      "token": "1D-4",
+      "reason": "invalid"
+    },
+    {
+      "id": "dot",
+      "token": ".",
+      "reason": "invalid"
+    },
+    {
+      "id": "missing_exponent",
+      "token": "1e",
+      "reason": "invalid"
+    }
+  ]
+}

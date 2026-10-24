@@ -3,6 +3,13 @@
 //! Exposes a small, ergonomic API for parsing SMILES and computing molecular
 //! descriptors from JavaScript/TypeScript via `wasm-bindgen`.
 
+mod dlpoly_history;
+pub use dlpoly_history::*;
+mod nwchem;
+pub use nwchem::*;
+mod bgf;
+pub use bgf::*;
+
 use wasm_bindgen::prelude::*;
 
 /// Maximum atom count for WASM to prevent DoS via unbounded JSON output.
@@ -18,12 +25,30 @@ pub(crate) const WASM_MAX_OUTPUT_BYTES: usize = 16 * 1024 * 1024;
 /// Maximum SMARTS matches returned by WASM APIs.
 const WASM_MAX_SMARTS_MATCHES: usize = 10_000;
 
+mod lpmd;
+pub use lpmd::*;
 mod ccd;
 pub use ccd::*;
 mod checked_matrices;
 mod chemdraw;
+mod dlpoly;
 mod ensemble_v2;
 mod format_io;
+mod fract;
+pub use fract::*;
+mod gromos96;
+pub use gromos96::*;
+mod gpr;
+pub use gpr::*;
+mod unixyz;
+pub use unixyz::*;
+mod viewmol;
+pub use viewmol::*;
+mod tinker;
+pub use dlpoly::*;
+pub use tinker::*;
+mod molden;
+pub use molden::*;
 mod hin;
 mod mol_3d;
 mod mol_depict;

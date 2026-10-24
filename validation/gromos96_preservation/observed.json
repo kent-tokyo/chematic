@@ -1,0 +1,1383 @@
+{
+  "schema_version": 1,
+  "scope": "bounded local GROMOS96 source candidate; caller-owned units; no release/toolkit-wide/engine/speed claim",
+  "candidate_base": "eb850d4bb137ec236ef4321203c84e8fd6b23e7b",
+  "source_sha256": {
+    "crates/chematic-mol/src/gromos96.rs": "edf13c3537fde033329461f2e9e43f6ded63b7ac2dbe55c7b95e7f791b340a65",
+    "crates/chematic-mol/src/gromos96/fields.rs": "34306f8c984417bd8a4dbf7f999da3a019a746958a5dcbac27280d4941f01db4",
+    "crates/chematic-mol/src/gromos96/frames.rs": "fa040a7134ff2de26b9b980da9efef85e21e80047ee9f5c9aeb198c18ab38a04",
+    "crates/chematic-mol/src/gromos96/text.rs": "572abf0205d7a2280afcd20191ac6384d55bd5e57446f72356cf88eb911122e4",
+    "crates/chematic-py/src/formats/gromos96.rs": "f010c552d1402eb51e904be6adcf3a504d21aa9d34065f4ea223ad69654593fe",
+    "crates/chematic-wasm/src/gromos96.rs": "d3967a0cc1d2405a8122f987adcdbb6b423fab0e142fc0cd71df92c4067165a6",
+    "crates/chematic-cli/src/gromos96.rs": "97c5810ae84e1c99e034955bf7619ab7aece096ecc203a4db4e9dd2fa831ce1c",
+    "scripts/validation/check_gromos96_preservation.py": "5c3c43a358785fb9a16447f7f4503a8754bc9e822dccbd8076b8cc607a9655b5",
+    "validation/gromos96_preservation/cases.json": "df1a36d7b066a841db22e4c0b69e521bd7c1fe8204022620a93aec89102ab202"
+  },
+  "runtime_sha256": {
+    "cli": "5ef640ce1e25a391d081cf89dc76263518c7b0dd24a13fbeeea5ef7a7fbc4706",
+    "wasm_js": "de807114a218161dfc26d049ed7d33c29fe08abc6c8a03ecfb10ba403452e630",
+    "wasm": "94f33cbad473596565fb83cf1da66dea8ac12f5eeb65a8f09584e17d182b057a",
+    "python_extension": {
+      "chematic.cpython-313-darwin.so": "69c89ab80847366410bea00fd486be3a380855e0bd0ad604f59c3cecce9f2582"
+    },
+    "ase_gromos_reader": "a388624fe4daef916af9fb2b76f6836c9ae617612591e081bae3b3b9ddcc82fa"
+  },
+  "versions": {
+    "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+    "node": "v24.5.0",
+    "ase": "3.26.0",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "counts": {
+    "valid": 26,
+    "refused": 45,
+    "projection_refused": 3,
+    "writer_probes": 6
+  },
+  "candidates": {
+    "python": {
+      "valid": [
+        {
+          "id": "full-nm",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-angstrom",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "title-utf8-spaces",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "empty-title",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "comments-layout",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "crlf",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-final-newline",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "triclinic",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "left-handed",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "zero-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "box-precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "adjacent-negative",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "numeric-spelling",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "labels-are-not-elements",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "ob-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-full",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-variable-count",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "commented-timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        }
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "raw_retained_projection_refused": [
+        true,
+        true,
+        true
+      ]
+    },
+    "node_wasm": {
+      "valid": [
+        {
+          "id": "full-nm",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-angstrom",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "title-utf8-spaces",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "empty-title",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "comments-layout",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "crlf",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-final-newline",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "triclinic",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "left-handed",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "zero-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "box-precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "adjacent-negative",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "numeric-spelling",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "labels-are-not-elements",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "ob-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-full",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-variable-count",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "commented-timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        }
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "raw_retained_projection_refused": [
+        true,
+        true,
+        true
+      ]
+    },
+    "cli": {
+      "valid": [
+        {
+          "id": "full-nm",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-angstrom",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "full-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "title-utf8-spaces",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "empty-title",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "comments-layout",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "crlf",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "no-final-newline",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "triclinic",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "left-handed",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "zero-box",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "box-precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "adjacent-negative",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "numeric-spelling",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "precision",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "labels-are-not-elements",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "ob-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "reduced-spaced-fields",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-full",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "two-frames-variable-count",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        },
+        {
+          "id": "commented-timestep-velocity",
+          "all_fields_all_four_states": true,
+          "geometry_bits_all_four_states": true
+        }
+      ],
+      "refused": [
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true,
+        true
+      ],
+      "raw_retained_projection_refused": [
+        true,
+        true,
+        true
+      ]
+    }
+  },
+  "ase_record_crossread": [
+    {
+      "id": "full-nm",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "full-angstrom",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "reduced",
+      "source": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      }
+    },
+    {
+      "id": "no-box",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "full-velocity",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "reduced-velocity",
+      "source": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      }
+    },
+    {
+      "id": "timestep",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "timestep-velocity",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "title-utf8-spaces",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "empty-title",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "comments-layout",
+      "source": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      }
+    },
+    {
+      "id": "crlf",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "no-final-newline",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "triclinic",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "left-handed",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "zero-box",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "box-precision",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "adjacent-negative",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "numeric-spelling",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "precision",
+      "source": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 3)"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 3)"
+      }
+    },
+    {
+      "id": "labels-are-not-elements",
+      "source": {
+        "observable": false,
+        "reason": "Symbol 'Q' not in chemical symbols"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "Symbol 'Q' not in chemical symbols"
+      }
+    },
+    {
+      "id": "ob-spaced-fields",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    },
+    {
+      "id": "reduced-spaced-fields",
+      "source": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 1)"
+      }
+    },
+    {
+      "id": "two-frames-full",
+      "source": {
+        "observable": false,
+        "reason": "single-Atoms reader does not expose the frame sequence"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "single-Atoms reader does not expose the frame sequence"
+      }
+    },
+    {
+      "id": "two-frames-variable-count",
+      "source": {
+        "observable": false,
+        "reason": "single-Atoms reader does not expose the frame sequence"
+      },
+      "candidate": {
+        "observable": false,
+        "reason": "single-Atoms reader does not expose the frame sequence"
+      }
+    },
+    {
+      "id": "commented-timestep-velocity",
+      "source": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "candidate": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      }
+    }
+  ],
+  "common_geometry_writers": [
+    {
+      "id": "integer",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.00000         0.00000         0.00000\n    2   UNL   CL       2         1.00000         2.00000         3.00000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "integer",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.00000         0.00000         0.00000\n    2   UNL   CL       2         0.10000         0.20000         0.30000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "binary-fractions",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.12500         0.25000         0.50000\n    2   UNL   CL       2        -0.37500         0.50000         1.25000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "binary-fractions",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.01250         0.02500         0.05000\n    2   UNL   CL       2        -0.03750         0.05000         0.12500\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "precision",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 4)"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         1.23457        -2.34568         0.34568\n    2   UNL   CL       2        -5.12346         0.12500         0.25000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": false,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 8.881784197001252e-16,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "precision",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": false,
+        "reason": "not enough values to unpack (expected 5, got 2)"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.12346        -0.23457         0.03457\n    2   UNL   CL       2        -0.51235         0.01250         0.02500\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": false,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "tiny",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.00000        -0.00000         0.00000\n    2   UNL   CL       2         0.12500         0.25000         0.50000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": false,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "tiny",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1         0.00000        -0.00000         0.00000\n    2   UNL   CL       2         0.01250         0.02500         0.05000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": false,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "large",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1   1000001.12500    -99999.12500     12345.25000\n    2   UNL   CL       2         0.12500         0.25000         0.50000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "large",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1    100000.11250     -9999.91250      1234.52500\n    2   UNL   CL       2         0.01250         0.02500         0.05000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "signed-zero",
+      "declared_unit": "angstrom",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1        -0.00000         0.00000         0.00000\n    2   UNL   CL       2         0.12500         0.25000         0.50000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    },
+    {
+      "id": "signed-zero",
+      "declared_unit": "nm",
+      "candidate_decimal_positions_equal": true,
+      "candidate_ase_geometry": {
+        "observable": true,
+        "count_match": true,
+        "finite": true,
+        "max_abs_geometry_error_angstrom": 0.0,
+        "within_2e_14_relative": true,
+        "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+      },
+      "openbabel": {
+        "exit": 0,
+        "stderr": "1 molecule converted\n",
+        "output": "#GENERATED BY OPEN BABEL 3.2.1\nTITLE\nOriginal synthetic geometry\nEND\nPOSITION\n    1   UNL    C       1        -0.00000         0.00000         0.00000\n    2   UNL   CL       2         0.01250         0.02500         0.05000\nEND\n",
+        "observable": true,
+        "error": null,
+        "decimal_positions_equal": true,
+        "ase_geometry": {
+          "observable": true,
+          "count_match": true,
+          "finite": true,
+          "max_abs_geometry_error_angstrom": 0.0,
+          "within_2e_14_relative": true,
+          "scope": "positions and declared BOX only; no element/label, title, time, velocity or frame-sequence conclusion"
+        }
+      },
+      "scope": "common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim"
+    }
+  ]
+}

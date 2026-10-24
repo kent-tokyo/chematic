@@ -1,0 +1,502 @@
+{
+  "schema_version": 1,
+  "scope": "Six original shared indexed XYZ geometries exported to NWChem; direct JSON adapter verified; tags and angstrom coordinates only; nw read/round-trip capability not compared",
+  "case_count": 6,
+  "timeout_seconds": 30,
+  "commands": {
+    "chematic": [
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+      "nwchem-geometry",
+      "--from-json"
+    ],
+    "openbabel": [
+      "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "-ixyz",
+      "-onw",
+      "-ab",
+      "-l1"
+    ]
+  },
+  "observed_counts": {
+    "chematic": 6,
+    "openbabel": 6
+  },
+  "exact_geometry_counts": {
+    "chematic": 6,
+    "openbabel": 1
+  },
+  "versions": {
+    "chematic": "chematic 1.2.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "packet_sha256": "9cd009867a1de08a129c2453562dcfc70c2a16e4e916279c7ed56799661d2e73",
+  "source_sha256": {
+    "crates/chematic-mol/src/nwchem.rs": "a731150305f812cca6c82fbbec5807a6d36d3f5224d5ba6f84d0d421b331e54b",
+    "crates/chematic-mol/src/nwchem/reader.rs": "2f20017c177ea38256839d80950cd79fcba54c19d928f72ef4f255cff5515190",
+    "crates/chematic-mol/src/nwchem/writer.rs": "aba3f6cb73fca13742eb22fa1e9b7b414d8e66fc42894c59cc17711b7dfd1e6c",
+    "crates/chematic-cli/src/main.rs": "588e36b4e02695c9f619f478ff4e55bd186006922584304d689fa899636f18c4",
+    "crates/chematic-cli/src/dispatch.rs": "6bdef5948254f191c4e2c65fbdd5f63d0f497c5a4cc85fe25b3ad08feef2e01f"
+  },
+  "binary_sha256": {
+    "chematic": "fc87d54429c374ffd6b7780ae80b08af0c560cff565a921fd42a899e52b2e13b",
+    "openbabel": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+  },
+  "cases": [
+    {
+      "id": "exact-binary",
+      "xyz_sha256": "3b02e0e4b3ec40f56fefd574577306e3b5ba6119adc9005e301d2c939f58bc2f",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            0.125,
+            -2.0,
+            0.0
+          ],
+          [
+            1.25,
+            0.5,
+            0.0
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.125,
+              -2.0,
+              0.0
+            ],
+            [
+              1.25,
+              0.5,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 1.25000000000000000e-1 -2.00000000000000000e0 0.00000000000000000e0\n  O 1.25000000000000000e0 5.00000000000000000e-1 0.00000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "5617711ba261919b4f3958b7cc0c9ebc8778e79d622013b6bd2433a27b757a7e"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.125,
+              -2.0,
+              0.0
+            ],
+            [
+              1.25,
+              0.5,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n exact-binary\n\ngeometry units angstroms print xyz autosym\n  C        0.12500       -2.00000        0.00000\n  O        1.25000        0.50000        0.00000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "3b02e0e4b3ec40f56fefd574577306e3b5ba6119adc9005e301d2c939f58bc2f"
+      }
+    },
+    {
+      "id": "seventeen-digits",
+      "xyz_sha256": "aed3366f1e1a1af10521024530eef4b0bc434feac1a490efbbf9a5cb670656ba",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            0.12345678901234566,
+            -2.345678901234567,
+            0.0
+          ],
+          [
+            1.9876543210987654,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.12345678901234566,
+              -2.345678901234567,
+              0.0
+            ],
+            [
+              1.9876543210987654,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 1.23456789012345663e-1 -2.34567890123456690e0 0.00000000000000000e0\n  O 1.98765432109876539e0 0.00000000000000000e0 0.00000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "5fe526922db58be0351a19fdb46adc478aff8bd6b9569bdbb17429e7e6a28f2b"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.12346,
+              -2.34568,
+              0.0
+            ],
+            [
+              1.98765,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": false,
+        "maximum_absolute_component_error_angstrom": 4.3210987654696e-06,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n seventeen-digits\n\ngeometry units angstroms print xyz autosym\n  C        0.12346       -2.34568        0.00000\n  O        1.98765        0.00000        0.00000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "aed3366f1e1a1af10521024530eef4b0bc434feac1a490efbbf9a5cb670656ba"
+      }
+    },
+    {
+      "id": "small-components",
+      "xyz_sha256": "ff7c5a58f39b78aaecf9c751655f55d19d6eb6a23315334d4a85c414d424e327",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            1.23456789e-08,
+            -2.3456789e-08,
+            0.0
+          ],
+          [
+            1.2,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              1.23456789e-08,
+              -2.3456789e-08,
+              0.0
+            ],
+            [
+              1.2,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 1.23456789000000004e-8 -2.34567889999999985e-8 0.00000000000000000e0\n  O 1.19999999999999996e0 0.00000000000000000e0 0.00000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "ef8404e24b7397cff1030e5c9e373a8fd4595fa67ed88f5d4647f397da664a8c"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.0,
+              -0.0,
+              0.0
+            ],
+            [
+              1.2,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": false,
+        "maximum_absolute_component_error_angstrom": 2.3456789e-08,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n small-components\n\ngeometry units angstroms print xyz autosym\n  C        0.00000       -0.00000        0.00000\n  O        1.20000        0.00000        0.00000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "ff7c5a58f39b78aaecf9c751655f55d19d6eb6a23315334d4a85c414d424e327"
+      }
+    },
+    {
+      "id": "large-components",
+      "xyz_sha256": "817b5c01425d05d7aa0ef7a17d0d3680a8de0228afa0976e4718580b6662d56e",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            12345.123456789,
+            -2345.987654321,
+            0.0
+          ],
+          [
+            12346.123456789,
+            -2345.987654321,
+            0.0
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              12345.123456789,
+              -2345.987654321,
+              0.0
+            ],
+            [
+              12346.123456789,
+              -2345.987654321,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 1.23451234567890006e4 -2.34598765432099981e3 0.00000000000000000e0\n  O 1.23461234567890006e4 -2.34598765432099981e3 0.00000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "125d7c17d31bf66496fff743160db43d0edace1d2a7c50574e173bc651fd810d"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              12345.12346,
+              -2345.98765,
+              0.0
+            ],
+            [
+              12346.12346,
+              -2345.98765,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": false,
+        "maximum_absolute_component_error_angstrom": 4.3209997784288134e-06,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n large-components\n\ngeometry units angstroms print xyz autosym\n  C    12345.12346    -2345.98765        0.00000\n  O    12346.12346    -2345.98765        0.00000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "817b5c01425d05d7aa0ef7a17d0d3680a8de0228afa0976e4718580b6662d56e"
+      }
+    },
+    {
+      "id": "half-last-place",
+      "xyz_sha256": "d205a54f24e470a7c9f31cb78ff3649d7541e142c50de751961428ace54e0970",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            5e-06,
+            1.5e-05,
+            -2.5e-05
+          ],
+          [
+            1.000005,
+            0.0,
+            0.0
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              5e-06,
+              1.5e-05,
+              -2.5e-05
+            ],
+            [
+              1.000005,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 5.00000000000000041e-6 1.50000000000000004e-5 -2.50000000000000012e-5\n  O 1.00000500000000003e0 0.00000000000000000e0 0.00000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "871b66b22136be1273baf21eb947ffcea90342f164d7b4fc39db66d819fd0475"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              1e-05,
+              2e-05,
+              -3e-05
+            ],
+            [
+              1.00001,
+              0.0,
+              0.0
+            ]
+          ]
+        },
+        "exact_indexed_geometry": false,
+        "maximum_absolute_component_error_angstrom": 5.000000000032756e-06,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n half-last-place\n\ngeometry units angstroms print xyz autosym\n  C        0.00001        0.00002       -0.00003\n  O        1.00001        0.00000        0.00000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "d205a54f24e470a7c9f31cb78ff3649d7541e142c50de751961428ace54e0970"
+      }
+    },
+    {
+      "id": "mixed-scales",
+      "xyz_sha256": "44f86e0c735bf416b8610bac5c0b546d4aca48f5f36a3900a4e1937238d9d2de",
+      "expected": {
+        "tags": [
+          "C",
+          "O"
+        ],
+        "positions_angstrom": [
+          [
+            1e-20,
+            1e-05,
+            100000.0
+          ],
+          [
+            1.25,
+            2.5,
+            -3.75
+          ]
+        ]
+      },
+      "chematic": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              1e-20,
+              1e-05,
+              100000.0
+            ],
+            [
+              1.25,
+              2.5,
+              -3.75
+            ]
+          ]
+        },
+        "exact_indexed_geometry": true,
+        "maximum_absolute_component_error_angstrom": 0.0,
+        "returncode": 0,
+        "stdout": "geometry units angstroms\n  C 9.99999999999999945e-21 1.00000000000000008e-5 1.00000000000000000e5\n  O 1.25000000000000000e0 2.50000000000000000e0 -3.75000000000000000e0\nend\n",
+        "stderr": "",
+        "command_input_sha256": "c2b28e685de9cff2d88909e74780a4a8c35045891205f2fef579dad80a45a95b"
+      },
+      "openbabel": {
+        "status": "observed",
+        "geometry": {
+          "tags": [
+            "C",
+            "O"
+          ],
+          "positions_angstrom": [
+            [
+              0.0,
+              1e-05,
+              100000.0
+            ],
+            [
+              1.25,
+              2.5,
+              -3.75
+            ]
+          ]
+        },
+        "exact_indexed_geometry": false,
+        "maximum_absolute_component_error_angstrom": 1e-20,
+        "returncode": 0,
+        "stdout": "start molecule\n\ntitle \n mixed-scales\n\ngeometry units angstroms print xyz autosym\n  C        0.00000        0.00001   100000.00000\n  O        1.25000        2.50000       -3.75000\nend\n",
+        "stderr": "1 molecule converted\n",
+        "command_input_sha256": "44f86e0c735bf416b8610bac5c0b546d4aca48f5f36a3900a4e1937238d9d2de"
+      }
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "scope": "Independent real-field numeric compatibility under Fortran F12.6/E12.4/G12.4; not a simulation or full postprocessor test",
+  "records_checked": 21,
+  "real_fields_checked": 961,
+  "descriptors": [
+    "F12.6",
+    "E12.4",
+    "G12.4"
+  ],
+  "all_f64_bits_equal": true,
+  "formatted_reads_checked": 2883,
+  "packet_sha256": "167008bd4ed35d458f37fba8f8c68d7f59c8dbd2e91e71afa913276898e3971b",
+  "probe_sha256": "2f31e0a7994354964bceaf6b618a311eac9a0737156e06022e4ca4f663b7a40c",
+  "script_sha256": "3a133a2fb95c390e08d6a7ab60d0ad2779e13f992a6630f1cd9b6d9ddfba9a74",
+  "cli_sha256": "163e4b1cf24de91f86b447e33648bbce2922ec142f335b41127f5e63ed748723",
+  "real_field_input_sha256": "a146be02eebaffe0a1c82fcf3ed9e2c69853b67d02ac4ba73aa1c85cbf091b41",
+  "compiler": "GNU Fortran (Homebrew GCC 16.1.0) 16.1.0"
+}

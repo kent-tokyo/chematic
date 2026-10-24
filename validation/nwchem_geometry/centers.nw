@@ -1,0 +1,5 @@
+# first # remark
+geometry Water_1 units bohr ang2au 1.8897261246257702 nocenter autosym 1D-6 noautoz print xyz bqbq nucleus fi
+O_ether 0.12345678901234566 -2.345678901234567 0 0.01 -0.02 0.03 mass 17.999159612 charge 6.5 nuc pt # center-specific settings
+end
+# after block

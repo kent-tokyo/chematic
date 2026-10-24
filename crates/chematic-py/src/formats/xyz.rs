@@ -6,6 +6,8 @@ mod properties;
 ///
 /// Keeps every listed atom, including H, without inferring bonds. Accepts
 /// canonical species symbols and uppercase two-letter XYZ aliases (e.g. CL).
+/// Coordinates must be finite. Nonzero decimals that round to binary64 zero
+/// raise ValueError; literal signed zero and finite subnormals are retained.
 ///
 ///     mol, coords = chematic.from_xyz(open("molecule.xyz").read())
 #[pyfunction]
@@ -131,7 +133,8 @@ pub(super) fn extxyz_property_rows<T>(
 ///
 /// Raises:
 ///     ValueError: on malformed input (bad ``Lattice=``/``Properties=``,
-///     wrong atom-row column count, non-finite values, ...).
+///     wrong atom-row column count, non-finite values, or nonzero coordinates,
+///     lattice entries or R atom values that round to binary64 zero).
 ///
 /// Example::
 ///

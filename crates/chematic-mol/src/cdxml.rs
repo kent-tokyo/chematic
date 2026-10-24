@@ -11,7 +11,11 @@
 //!               `GenericNickname` pseudoatoms (`*`, `R`, `R<n>`)
 //!
 //! `<b>` (bond): `B` (begin atom id), `E` (end atom id), `Order` (1/2/3,
-//!               defaults to 1)
+//!               defaults to 1; also 4, 1.5/aromatic and directed dative)
+//! A dative bond retains B -> E regardless of wedge/hash display decoration.
+//! Other declared orders return an [`CdxmlError::InvalidDocument`] classified
+//! by [`CdxmlError::unsupported_bond_order`]; only an absent order defaults to
+//! single. This is a bounded graph profile.
 //!
 //! # Limitations
 //!
@@ -113,6 +117,9 @@ pub enum CdxmlError {
 impl std::fmt::Display for CdxmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            CdxmlError::InvalidDocument(s) if s.starts_with(UNSUPPORTED_BOND_ORDER_PREFIX) => {
+                f.write_str(s)
+            }
             CdxmlError::InvalidDocument(s) => write!(f, "invalid CDXML document: {s}"),
             CdxmlError::UnknownAtomicNumber(n) => write!(f, "unknown atomic number: {n}"),
             CdxmlError::UnknownAtomRef(s) => write!(f, "unknown atom ref: {s}"),
@@ -136,6 +143,23 @@ impl std::fmt::Display for CdxmlError {
 }
 
 impl std::error::Error for CdxmlError {}
+
+const UNSUPPORTED_BOND_ORDER_PREFIX: &str = "unsupported CDXML bond order: ";
+
+impl CdxmlError {
+    /// Returns the authored bond-order token when this error is the bounded
+    /// CDXML profile's unsupported-order refusal.
+    ///
+    /// This classifier keeps the public error enum source-compatible with
+    /// earlier 1.x releases while allowing callers to distinguish this refusal
+    /// without parsing [`std::fmt::Display`] output.
+    pub fn unsupported_bond_order(&self) -> Option<&str> {
+        match self {
+            Self::InvalidDocument(message) => message.strip_prefix(UNSUPPORTED_BOND_ORDER_PREFIX),
+            _ => None,
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Parser
@@ -351,15 +375,19 @@ impl FragAccum {
             coords.push((self.atom_xs[index], self.atom_ys[index]));
         }
         for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
-            // CDXML End glyphs put the narrow/reference end on E.
-            let (begin, end) = if matches!(
-                self.bond_display[bond_index].as_deref(),
-                Some("WedgeEnd") | Some("WedgedHashEnd")
-            ) {
-                (end, begin)
-            } else {
-                (begin, end)
-            };
+            // Single-bond End glyphs put the stereo reference end on E.
+            // They never reverse the independent B -> E dative direction.
+            let (begin, end) =
+                if matches!(self.bond_ords[bond_index], BondOrder::Up | BondOrder::Down)
+                    && matches!(
+                        self.bond_display[bond_index].as_deref(),
+                        Some("WedgeEnd") | Some("WedgedHashEnd")
+                    )
+                {
+                    (end, begin)
+                } else {
+                    (begin, end)
+                };
             builder
                 .add_bond(indices[&begin], indices[&end], self.bond_ords[bond_index])
                 .map_err(|_| {
@@ -610,23 +638,30 @@ fn push_cdxml_atom(
     Ok(())
 }
 
-fn cdxml_bond_order(attrs: &HashMap<String, String>) -> BondOrder {
-    let base = match attrs.get("Order").map(String::as_str) {
+fn cdxml_bond_order(attrs: &HashMap<String, String>) -> Result<BondOrder, CdxmlError> {
+    let base = match attrs.get("Order").map(|value| value.trim()) {
+        None | Some("1") => BondOrder::Single,
         Some("2") => BondOrder::Double,
         Some("3") => BondOrder::Triple,
+        Some("4") => BondOrder::Quadruple,
         Some("1.5") => BondOrder::Aromatic,
-        _ => BondOrder::Single,
+        Some("dative") => BondOrder::Dative,
+        Some(order) => {
+            return Err(CdxmlError::InvalidDocument(format!(
+                "{UNSUPPORTED_BOND_ORDER_PREFIX}{order}"
+            )));
+        }
     };
     if base != BondOrder::Single {
-        return base;
+        return Ok(base);
     }
-    match attrs.get("Display").map(String::as_str) {
+    Ok(match attrs.get("Display").map(String::as_str) {
         Some("WedgeBegin") | Some("WedgeEnd") | Some("Bold") => BondOrder::Up,
         Some("Hash") | Some("Dash") | Some("WedgedHashBegin") | Some("WedgedHashEnd") => {
             BondOrder::Down
         }
         _ => BondOrder::Single,
-    }
+    })
 }
 
 fn push_cdxml_bond(
@@ -655,7 +690,7 @@ fn push_cdxml_bond(
             .cloned()
             .ok_or(CdxmlError::MissingBondEndpoint)?,
     );
-    accumulator.bond_ords.push(cdxml_bond_order(&attrs));
+    accumulator.bond_ords.push(cdxml_bond_order(&attrs)?);
     accumulator.bond_display.push(attrs.get("Display").cloned());
     Ok(())
 }
@@ -780,6 +815,8 @@ pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
         let (order_attr, display_attr) = match bond.order {
             BondOrder::Double => ("2", None),
             BondOrder::Triple => ("3", None),
+            BondOrder::Quadruple => ("4", None),
+            BondOrder::Dative => ("dative", None),
             BondOrder::Aromatic => ("1.5", None),
             BondOrder::Up => ("1", Some("WedgeBegin")),
             BondOrder::Down => ("1", Some("Hash")),

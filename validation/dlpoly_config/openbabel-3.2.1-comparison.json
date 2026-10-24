@@ -1,0 +1,2270 @@
+{
+  "schema_version": 1,
+  "scope": "original single-CONFIG packet; exact source-unit data; not force-field validation",
+  "case_count": 17,
+  "commands": {
+    "chematic": [
+      "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+      "dlpoly-config"
+    ],
+    "openbabel": [
+      "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+      "-iCONFIG",
+      "-oCONFIG",
+      "-l1"
+    ]
+  },
+  "timeout_seconds": 60,
+  "versions": {
+    "chematic": "chematic 1.2.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "packet_sha256": "00c360c602df37625f8a9fd205ef2b77ca0ea41af8c7e1c855af86ff7ddf4cc7",
+  "source_sha256": {
+    "crates/chematic-mol/src/dlpoly.rs": "ba0497b1c81bf418a9fc63fa45ebb5345221070bee8edd53ac184deff7735b34",
+    "crates/chematic-mol/src/dlpoly/reader.rs": "94faf4d3f15dfc3dcc14bf7754531454c1e67899949b180f3286edd1bab29731",
+    "crates/chematic-cli/src/main.rs": "2c517a6701c5f327b4a4dbf63fbc26dfe7e6a7557a28878f319c591dba8e6b54",
+    "crates/chematic-cli/src/dispatch.rs": "b5223c42b388ba5d145680c88f7928da50cb42a7ef7841a0c046fbecbe204561"
+  },
+  "binary_sha256": {
+    "chematic": "7352004c3d4f63bf25ff3b974814f3c0a1a1ed0ad4bc9bce9dc2326b5c1dbc7f",
+    "openbabel": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+  },
+  "observed_counts": {
+    "chematic": 17,
+    "openbabel": 17
+  },
+  "preserved_counts": {
+    "chematic": {
+      "title": 17,
+      "levcfg": 17,
+      "imcon": 17,
+      "declared_atom_count": 17,
+      "names": 17,
+      "indices": 17,
+      "positions": 17,
+      "velocities": 17,
+      "forces": 17,
+      "cell_vectors": 17,
+      "header_extra": 17
+    },
+    "openbabel": {
+      "title": 17,
+      "levcfg": 3,
+      "imcon": 12,
+      "declared_atom_count": 2,
+      "names": 16,
+      "indices": 15,
+      "positions": 16,
+      "velocities": 3,
+      "forces": 4,
+      "cell_vectors": 12,
+      "header_extra": 0
+    }
+  },
+  "cases": [
+    {
+      "id": "level_0",
+      "input_sha256": "f619a7cde065b348cc0c06789ce7de1f86067e45f3f3a5379d7366e2a68fc7eb",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n0 0 2\nO 1\n0 0 0\nH 2\n1 0 0\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "level_1",
+      "input_sha256": "2d79d18e6068a75b7c2d582f02f1c540b90c6938e54d6a39dbf83073a4bcfe53",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 1,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n1 0 2\nO 1\n0 0 0\n0.1 0.2 0.3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "level_2",
+      "input_sha256": "ae4b2663037686363b2b3c0292b6f29031f06c0760e440817e2066939c3a9e52",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "legacy_count_omitted",
+      "input_sha256": "0230fa0d45b8b3606a481f9702f7c0b5b85f840f8aab9c7c7c279ee419aea39e",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n0 0\nO 1\n0 0 0\nH 2\n1 0 0\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "classic_name_only",
+      "input_sha256": "94127dc40b27029d31846dbb69dac73dfa067103bcca28383ff7868a922fae9d",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": null,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": null,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n0 0\nO\n0 0 0\nH\n1 0 0\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": false,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "source_order_by_id",
+      "input_sha256": "58f9270608177fe9789bba59e79bf305f7a1bf4fc6924d4bb970a3e130c71d52",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            },
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "H",
+              "index": 1,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "O",
+              "index": 2,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       H         1         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n       O         2         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": false,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "opaque_names",
+      "input_sha256": "cfd8a768824a52356cc635e6aef3951106ce3941666ac427dfdfd4111861f9ca",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "OW",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "HW",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nOW 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nHW 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": false,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "cubic",
+      "input_sha256": "8b7c67d1606d3f27e59479fb811a7cd06fe743caa4b122f4fab2006ce04b6091",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 1,
+          "declared_atom_count": 2,
+          "cell_vectors": [
+            [
+              10.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              10.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              10.0
+            ]
+          ],
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 1 2\n10 0 0\n0 10 0\n0 0 10\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": false,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": false,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "orthorhombic",
+      "input_sha256": "d9766bfc47f87bab6b60e8679cc00cbf48958d39f2eca6e641795658f443644b",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 2,
+          "declared_atom_count": 2,
+          "cell_vectors": [
+            [
+              10.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              20.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              30.0
+            ]
+          ],
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 2 2\n10 0 0\n0 20 0\n0 0 30\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": false,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": false,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "triclinic",
+      "input_sha256": "c5d70ec33ebb9a6b61115a81c2ab950d118527bbb2dedb2de7bb0814f3d25d2c",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 3,
+          "declared_atom_count": 2,
+          "cell_vectors": [
+            [
+              10.0,
+              1.0,
+              2.0
+            ],
+            [
+              3.0,
+              11.0,
+              4.0
+            ],
+            [
+              5.0,
+              6.0,
+              12.0
+            ]
+          ],
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 3 2\n10 1 2\n3 11 4\n5 6 12\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": false,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": false,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "left_handed",
+      "input_sha256": "b21246e3ad7cf2b4788d54eb6a2a0db1c2b55931154acad3f61a21195ee8cd99",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 3,
+          "declared_atom_count": 2,
+          "cell_vectors": [
+            [
+              10.0,
+              0.0,
+              0.0
+            ],
+            [
+              0.0,
+              11.0,
+              0.0
+            ],
+            [
+              0.0,
+              0.0,
+              -12.0
+            ]
+          ],
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 3 2\n10 0 0\n0 11 0\n0 0 -12\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": false,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": false,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "precise_positions",
+      "input_sha256": "90238c7e6438403bab58e8b9e343972d7bbafbf8593038aa175a6c8a8c484b96",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.12345678901234566,
+                -0.9876543210987654,
+                1.2345678901234567
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.123456789012346,
+                -0.987654321098765,
+                1.234567890123457
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.123456789012346   -0.987654321098765    1.234567890123457\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": false,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "precise_velocities",
+      "input_sha256": "b488333de3bd372583440c3946e15aa8708c37ac9117297286c41c77079e6ab3",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.12345678901234566,
+                -0.9876543210987654,
+                1.2345678901234567
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1\n0 0 0\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "precise_forces",
+      "input_sha256": "c3392e037ea672b565fd65ddbb73bed8316b0959f4f8a8a1884f16496eba367a",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                0.12345678901234566,
+                -0.9876543210987654,
+                1.2345678901234567
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1\n0 0 0\n0.1 0.2 0.3\n0.12345678901234566 -0.9876543210987654 1.2345678901234567\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "precise_cell",
+      "input_sha256": "47c9c55f2f19605da2d5acdf58a27c507aab536c0880b48e1fe70eca4d08037b",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 3,
+          "declared_atom_count": 2,
+          "cell_vectors": [
+            [
+              10.123456789012344,
+              1.0,
+              2.0
+            ],
+            [
+              3.0,
+              11.23456789012345,
+              4.0
+            ],
+            [
+              5.0,
+              6.0,
+              12.345678901234567
+            ]
+          ],
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 3 2\n10.123456789012344 1 2\n3 11.23456789012345 4\n5 6 12.345678901234567\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": false,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": false,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "fortran_d_exponents",
+      "input_sha256": "6e77821403bcf58cc362643662a16c4efd020581c1a8184fba58fad654c21768",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    },
+    {
+      "id": "opaque_atom_metadata",
+      "input_sha256": "d2f4de4603d211d22bbd0bb9a5c43aa2e44ca62ac4b96630178156e5fcc6a980",
+      "chematic": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 2,
+          "imcon": 0,
+          "declared_atom_count": 2,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "16.0",
+                "-0.5"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                0.1,
+                0.2,
+                0.3
+              ],
+              "force": [
+                1.0,
+                2.0,
+                3.0
+              ]
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": [
+                -0.1,
+                -0.2,
+                -0.3
+              ],
+              "force": [
+                -1.0,
+                -2.0,
+                -3.0
+              ]
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n2 0 2\nO 1 16.0 -0.5\n0 0 0\n0.1 0.2 0.3\n1 2 3\nH 2\n1 0 0\n-0.1 -0.2 -0.3\n-1 -2 -3\n",
+        "stderr": "",
+        "preserved": {
+          "title": true,
+          "levcfg": true,
+          "imcon": true,
+          "declared_atom_count": true,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": true,
+          "forces": true,
+          "cell_vectors": true,
+          "header_extra": true
+        }
+      },
+      "openbabel": {
+        "status": "observed",
+        "record": {
+          "title": "Original CONFIG test",
+          "levcfg": 0,
+          "imcon": 0,
+          "declared_atom_count": null,
+          "cell_vectors": null,
+          "atoms": [
+            {
+              "name": "O",
+              "index": 1,
+              "header_extra": [
+                "8"
+              ],
+              "position": [
+                0.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            },
+            {
+              "name": "H",
+              "index": 2,
+              "header_extra": [
+                "1"
+              ],
+              "position": [
+                1.0,
+                0.0,
+                0.0
+              ],
+              "velocity": null,
+              "force": null
+            }
+          ]
+        },
+        "returncode": 0,
+        "stdout": "Original CONFIG test\n         0         0\n       O         1         8\n   0.000000000000000    0.000000000000000    0.000000000000000\n       H         2         1\n   1.000000000000000    0.000000000000000    0.000000000000000\n",
+        "stderr": "1 molecule converted\n",
+        "preserved": {
+          "title": true,
+          "levcfg": false,
+          "imcon": true,
+          "declared_atom_count": false,
+          "names": true,
+          "indices": true,
+          "positions": true,
+          "velocities": false,
+          "forces": false,
+          "cell_vectors": true,
+          "header_extra": false
+        }
+      }
+    }
+  ]
+}

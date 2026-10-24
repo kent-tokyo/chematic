@@ -10,6 +10,12 @@ verified.
 
 | Evidence | What it supports | What it does not support |
 |---|---|---|
+| [GROMOS96 records](gromos96-preservation.md) | Preserved blocks, labels and explicit unit context; bounded one-way coordinate precision comparison | Full engine/external-reader compatibility, element inference, equivalent-work speed or toolkit-wide superiority |
+| [LPMD trajectories](lpmd-preservation.md) | All-frame source fields and checked projection; independent observation of an Open Babel 3.2.1 default writer header defect | Full LPMD engine compatibility, all output options, speed or toolkit-wide superiority |
+| [ViewMol geometry](viewmol-preservation.md) | New bounded vmol R/W across Rust/Python/WASM/CLI, raw scale/precision/constraints and checked Angstrom projection on 28 authored records | All project/data-group semantics, external ViewMol execution, isolated parser accuracy, released-package or broad toolkit superiority |
+| [UniChem XYZ records](unixyz-preservation.md) | New bounded unixyz R/W across Rust/Python/WASM/CLI; title/order/coordinate-token retention on 15 authored records | Every dialect, multiple records, isolated parser accuracy, released-package or broad toolkit superiority |
+| [Ghemical GPR records](gpr-preservation.md) | New bounded gpr 100 R/W across Rust/Python/WASM/CLI; graph, raw nm precision and optional partial-charge records on 16 authored inputs | All Ghemical project/dialect support, isolated parser accuracy, released-package or broad toolkit superiority |
+| [Free Form Fractional](fract-preservation.md) | New bounded fract R/W across Rust/Python/WASM/CLI, decimal and uncertainty token retention on 17 authored records | All crystallographic dialects, isolated parser accuracy, released-package or broad-format superiority |
 | [V3000 atom scalar integrity](v3000-atom-scalar-integrity.md) | Checked charge/isotope/map parsing, quoted-text controls and explicit malformed-input errors | General CTfile/query validity or broad-format superiority |
 | [V2000 isotope output](v2000-isotope-output.md) | Explicit isotope labels in regenerated MOL/SDF, checked through Python/WASM and an external reader | Superiority over Open Babel with atom-class output enabled, or general CTfile validity |
 | [V2000 property precedence](v2000-property-precedence.md) | Sparse CHG/ISO records replace their complete atom-block channels across ordinary/fast readers | Full CTfile/spin-state support or superiority over Open Babel |
@@ -20,7 +26,10 @@ verified.
 | [stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md) | Paired RDKit-written V2000/V3000 stereo round trips | Independent proof of absolute stereo correctness |
 | [latest V2000 experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-openbabel-v2000-bond-tail.md) | Full retained evidence for a rejected source optimization and fresh Open Babel lanes | Adopted-main or release performance; the source adoption gate failed |
 | [mmCIF numeric preservation](mmcif-numeric-preservation.md) | Authored finite binary64 coordinates, occupancy, B factors and cell parameters through Rust/Python/WASM record output | Complete mmCIF metadata/schema/source-byte retention, CLI support or speed |
+| [XYZ numeric read contract](xyz-numeric-read.md) | 14 finite/signed-zero controls retain binary64 bits; 16 unsafe numeric tokens are explicitly refused in native/Python/WASM reads | Arbitrary decimal precision, writer precision, whole-format or toolkit-wide superiority; refusals are not counted as preservation |
 | [Python typed ExtXYZ round trips](extxyz-output-integrity.md#typed-python-readwrite-round-trips) | Declared R/I/S/L kinds, widths and data plus plain comments survive 12 authored Python dictionary round trips | General ASE ExtXYZ, typed WASM writing, graph/stereo, speed or toolkit-wide superiority |
+| [CDXML bond meaning](cdxml-bond-meaning.md) | Quadruple class, dative class/direction and explicit unsupported-order refusal in an authored development packet | Complete CDXML/schema/query/stereo/source retention or speed |
+| [Local MolJSON graph input](moljson-graph-input.md) | 13 known-field graphs retain charges/isotopes/H/flags/connectivity/orders; 51 invalid or ambiguous graph inputs are refused | Upstream oxpig schema, stereo/source retention, general writer safety, speed or an Open Babel same-format score |
 
 The overview therefore reports Open Babel separately from RDKit and COSMolKit.
 File-I/O results are not used to imply descriptor, fingerprint, reaction,

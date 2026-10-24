@@ -9,6 +9,12 @@ use std::path::PathBuf;
 
 mod conversion_format;
 mod dispatch;
+mod fract;
+mod gpr;
+mod gromos96;
+mod lpmd;
+mod unixyz;
+mod viewmol;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -51,6 +57,186 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Retain checked GROMOS96 blocks, labels and all coordinate frames.
+    Gromos96 {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["from_json", "angstrom"])]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        /// Emit Angstrom positions and BOX vectors; requires declared source units.
+        #[arg(long)]
+        angstrom: bool,
+        /// Caller-owned unit: nm or angstrom; absence means unspecified.
+        #[arg(long, conflicts_with = "from_json")]
+        length_unit: Option<String>,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write all frames of a checked LPMD 2.0 text trajectory.
+    Lpmd {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["from_json", "angstrom"])]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        /// Explicit Cartesian positions (angstroms), grouped by frame.
+        #[arg(long)]
+        angstrom: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Retain ViewMol raw units/fixed axes or explicitly inspect/project geometry.
+    Viewmol {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with_all = ["from_json", "angstrom"])]
+        inspect: bool,
+        #[arg(long)]
+        from_json: bool,
+        /// Emit only checked Angstrom coordinate arrays as JSON.
+        #[arg(long)]
+        angstrom: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write one UniChem XYZ record, retaining title and coordinate decimals.
+    Unixyz {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit editable JSON instead of UniChem XYZ text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read strict record JSON and emit UniChem XYZ text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write gpr 100, retaining nm coordinates, bond codes and partial charges.
+    Gpr {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit editable JSON instead of gpr text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read strict record JSON and emit gpr text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write a single-cell fract record while retaining decimal/uncertainty tokens.
+    Fract {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit editable JSON instead of fract text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read strict record JSON and emit fract text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Preserve all frames of a formatted Classic DL-POLY HISTORY trajectory.
+    DlpolyHistory {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long, conflicts_with = "inspect")]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Preserve a Cartesian NWChem GEOMETRY block; full calculation decks refuse.
+    NwchemGeometry {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long, conflicts_with = "inspect")]
+        from_json: bool,
+        #[arg(long, default_value_t = 16 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write one Tinker XYZ frame, preserving names, force-field types and connectivity.
+    TinkerXyz {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit an editable JSON record instead of Tinker XYZ text.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read an edited JSON record and write Tinker XYZ text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Preserve standard nonperiodic BIOGRF 200 atom and connectivity fields.
+    Bgf {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long, conflicts_with = "inspect")]
+        from_json: bool,
+        #[arg(long, default_value_t = 16 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Retain Molden geometry/vibration data; refuse electronic/trajectory sections.
+    Molden {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit an editable record as JSON.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read edited record JSON and write Molden text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
+    /// Read/write one DL-POLY CONFIG, retaining positions, velocities, forces and cell.
+    DlpolyConfig {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit the editable record as JSON.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read an edited JSON record and write CONFIG text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long, default_value_t = 64 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
     GjfDocument {
         #[arg(short, long)]

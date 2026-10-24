@@ -21,8 +21,18 @@ mod reaction_cx;
 mod registration;
 use reaction_cx::normalize_reaction_cxsmiles;
 
+mod dlpoly_history;
+use dlpoly_history::{parse_dlpoly_history, write_dlpoly_history};
+mod nwchem;
+use nwchem::{parse_nwchem_geometry, write_nwchem_geometry};
+mod bgf;
+use bgf::{parse_bgf, write_bgf};
+
 mod hin;
 use hin::*;
+
+mod lpmd;
+use lpmd::*;
 
 mod ccd;
 use ccd::*;
@@ -35,9 +45,25 @@ mod cdjson;
 use cdjson::*;
 mod fhiaims;
 use fhiaims::*;
+mod fract;
+use fract::*;
+mod gpr;
+use gpr::*;
+mod gromos96;
+use gromos96::*;
+mod unixyz;
+use unixyz::*;
+mod viewmol;
+use viewmol::*;
 mod dmol3;
 use dmol3::*;
+mod dlpoly;
 mod exyz;
+mod tinker;
+use dlpoly::{parse_dlpoly_config, write_dlpoly_config};
+use tinker::{parse_tinker_xyz, write_tinker_xyz};
+mod molden;
+use molden::{parse_molden, write_molden};
 mod mopac;
 use exyz::*;
 mod gro;
@@ -552,12 +578,11 @@ fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-/// Parse a MolJSON string into a ``Mol`` object.
+/// Parse chematic's atom-record MolJSON dialect into a ``Mol`` object.
 ///
-/// MolJSON is a JSON-based molecular representation designed for LLM
-/// (large language model) compatibility.
-///
-/// Raises ``ValueError`` on parse failure.
+/// Known graph fields are range/type checked; order 4 denotes a quadruple bond.
+/// Duplicate keys/IDs, conflicting aromatic flags and invalid bonds raise
+/// ``ValueError``. This is not the upstream oxpig schema or source/stereo retention.
 ///
 ///     mol = chematic.from_moljson(open("mol.json").read())
 ///     # Round-trip:
@@ -1346,128 +1371,6 @@ fn write_smi_file(records: Vec<(Mol, String)>) -> PyResult<String> {
 // Register
 // ---------------------------------------------------------------------------
 
-fn register_reaction_formats(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    register_pyfunctions!(
-        m,
-        write_reaction_cdxml_checked,
-        write_reaction,
-        normalize_reaction_cxsmiles,
-        from_rxn_file,
-        to_rxn_file,
-        from_rxn_document_json,
-        to_rxn_document_json,
-    )
-}
-
 pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    gro_lammps::register(m)?;
-    xyz_output::register(m)?;
-    m.add_class::<PySmilesBatchStream>()?;
-    mopac::register(m)?;
-    gzmat::register(m)?;
-    register_pyfunctions!(
-        m,
-        from_smiles,
-        parse_cdjson,
-        write_cdjson_graph,
-        canonicalize_smiles_batch_json,
-        from_cxsmiles,
-        from_condensed,
-        from_mol_block,
-        from_mol_block_with_coords,
-        from_mol_block_with_coords_3d,
-        from_mol_block_with_diagnostics,
-        parse_sdf_with_coords,
-        from_cml,
-        from_cml_with_3d,
-        from_cml_strict,
-        roundtrip_cml_source,
-        from_mrv_block,
-        from_mrv_block_with_coords,
-        from_cjson,
-        from_cjson_checked,
-        from_moljson,
-        from_cdxml,
-        from_chemdraw_block,
-        parse_cdxml_document_json,
-        edit_cdxml_document_json,
-        semantic_model_json,
-        semantic_apply_json_command,
-        semantic_expand_json,
-        semantic_expand_json_with_limits,
-        from_mol_v3000,
-        roundtrip_mol_v3000_source,
-        from_mol_v3000_with_coords,
-        from_mol_v3000_with_coords_3d,
-        from_mol_v3000_with_diagnostics,
-        from_mol2,
-        from_hin,
-        parse_hin_record_json,
-        roundtrip_hin_record,
-        parse_cjson_record_json,
-        roundtrip_cjson_record,
-        parse_mol2_record_json,
-        parse_mol2_records_json,
-        mol2_reference_rmsds_json,
-        convert_with_report_json,
-        roundtrip_mol2_record,
-        roundtrip_sdf_source,
-        single_sdf_mol_block,
-        project_mol2_to_cjson,
-        project_cjson_to_cml,
-        project_cml_to_cjson,
-        kekulize_mol2_record,
-        from_pdbqt,
-        from_pdbqt_with_data,
-        parse_cif,
-        write_cif_checked,
-        write_cif_with_bonds_checked,
-        is_valid_smiles,
-        is_valid_smarts,
-        from_inchi,
-        from_pdb,
-        from_pdb_conect,
-        from_pdb_strict,
-        rdkit_from_pdb_block,
-        rdkit_pdb_block_to_smiles,
-        rdkit_from_xyz_block,
-        rdkit_from_mol2_block,
-        rdkit_mol2_block_to_smiles,
-        parse_formula,
-        mol_hash,
-        are_identical,
-        stable_are_identical,
-        nearest_neighbors_from_fp,
-        parse_smi_file,
-        write_smi_file,
-        parse_ccd_json,
-        from_ccd,
-        parse_mmcif,
-        parse_rdfile,
-        write_rdfile,
-        rdfile_to_smiles,
-        parse_fhiaims,
-        write_fhiaims,
-        parse_dmol3,
-        write_dmol3,
-        select_pdb_atoms,
-        parse_exyz,
-        write_exyz,
-        parse_turbomole,
-        write_turbomole,
-        parse_mmcif_residues,
-        mmcif_to_pdb_checked,
-        protein_from_pdb_json,
-        protein_from_mmcif_json,
-        write_mmcif,
-        parse_pqr,
-        write_pqr,
-        write_pqr_checked,
-        pqr_to_pdbqt,
-        write_pdbqt_checked,
-        project_pdbqt_isotopes,
-        infer_element,
-    )?;
-    registration::register_quantum_formats(m)?;
-    register_reaction_formats(m)
+    registration::register_all(m)
 }
