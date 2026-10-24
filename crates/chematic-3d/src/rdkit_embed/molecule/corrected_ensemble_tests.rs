@@ -79,6 +79,37 @@ fn quality_profile_uses_new_seeds_when_gradients_match() {
 }
 
 #[test]
+fn torsion_search_recovers_lower_converged_minimum() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("COc1cc2nc(N3CCN(S(=O)(=O)c4cccs4)CC3)nc(N)c2cc1OC").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let baseline =
+        etkdg_embed_multiple_confs_mmff_best_gradient(&molecule, 20, &options, 200).unwrap();
+    let improved =
+        etkdg_embed_multiple_confs_mmff_torsion_search(&molecule, 20, &options, 200).unwrap();
+    let best_converged = |rows: &[RdkitMmffConformer]| {
+        rows.iter()
+            .filter(|row| row.status == 0)
+            .map(|row| row.energy)
+            .min_by(f64::total_cmp)
+            .unwrap()
+    };
+    assert_eq!(baseline.len(), improved.len());
+    let before = best_converged(&baseline);
+    let after = best_converged(&improved);
+    assert!(
+        after <= before + 1e-6,
+        "torsion search: {before} -> {after}"
+    );
+    // ETKDG and BFGS can enter different basins across targets. The measured
+    // macOS arm64 regression has a large margin; the portable contract is
+    // finite, converged, stereo-checked non-regression.
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    assert!(after < before - 0.5, "torsion search: {before} -> {after}");
+}
+
+#[test]
 fn quality_profile_extends_search_after_third_batch_improves() {
     let molecule = chematic_chem::add_hydrogens(
         &chematic_smiles::parse(

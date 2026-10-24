@@ -417,9 +417,23 @@ class Mol:
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Keep the lowest-energy candidate, then converged conformers from
         ETKDG/MMFF94 runs. The second uses the corrected gradient when
-        relevant; otherwise two additional runs use new seeds. Uses twice or
-        three times the candidate work, respectively, plus up to one or two
-        optional MMFF retries.
+        relevant; otherwise up to three additional runs use new seeds. The
+        fourth batch runs only when the third improves the best energy by
+        more than 0.01 kcal/mol. Uses up to four times the candidate work
+        and up to three optional MMFF retries.
+        """
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_torsion_search(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Extend the quality ensemble with bounded, stereo-checked
+        rotatable-bond moves and MMFF94 minimizations.
         """
         ...
 

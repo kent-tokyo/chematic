@@ -1,0 +1,299 @@
+{
+  "schema_version": 1,
+  "rdkit_version": "2026.09.1",
+  "tier": "chembl",
+  "selection": "Tier A all nine eligible; Tier B SHA-256 SMILES positions 12:33; ChEMBL 12 lowest SHA-256 among 851 RDKit-eligible molecules excluding Tier A/B SMILES",
+  "conditions": "ETKDGv3 seed 42; 20 CheMatic candidates per seed batch; RDKit 60 candidates; MMFF94 200 iterations; torsion arm adds at most 24 minimizations",
+  "hashes": {
+    "binary": "78362ebed0fba453a9977007c64f767aa8168107b0c637f42addb529ad81cf45",
+    "script": "3318319067c37c840c9decc412cdfd395d4b50b9049b3a0e54c2af236da2434d",
+    "corpus": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "torsion_source": "9943569c5f571c8076c92b9a84af3fd1aee4038a504bb7c91c42492f73bee651"
+  },
+  "summary": {
+    "rows": 12,
+    "comparable": 11,
+    "torsion_lower_than_rdkit_by_1e_6": 4,
+    "rdkit_lower_than_torsion_by_1e_6": 0,
+    "within_1e_6": 7,
+    "torsion_improved_over_quality": 2
+  },
+  "rows": [
+    {
+      "name": "chembl_corpus_0381",
+      "smiles": "CC(=O)OCn1c([S+]([O-])Cc2ccccn2)nc2ccccc21",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 18.688227221350154,
+        "same_coordinate_energy_error": 3.552713678800501e-15
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 18.688227221350154,
+        "same_coordinate_energy_error": 3.552713678800501e-15
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 32,
+        "best_energy": 18.688227221664448,
+        "best_converged_energy": 18.688227221664448
+      },
+      "torsion_minus_rdkit": -3.142943683087651e-10
+    },
+    {
+      "name": "chembl_corpus_0346",
+      "smiles": "c1cc(NC2=NCCN2)ccc1Cc1ccc(OC2CCCC2)cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 2,
+        "best_converged_energy": 0.5878153526265351,
+        "same_coordinate_energy_error": -7.105427357601002e-15
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 2,
+        "best_converged_energy": 0.5878153526265351,
+        "same_coordinate_energy_error": -7.105427357601002e-15
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 0,
+        "best_energy": 0.5878168172975151,
+        "best_converged_energy": null
+      },
+      "torsion_minus_rdkit": null
+    },
+    {
+      "name": "chembl_corpus_1634",
+      "smiles": "COC(=O)c1ccc(Oc2cccc(NC(=O)[C@@H](N)CS)c2)cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 13,
+        "best_converged_energy": 87.11138516077938,
+        "same_coordinate_energy_error": -1.4210854715202004e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 14,
+        "best_converged_energy": 87.09543668437087,
+        "same_coordinate_energy_error": -2.842170943040401e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 7,
+        "best_energy": 87.13795342217301,
+        "best_converged_energy": 90.15921406208138
+      },
+      "torsion_minus_rdkit": -3.063777377710508
+    },
+    {
+      "name": "chembl_corpus_4878",
+      "smiles": "COc1ccc(-c2cn(Cc3ccccc3)c3ccc(O)nc23)cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 42.207193983117946,
+        "same_coordinate_energy_error": -2.1316282072803006e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 42.207193983117946,
+        "same_coordinate_energy_error": -2.1316282072803006e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 58,
+        "best_energy": 42.20719398662598,
+        "best_converged_energy": 42.20719398662598
+      },
+      "torsion_minus_rdkit": -3.508034751575906e-09
+    },
+    {
+      "name": "chembl_corpus_2510",
+      "smiles": "CCCN1C(=O)[C@H](CS)NC(=O)[C@@H]1Cc1ccc([N+](=O)[O-])cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 127.31828875876354,
+        "same_coordinate_energy_error": 2.842170943040401e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 127.31828875876354,
+        "same_coordinate_energy_error": 2.842170943040401e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 43,
+        "best_energy": 127.31828836031602,
+        "best_converged_energy": 127.31828836031602
+      },
+      "torsion_minus_rdkit": 3.98447525640222e-07
+    },
+    {
+      "name": "chembl_corpus_4380",
+      "smiles": "Cc1cccc(C(C)C)c1NC(=O)c1ccccc1N",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 69.29466912366965,
+        "same_coordinate_energy_error": 0.0
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 69.29466912366965,
+        "same_coordinate_energy_error": 0.0
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 60,
+        "best_energy": 69.29466909733688,
+        "best_converged_energy": 69.29466909733688
+      },
+      "torsion_minus_rdkit": 2.6332770630688174e-08
+    },
+    {
+      "name": "chembl_corpus_2016",
+      "smiles": "C[S+]([O-])CCN(N=O)C(=O)NCCCl",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -44.88700413360884,
+        "same_coordinate_energy_error": 7.105427357601002e-15
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -44.88700413360884,
+        "same_coordinate_energy_error": 7.105427357601002e-15
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 59,
+        "best_energy": -44.887004099280034,
+        "best_converged_energy": -44.887004099280034
+      },
+      "torsion_minus_rdkit": -3.43288064641456e-08
+    },
+    {
+      "name": "chembl_corpus_0948",
+      "smiles": "COc1c(-c2ccc(OC)c(=O)cc2)ccc(C=O)c1C=O",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 115.30268734214053,
+        "same_coordinate_energy_error": 0.0
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 115.30268734214053,
+        "same_coordinate_energy_error": 0.0
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 28,
+        "best_energy": 115.38158121012705,
+        "best_converged_energy": 117.75243467675004
+      },
+      "torsion_minus_rdkit": -2.449747334609512
+    },
+    {
+      "name": "chembl_corpus_1119",
+      "smiles": "CCOc1ccc(-c2cccn3c(C)ncc23)cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 51.00201827455537,
+        "same_coordinate_energy_error": -5.684341886080802e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 51.00201827455537,
+        "same_coordinate_energy_error": -5.684341886080802e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 60,
+        "best_energy": 51.00201828173435,
+        "best_converged_energy": 51.00201828173435
+      },
+      "torsion_minus_rdkit": -7.1789827416068874e-09
+    },
+    {
+      "name": "chembl_corpus_4250",
+      "smiles": "CC(C)C(O)(C(=O)OCC1=CCN2CC[C@@H](O)[C@@H]12)C(C)O",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 74.86358521749916,
+        "same_coordinate_energy_error": 0.0
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": 74.6414670288461,
+        "same_coordinate_energy_error": -1.4210854715202004e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 20,
+        "best_energy": 76.16656073826385,
+        "best_converged_energy": 76.16656073826385
+      },
+      "torsion_minus_rdkit": -1.5250937094177601
+    },
+    {
+      "name": "chembl_corpus_1681",
+      "smiles": "Nc1ccc(S(=O)(=O)Nc2nncs2)cc1",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -75.36394676298892,
+        "same_coordinate_energy_error": 1.4210854715202004e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -75.36394676298892,
+        "same_coordinate_energy_error": 1.4210854715202004e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 56,
+        "best_energy": -75.36394675216472,
+        "best_converged_energy": -75.36394675216472
+      },
+      "torsion_minus_rdkit": -1.0824194873748638e-08
+    },
+    {
+      "name": "chembl_corpus_2471",
+      "smiles": "Cc1noc(NS(=O)(=O)c2ccc3cc(N)ccc3c2)c1C",
+      "quality": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -34.40495622324476,
+        "same_coordinate_energy_error": 1.4210854715202004e-14
+      },
+      "torsion": {
+        "returned": 20,
+        "converged": 20,
+        "best_converged_energy": -34.40495622324476,
+        "same_coordinate_energy_error": 1.4210854715202004e-14
+      },
+      "rdkit": {
+        "generated": 60,
+        "converged": 26,
+        "best_energy": -34.43804575959997,
+        "best_converged_energy": -33.66229357725418
+      },
+      "torsion_minus_rdkit": -0.7426626459905776
+    }
+  ]
+}
