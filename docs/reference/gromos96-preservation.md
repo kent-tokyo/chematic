@@ -1,7 +1,7 @@
 # GROMOS96 block and unit preservation
 
 Rust, Python, WASM/Node and CLI expose bounded GROMOS96 read/write operations.
-This adapter was absent from base `a73204f9`; Open Babel's `gr96` adapter is
+This adapter was absent from base `eb850d4b`; Open Babel's `gr96` adapter is
 [write-only](https://openbabel.org/docs/FileFormats/GROMOS96_format.html).
 The new profile retains every supported block, frame, label, comment, numeric
 token and fixed-field padding as current editable data. It never guesses atom
@@ -188,3 +188,10 @@ The [Open Babel adapter documentation](https://openbabel.org/docs/FileFormats/GR
 defines its direction and nm output option. External implementation sources
 were consulted as format/behavior references and were not copied or translated
 into this implementation.
+
+The retained observation records main `eb850d4b` (the MCS SMARTS API addition)
+as the integrated base. The
+observer's optional `--candidate-base <40-character lowercase commit>` makes
+that integrated base explicit for a pending merge or source archive; otherwise
+it records `git merge-base HEAD origin/main`. Neither form claims a clean
+compiled release commit. Source and runtime hashes remain the measured identity.

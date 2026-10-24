@@ -12,6 +12,7 @@ import importlib
 import io
 import json
 import math
+import re
 from pathlib import Path
 import subprocess
 import sys
@@ -182,7 +183,7 @@ def observe(args):
                     'candidate_ase_geometry':ase_geometry(read,candidate_text,candidate),'openbabel':{'exit':out.returncode,'stderr':out.stderr,'output':text,'observable':observed,'error':error,'decimal_positions_equal':equal,
                     'ase_geometry':ase_geometry(read,text,external) if external else None},'scope':'common author-supplied elements and Cartesian geometry, no source metadata or round-trip claim'})
     paths=['crates/chematic-mol/src/gromos96.rs','crates/chematic-mol/src/gromos96/fields.rs','crates/chematic-mol/src/gromos96/frames.rs','crates/chematic-mol/src/gromos96/text.rs','crates/chematic-py/src/formats/gromos96.rs','crates/chematic-wasm/src/gromos96.rs','crates/chematic-cli/src/gromos96.rs','scripts/validation/check_gromos96_preservation.py','validation/gromos96_preservation/cases.json']
-    report={'schema_version':1,'scope':'bounded local GROMOS96 source candidate; caller-owned units; no release/toolkit-wide/engine/speed claim','candidate_base':run(['git','-C',ROOT,'merge-base','HEAD','origin/main']).stdout.strip(),
+    report={'schema_version':1,'scope':'bounded local GROMOS96 source candidate; caller-owned units; no release/toolkit-wide/engine/speed claim','candidate_base':args.candidate_base or run(['git','-C',ROOT,'merge-base','HEAD','origin/main']).stdout.strip(),
         'source_sha256':{p:digest(ROOT/p) for p in paths},'runtime_sha256':{'cli':digest(args.cli),'wasm_js':digest(args.wasm_module),'wasm':digest(args.wasm_module.with_name('chematic_wasm_bg.wasm')),'python_extension':{p.name:digest(p) for p in args.python_path.rglob('*.so')},'ase_gromos_reader':digest(Path(ase.__file__).parent/'io/gromos.py')},
         'versions':{'python':sys.version,'node':run(['node','--version']).stdout.strip(),'ase':ase.__version__,'openbabel':run([args.openbabel,'-V']).stdout.strip()},'counts':{k:len(packet[k]) for k in ('valid','refused','projection_refused','writer_probes')},'candidates':candidates,'ase_record_crossread':ase_records,'common_geometry_writers':writers}
     args.output.parent.mkdir(parents=True,exist_ok=True);args.output.write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\n',encoding='utf-8')
@@ -196,5 +197,8 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     for flag in ('python-path','wasm-module','cli','ase-path'):p.add_argument('--'+flag,type=Path,required=True)
     p.add_argument('--openbabel',default='/opt/homebrew/bin/obabel');p.add_argument('--output',type=Path,default=ROOT/'validation/gromos96_preservation/observed.json')
-    observe(p.parse_args())
+    p.add_argument('--candidate-base',help='Explicit integrated main commit for a pending merge or source archive (40 lowercase hex characters)')
+    args=p.parse_args()
+    if args.candidate_base and not re.fullmatch(r'[0-9a-f]{40}',args.candidate_base):p.error('--candidate-base must be 40 lowercase hex characters')
+    observe(args)
 if __name__=='__main__':main()

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "scope": "bounded local GROMOS96 source candidate; caller-owned units; no release/toolkit-wide/engine/speed claim",
-  "candidate_base": "a73204f91efe9df5c772a28fa95237c088fcc9e9",
+  "candidate_base": "eb850d4bb137ec236ef4321203c84e8fd6b23e7b",
   "source_sha256": {
     "crates/chematic-mol/src/gromos96.rs": "edf13c3537fde033329461f2e9e43f6ded63b7ac2dbe55c7b95e7f791b340a65",
     "crates/chematic-mol/src/gromos96/fields.rs": "34306f8c984417bd8a4dbf7f999da3a019a746958a5dcbac27280d4941f01db4",
@@ -10,15 +10,15 @@
     "crates/chematic-py/src/formats/gromos96.rs": "f010c552d1402eb51e904be6adcf3a504d21aa9d34065f4ea223ad69654593fe",
     "crates/chematic-wasm/src/gromos96.rs": "d3967a0cc1d2405a8122f987adcdbb6b423fab0e142fc0cd71df92c4067165a6",
     "crates/chematic-cli/src/gromos96.rs": "97c5810ae84e1c99e034955bf7619ab7aece096ecc203a4db4e9dd2fa831ce1c",
-    "scripts/validation/check_gromos96_preservation.py": "01b09500a5d80b0a3833d298fc06aa93165824b89eaf899184ad6f7b6985c287",
+    "scripts/validation/check_gromos96_preservation.py": "5c3c43a358785fb9a16447f7f4503a8754bc9e822dccbd8076b8cc607a9655b5",
     "validation/gromos96_preservation/cases.json": "df1a36d7b066a841db22e4c0b69e521bd7c1fe8204022620a93aec89102ab202"
   },
   "runtime_sha256": {
-    "cli": "6d7feef749a2876f190ff5c5846e5fbd60c397d9f6cad82269b7df8681c9b6af",
-    "wasm_js": "7628ab66ae4b4af90ff29a93d613f73e25b3e4c0ac3f77ead830667a9191e3f1",
-    "wasm": "9443cef924cced118df1d5b1dea2b07084df3e708afdf9da61cc48964e641613",
+    "cli": "5ef640ce1e25a391d081cf89dc76263518c7b0dd24a13fbeeea5ef7a7fbc4706",
+    "wasm_js": "de807114a218161dfc26d049ed7d33c29fe08abc6c8a03ecfb10ba403452e630",
+    "wasm": "94f33cbad473596565fb83cf1da66dea8ac12f5eeb65a8f09584e17d182b057a",
     "python_extension": {
-      "chematic.cpython-313-darwin.so": "a82e5cb4c5e89c779812d063aa04f10eeb37d40ac186e98c7abf47ac52f0a8a4"
+      "chematic.cpython-313-darwin.so": "69c89ab80847366410bea00fd486be3a380855e0bd0ad604f59c3cecce9f2582"
     },
     "ase_gromos_reader": "a388624fe4daef916af9fb2b76f6836c9ae617612591e081bae3b3b9ddcc82fa"
   },

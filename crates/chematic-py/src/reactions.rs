@@ -1246,6 +1246,78 @@ fn find_mcs_checked(
     }
 }
 
+/// Return the actual MCS query as SMARTS, preserving observed atom and bond
+/// alternatives. The status distinguishes a partial timeout result.
+///
+/// Charge, isotope, and chirality matching flags are deliberately absent:
+/// the native MCS query does not yet encode those predicates for re-search.
+#[pyfunction]
+#[pyo3(signature = (
+    mols,
+    match_bonds=true,
+    min_atoms=1,
+    timeout_ms=None,
+    ring_matches_ring_only=false,
+    complete_rings_only=false,
+    atom_compare="elements",
+    bond_compare="order_or_aromatic",
+    maximize_bonds=true,
+    max_search_nodes=None,
+))]
+#[allow(clippy::too_many_arguments)]
+fn find_mcs_smarts_checked(
+    mols: Vec<Mol>,
+    match_bonds: bool,
+    min_atoms: usize,
+    timeout_ms: Option<u64>,
+    ring_matches_ring_only: bool,
+    complete_rings_only: bool,
+    atom_compare: &str,
+    bond_compare: &str,
+    maximize_bonds: bool,
+    max_search_nodes: Option<usize>,
+) -> PyResult<(Option<String>, bool)> {
+    let mut config = build_mcs_config(
+        match_bonds,
+        min_atoms,
+        timeout_ms,
+        ring_matches_ring_only,
+        complete_rings_only,
+        atom_compare,
+        bond_compare,
+        false,
+        false,
+        false,
+        maximize_bonds,
+    )?;
+    if let Some(limit) = max_search_nodes {
+        config.max_search_nodes = Some(limit);
+    }
+    let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
+    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config)
+    } else {
+        chematic_smarts::find_mcs_with_config_checked(&refs, &config)
+    };
+    let timed_out = outcome.was_timed_out();
+    if outcome.was_resource_limited() {
+        return Err(crate::errors::input_error(
+            "resource_limit",
+            "mcs_resource_limit",
+            "mcs",
+            "MCS search reached its configured resource limit before proving the result optimal"
+                .to_string(),
+        ));
+    }
+    let query = outcome.into_query();
+    if query.atoms.is_empty() {
+        return Ok((None, timed_out));
+    }
+    let smarts = chematic_smarts::mcs_query_to_smarts(&query)
+        .map_err(|error| PyValueError::new_err(error.to_string()))?;
+    Ok((Some(smarts), timed_out))
+}
+
 // ---------------------------------------------------------------------------
 // Module definition
 // ---------------------------------------------------------------------------
@@ -1283,6 +1355,7 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         run_smirks_strict,
         find_mcs,
         find_mcs_checked,
+        find_mcs_smarts_checked,
     )
 }
 
