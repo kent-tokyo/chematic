@@ -66,6 +66,19 @@ enum Command {
         #[arg(long, default_value_t = 64 * 1024 * 1024)]
         max_input_bytes: usize,
     },
+    /// Preserve standard nonperiodic BIOGRF 200 atom and connectivity fields.
+    Bgf {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        #[arg(long, conflicts_with = "inspect")]
+        from_json: bool,
+        #[arg(long, default_value_t = 16 * 1024 * 1024)]
+        max_input_bytes: usize,
+    },
     /// Retain Molden geometry/vibration data; refuse electronic/trajectory sections.
     Molden {
         #[arg(short, long)]

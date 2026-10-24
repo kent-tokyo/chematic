@@ -29,6 +29,12 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
   frequency signs, mode/atom IDs and optional IR/Raman data survive edits.
   Electronic, convergence and trajectory sections are refused rather than
   discarded. This is a bounded profile, not a general orbital-file reader.
+- Editable nonperiodic BIOGRF 200 records in Rust, Python, WASM/Node, and CLI,
+  retaining fixed-column atom/residue/force-field/partial-charge/lone-pair
+  fields and explicit/implicit connection orders. Unsupported records, unknown
+  JSON fields, conflicting connectivity, overflow, and precision loss refuse.
+  The original cross-binding packet and pinned Open Babel comparison document
+  the bounded profile in [BGF records](docs/reference/bgf-records.md).
 
 ### Fixed
 

@@ -86,6 +86,7 @@ nav:
     - Tinker XYZ: reference/tinker-xyz.md
     - DL-POLY CONFIG: reference/dlpoly-config.md
     - Molden Geometry & Vibrations: reference/molden-vibrations.md
+    - BGF Atom Records: reference/bgf-records.md
     - Language Bindings: reference/language-bindings.md
     - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md

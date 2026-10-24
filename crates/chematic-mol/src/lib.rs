@@ -16,6 +16,12 @@
 //! let written = write_mol(&mol, &meta);
 //! ```
 
+pub mod bgf;
+pub use bgf::{
+    BgfAtom, BgfAtomKind, BgfConnectivity, BgfError, BgfLimits, BgfRecord, bgf_record_from_json,
+    parse_bgf, parse_bgf_with_limits, write_bgf,
+};
+
 pub mod ccd;
 pub use ccd::{
     CcdAtom, CcdBond, CcdComponent, CcdError, CcdParseLimits, parse_ccd_component,
