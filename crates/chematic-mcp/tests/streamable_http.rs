@@ -6,7 +6,7 @@
 use std::io::{BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpStream};
 use std::process::{Command, Stdio};
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use chematic_mcp::http::{HttpRequest, handle_http_request, read_request};
 use chematic_mcp::{HttpConfig, HttpServer};
@@ -487,6 +487,56 @@ fn concurrency_is_bounded() {
     drop(held);
     let (reply, _) = call(addr, "tools/list", json!({}));
     assert_eq!(reply.status, 200);
+}
+
+#[test]
+fn incomplete_busy_request_does_not_block_the_accept_loop() {
+    let addr = start(HttpConfig {
+        max_concurrency: 1,
+        io_timeout: Duration::from_secs(2),
+        ..HttpConfig::default()
+    });
+    let held = TcpStream::connect(addr).unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+
+    let mut incomplete = TcpStream::connect(addr).unwrap();
+    incomplete
+        .write_all(b"POST /mcp HTTP/1.1\r\nHost: localhost")
+        .unwrap();
+    std::thread::sleep(Duration::from_millis(100));
+
+    let mut next = TcpStream::connect(addr).unwrap();
+    next.set_read_timeout(Some(Duration::from_millis(700)))
+        .unwrap();
+    next.write_all(b"GET /mcp HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        .unwrap();
+    let started = Instant::now();
+    let mut status = String::new();
+    BufReader::new(next).read_line(&mut status).unwrap();
+    assert!(status.starts_with("HTTP/1.1 503 "), "{status}");
+    assert!(started.elapsed() < Duration::from_millis(700));
+    drop(incomplete);
+    drop(held);
+}
+
+#[test]
+fn slowly_sent_headers_cannot_extend_the_request_deadline() {
+    let addr = start(HttpConfig {
+        io_timeout: Duration::from_millis(500),
+        ..HttpConfig::default()
+    });
+    let mut stream = TcpStream::connect(addr).unwrap();
+    stream
+        .set_read_timeout(Some(Duration::from_millis(200)))
+        .unwrap();
+    stream.write_all(b"P").unwrap();
+    for _ in 0..4 {
+        std::thread::sleep(Duration::from_millis(180));
+        let _ = stream.write_all(b"O");
+    }
+    let mut status = String::new();
+    BufReader::new(stream).read_line(&mut status).unwrap();
+    assert!(status.starts_with("HTTP/1.1 408 "), "{status}");
 }
 
 #[test]
