@@ -30,6 +30,11 @@ def test_bridge_retains_all_source_xyz_and_declared_graph_fields(case, variant, 
     assert legacy.smiles == mol.smiles
     assert bits(xy) == bits([row[:2] for row in coords])
     document = text + ("\n$$$$\n" if format == "sdf" else "")
+    projection = case.get("cjson_projection", {"accepted": True})
+    if not projection["accepted"]:
+        with pytest.raises(ValueError, match=projection["error"]):
+            chematic.convert_format(document, format, "cjson")
+        return
     value = json.loads(chematic.convert_format(document, format, "cjson"))
     atoms, bonds = value["atoms"], value["bonds"]
     flat = atoms["coords"]["3d"]

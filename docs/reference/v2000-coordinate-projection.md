@@ -5,11 +5,15 @@ bridge previously discarded them for V2000 input: converting a 3D MOL to CJSON
 omitted `atoms.coords.3d`, and Python MOL→XYZ required a separate coordinate
 argument even though the source already contained geometry.
 
-The V2000→CJSON bridge now retains the finite source-order x/y/z values in both
-Python and WASM. It applies to one MOL block or a one-record SDF document; the
+The V2000→CJSON bridge retains the finite source-order x/y/z values in both
+Python and WASM when every parsed graph property is representable by the local
+CJSON profile. It applies to one MOL block or a one-record SDF document; the
 existing SDF framing boundary refuses extra records. It does not generate or
 recenter coordinates. The numerical projection is independent of the header's
 `2D`/`3D` declaration and the tolerance used to select a perception conformer.
+If 3D perception assigns atom chirality, the checked CJSON bridge refuses the
+conversion instead of dropping that assignment; the low-level coordinate reader
+still returns the original coordinates.
 
 ```python
 import json
@@ -64,15 +68,17 @@ separate contract.
 
 The authored packet `validation/v2000_coordinate_projection/cases.json` contains
 10 profiles, each exercised as MOL/SDF with LF, CRLF and no final newline:
-60 projections. It includes ordinary four-decimal coordinates and deliberately
-extended precision/scientific spellings inside the 10-byte fields. The latter
-are accepted-input boundary tests, not a claim that every V2000 reader supports
-those spellings.
+60 routes. Fifty-four graph/coordinate projections succeed; the six tetrahedral
+routes return a typed atom-chirality refusal. It includes ordinary four-decimal
+coordinates and deliberately extended precision/scientific spellings inside the
+10-byte fields. The latter are accepted-input boundary tests, not a claim that
+every V2000 reader supports those spellings.
 
 A separate fixed-column decoder checks the source coordinates, and the shared
 CJSON observer checks output coordinate bits and indexed graph fields without
 using chematic readback as its only oracle. Python and real Node/WASM agree on
-all 60 projections. The old local package emits no coordinate array on all 60.
+all 54 representable projections and all six typed refusals. The old local
+package emits no coordinate array on all 60.
 
 Open Babel 3.2.1 is compared on the **same source bytes and CJSON target**, using
 both default output and `-xs` (single geometry). It retains coordinate bits on

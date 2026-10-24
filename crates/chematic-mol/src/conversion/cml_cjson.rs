@@ -8,6 +8,18 @@ fn unsupported(detail: impl Into<String>) -> ConversionError {
     ConversionError::Unsupported(format!("CML to CJSON: {}", detail.into()))
 }
 
+fn unsupported_bond_order(order: &str) -> Option<&'static str> {
+    match order.trim() {
+        "0" | "zero" => Some("Zero"),
+        "A" | "aromatic" => Some("Aromatic"),
+        "any" => Some("QueryAny"),
+        "S/D" => Some("QuerySingleOrDouble"),
+        "S/A" => Some("QuerySingleOrAromatic"),
+        "D/A" => Some("QueryDoubleOrAromatic"),
+        _ => None,
+    }
+}
+
 fn attributes(node: Node<'_, '_>, allowed: &[&str]) -> Result<(), ConversionError> {
     for attr in node.attributes() {
         if attr.namespace().is_some() || !allowed.contains(&attr.name()) {
@@ -123,15 +135,19 @@ fn profile_name(text: &str) -> Result<Option<String>, ConversionError> {
             }
             name = Some(value);
         }
-        if tag == "bond"
-            && !matches!(
-                node.attribute("order").map(str::trim),
+        if tag == "bond" {
+            let order = node.attribute("order").map(str::trim);
+            if let Some(order) = order.and_then(unsupported_bond_order) {
+                return Err(unsupported(format!("cannot preserve bond order {order}")));
+            }
+            if !matches!(
+                order,
                 Some("1" | "S" | "single" | "2" | "D" | "double" | "3" | "T" | "triple")
-            )
-        {
-            return Err(unsupported(
-                "bond order is outside single/double/triple profile",
-            ));
+            ) {
+                return Err(unsupported(
+                    "bond order is outside single/double/triple profile",
+                ));
+            }
         }
         if tag == "atom"
             && ["isotope", "isotopeNumber"].iter().any(|key| {

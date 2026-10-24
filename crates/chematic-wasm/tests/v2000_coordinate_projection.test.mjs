@@ -10,6 +10,11 @@ for(const c of packet.cases) {
  for(const text of [c.input,c.input.replaceAll('\n','\r\n'),c.input.trimEnd()]) {
   for(const format of ['.MOL','sdf']) {
    const source=format==='sdf'?text+'\n$$$$\n':text;
+   const projection=c.cjson_projection??{accepted:true};
+   if(!projection.accepted) {
+    assert.throws(()=>wasm.convert_common_format(source,format,'cjson'),new RegExp(projection.error),c.id);
+    continue;
+   }
    const v=JSON.parse(wasm.convert_common_format(source,format,'cjson'));
    const a=v.atoms,b=v.bonds,e=c.expected,n=e.numbers.length;
    assert.deepEqual(bits(a.coords['3d']),bits(e.coordinates.flat()),c.id);

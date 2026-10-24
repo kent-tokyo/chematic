@@ -89,3 +89,24 @@ fn explicit_h_nodes_and_isotope_zero_aliases_do_not_silently_change() {
         assert!(project_cml_to_cjson(&text).is_err());
     }
 }
+
+#[test]
+fn unsupported_bond_orders_report_the_parsed_order() {
+    for (token, expected) in [
+        ("0", "Zero"),
+        ("any", "QueryAny"),
+        ("S/D", "QuerySingleOrDouble"),
+        ("S/A", "QuerySingleOrAromatic"),
+        ("D/A", "QueryDoubleOrAromatic"),
+        ("A", "Aromatic"),
+    ] {
+        let text = format!(
+            "<molecule><atom id='a' elementType='C'/><atom id='b' elementType='N'/><bond atomRefs2='a b' order='{token}'/></molecule>"
+        );
+        let error = project_cml_to_cjson(&text).unwrap_err().to_string();
+        assert!(
+            error.contains(&format!("cannot preserve bond order {expected}")),
+            "{token}: {error}"
+        );
+    }
+}

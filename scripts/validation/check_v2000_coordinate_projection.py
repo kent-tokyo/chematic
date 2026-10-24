@@ -36,7 +36,11 @@ def cases(packet):
         for variant,text in [('lf',c['input']),('crlf',c['input'].replace('\n','\r\n')),('no-final-newline',c['input'].rstrip('\n'))]:
             for fmt in ['mol','sdf']:
                 source=text+'\n$$$$\n' if fmt=='sdf' else text
-                result.append(dict(id=f"{c['id']}/{variant}/{fmt}",input=source,format=fmt,expected=c['expected']))
+                result.append(dict(
+                    id=f"{c['id']}/{variant}/{fmt}", input=source, format=fmt,
+                    expected=c['expected'],
+                    cjson_projection=c.get('cjson_projection', {'accepted': True}),
+                ))
     return result
 
 
@@ -90,7 +94,16 @@ def main():
     args.output.write_text(json.dumps(record,indent=2)+'\n')
     print(json.dumps(summary))
     if not args.baseline:
-        require(all(all(r[label]['observation'].values()) for r in results for label in labels[:2]),'candidate projection failure')
+        for row, case in zip(results, inputs, strict=True):
+            projection = case['cjson_projection']
+            for label in labels[:2]:
+                if projection['accepted']:
+                    require(all(row[label]['observation'].values()), 'candidate projection failure')
+                else:
+                    require(
+                        projection['error'] in row[label].get('error', ''),
+                        'candidate did not return the expected typed refusal',
+                    )
 
 
 if __name__=='__main__':main()
