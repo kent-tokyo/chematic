@@ -56,7 +56,9 @@ is assigned.
 
 ## Reproduce
 
-With RDKit 2026.09.1 installed in the Python interpreter:
+For the original one-pass result, use source revision `aeae3f53` with RDKit
+2026.09.1 installed in the Python interpreter. The current source runs the
+two-pass follow-up described below.
 
 ```sh
 cargo build --locked -p chematic-3d --example etkdg_torsion_search_probe
@@ -75,3 +77,41 @@ The experiment does not measure experimental geometry, conformer diversity,
 population coverage, wall time, memory, equal work, or published-wheel
 behavior. The force-field formula is unchanged, so this does not establish
 better physical MMFF accuracy or broad 3D superiority over RDKit.
+
+## Two-pass follow-up
+
+The follow-up source candidate starts from `origin/main` at `db600bc4`.
+After a successful first torsion pass, it repeats the same bounded moves
+once from the improved conformer. The second pass can combine changes at
+two rotatable bonds. The total extra work is at most 48 MMFF94 minimizations;
+the second pass is skipped when the first finds no lower converged,
+stereo-safe result. The original quality profile and MMFF94 force field are
+unchanged.
+
+On the 21-row prior Tier B development set, one row improved beyond the
+one-pass result: `chembl_tier_b_0022` moved from −53.719974 to −54.535353
+kcal/mol. The other 20 best converged energies did not increase. The
+[two-pass Tier B report](../validation/results/etkdg-torsion-search-tier-b-two-pass-2026-10-24.json)
+records 11/20 lower energies than RDKit's best converged conformer and 9/20
+ties within 1e-6 kcal/mol; one RDKit row had no converged conformer.
+
+For a disjoint follow-up, the next 12 eligible ChEMBL molecules in SHA-256
+SMILES order (positions 12–23, after the original 12) were selected before
+scoring. The [follow-up report](../validation/results/etkdg-torsion-search-chembl-hash12-23-two-pass-2026-10-24.json)
+records 7/12 lower energies than RDKit and 5/12 ties within 1e-6 kcal/mol.
+The torsion arm improved on its own base quality profile in 6/12. Both
+reports verify the atom-indexed graph, declared tetrahedral and double-bond
+stereochemistry, and independent RDKit MMFF94 energy on the returned
+coordinates. The largest same-coordinate energy difference is below
+2e-13 kcal/mol. These are repository development and follow-up slices, not
+external sealed holdouts or equal-compute comparisons.
+
+To repeat the follow-up slice with RDKit 2026.09.1:
+
+```sh
+cargo build --locked -p chematic-3d --example etkdg_torsion_search_probe
+python3 scripts/benchmarks/etkdg_torsion_search_probe.py \
+  --binary target/debug/examples/etkdg_torsion_search_probe \
+  --tier chembl --chembl-start 12 \
+  --output /tmp/etkdg-torsion-search-chembl-hash12-23.json
+```

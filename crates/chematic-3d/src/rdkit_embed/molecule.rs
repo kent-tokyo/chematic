@@ -602,10 +602,12 @@ pub fn etkdg_embed_multiple_confs_mmff_best_gradient(
 /// Accuracy-oriented follow-up to the quality profile. For the lowest
 /// converged MMFF94 conformer, rotate each of at most twelve strict,
 /// acyclic rotatable bonds by ±120 degrees and minimize the resulting
-/// coordinates for at most `max_iters` steps. Only a finite, converged,
-/// lower-energy and stereo-safe result may replace an ensemble member.
-/// This adds up to 24 MMFF minimizations and leaves the compatibility and
-/// existing quality profiles unchanged.
+/// coordinates for at most `max_iters` steps. If the first pass improves the
+/// minimum, repeat once from the improved geometry so that two torsion moves
+/// can be combined. Only a finite, converged, lower-energy and stereo-safe
+/// result may replace an ensemble member. This adds up to 48 MMFF
+/// minimizations and leaves the compatibility and existing quality profiles
+/// unchanged.
 pub fn etkdg_embed_multiple_confs_mmff_torsion_search(
     mh: &Molecule,
     num_confs: usize,

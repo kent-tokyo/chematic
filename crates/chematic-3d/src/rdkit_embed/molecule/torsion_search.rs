@@ -27,52 +27,59 @@ pub(super) fn refine_best_with_torsion_moves(
     else {
         return candidates;
     };
-    let source_coords = Coords3D {
-        points: source
-            .coords
-            .iter()
-            .map(|&[x, y, z]| Point3::new(x, y, z))
-            .collect(),
-    };
     let mut best = source;
-    for (b, c) in chematic_chem::rotatable_bond_atom_pairs(mol)
-        .into_iter()
-        .take(12)
-    {
-        let Some(a) = heavy_neighbor(mol, b, c) else {
-            continue;
+    for _ in 0..2 {
+        let previous_energy = best.energy;
+        let source_coords = Coords3D {
+            points: best
+                .coords
+                .iter()
+                .map(|&[x, y, z]| Point3::new(x, y, z))
+                .collect(),
         };
-        let Some(d) = heavy_neighbor(mol, c, b) else {
-            continue;
-        };
-        let Some(angle) = get_dihedral(&source_coords, a, b, c, d) else {
-            continue;
-        };
-        for delta in [-std::f64::consts::TAU / 3.0, std::f64::consts::TAU / 3.0] {
-            let Ok(rotated) = try_set_dihedral(&source_coords, mol, a, b, c, d, angle + delta)
-            else {
+        for (b, c) in chematic_chem::rotatable_bond_atom_pairs(mol)
+            .into_iter()
+            .take(12)
+        {
+            let Some(a) = heavy_neighbor(mol, b, c) else {
                 continue;
             };
-            let coords: Vec<[f64; 3]> = rotated.points.iter().map(|p| [p.x, p.y, p.z]).collect();
-            let trial = optimize_mmff_conformer(&field, coords, max_iters);
-            if trial.status != 0
-                || !trial.energy.is_finite()
-                || trial.energy >= best.energy - 1e-6
-                || !trial.coords.iter().flatten().all(|value| value.is_finite())
-            {
+            let Some(d) = heavy_neighbor(mol, c, b) else {
                 continue;
-            }
-            let checked = Coords3D {
-                points: trial
-                    .coords
-                    .iter()
-                    .map(|&[x, y, z]| Point3::new(x, y, z))
-                    .collect(),
             };
-            let stereo = verify_stereo(mol, &checked);
-            if stereo.n_violations() == 0 && stereo.n_unevaluable() == 0 {
-                best = trial;
+            let Some(angle) = get_dihedral(&source_coords, a, b, c, d) else {
+                continue;
+            };
+            for delta in [-std::f64::consts::TAU / 3.0, std::f64::consts::TAU / 3.0] {
+                let Ok(rotated) = try_set_dihedral(&source_coords, mol, a, b, c, d, angle + delta)
+                else {
+                    continue;
+                };
+                let coords: Vec<[f64; 3]> =
+                    rotated.points.iter().map(|p| [p.x, p.y, p.z]).collect();
+                let trial = optimize_mmff_conformer(&field, coords, max_iters);
+                if trial.status != 0
+                    || !trial.energy.is_finite()
+                    || trial.energy >= best.energy - 1e-6
+                    || !trial.coords.iter().flatten().all(|value| value.is_finite())
+                {
+                    continue;
+                }
+                let checked = Coords3D {
+                    points: trial
+                        .coords
+                        .iter()
+                        .map(|&[x, y, z]| Point3::new(x, y, z))
+                        .collect(),
+                };
+                let stereo = verify_stereo(mol, &checked);
+                if stereo.n_violations() == 0 && stereo.n_unevaluable() == 0 {
+                    best = trial;
+                }
             }
+        }
+        if best.energy >= previous_energy - 1e-6 {
+            break;
         }
     }
     if best.energy
