@@ -20,6 +20,7 @@ verified.
 | [stereo-preservation record](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-15-openbabel-stereo-paired.md) | Paired RDKit-written V2000/V3000 stereo round trips | Independent proof of absolute stereo correctness |
 | [latest V2000 experiment](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-openbabel-v2000-bond-tail.md) | Full retained evidence for a rejected source optimization and fresh Open Babel lanes | Adopted-main or release performance; the source adoption gate failed |
 | [mmCIF numeric preservation](mmcif-numeric-preservation.md) | Authored finite binary64 coordinates, occupancy, B factors and cell parameters through Rust/Python/WASM record output | Complete mmCIF metadata/schema/source-byte retention, CLI support or speed |
+| [Python typed ExtXYZ round trips](extxyz-output-integrity.md#typed-python-readwrite-round-trips) | Declared R/I/S/L kinds, widths and data plus plain comments survive 12 authored Python dictionary round trips | General ASE ExtXYZ, typed WASM writing, graph/stereo, speed or toolkit-wide superiority |
 
 The overview therefore reports Open Babel separately from RDKit and COSMolKit.
 File-I/O results are not used to imply descriptor, fingerprint, reaction,

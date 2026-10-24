@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- Python Extended XYZ dictionaries now retain declared R/I/S/L atom-column
+  kinds, widths and original comments for typed read/write round trips,
+  including empty frames and signed 64-bit identifiers. The writer accepts an
+  explicit property schema and refuses lossy integer-to-real coercion;
+  duplicate reader columns are refused before dictionary overwrite.
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element
