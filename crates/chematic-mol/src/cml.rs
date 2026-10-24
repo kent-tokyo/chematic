@@ -7,6 +7,9 @@
 //!
 //! Legacy graph/2D readers use a lightweight attribute scanner. The additive
 //! Cartesian profile uses bounded, namespace-aware XML parsing.
+//! Graph/2D readers join multiline tags, normalize literal attribute whitespace,
+//! and exclude comments, CDATA and processing instructions from graph markup.
+//! These projections do not retain opaque XML; source-retaining APIs do.
 //!
 //! # Supported attributes
 //!
@@ -126,7 +129,9 @@ impl std::error::Error for CmlError {}
 // ---------------------------------------------------------------------------
 
 mod attributes;
+mod lexical;
 pub(crate) use attributes::parse_xml_attrs;
+use lexical::split_cml_tags;
 
 // ---------------------------------------------------------------------------
 // CML bond order decoding
@@ -385,7 +390,9 @@ fn build_cml(
 /// The second element of the tuple contains one `(x, y)` entry per atom in
 /// atom-insertion order.  If a molecule has no `x2`/`y2` attributes, the
 /// coordinate pairs default to `(0.0, 0.0)`.
-/// Parse a Chemical Markup Language (CML) string into a molecule and 2D coordinates.
+/// Compact and multiline tags are supported. Comments, CDATA and processing
+/// instructions cannot introduce atoms or bonds. This lightweight reader does
+/// not perform full XML, namespace or CML schema validation.
 ///
 /// **Coordinate system:** The returned `coords` use **chemical Y-up convention**
 /// (Y increases upward, matching mathematical axes). This differs from SVG/screen Y-down.
@@ -422,98 +429,13 @@ pub fn parse_cml_strict_with_limits(
     input: &str,
     limits: &CmlParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
+    cml_lines(input, limits)?;
     validate_strict_cml_structure(input)?;
-    let normalized = split_cml_tags(input);
-    let parsed = parse_cml_with_limits(&normalized, limits)?;
+    let parsed = parse_cml_with_limits(input, limits)?;
     if parsed.0.atom_count() == 0 {
         return Err(CmlError::EmptyMolecule);
     }
     Ok(parsed)
-}
-
-/// Make the lightweight line-oriented reader usable with compact XML too.
-///
-/// The legacy parser intentionally only inspects one tag per input line. The
-/// strict entry point can normalize tag boundaries without changing the
-/// legacy parser's compatibility behavior. A quote-aware scan avoids splitting
-/// an attribute value that happens to contain `>`.
-fn split_cml_tags(input: &str) -> String {
-    let mut output = String::with_capacity(input.len() + input.len() / 8);
-    let mut in_tag = false;
-    let mut quote = None;
-    let mut cursor = 0usize;
-    while cursor < input.len() {
-        // Comments, CDATA, and processing instructions may contain `>` (and
-        // comments/CDATA may contain `<`) as ordinary content. Keep each
-        // construct intact so the line-oriented compatibility reader never
-        // interprets markup inside it as a molecule element. The strict
-        // validator has already checked that the terminator exists.
-        if !in_tag && input[cursor..].starts_with("<!--") {
-            let end = input[cursor + 4..]
-                .find("-->")
-                .map(|offset| cursor + 4 + offset + 3)
-                .unwrap_or(input.len());
-            if !output.is_empty() && !output.ends_with('\n') {
-                output.push('\n');
-            }
-            output.push_str(&input[cursor..end]);
-            output.push('\n');
-            cursor = end;
-            continue;
-        }
-        if !in_tag && input[cursor..].starts_with("<![CDATA[") {
-            let end = input[cursor + 9..]
-                .find("]]>")
-                .map(|offset| cursor + 9 + offset + 3)
-                .unwrap_or(input.len());
-            if !output.is_empty() && !output.ends_with('\n') {
-                output.push('\n');
-            }
-            output.push_str(&input[cursor..end]);
-            output.push('\n');
-            cursor = end;
-            continue;
-        }
-        if !in_tag && input[cursor..].starts_with("<?") {
-            let end = input[cursor + 2..]
-                .find("?>")
-                .map(|offset| cursor + 2 + offset + 2)
-                .unwrap_or(input.len());
-            if !output.is_empty() && !output.ends_with('\n') {
-                output.push('\n');
-            }
-            output.push_str(&input[cursor..end]);
-            output.push('\n');
-            cursor = end;
-            continue;
-        }
-
-        let character = input[cursor..]
-            .chars()
-            .next()
-            .expect("cursor is a valid non-empty UTF-8 boundary");
-        if character == '<' && !in_tag {
-            if !output.is_empty() && !output.ends_with('\n') {
-                output.push('\n');
-            }
-            in_tag = true;
-        }
-        output.push(character);
-        if in_tag {
-            if let Some(active_quote) = quote {
-                if character == active_quote {
-                    quote = None;
-                }
-            } else if character == '\'' || character == '"' {
-                quote = Some(character);
-            } else if character == '>' {
-                in_tag = false;
-                output.push('\n');
-            }
-        }
-        cursor += character.len_utf8();
-    }
-    output
 }
 
 /// Parse CML with explicit resource limits.
@@ -521,7 +443,17 @@ pub fn parse_cml_with_limits(
     input: &str,
     limits: &CmlParseLimits,
 ) -> Result<(Molecule, Vec<(f64, f64)>), CmlError> {
-    let lines = cml_lines(input, limits)?;
+    cml_lines(input, limits)?;
+    let normalized = split_cml_tags(input);
+    // Input bytes are a source limit. Logical tag lines and element limits
+    // apply separately after the bounded lexical projection.
+    let lines = cml_lines(
+        &normalized,
+        &CmlParseLimits {
+            max_input_bytes: normalized.len(),
+            ..*limits
+        },
+    )?;
     let (atoms, bonds) = collect_cml_data(lines, limits)?;
     build_cml(atoms, bonds)
 }

@@ -1,0 +1,530 @@
+{
+  "schema": "chematic.cml-lexical-meaning.v1",
+  "provenance": "Original synthetic MIT fixtures authored for chematic on 2026-10-24. XML lexical formatting/opaque-content controls; ElementTree checked for well-formedness, not CML schema or physical validity. Authored graph/H/coordinate oracle.",
+  "cases": [
+    {
+      "id": "ammonium_pretty",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "carbonyl_pretty",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "quoted_gt_and_references",
+      "scope": "control",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo > quoted\" elementType=\"N\" formalCharge=\"&#x31;\" isotopeNumber=\"&#49;&#53;\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_atom_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom\n id=\"a1\"\n elementType=\"N\"\n formalCharge=\"1\"\n isotopeNumber=\"15\"\n hydrogenCount=\"4\"\n x2=\"0.125\"\n y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "split_identity_and_scalars",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\"\n elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_bond_order",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1 a2\"\n order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_quoted_bond_refs",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/>\n<atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/>\n</atomArray>\n<bondArray>\n<bond atomRefs2=\"a1\n a2\" order=\"2\"/>\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "compact_carbonyl",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\"><atomArray><atom id=\"a1\" elementType=\"C\" isotopeNumber=\"13\" hydrogenCount=\"2\" x2=\"0\" y2=\"0\"/><atom id=\"a2\" elementType=\"O\" isotopeNumber=\"18\" hydrogenCount=\"0\" x2=\"1.5\" y2=\"0.25\"/></atomArray><bondArray><bond atomRefs2=\"a1 a2\" order=\"2\"/></bondArray></molecule>",
+      "expected": {
+        "numbers": [
+          6,
+          8
+        ],
+        "charges": [
+          0,
+          0
+        ],
+        "isotopes": [
+          13,
+          18
+        ],
+        "hydrogens": [
+          2,
+          0
+        ],
+        "atom_maps": [
+          0,
+          0
+        ],
+        "bonds": [
+          [
+            0,
+            1,
+            2
+          ]
+        ],
+        "coords2d": [
+          [
+            0.0,
+            0.0
+          ],
+          [
+            1.5,
+            0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "crlf_tab_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r\n<atomArray>\r\n<atom\r\n\tid=\"a1\"\r\n\telementType=\"N\"\r\n\tformalCharge=\"1\"\r\n\tisotopeNumber=\"15\"\r\n\thydrogenCount=\"4\"\r\n\tx2=\"0.125\"\r\n\ty2=\"-0.25\"/>\r\n</atomArray>\r\n<bondArray>\n\r\n</bondArray>\n\r\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "cr_only_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\r<atomArray>\r<atom\r id=\"a1\"\r elementType=\"N\"\r formalCharge=\"1\"\r isotopeNumber=\"15\"\r hydrogenCount=\"4\"\r x2=\"0.125\"\r y2=\"-0.25\"/>\r</atomArray>\r<bondArray>\r\r</bondArray>\r\r</molecule>\r",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "quoted_literal_linebreak",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" title=\"memo >\n fields\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_comment",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<!-- opaque example\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n-->\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_cdata",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n]]></scalar></property></propertyList>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "multiline_processing_instruction",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<?fixture\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n?>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "adjacent_comment_attributes",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/><!-- <atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/> -->\n</atomArray>\n<bondArray>\n\n</bondArray>\n\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    },
+    {
+      "id": "unicode_opaque",
+      "scope": "reproduction",
+      "input": "<molecule xmlns=\"http://www.xml-cml.org/schema\">\n<atomArray>\n<atom id=\"a1\" elementType=\"N\" formalCharge=\"1\" isotopeNumber=\"15\" hydrogenCount=\"4\" x2=\"0.125\" y2=\"-0.25\"/>\n</atomArray>\n<bondArray>\n\n</bondArray>\n<propertyList><property><scalar><![CDATA[λ 漢字\n<atom id=\"ghost\" elementType=\"C\" formalCharge=\"-1\" isotopeNumber=\"14\" hydrogenCount=\"3\"/>\n🙂]]></scalar></property></propertyList>\n</molecule>\n",
+      "expected": {
+        "numbers": [
+          7
+        ],
+        "charges": [
+          1
+        ],
+        "isotopes": [
+          15
+        ],
+        "hydrogens": [
+          4
+        ],
+        "atom_maps": [
+          0
+        ],
+        "bonds": [],
+        "coords2d": [
+          [
+            0.125,
+            -0.25
+          ]
+        ]
+      }
+    }
+  ]
+}

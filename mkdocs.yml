@@ -92,6 +92,7 @@ nav:
     - Benchmark Method: reference/benchmark.md
     - RDKit Comparison: reference/rdkit-comparison.md
     - Open Babel File I/O: reference/openbabel-file-io.md
+    - CML Lexical Meaning: reference/cml-lexical-meaning.md
   - API Reference:
     - Python: api/chematic.md
   - Project:
