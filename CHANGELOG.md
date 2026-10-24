@@ -16,6 +16,11 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Fixed
 
+- The local atom-record MolJSON reader now keeps order 4 as a quadruple bond
+  and validates charge/isotope ranges, boolean fields and exact supported bond
+  orders. Duplicate JSON keys/IDs, self/duplicate bonds, conflicting aromatic
+  declarations and malformed present bond arrays are refused instead of being
+  narrowed, overwritten, rounded or ignored across Rust/Python/WASM/CLI reads.
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps
   foreign annotations out of the molecular graph. Forward bond references are
   resolved after collecting source-order atoms. Malformed XML, missing element

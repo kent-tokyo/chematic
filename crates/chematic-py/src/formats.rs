@@ -552,12 +552,11 @@ fn from_mrv_block(mrv_str: &str) -> PyResult<Mol> {
         .map_err(|e| PyValueError::new_err(e.to_string()))
 }
 
-/// Parse a MolJSON string into a ``Mol`` object.
+/// Parse chematic's atom-record MolJSON dialect into a ``Mol`` object.
 ///
-/// MolJSON is a JSON-based molecular representation designed for LLM
-/// (large language model) compatibility.
-///
-/// Raises ``ValueError`` on parse failure.
+/// Known graph fields are range/type checked; order 4 denotes a quadruple bond.
+/// Duplicate keys/IDs, conflicting aromatic flags and invalid bonds raise
+/// ``ValueError``. This is not the upstream oxpig schema or source/stereo retention.
 ///
 ///     mol = chematic.from_moljson(open("mol.json").read())
 ///     # Round-trip:

@@ -125,6 +125,7 @@ with single bonds.
 
 Use these pages when the short matrix is not enough:
 
+- [MolJSON graph input integrity](moljson-graph-input.md)
 - [MOL2 hydrogen order](mol2-hydrogen-order.md) and
   [Kekulé output](mol2-kekule-bond-output.md)
 - [CIF molecular bonds](cif-molecular-bonds.md) and

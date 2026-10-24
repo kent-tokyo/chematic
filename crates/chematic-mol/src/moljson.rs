@@ -38,7 +38,9 @@
 use chematic_core::{
     Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, implicit_hcount,
 };
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+
+mod fields;
 
 /// Resource limits for MolJSON parsing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -119,6 +121,12 @@ impl std::error::Error for MolJsonError {}
 /// nodes are additional and are not counted here. When the field is absent,
 /// the existing valence-based inference remains in effect. This is not a
 /// valence or radical-state validator.
+///
+/// Known charge/isotope/boolean fields are checked before conversion. Numeric
+/// bond orders are exactly 1, 1.5, 2, 3 or 4, with consistent aromatic flags;
+/// 4 denotes a quadruple bond. Duplicate JSON keys, IDs, self/duplicate bonds
+/// and malformed present fields are errors. Unknown fields remain outside the
+/// graph projection; atom/bond IDs are used for references, not source retention.
 pub fn parse_moljson(input: &str) -> Result<Molecule, MolJsonError> {
     parse_moljson_with_limits(input, &MolJsonParseLimits::default())
 }
@@ -145,11 +153,10 @@ fn parse_moljson_atoms(
     let mut builder = MoleculeBuilder::new();
     let mut ids = HashMap::new();
     for value in atoms {
-        let id = value
-            .get("id")
-            .and_then(|value| value.as_str())
-            .ok_or(MolJsonError::MissingField("atoms[].id"))?
-            .to_owned();
+        let id = fields::id(value, "id", "atoms[].id")?.to_owned();
+        if ids.contains_key(&id) {
+            return Err(fields::invalid(format!("duplicate atom id {id:?}")));
+        }
         let symbol = value
             .get("element")
             .and_then(|value| value.as_str())
@@ -158,19 +165,9 @@ fn parse_moljson_atoms(
             .ok_or_else(|| MolJsonError::UnknownElement(symbol.to_owned()))?;
         let mut atom = Atom::new(element);
         atom.hydrogen_count = hydrogen_count(value)?;
-        atom.charge = value
-            .get("charge")
-            .and_then(|value| value.as_i64())
-            .unwrap_or(0) as i8;
-        atom.isotope = value.get("isotope").and_then(|value| {
-            (!value.is_null())
-                .then(|| value.as_u64().map(|number| number as u16))
-                .flatten()
-        });
-        atom.aromatic = value
-            .get("aromatic")
-            .and_then(|value| value.as_bool())
-            .unwrap_or(false);
+        atom.charge = fields::charge(value)?;
+        atom.isotope = fields::isotope(value)?;
+        atom.aromatic = fields::flag(value, "atoms[].aromatic")?.unwrap_or(false);
         let index = builder.add_atom(atom);
         ids.insert(id, index);
     }
@@ -182,12 +179,21 @@ fn parse_moljson_bonds(
     ids: &HashMap<String, AtomIdx>,
     builder: &mut MoleculeBuilder,
 ) -> Result<(), MolJsonError> {
+    let mut bond_ids = HashSet::new();
     for value in bonds {
-        let bond_id = value
-            .get("id")
-            .and_then(|value| value.as_str())
-            .unwrap_or("?")
-            .to_owned();
+        if !value.is_object() {
+            return Err(fields::invalid("bonds[] must be an object"));
+        }
+        let bond_id = if value.get("id").is_some() {
+            let id = fields::id(value, "id", "bonds[].id")?;
+            if !bond_ids.insert(id) {
+                return Err(fields::invalid(format!("duplicate bond id {id:?}")));
+            }
+            id
+        } else {
+            "?"
+        }
+        .to_owned();
         let endpoint = |key: &str, field: &'static str| {
             let id = value
                 .get(key)
@@ -202,21 +208,13 @@ fn parse_moljson_bonds(
         };
         let source = endpoint("source_id", "bonds[].source_id")?;
         let target = endpoint("target_id", "bonds[].target_id")?;
-        let aromatic = value
-            .get("aromatic")
-            .and_then(|value| value.as_bool())
-            .unwrap_or(false);
-        let order = if aromatic {
-            BondOrder::Aromatic
-        } else {
-            float_to_bond_order(
-                value
-                    .get("order")
-                    .and_then(|value| value.as_f64())
-                    .unwrap_or(1.0),
-            )
-        };
-        let _ = builder.add_bond(source, target, order);
+        if source == target {
+            return Err(fields::invalid(format!("bond {bond_id:?} is a self bond")));
+        }
+        let order = fields::bond_order(value)?;
+        builder
+            .add_bond(source, target, order)
+            .map_err(|error| fields::invalid(format!("bond {bond_id:?}: {error}")))?;
     }
     Ok(())
 }
@@ -233,8 +231,9 @@ pub fn parse_moljson_with_limits(
             limit: limits.max_input_bytes,
         });
     }
-    let v: serde_json::Value =
+    let v: crate::cjson_record::UniqueValue =
         serde_json::from_str(input).map_err(|e| MolJsonError::InvalidJson(e.to_string()))?;
+    let v = v.0;
     check_json_limits(&v, "$", 0, limits)?;
 
     let atoms_arr = v
@@ -252,7 +251,10 @@ pub fn parse_moljson_with_limits(
     let (mut builder, id_to_idx) = parse_moljson_atoms(atoms_arr)?;
 
     // ── Bonds ────────────────────────────────────────────────────────────────
-    if let Some(bonds_arr) = v.get("bonds").and_then(|b| b.as_array()) {
+    if let Some(bonds) = v.get("bonds") {
+        let bonds_arr = bonds
+            .as_array()
+            .ok_or_else(|| fields::invalid("bonds must be an array when present"))?;
         if bonds_arr.len() > limits.max_bonds {
             return Err(MolJsonError::ResourceLimit {
                 resource: "bond records",
@@ -316,17 +318,6 @@ fn check_json_limits(
     Ok(())
 }
 
-fn float_to_bond_order(v: f64) -> BondOrder {
-    if (v - 1.5).abs() < 0.1 || (v - 4.0).abs() < 0.1 {
-        return BondOrder::Aromatic;
-    }
-    match v.round() as i64 {
-        2 => BondOrder::Double,
-        3 => BondOrder::Triple,
-        _ => BondOrder::Single,
-    }
-}
-
 // ─── Writer ──────────────────────────────────────────────────────────────────
 
 /// Serialize a [`Molecule`] to a MolJSON string (pretty-printed).
@@ -334,6 +325,9 @@ fn float_to_bond_order(v: f64) -> BondOrder {
 /// Atom IDs are assigned as `"a1"`, `"a2"`, … in molecule atom order.
 /// Bond IDs are assigned as `"b1"`, `"b2"`, … in bond iteration order.
 /// The `hydrogens` field reflects computed implicit H count.
+/// This graph-only writer retains Single/Double/Triple/Quadruple/Aromatic orders.
+/// Native zero/dative/stereo/query orders still project to single bonds; atom
+/// stereo, atom maps, coordinates and source metadata are not encoded.
 pub fn write_moljson(mol: &Molecule) -> String {
     use serde_json::{Value, json};
 

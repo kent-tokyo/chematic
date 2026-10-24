@@ -39,7 +39,9 @@ implement that upstream schema or silently translate between the two.
 This is an H-authority correction, not a strict validator of every MolJSON
 field or a general lossless writer. The storage range does not establish
 chemical valence validity. Spin multiplicity and stereochemistry are outside
-this contract; other legacy field interpretations and omission rules remain.
+this contract. The later [graph input integrity](moljson-graph-input.md) change
+validates other known graph fields and corrects quadruple-bond reading; the
+H-specific measurements below retain their original dated scope.
 
 ## Local validation — 2026-10-24
 

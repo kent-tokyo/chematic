@@ -625,10 +625,10 @@ pub fn to_cml(mol: &MolHandle) -> String {
     chematic_mol::write_cml(&mol.inner, Some(&coords))
 }
 
-/// Parse a MolJSON string into a `MolHandle`.
-///
-/// MolJSON is a JSON-based molecular representation designed for LLM
-/// (large language model) compatibility.  Returns a JS error on invalid input.
+/// Parse chematic's atom-record MolJSON graph dialect, not oxpig MolJSON.
+/// Range/type checks, exact bond orders (4 = quadruple), unique keys/IDs and
+/// valid nonduplicate bonds are enforced. Throws on invalid input; source
+/// metadata and stereochemistry are outside this graph profile.
 #[wasm_bindgen]
 pub fn mol_from_moljson(json: &str) -> Result<MolHandle, JsValue> {
     if json.len() > WASM_MAX_INPUT_BYTES {
