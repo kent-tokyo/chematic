@@ -755,11 +755,22 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
     // corresponding atom disagrees on aromaticity (a real, confirmed regression when
     // AtomCompare::Elements permits cross-aromaticity matches).
     for row in &mapping.query_to_mol {
-        let a0 = row[0];
-        let atom = mol0.atom(a0);
-        let an = atom.element.atomic_number();
-
-        let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
+        // RDKit's FMCS query includes every element observed at this mapped
+        // position when the atom comparator accepts unlike elements. Keeping
+        // only mol0's element would produce an MCS that cannot match another
+        // input even though the search mapped it successfully.
+        let mut numbers = Vec::new();
+        for (&mol, &atom_idx) in mols.iter().zip(row) {
+            let number = mol.atom(atom_idx).element.atomic_number();
+            if !numbers.contains(&number) {
+                numbers.push(number);
+            }
+        }
+        let query = numbers
+            .into_iter()
+            .map(|number| AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)))
+            .reduce(|left, right| AtomQuery::Or(Box::new(left), Box::new(right)))
+            .expect("an MCS mapping includes its first input");
         qmol.add_atom(query);
     }
 
@@ -772,10 +783,26 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
                 continue;
             }
             let a2 = row2[0];
-            if let Some((_bidx, bond_entry)) = mol0.bond_between(a1, a2)
+            if mol0.bond_between(a1, a2).is_some()
                 && mapped_rows_share_common_bond(mols, mapping, q1, q2, config)
             {
-                let bq = bond_order_to_query(bond_entry.order, config.match_bonds);
+                // CompareAny and match_bonds=false may map different bond
+                // orders. Emit the observed alternatives, not mol0's order
+                // or an unrestricted bond that also matches unseen orders.
+                let mut alternatives = Vec::new();
+                for (mol, (&left, &right)) in mols.iter().zip(row1.iter().zip(row2)) {
+                    let (_, bond) = mol
+                        .bond_between(left, right)
+                        .expect("every MCS query bond is present in each input");
+                    let query = bond_order_to_query(bond.order);
+                    if !alternatives.contains(&query) {
+                        alternatives.push(query);
+                    }
+                }
+                let bq = alternatives
+                    .into_iter()
+                    .reduce(|left, right| BondQuery::Or(Box::new(left), Box::new(right)))
+                    .expect("an MCS query bond includes its first input");
                 qmol.add_bond(q1, q2, bq);
             }
         }
@@ -787,13 +814,10 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
 /// Convert a target-molecule `BondOrder` into the corresponding `BondQuery`
 /// used in a `QueryMolecule`.
 ///
-/// When `match_bonds` is false, every bond becomes `Any` (atom-only MCS).
 /// Up/Down/Dative stereo-like bonds collapse to Single. Query bond variants
-/// become their closest SMARTS query equivalent.
-fn bond_order_to_query(order: BondOrder, match_bonds: bool) -> BondQuery {
-    if !match_bonds {
-        return BondQuery::Primitive(BondPrimitive::Any);
-    }
+/// become their closest SMARTS query equivalent. `build_query` combines the
+/// orders observed across inputs when bond matching was relaxed.
+fn bond_order_to_query(order: BondOrder) -> BondQuery {
     match normalize_bond(order) {
         BondOrder::Single | BondOrder::Dative => BondQuery::Primitive(BondPrimitive::Single),
         BondOrder::Double => BondQuery::Primitive(BondPrimitive::Double),
@@ -832,7 +856,7 @@ fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
     }
 
     for (_, bond) in mol.bonds() {
-        let bq = bond_order_to_query(bond.order, true);
+        let bq = bond_order_to_query(bond.order);
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }
 

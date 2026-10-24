@@ -51,6 +51,22 @@ mod mcs_config_tests {
     }
 
     #[test]
+    fn concrete_mcs_projection_uses_first_input_alternative() {
+        for (first, second, config) in [
+            ("NO", "CO", r#"{"atomCompare":"any"}"#),
+            ("CO", "NO", r#"{"atomCompare":"any"}"#),
+            ("C=N", "CN", r#"{"bondCompare":"any"}"#),
+            ("CN", "C=N", r#"{"bondCompare":"any"}"#),
+        ] {
+            let inputs = serde_json::to_string(&[first, second]).unwrap();
+            let result = mcs_smiles_json_with_config(&inputs, config).unwrap();
+            let value: serde_json::Value = serde_json::from_str(&result).unwrap();
+            let expected = chematic_smiles::canonical_smiles(&chematic_smiles::parse(first).unwrap());
+            assert_eq!(value["smiles"], expected, "{first} versus {second}");
+        }
+    }
+
+    #[test]
     fn no_common_substructure_returns_null_smiles() {
         // Two disconnected, chemically unrelated single-heavy-atom molecules.
         let smiles = r#"["[He]","[Ne]"]"#;

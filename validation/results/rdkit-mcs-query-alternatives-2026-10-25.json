@@ -1,0 +1,79 @@
+{
+  "rdkit_version": "2026.09.1",
+  "script_sha256": "aa2e27a398b2f5669a3f1339dae447520b012c85de14f751adcc6aa9e175d311",
+  "cases": [
+    {
+      "smiles": [
+        "CO",
+        "NO",
+        "SO"
+      ],
+      "atom_compare": "Any",
+      "bond_compare": "OrderExact",
+      "atoms": 2,
+      "bonds": 1,
+      "smarts": "[#6,#7,#16]-[#8]",
+      "all_inputs_match": true,
+      "unseen_smiles": null,
+      "unseen_matches": null
+    },
+    {
+      "smiles": [
+        "CO",
+        "NO",
+        "SO"
+      ],
+      "atom_compare": "AnyHeavyAtom",
+      "bond_compare": "OrderExact",
+      "atoms": 2,
+      "bonds": 1,
+      "smarts": "[#6,#7,#16]-[#8]",
+      "all_inputs_match": true,
+      "unseen_smiles": null,
+      "unseen_matches": null
+    },
+    {
+      "smiles": [
+        "C=N",
+        "CN",
+        "C#N"
+      ],
+      "atom_compare": "Elements",
+      "bond_compare": "Any",
+      "atoms": 2,
+      "bonds": 1,
+      "smarts": "[#6]=,-,#[#7]",
+      "all_inputs_match": true,
+      "unseen_smiles": null,
+      "unseen_matches": null
+    },
+    {
+      "smiles": [
+        "CO",
+        "NO"
+      ],
+      "atom_compare": "Any",
+      "bond_compare": "OrderExact",
+      "atoms": 2,
+      "bonds": 1,
+      "smarts": "[#6,#7]-[#8]",
+      "all_inputs_match": true,
+      "unseen_smiles": "PO",
+      "unseen_matches": false
+    },
+    {
+      "smiles": [
+        "C=N",
+        "CN"
+      ],
+      "atom_compare": "Elements",
+      "bond_compare": "Any",
+      "atoms": 2,
+      "bonds": 1,
+      "smarts": "[#6]=,-[#7]",
+      "all_inputs_match": true,
+      "unseen_smiles": "C#N",
+      "unseen_matches": false
+    }
+  ]
+}

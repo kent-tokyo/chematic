@@ -325,11 +325,9 @@ pub fn neutralize_charges(mol: &MolHandle) -> MolHandle {
 }
 
 /// Reconstruct a concrete `Molecule` from a `QueryMolecule` produced by MCS
-/// search (atom queries are bare `AtomicNum` primitives; aromaticity is never a
-/// per-atom constraint, only carried via aromatic bond queries -- see
-/// `build_query`/`molecule_to_query` in `chematic-smarts`) -- shared by every
-/// MCS binding below so they can't silently drift apart on how a query result
-/// is turned back into a molecule.
+/// search by selecting the first input's observed atom and bond alternatives.
+/// Aromaticity is carried via aromatic bond queries rather than per-atom
+/// constraints. This conversion is shared by every MCS binding below.
 fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Molecule {
     use chematic_core::{Atom, AtomIdx, BondOrder, Element, MoleculeBuilder};
     use chematic_smarts::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery};
@@ -338,7 +336,19 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
         match q {
             AtomQuery::Primitive(AtomPrimitive::AtomicNum(n)) => Some(*n),
             AtomQuery::And(lhs, rhs) => extract_atomic_num(lhs).or_else(|| extract_atomic_num(rhs)),
+            AtomQuery::Or(lhs, _) => extract_atomic_num(lhs),
             _ => None,
+        }
+    }
+
+    // Choose the first input's bond order when MCS produced an observed-order OR.
+    fn first_bond_order(q: &BondQuery) -> BondOrder {
+        match q {
+            BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
+            BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
+            BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
+            BondQuery::Or(lhs, _) | BondQuery::And(lhs, _) => first_bond_order(lhs),
+            _ => BondOrder::Single,
         }
     }
 
@@ -349,10 +359,7 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
     let mut aromatic_atoms = vec![false; qmol.atoms.len()];
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
-            if matches!(
-                qmol.bonds[*bond_idx].query,
-                BondQuery::Primitive(BondPrimitive::Aromatic)
-            ) {
+            if first_bond_order(&qmol.bonds[*bond_idx].query) == BondOrder::Aromatic {
                 aromatic_atoms[atom_idx] = true;
                 aromatic_atoms[*neighbor_idx] = true;
             }
@@ -371,12 +378,7 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
     for (atom_idx, neighbors) in qmol.adj.iter().enumerate() {
         for (bond_idx, neighbor_idx) in neighbors {
             if atom_idx < *neighbor_idx {
-                let order = match &qmol.bonds[*bond_idx].query {
-                    BondQuery::Primitive(BondPrimitive::Double) => BondOrder::Double,
-                    BondQuery::Primitive(BondPrimitive::Triple) => BondOrder::Triple,
-                    BondQuery::Primitive(BondPrimitive::Aromatic) => BondOrder::Aromatic,
-                    _ => BondOrder::Single,
-                };
+                let order = first_bond_order(&qmol.bonds[*bond_idx].query);
                 let _ = builder.add_bond(
                     AtomIdx(atom_idx as u32),
                     AtomIdx(*neighbor_idx as u32),
