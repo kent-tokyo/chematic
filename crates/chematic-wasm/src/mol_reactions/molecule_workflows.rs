@@ -506,6 +506,49 @@ pub fn mcs_smiles_json_with_config(
     ))
 }
 
+/// MCS SMARTS with status, preserving atom and bond query alternatives.
+///
+/// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
+/// Configuration requiring charge, isotope, or chirality predicates is rejected
+/// because those constraints are not yet encoded in the returned SMARTS.
+#[wasm_bindgen]
+pub fn mcs_smarts_json_with_config(
+    smiles_json: &str,
+    config_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("config_json", config_json)?;
+    let mols = parse_mcs_input(smiles_json, "mcs_smarts_json_with_config")?;
+    let config: McsConfigJson =
+        serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
+    let config = config.into_mcs_config();
+    if config.match_chiral_tag || config.match_charge || config.match_isotope {
+        return Err(JsValue::from_str(
+            "MCS SMARTS does not encode matchChiralTag, matchCharge, or matchIsotope constraints",
+        ));
+    }
+
+    let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
+    let outcome = if rdkit_heavy {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+    } else {
+        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+    };
+    let was_timed_out = outcome.was_timed_out();
+    let was_resource_limited = outcome.was_resource_limited();
+    let query = outcome.into_query();
+    let smarts_json_value = if query.atoms.is_empty() {
+        "null".to_string()
+    } else {
+        let smarts = chematic_smarts::mcs_query_to_smarts(&query)
+            .map_err(|error| JsValue::from_str(&error.to_string()))?;
+        format!("\"{}\"", escape_json_string(&smarts))
+    };
+    Ok(format!(
+        r#"{{"smarts":{smarts_json_value},"wasTimedOut":{was_timed_out},"wasResourceLimited":{was_resource_limited}}}"#
+    ))
+}
+
 /// Find matched molecular pairs in a set of molecules as JSON.
 ///
 /// `smiles_json` — JSON array of SMILES strings to analyze.

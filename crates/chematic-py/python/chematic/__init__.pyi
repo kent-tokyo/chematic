@@ -4879,6 +4879,27 @@ def find_mcs_checked(
     """
     ...
 
+def find_mcs_smarts_checked(
+    mols: list[Mol],
+    match_bonds: bool = True,
+    min_atoms: int = 1,
+    timeout_ms: Optional[int] = None,
+    ring_matches_ring_only: bool = False,
+    complete_rings_only: bool = False,
+    atom_compare: McsAtomComparison = "elements",
+    bond_compare: McsBondComparison = "order_or_aromatic",
+    maximize_bonds: bool = True,
+    max_search_nodes: Optional[int] = None,
+) -> tuple[Optional[str], bool]:
+    """Return the MCS SMARTS query and whether the deadline stopped the search.
+
+    Unlike :func:`find_mcs_checked`, this retains all observed atom and bond
+    alternatives under relaxed comparison. A resource limit raises
+    ``ChematicInputError``. Charge, isotope, and chirality matching are not
+    exposed here because the returned query does not encode those constraints.
+    """
+    ...
+
 # ---------------------------------------------------------------------------
 # PipelineV2Config / PipelineV2Error (Mol.embed_pipeline_v2)
 # ---------------------------------------------------------------------------
