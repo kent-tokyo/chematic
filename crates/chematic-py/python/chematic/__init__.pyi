@@ -5828,6 +5828,14 @@ def write_gzmat(elements: Sequence[str], positions_angstrom: Sequence[Sequence[f
     ...
 
 
+def parse_molden(text: Union[str, bytes]) -> dict[str, Any]:
+    """Read the Molden geometry/vibration profile; refuse unsupported sections."""
+    ...
+
+def write_molden(record: dict[str, Any]) -> str:
+    """Write edited Molden geometry/vibration data with explicit source units."""
+    ...
+
 def parse_exyz(text: str, *, max_input_bytes: Optional[int] = None, max_atoms: Optional[int] = None, max_line_len: Optional[int] = None) -> dict[str, Any]:
     """Read ORCA-AICCM EXYZ with explicit virtual flags, lattice and offset."""
     ...

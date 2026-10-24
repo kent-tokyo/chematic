@@ -51,6 +51,21 @@ impl Default for BatchLimits {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Retain Molden geometry/vibration data; refuse electronic/trajectory sections.
+    Molden {
+        #[arg(short, long)]
+        input: Option<PathBuf>,
+        #[arg(short, long)]
+        output: Option<PathBuf>,
+        /// Emit an editable record as JSON.
+        #[arg(long, conflicts_with = "from_json")]
+        inspect: bool,
+        /// Read edited record JSON and write Molden text.
+        #[arg(long)]
+        from_json: bool,
+        #[arg(long,default_value_t=64*1024*1024)]
+        max_input_bytes: usize,
+    },
     /// Retain all explicit Cartesian GJF/COM Link1 jobs, or inspect them as JSON.
     GjfDocument {
         #[arg(short, long)]

@@ -14,6 +14,14 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ## [Unreleased]
 
+### Added
+
+- Molden geometry/vibration record read/write in Rust, Python, WASM/Node and
+  the CLI. Explicit atom units, Bohr vibration coordinates/displacements,
+  frequency signs, mode/atom IDs and optional IR/Raman data survive edits.
+  Electronic, convergence and trajectory sections are refused rather than
+  discarded. This is a bounded profile, not a general orbital-file reader.
+
 ### Fixed
 
 - The CML Cartesian/CJSON projection now resolves namespace prefixes and keeps

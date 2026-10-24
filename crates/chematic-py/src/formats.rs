@@ -38,6 +38,8 @@ use fhiaims::*;
 mod dmol3;
 use dmol3::*;
 mod exyz;
+mod molden;
+use molden::{parse_molden, write_molden};
 mod mopac;
 use exyz::*;
 mod gro;
@@ -1452,6 +1454,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         write_dmol3,
         select_pdb_atoms,
         parse_exyz,
+        parse_molden,
+        write_molden,
         write_exyz,
         parse_turbomole,
         write_turbomole,

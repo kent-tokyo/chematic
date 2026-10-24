@@ -1,0 +1,12 @@
+[Molden Format]
+[FREQ]
+1000.0
+[FR-COORD]
+H 0.0 0.0 0.0
+H 0.0 0.0 1.0
+[FR-NORM-COORD]
+vibration 1
+0.0 0.0 0.1
+0.0 0.0 -0.1
+[INT]
+12.5

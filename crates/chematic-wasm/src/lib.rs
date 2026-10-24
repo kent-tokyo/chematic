@@ -24,6 +24,8 @@ mod checked_matrices;
 mod chemdraw;
 mod ensemble_v2;
 mod format_io;
+mod molden;
+pub use molden::*;
 mod hin;
 mod mol_3d;
 mod mol_depict;

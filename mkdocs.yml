@@ -83,6 +83,7 @@ nav:
     - RDKit Support Matrix: reference/rdkit-migration.md
   - Formats & Bindings:
     - Format Capability Matrix: reference/format-capabilities.md
+    - Molden Geometry & Vibrations: reference/molden-vibrations.md
     - Language Bindings: reference/language-bindings.md
     - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md

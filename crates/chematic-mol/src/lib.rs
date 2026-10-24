@@ -41,6 +41,12 @@ pub mod cml_named;
 pub mod conversion;
 pub mod cube;
 pub mod dmol3;
+pub mod molden;
+pub use molden::{
+    MoldenAtom, MoldenAtoms, MoldenError, MoldenIntensity, MoldenLengthUnit, MoldenLimits,
+    MoldenNormalMode, MoldenRecord, MoldenVibrationAtom, molden_record_from_json, parse_molden,
+    parse_molden_with_limits, write_molden,
+};
 pub mod error;
 pub mod exyz;
 pub mod fhiaims;
