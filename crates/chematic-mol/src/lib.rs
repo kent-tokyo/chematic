@@ -22,6 +22,13 @@ pub use bgf::{
     parse_bgf, parse_bgf_with_limits, write_bgf,
 };
 
+pub mod dlpoly_history;
+pub use dlpoly_history::{
+    DlpolyHistory, DlpolyHistoryAtom, DlpolyHistoryError, DlpolyHistoryFrame, DlpolyHistoryLimits,
+    dlpoly_history_from_json, parse_dlpoly_history, parse_dlpoly_history_with_limits,
+    write_dlpoly_history,
+};
+
 pub mod nwchem;
 pub use nwchem::{
     NwchemCenter, NwchemError, NwchemGeometry, NwchemLimits, NwchemNucleus, NwchemPrint,

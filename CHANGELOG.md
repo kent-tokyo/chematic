@@ -16,6 +16,13 @@ and public releases follow [Semantic Versioning](https://semver.org/spec/v2.0.0.
 
 ### Added
 
+- Editable formatted DL-POLY Classic HISTORY trajectories in Rust, Python,
+  WASM/Node and CLI, retaining all frames, source atom IDs/order, changing cells,
+  masses, charges, positions, velocities, forces and integration timesteps in
+  raw source units. Modern/binary layouts, inconsistent metadata and numeric
+  values that cannot fit exact fixed-width output refuse. See
+  [HISTORY records](docs/reference/dlpoly-history.md) for the bounded profile
+  and the separate Open Babel all-frame coordinate comparison.
 - Editable Cartesian NWChem GEOMETRY blocks in Rust, Python, WASM/Node and CLI,
   preserving explicit/omitted units and controls, case-sensitive center tags,
   velocities, nuclear charges, isotope masses and nuclear models. Full job

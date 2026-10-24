@@ -1,0 +1,1011 @@
+{
+  "schema_version": 1,
+  "scope": "Six original nonperiodic C/O Classic HISTORY inputs; all-frame raw coordinate observation through native inspection versus Open Babel CJSON export with -m; not a pure parser or full semantic-preservation comparison",
+  "case_count": 6,
+  "timeout_seconds": 60,
+  "input_mode": "same seekable temporary file for both tools",
+  "command_templates": {
+    "chematic": [
+      "<cli>",
+      "dlpoly-history",
+      "--inspect",
+      "--input",
+      "<input.HISTORY>"
+    ],
+    "openbabel": [
+      "<obabel>",
+      "-iHISTORY",
+      "<input.HISTORY>",
+      "-ocjson",
+      "-O",
+      "<frame.cjson>",
+      "-m"
+    ]
+  },
+  "observed_counts": {
+    "chematic": 6,
+    "openbabel": 6
+  },
+  "exact_all_frame_counts": {
+    "chematic": 6,
+    "openbabel": 6
+  },
+  "versions": {
+    "chematic": "chematic 1.2.1",
+    "openbabel": "Open Babel 3.2.1 -- Jul 11 2026 -- 19:21:27"
+  },
+  "packet_sha256": "167008bd4ed35d458f37fba8f8c68d7f59c8dbd2e91e71afa913276898e3971b",
+  "source_sha256": {
+    "crates/chematic-mol/src/dlpoly_history.rs": "dce62ba537cb0a51c407ae953a6a44e5377da23090c96252d7606ad829159833",
+    "crates/chematic-mol/src/dlpoly_history/reader.rs": "c34cdc8b88dcbba42b6ed474d0c8601b05d223cf554f0979aa71260933c8d3a7",
+    "crates/chematic-mol/src/dlpoly_history/writer.rs": "f9e2f17a779f8558168837184a00fdb11c5a582ed786ac9ea43786cee919ee53",
+    "crates/chematic-cli/src/main.rs": "408db4e82944e58cc2455a744ebb4737358e05cc6fbd08cc2e939ec925d10c51",
+    "crates/chematic-cli/src/dispatch.rs": "ac210f9e98a7aab3b02f56b4384be00542050601a3867a506862c9b2e45e2385"
+  },
+  "binary_sha256": {
+    "chematic": "163e4b1cf24de91f86b447e33648bbce2922ec142f335b41127f5e63ed748723",
+    "openbabel": "733b2c925d60b17a5c9d8ce9ec841e918cc20c7634301e23f9008a187d1d9bc5"
+  },
+  "cases": [
+    {
+      "id": "two-frame-forces",
+      "input_sha256": "d2273c5b6e6d3764df90f7f26d46155717c19f8a7d22047f33b50dee88629792",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123579,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ddie2kz7/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 2,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    },\n    {\n      \"step\": 20,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123579,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ddie2kz7/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ddie2kz7/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ddie2kz7/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123579,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=20\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    },
+    {
+      "id": "level-0",
+      "input_sha256": "b4cdb23d070e4944b3f358290d2e2187e645d0f99f17b7f07d6b4d3c90ec3761",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123579,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-4rb2l0gj/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 0,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": null,\n          \"force\": null\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": null,\n          \"force\": null\n        }\n      ]\n    },\n    {\n      \"step\": 20,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123579,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": null,\n          \"force\": null\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": null,\n          \"force\": null\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-4rb2l0gj/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-4rb2l0gj/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-4rb2l0gj/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123579,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=20\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    },
+    {
+      "id": "level-1",
+      "input_sha256": "3309abef9c49f8f903c5e0f80e75a367e0d4adfc614ebfb3d0f72cd00a1d20af",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123579,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-x9wc2b0e/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 1,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": null\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": null\n        }\n      ]\n    },\n    {\n      \"step\": 20,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123579,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": null\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": null\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-x9wc2b0e/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-x9wc2b0e/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-x9wc2b0e/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123579,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=20\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    },
+    {
+      "id": "repeated-step-variable-delta",
+      "input_sha256": "8ecf46e772391f6ceeeb69a7ede6f680f1c7f5360f1b9bd78ba8b45467f35303",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123579,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-bonwygeb/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 2,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    },\n    {\n      \"step\": 10,\n      \"timestep\": 0.00025,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123579,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-bonwygeb/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-bonwygeb/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-bonwygeb/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123579,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    },
+    {
+      "id": "fortran-d-exponents",
+      "input_sha256": "891f03357506e3457438ba63d1408a3db2426de15a7887a25d62d1a64dc286da",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123579,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ygo17wwp/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 2,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 1e-7,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    },\n    {\n      \"step\": 20,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123579,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ygo17wwp/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ygo17wwp/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-ygo17wwp/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123579,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=20\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123579,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    },
+    {
+      "id": "within-twelve-column-precision",
+      "input_sha256": "b5246ac4f47222779fb7c20b73c1c46d247e00dc3099aefb071645645b406d1e",
+      "expected": [
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456789,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.234567,
+              -2.345678,
+              0.0
+            ]
+          ]
+        },
+        {
+          "elements": [
+            6,
+            8
+          ],
+          "positions": [
+            [
+              0.123456789,
+              -2.345678,
+              0.0
+            ],
+            [
+              1.23469,
+              -2.345678,
+              0.0
+            ]
+          ]
+        }
+      ],
+      "chematic": {
+        "status": "observed",
+        "command": [
+          "/Users/k_tanabe/Documents/Documents/oss_rust/chematic/.worktrees/cjson-preservation-20261024/target/io-scalars-20261024/build/debug/chematic",
+          "dlpoly-history",
+          "--inspect",
+          "--input",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-kvl9fkd2/input.HISTORY"
+        ],
+        "returncode": 0,
+        "stdout": "{\n  \"title\": \"original HISTORY trajectory\",\n  \"keytrj\": 2,\n  \"imcon\": 0,\n  \"atom_count\": 2,\n  \"frames\": [\n    {\n      \"step\": 10,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456789,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.234567,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    },\n    {\n      \"step\": 20,\n      \"timestep\": 0.002,\n      \"cell_vectors\": null,\n      \"atoms\": [\n        {\n          \"name\": \"C\",\n          \"index\": 1,\n          \"mass\": 12.011,\n          \"charge\": 0.123456,\n          \"position\": [\n            0.123456789,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        },\n        {\n          \"name\": \"O\",\n          \"index\": 2,\n          \"mass\": 15.999,\n          \"charge\": -0.123456,\n          \"position\": [\n            1.23469,\n            -2.345678,\n            0.0\n          ],\n          \"velocity\": [\n            0.0001,\n            -0.0002,\n            0.0\n          ],\n          \"force\": [\n            2.0,\n            -3.5,\n            0.25\n          ]\n        }\n      ]\n    }\n  ]\n}\n",
+        "stderr": "",
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456789,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456789,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      },
+      "openbabel": {
+        "status": "observed",
+        "command": [
+          "/opt/homebrew/Cellar/open-babel/3.2.1/bin/obabel",
+          "-iHISTORY",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-kvl9fkd2/input.HISTORY",
+          "-ocjson",
+          "-O",
+          "/var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-kvl9fkd2/frame.cjson",
+          "-m"
+        ],
+        "returncode": 0,
+        "stdout": "",
+        "stderr": "2 molecules converted\n2 files output. The first is /var/folders/_h/f8_99c4s0vn6f7lb4p3tq6km0000gn/T/chematic-history-comparison-kvl9fkd2/frame1.cjson\n",
+        "output_files": [
+          {
+            "name": "frame1.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456789,\n        -2.345678,\n        0.0,\n        1.234567,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=10\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          },
+          {
+            "name": "frame2.cjson",
+            "text": "{\n  \"chemicalJson\": 1,\n  \"atoms\": {\n    \"coords\": {\n      \"3d\": [\n        0.123456789,\n        -2.345678,\n        0.0,\n        1.23469,\n        -2.345678,\n        0.0\n      ]\n    },\n    \"elements\": {\n      \"number\": [\n        6,\n        8\n      ]\n    },\n    \"formalCharges\": [\n      0,\n      0\n    ]\n  },\n  \"partialCharges\": {\n    \"Gasteiger\": [\n      0.0,\n      0.0\n    ]\n  },\n  \"properties\": {\n    \"name\": \"original HISTORY trajectory: timestep=20\",\n    \"totalCharge\": 0,\n    \"totalSpinMultiplicity\": 1,\n    \"totalEnergy\": 0.0,\n    \"energies\": []\n  }\n}"
+          }
+        ],
+        "geometry": [
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456789,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.234567,
+                -2.345678,
+                0.0
+              ]
+            ]
+          },
+          {
+            "elements": [
+              6,
+              8
+            ],
+            "positions": [
+              [
+                0.123456789,
+                -2.345678,
+                0.0
+              ],
+              [
+                1.23469,
+                -2.345678,
+                0.0
+              ]
+            ]
+          }
+        ],
+        "frame_count_preserved": true,
+        "exact_all_frame_coordinates": true
+      }
+    }
+  ]
+}

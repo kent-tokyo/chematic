@@ -59,6 +59,7 @@ means the operation is not exposed on that binding.
 | Gaussian Cube | R/W | R/W | R/W | Volumetric grid profile |
 | OpenDX | R/W | R/W | R/W | Strict and explicitly lossy writers |
 | ChemDoodle JSON | bounded R/W | bounded R/W | — | Molecular graph subset |
+| DL-POLY HISTORY, Classic text | bounded R/W | bounded R/W | bounded R/W | [All-frame records in raw source units](dlpoly-history.md); modern/binary layouts refuse |
 | LAMMPS data | R/W | R/W | R/W | Units and atom styles are explicit |
 | LAMMPS dump/trajectory | R/W | R/W | R/W | Streaming/materialization differs by binding |
 | DMol3, MOPAC, FHI-aims, EXYZ | R/W | R/W | — | Cartesian geometry profiles |

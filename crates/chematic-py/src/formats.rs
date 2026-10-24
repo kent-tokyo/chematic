@@ -21,6 +21,8 @@ mod reaction_cx;
 mod registration;
 use reaction_cx::normalize_reaction_cxsmiles;
 
+mod dlpoly_history;
+use dlpoly_history::{parse_dlpoly_history, write_dlpoly_history};
 mod nwchem;
 use nwchem::{parse_nwchem_geometry, write_nwchem_geometry};
 mod bgf;
@@ -1462,6 +1464,8 @@ pub fn register(m: &Bound<'_, PyModule>) -> PyResult<()> {
         parse_dmol3,
         write_dmol3,
         select_pdb_atoms,
+        parse_dlpoly_history,
+        write_dlpoly_history,
         parse_nwchem_geometry,
         write_nwchem_geometry,
         parse_bgf,
