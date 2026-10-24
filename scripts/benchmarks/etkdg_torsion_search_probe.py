@@ -50,7 +50,7 @@ def select_tier_a() -> list[dict[str, str]]:
     return sorted(selected, key=lambda row: hashlib.sha256(row["smiles"].encode()).hexdigest())
 
 
-def select_chembl() -> list[dict[str, str]]:
+def select_chembl(start: int = 0) -> list[dict[str, str]]:
     known = {
         row["smiles"] for tier in ("a", "b")
         for row in json.loads((ROOT / f"validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_{tier}.json").read_text())["molecules"]
@@ -71,7 +71,7 @@ def select_chembl() -> list[dict[str, str]]:
         if any(float(torsion["V"][i]) != 0 for torsion in torsions for i in (4, 5)):
             continue
         selected.append({"name": f"chembl_corpus_{index:04d}", "smiles": smiles})
-    return sorted(selected, key=lambda row: hashlib.sha256(row["smiles"].encode()).hexdigest())[:12]
+    return sorted(selected, key=lambda row: hashlib.sha256(row["smiles"].encode()).hexdigest())[start:start + 12]
 
 
 def score_arm(mol: Chem.Mol, arm: dict, expected_cip: dict, expected_bonds: dict) -> dict:
@@ -96,13 +96,17 @@ def main() -> None:
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--tier", choices=("a", "b", "chembl"), required=True)
+    parser.add_argument("--chembl-start", type=int, default=0,
+                        help="start position in the eligible ChEMBL SMILES-hash order")
     args = parser.parse_args()
+    if args.chembl_start < 0 or (args.tier != "chembl" and args.chembl_start != 0):
+        parser.error("--chembl-start must be nonnegative and applies only to --tier chembl")
     if rdBase.rdkitVersion != "2026.09.1":
         parser.error(f"expected RDKit 2026.09.1, found {rdBase.rdkitVersion}")
     RDLogger.DisableLog("rdApp.*")
     selected = (select_tier_a() if args.tier == "a" else
                 prior.select_rows(start=12, count=21) if args.tier == "b" else
-                select_chembl())
+                select_chembl(args.chembl_start))
     assert len(selected) == {"a": 9, "b": 21, "chembl": 12}[args.tier]
     rows = []
     for row in selected:
@@ -137,8 +141,10 @@ def main() -> None:
         "schema_version": 1,
         "rdkit_version": rdBase.rdkitVersion,
         "tier": args.tier,
-        "selection": "Tier A all nine eligible; Tier B SHA-256 SMILES positions 12:33; ChEMBL 12 lowest SHA-256 among 851 RDKit-eligible molecules excluding Tier A/B SMILES",
-        "conditions": "ETKDGv3 seed 42; 20 CheMatic candidates per seed batch; RDKit 60 candidates; MMFF94 200 iterations; torsion arm adds at most 24 minimizations",
+        "selection": ("Tier A all nine eligible; Tier B SHA-256 SMILES positions 12:33; "
+                      f"ChEMBL SHA-256 SMILES positions {args.chembl_start}:{args.chembl_start + 12} "
+                      "among 851 RDKit-eligible molecules excluding Tier A/B SMILES"),
+        "conditions": "ETKDGv3 seed 42; 20 CheMatic candidates per seed batch; RDKit 60 candidates; MMFF94 200 iterations; torsion arm adds at most 48 minimizations across two passes",
         "hashes": {
             "binary": sha256(args.binary),
             "script": sha256(Path(__file__)),
