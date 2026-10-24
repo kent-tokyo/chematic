@@ -72,6 +72,12 @@ fn ring_label(number: usize, out: &mut String) {
 /// MCS. Other query predicates and malformed graphs return an error rather than
 /// silently changing which molecules match. An empty query serializes to `""`.
 pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsError> {
+    validate_graph(query)?;
+    let layout = forest_layout(query)?;
+    render_layout(query, &layout)
+}
+
+fn validate_graph(query: &QueryMolecule) -> Result<(), McsSmartsError> {
     let atom_count = query.atoms.len();
     if query.adj.len() != atom_count {
         return Err(McsSmartsError::InvalidGraph);
@@ -101,6 +107,17 @@ pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsErr
         return Err(McsSmartsError::InvalidGraph);
     }
 
+    Ok(())
+}
+
+struct Layout {
+    children: Vec<Vec<(usize, usize)>>,
+    ring_marks: Vec<Vec<(usize, usize, bool)>>,
+    roots: Vec<usize>,
+}
+
+fn forest_layout(query: &QueryMolecule) -> Result<Layout, McsSmartsError> {
+    let atom_count = query.atoms.len();
     let mut children: Vec<Vec<(usize, usize)>> = vec![Vec::new(); atom_count];
     let mut ring_marks: Vec<Vec<(usize, usize, bool)>> = vec![Vec::new(); atom_count];
     let mut visited = vec![false; atom_count];
@@ -144,6 +161,14 @@ pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsErr
         }
     }
 
+    Ok(Layout {
+        children,
+        ring_marks,
+        roots,
+    })
+}
+
+fn render_layout(query: &QueryMolecule, layout: &Layout) -> Result<String, McsSmartsError> {
     enum Action {
         Atom(usize),
         Bond(usize),
@@ -151,7 +176,7 @@ pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsErr
         Close,
     }
     let mut out = String::new();
-    for root in roots {
+    for &root in &layout.roots {
         if !out.is_empty() {
             out.push('.');
         }
@@ -171,14 +196,16 @@ pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsErr
                     out.push('[');
                     atom_expression(&atom.query, &mut out)?;
                     out.push(']');
-                    for &(bond_idx, ring, opening) in &ring_marks[atom_idx] {
+                    for &(bond_idx, ring, opening) in &layout.ring_marks[atom_idx] {
                         if opening {
                             bond_expression(&query.bonds[bond_idx].query, &mut out)?;
                         }
                         ring_label(ring, &mut out);
                     }
-                    let last = children[atom_idx].len().saturating_sub(1);
-                    for (index, &(bond_idx, child)) in children[atom_idx].iter().enumerate().rev() {
+                    let last = layout.children[atom_idx].len().saturating_sub(1);
+                    for (index, &(bond_idx, child)) in
+                        layout.children[atom_idx].iter().enumerate().rev()
+                    {
                         if index != last {
                             actions.push(Action::Close);
                         }
