@@ -153,11 +153,13 @@ def main():
                     'crates/chematic-mol/src/cml/lexical.rs',
                     'crates/chematic-mol/src/cml/geometry.rs', 'crates/chematic-mol/src/cml/geometry_xml.rs']
     baseline_commit = '342d1d5f9ad09aa6ade4e3079a902cba856209e2'
+    comparison_base = 'fcbf6d0a8c901dee5220cca965cf119c0a3b7b46'
     baseline_sources = [path for path in source_paths if not path.endswith('/lexical.rs')]
     if args.baseline:
-        subprocess.run(['git', 'diff', '--exit-code', baseline_commit, 'HEAD', '--', *baseline_sources], cwd=ROOT, check=True)
+        subprocess.run(['git', 'diff', '--exit-code', baseline_commit, comparison_base, '--', *baseline_sources], cwd=ROOT, check=True)
     record = dict(schema='chematic.cml-lexical-meaning-report.v1', baseline=args.baseline,
                   baseline_runtime_commit=baseline_commit if args.baseline else None,
+                  reader_comparison_base=comparison_base,
                   baseline_reader_sources=[identity(ROOT / path, subprocess.check_output(
                       ['git', 'show', baseline_commit + ':' + path], cwd=ROOT)) for path in baseline_sources] if args.baseline else [],
                   scope='synthetic development packet; graph/H observation only; native tests cover 2D coordinates separately; no schema/stereo/aromaticity/query/speed claim',
