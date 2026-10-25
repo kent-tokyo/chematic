@@ -31,7 +31,7 @@ rustc-hash = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tiny-skia = { version = "0.12", optional = true }
-harumi = { version = "1.23.2", default-features = false, features = ["svg"], optional = true }
+harumi = { version = "1.23.5", default-features = false, features = ["svg"], optional = true }
 
 [dev-dependencies]
 lopdf = { version = "0.46", default-features = false }

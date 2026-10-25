@@ -2,8 +2,8 @@
 
 use chematic_core::{Atom, BondOrder, Element, MoleculeBuilder};
 use chematic_depict::{
-    RenderOptions, depict_pdf, depict_pdf_opts, depict_reaction_svg, depict_svg, depict_svg_grid,
-    svg_to_pdf,
+    RenderOptions, compute_layout, depict_pdf, depict_pdf_opts, depict_reaction_svg, depict_svg,
+    depict_svg_grid, render_svg_with_metadata, svg_to_pdf,
 };
 use chematic_rxn::parse_reaction;
 use chematic_smiles::parse;
@@ -138,6 +138,53 @@ fn svg_conversion_matches_molecule_entry_point() {
             drawing_operators(&pdf)
                 .iter()
                 .any(|operator| operator == "S")
+        );
+    }
+}
+
+#[test]
+fn metadata_svg_converts_and_keeps_geometry() {
+    let molecule = parse("CCO").unwrap();
+    let layout = compute_layout(&molecule);
+    let svg = render_svg_with_metadata(&molecule, &layout, &RenderOptions::default(), "CCO");
+    assert!(svg.contains("<metadata><smiles>CCO</smiles></metadata>"));
+    let pdf = document(&svg_to_pdf(&svg));
+    assert!(drawing_operators(&pdf).iter().any(|op| op == "S"));
+}
+
+#[test]
+fn css_background_colors_convert_to_pdf() {
+    let molecule = parse("CCO").unwrap();
+    for (color, expected_rgb) in [
+        ("yellow", [1.0, 1.0, 0.0]),
+        ("rgb(255, 165, 0)", [1.0, 165.0 / 255.0, 0.0]),
+    ] {
+        let opts = RenderOptions {
+            background: color.into(),
+            ..Default::default()
+        };
+        let pdf = document(&depict_pdf_opts(&molecule, &opts));
+        assert!(
+            drawing_operators(&pdf).iter().any(|op| op == "f"),
+            "{color}: background should remain filled vector geometry"
+        );
+        let page_id = *pdf.get_pages().values().next().unwrap();
+        let content = pdf.get_and_decode_page_content(page_id).unwrap();
+        assert!(
+            content.operations.iter().any(|operation| {
+                operation.operator == "rg"
+                    && operation.operands.len() == 3
+                    && operation
+                        .operands
+                        .iter()
+                        .zip(expected_rgb)
+                        .all(|(value, expected)| {
+                            value
+                                .as_float()
+                                .is_ok_and(|actual| (actual - expected).abs() < 0.01)
+                        })
+            }),
+            "{color}: expected fill color {expected_rgb:?} in PDF content"
         );
     }
 }
