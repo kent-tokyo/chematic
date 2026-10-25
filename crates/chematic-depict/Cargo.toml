@@ -20,7 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 default = ["png"]
 # PNG rasterization via tiny-skia. Disable for WASM to save ~200 KB.
 png = ["dep:tiny-skia"]
-pdf = ["dep:harumi", "dep:aes"]
+pdf = ["dep:harumi"]
 
 [dependencies]
 chematic-core = { path = "../chematic-core", version = "1.2.1" }
@@ -31,9 +31,7 @@ rustc-hash = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 tiny-skia = { version = "0.12", optional = true }
-harumi = { version = "1.23.1", default-features = false, features = ["svg"], optional = true }
-# lopdf 0.46 permits aes 0.9.3 (Rust 1.89); constrain it until harumi #89 is fixed.
-aes = { version = "=0.9.2", optional = true }
+harumi = { version = "1.23.2", default-features = false, features = ["svg"], optional = true }
 
 [dev-dependencies]
 lopdf = { version = "0.46", default-features = false }
