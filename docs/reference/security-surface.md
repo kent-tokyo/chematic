@@ -56,7 +56,7 @@ advisory reported an exploit or patched release. The `svg2pdf` repository is
 archived, and its suggested successor `krilla-svg` 0.8.1 requires Rust 1.92,
 above chematic's Rust 1.88 minimum.
 
-The PDF depiction feature now uses `harumi` 1.23.1 with its SVG converter and
+The PDF depiction feature now uses `harumi` 1.23.2 with its SVG converter and
 an embedded OFL-licensed Lato font. This release fixes the text placement,
 three-digit hex colors, marker definitions, SVG path commands, and empty
 transform panics reported in harumi issues
@@ -69,16 +69,18 @@ dependency also removes the transitive `ttf-parser` reported in
 [#81](https://github.com/kent-tokyo/harumi/issues/81). The locked PDF
 depiction graph no longer contains `rustybuzz` or `ttf-parser`. The PDF export
 contract tests cover vector geometry, labels, dashed bonds, reaction and grid
-SVGs, page dimensions, and SVG text alignment. The `pdf` feature remains
-opt-in. Because `lopdf` 0.46 can otherwise select `aes` 0.9.3, which requires
-Rust 1.89, the PDF feature constrains `aes` to 0.9.2 until harumi
-[#89](https://github.com/kent-tokyo/harumi/issues/89) restores a compatible
-dependency resolution for Rust 1.88 consumers.
+SVGs, page dimensions, and SVG text alignment. Version 1.23.2 also fixes
+SVG subpath separation and polygon fill/stroke colors reported in
+[#92](https://github.com/kent-tokyo/harumi/issues/92) and
+[#91](https://github.com/kent-tokyo/harumi/issues/91). The `pdf` feature
+remains opt-in. Harumi now pins `aes` to 0.9.2 for Rust 1.88 consumers,
+resolving [#89](https://github.com/kent-tokyo/harumi/issues/89); chematic no
+longer needs its own temporary direct dependency.
 
 Upstream status: [svg2pdf](https://github.com/typst/svg2pdf),
 [krilla-svg 0.8.1](https://docs.rs/crate/krilla-svg/0.8.1),
 [resvg changelog](https://github.com/linebender/resvg/blob/main/CHANGELOG.md),
-[harumi v1.23.1](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.1).
+[harumi v1.23.2](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.2).
 
 ## Classification rule
 

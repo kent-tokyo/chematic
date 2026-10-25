@@ -397,7 +397,6 @@ dependencies = [
 name = "chematic-depict"
 version = "1.2.1"
 dependencies = [
- "aes",
  "chematic-core",
  "chematic-perception",
  "chematic-rxn",
@@ -1040,10 +1039,11 @@ dependencies = [
 
 [[package]]
 name = "harumi"
-version = "1.23.1"
+version = "1.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "055352ad4fbc6a2d4bd35ff0da8a1d19544e95512bb18abff5778d58aa5d50d4"
+checksum = "146481f458221fd3228166ce5d05b063052979ccfcba8160a8786c5cd4428aec"
 dependencies = [
+ "aes",
  "getrandom 0.4.3",
  "lopdf",
  "roxmltree",
