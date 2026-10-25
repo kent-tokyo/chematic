@@ -57,23 +57,32 @@ not a claim that the chain is free of future vulnerabilities.
 
 As of 2026-10-25, `svg2pdf` is archived and recommends `krilla-svg` as its
 successor. `krilla-svg` 0.8.1 requires Rust 1.92 and still uses `fontdb` 0.23,
-so it cannot currently meet chematic's Rust 1.88 minimum or clear both
-advisories. `harumi` 1.22.1 supports Rust 1.88, but has no SVG input API and
-directly depends on `ttf-parser`; its drawing API also lacks dash patterns.
-These gaps are tracked in harumi issues
-[#50](https://github.com/kent-tokyo/harumi/issues/50),
-[#51](https://github.com/kent-tokyo/harumi/issues/51), and
-[#52](https://github.com/kent-tokyo/harumi/issues/52).
+so it cannot meet chematic's Rust 1.88 minimum or clear both advisories.
+`harumi` 1.23.0 resolves the original SVG input, direct `ttf-parser`, and
+dash-pattern gaps ([#50](https://github.com/kent-tokyo/harumi/issues/50),
+[#51](https://github.com/kent-tokyo/harumi/issues/51),
+[#52](https://github.com/kent-tokyo/harumi/issues/52)). Its SVG converter
+passes the original four PDF structure tests after normalizing Chematic's
+`#333` color to `#333333`, but it does not honor `text-anchor` or
+`dominant-baseline`: atom labels shift in the resulting PDF. The new text
+placement regression test guards this behavior. The converter also rejects
+valid three-digit hex colors, and `harumi -> lopdf` still brings in the
+unmaintained `ttf-parser`. These remaining gaps are tracked in harumi issues
+[#79](https://github.com/kent-tokyo/harumi/issues/79),
+[#80](https://github.com/kent-tokyo/harumi/issues/80), and
+[#81](https://github.com/kent-tokyo/harumi/issues/81). Documented SVG path
+commands that do not work are tracked in
+[#82](https://github.com/kent-tokyo/harumi/issues/82).
 
 Until a replacement passes the PDF export contract test in CI and the Rust
 1.88 all-features check, the existing converter remains behind the `pdf`
-feature. Re-evaluate on a compatible SVG-to-PDF release or any new security
-advisory affecting the chain.
+feature. Re-evaluate when a compatible harumi release fixes PDF text placement
+or any new security advisory affects the chain.
 
 Upstream status: [svg2pdf](https://github.com/typst/svg2pdf),
 [krilla-svg 0.8.1](https://docs.rs/crate/krilla-svg/0.8.1),
 [resvg changelog](https://github.com/linebender/resvg/blob/main/CHANGELOG.md),
-[harumi manifest](https://github.com/kent-tokyo/harumi/blob/master/Cargo.toml).
+[harumi v1.23.0](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.0).
 
 ## Classification rule
 

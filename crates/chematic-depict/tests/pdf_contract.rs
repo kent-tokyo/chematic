@@ -56,6 +56,27 @@ fn drawing_operators(pdf: &Document) -> Vec<String> {
     operators
 }
 
+fn first_text_origin(pdf: &Document) -> [f32; 2] {
+    let page_id = *pdf.get_pages().values().next().unwrap();
+    let content = pdf.get_and_decode_page_content(page_id).unwrap();
+    let position = content
+        .operations
+        .iter()
+        .find(|operation| matches!(operation.operator.as_str(), "Tm" | "Td"))
+        .expect("PDF labels should have a text position");
+    let number = |operand: &Object| match operand {
+        Object::Integer(value) => *value as f32,
+        Object::Real(value) => *value,
+        other => panic!("expected a numeric text coordinate, got {other:?}"),
+    };
+    let coordinates = match position.operator.as_str() {
+        "Tm" => &position.operands[4..6],
+        "Td" => &position.operands[0..2],
+        _ => unreachable!(),
+    };
+    [number(&coordinates[0]), number(&coordinates[1])]
+}
+
 #[test]
 fn molecule_pdf_keeps_vector_geometry_and_atom_labels() {
     for smiles in ["c1ccccc1", "CCO", "[NH4+]"] {
@@ -138,4 +159,22 @@ fn explicit_dimensions_survive_pdf_conversion() {
         .map(|value| value.as_float().unwrap())
         .collect();
     assert_eq!(size, vec![0.0, 0.0, 320.0, 240.0]);
+}
+
+#[test]
+fn svg_text_anchor_and_baseline_change_pdf_position() {
+    let centered = r##"<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80"><text x="40" y="40" font-size="12" text-anchor="middle" dominant-baseline="central" fill="#3050F8">H4N+</text></svg>"##;
+    let start = centered
+        .replace("middle", "start")
+        .replace("central", "auto");
+    let centered_origin = first_text_origin(&document(&svg_to_pdf(centered)));
+    let start_origin = first_text_origin(&document(&svg_to_pdf(&start)));
+    assert!(
+        start_origin[0] - centered_origin[0] > 10.0,
+        "middle anchor should shift the text left: start={start_origin:?}, middle={centered_origin:?}"
+    );
+    assert!(
+        centered_origin[1] - start_origin[1] > 2.0,
+        "central baseline should shift the text vertically: start={start_origin:?}, central={centered_origin:?}"
+    );
 }
