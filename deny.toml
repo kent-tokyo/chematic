@@ -1,17 +1,7 @@
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-ignore = [
-    # ttf-parser: informational unmaintained advisory in the pdf-feature
-    # conversion chain (svg2pdf -> fontdb/usvg, and svg2pdf's own text feature).
-    # svg2pdf is archived; migration candidates and blockers are documented in
-    # docs/reference/security-surface.md.
-    "RUSTSEC-2026-0192",
-    # rustybuzz: informational unmaintained advisory in svg2pdf's pinned
-    # usvg/resvg font stack. Newer usvg/resvg have moved to harfrust, but the
-    # archived SVG-to-PDF converter cannot use those versions as-is.
-    "RUSTSEC-2026-0206",
-]
+ignore = []
 
 [licenses]
 allow = [

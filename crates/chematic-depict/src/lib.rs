@@ -202,40 +202,8 @@ pub fn svg_to_pdf(svg: &str) -> Vec<u8> {
 
 #[cfg(feature = "pdf")]
 fn svg_bytes_to_pdf(svg: &str) -> Vec<u8> {
-    use svg2pdf::usvg::fontdb::{Family, Query};
-
-    let mut options = svg2pdf::usvg::Options::default();
-    let fontdb = options.fontdb_mut();
-    fontdb.load_system_fonts();
-    // fontdb maps generic SVG families to Arial/Times New Roman by default.
-    // Headless Linux images often have neither, which silently drops atom
-    // labels from the PDF. Keep a licensed font as a fallback for that case.
-    fontdb.load_font_data(include_bytes!("../assets/Lato-Regular.ttf").to_vec());
-    if fontdb
-        .query(&Query {
-            families: &[Family::SansSerif],
-            ..Query::default()
-        })
-        .is_none()
-    {
-        fontdb.set_sans_serif_family("Lato");
-    }
-    if fontdb
-        .query(&Query {
-            families: &[Family::Serif],
-            ..Query::default()
-        })
-        .is_none()
-    {
-        fontdb.set_serif_family("Lato");
-    }
-    let tree = svg2pdf::usvg::Tree::from_str(svg, &options).expect("generated SVG should parse");
-    svg2pdf::to_pdf(
-        &tree,
-        svg2pdf::ConversionOptions::default(),
-        svg2pdf::PageOptions::default(),
-    )
-    .expect("PDF conversion should not fail for valid SVG")
+    harumi::svg_to_pdf(svg.as_bytes(), include_bytes!("../assets/Lato-Regular.ttf"))
+        .expect("PDF conversion should not fail for generated SVG")
 }
 
 /// Compute a 2D layout and render it as an EPS string.
