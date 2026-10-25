@@ -5,7 +5,7 @@
 ## Features
 
 - **SVG output**: vector graphics suitable for web and print
-- **PDF output**: `depict_pdf(mol)` / `depict_pdf_opts(mol, opts)` — via `svg2pdf`; enabled by default (`pdf` feature), excluded from WASM
+- **PDF output**: `depict_pdf(mol)` / `depict_pdf_opts(mol, opts)` — via `svg2pdf`; opt-in `pdf` feature
 - **EPS output**: `depict_eps(mol)` / `depict_eps_opts(mol, opts)` — pure Rust PostScript, no extra deps, always available
 - **Ring templates**: pre-drawn benzene and other common rings for cleaner depiction
 - **Stereo bonds**: wedge (Up) and dash (Down) for 3D stereochemistry
@@ -39,8 +39,8 @@ println!("{}", svg);  // Print SVG to stdout or write to file
 - `depict_smiles(smiles: &str, options: &DepictOptions) -> Result<String, DepictError>` — SVG from SMILES
 - `depict_molecule(mol: &Molecule, options: &DepictOptions) -> String` — SVG from Molecule
 - `depict_reaction(rxn_smiles: &str, options: &RenderOptions) -> Result<String, RenderError>` — reaction scheme SVG
-- `depict_pdf(mol: &Molecule) -> Vec<u8>` — PDF bytes (`pdf` feature; default on, excluded from WASM)
-- `depict_pdf_opts(mol: &Molecule, opts: &DepictOptions) -> Vec<u8>` — PDF with options
+- `depict_pdf(mol: &Molecule) -> Vec<u8>` — PDF bytes (`pdf` feature)
+- `depict_pdf_opts(mol: &Molecule, opts: &RenderOptions) -> Vec<u8>` — PDF with options
 - `depict_eps(mol: &Molecule) -> String` — EPS output (always available, pure Rust)
 - `depict_eps_opts(mol: &Molecule, opts: &DepictOptions) -> String` — EPS with options
 

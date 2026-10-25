@@ -50,13 +50,30 @@ so that `standard_inchi` returns IUPAC InChI instead of an error.
 - GitHub Linux AddressSanitizer, LeakSanitizer, and ThreadSanitizer all passed
   on the core/parser scope; focused Miri tests also passed in run 33588355817.
 
-The audit reported two unmaintained transitive packages (`rustybuzz` and
-`ttf-parser`) used by the depiction dependency chain. This is an explicitly
-accepted residual dependency risk, not a security vulnerability: the packages
-are not directly exposed as a public API, no vulnerable advisory is reported,
-and replacing the rendering chain would change artifact behavior. The release
-owner must re-evaluate this decision when upstream `usvg`/`resvg`/`svg2pdf`
-moves to maintained font components, or when an advisory affects the chain.
+The audit reported two informational unmaintained advisories for `rustybuzz`
+and `ttf-parser` in the PDF depiction chain. Neither advisory reports
+an exploit or patched release. This is an accepted residual dependency risk,
+not a claim that the chain is free of future vulnerabilities.
+
+As of 2026-10-25, `svg2pdf` is archived and recommends `krilla-svg` as its
+successor. `krilla-svg` 0.8.1 requires Rust 1.92 and still uses `fontdb` 0.23,
+so it cannot currently meet chematic's Rust 1.88 minimum or clear both
+advisories. `harumi` 1.22.1 supports Rust 1.88, but has no SVG input API and
+directly depends on `ttf-parser`; its drawing API also lacks dash patterns.
+These gaps are tracked in harumi issues
+[#50](https://github.com/kent-tokyo/harumi/issues/50),
+[#51](https://github.com/kent-tokyo/harumi/issues/51), and
+[#52](https://github.com/kent-tokyo/harumi/issues/52).
+
+Until a replacement passes the PDF export contract test in CI and the Rust
+1.88 all-features check, the existing converter remains behind the `pdf`
+feature. Re-evaluate on a compatible SVG-to-PDF release or any new security
+advisory affecting the chain.
+
+Upstream status: [svg2pdf](https://github.com/typst/svg2pdf),
+[krilla-svg 0.8.1](https://docs.rs/crate/krilla-svg/0.8.1),
+[resvg changelog](https://github.com/linebender/resvg/blob/main/CHANGELOG.md),
+[harumi manifest](https://github.com/kent-tokyo/harumi/blob/master/Cargo.toml).
 
 ## Classification rule
 

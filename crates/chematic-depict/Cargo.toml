@@ -34,3 +34,4 @@ tiny-skia = { version = "0.12", optional = true }
 svg2pdf = { version = "0.13", optional = true }
 
 [dev-dependencies]
+lopdf = { version = "0.42", default-features = false }

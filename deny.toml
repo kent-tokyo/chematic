@@ -2,17 +2,14 @@
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
 ignore = [
-    # ttf-parser: unmaintained, pulled in transitively via chematic-depict ->
-    # svg2pdf -> fontdb/usvg. No safe upgrade available (advisory's own
-    # recommendation is to migrate to `skrifa`, which is an upstream change
-    # in fontdb/usvg/svg2pdf, not something chematic controls directly).
+    # ttf-parser: informational unmaintained advisory in the pdf-feature
+    # conversion chain (svg2pdf -> fontdb/usvg, and svg2pdf's own text feature).
+    # svg2pdf is archived; migration candidates and blockers are documented in
+    # docs/reference/security-surface.md.
     "RUSTSEC-2026-0192",
-    # rustybuzz: unmaintained (informational, not a vulnerability -- no CVSS,
-    # no exploit class, no patched version exists). Transitive via
-    # chematic-depict -> svg2pdf -> resvg/usvg -> rustybuzz; not a direct
-    # dependency. Upstream recommendation is to migrate to `harfrust`, which
-    # is an usvg/resvg decision, not something chematic controls directly.
-    # Re-evaluate when usvg/resvg switches.
+    # rustybuzz: informational unmaintained advisory in svg2pdf's pinned
+    # usvg/resvg font stack. Newer usvg/resvg have moved to harfrust, but the
+    # archived SVG-to-PDF converter cannot use those versions as-is.
     "RUSTSEC-2026-0206",
 ]
 

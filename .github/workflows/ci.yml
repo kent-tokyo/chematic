@@ -81,6 +81,8 @@ jobs:
         # The Python extension uses PyO3's non-linking extension-module mode.
         # Its Rust unit tests run in the Python job with that feature disabled.
         run: cargo test --workspace --exclude chematic-py --lib --quiet
+      - name: PDF export contract
+        run: cargo test -p chematic-depict --features pdf --test pdf_contract --quiet
       - name: Refactor debt ratchet
         run: |
           python3 scripts/checks/check_refactor_budget.py
