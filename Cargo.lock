@@ -1039,9 +1039,9 @@ dependencies = [
 
 [[package]]
 name = "harumi"
-version = "1.23.5"
+version = "1.23.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a678e945a8f45491970be523c8f27f206db602bc7698d2134d8ae8216bbcf31b"
+checksum = "759253088ca33e8456d4af32fd8e00638ab6ae8bb2ce725d76ed4cebd58dfa4d"
 dependencies = [
  "aes",
  "getrandom 0.4.3",

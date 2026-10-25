@@ -56,7 +56,7 @@ advisory reported an exploit or patched release. The `svg2pdf` repository is
 archived, and its suggested successor `krilla-svg` 0.8.1 requires Rust 1.92,
 above chematic's Rust 1.88 minimum.
 
-The PDF depiction feature now uses `harumi` 1.23.5 with its SVG converter and
+The PDF depiction feature now uses `harumi` 1.23.7 with its SVG converter and
 an embedded OFL-licensed Lato font. This release fixes the text placement,
 three-digit hex colors, marker definitions, SVG path commands, and empty
 transform panics reported in harumi issues
@@ -66,8 +66,10 @@ transform panics reported in harumi issues
 [#85](https://github.com/kent-tokyo/harumi/issues/85), and
 [#86](https://github.com/kent-tokyo/harumi/issues/86). Updating its `lopdf`
 dependency also removes the transitive `ttf-parser` reported in
-[#81](https://github.com/kent-tokyo/harumi/issues/81). The locked PDF
-depiction graph no longer contains `rustybuzz` or `ttf-parser`. The PDF export
+[#81](https://github.com/kent-tokyo/harumi/issues/81). Harumi 1.23.7 removes
+the `ttf-parser` dependency reintroduced in 1.23.6
+([#115](https://github.com/kent-tokyo/harumi/issues/115)). The locked PDF
+depiction graph contains neither `rustybuzz` nor `ttf-parser`. The PDF export
 contract tests cover vector geometry, labels, dashed bonds, reaction and grid
 SVGs, page dimensions, and SVG text alignment. Version 1.23.2 also fixes
 SVG subpath separation and polygon fill/stroke colors reported in
@@ -83,7 +85,7 @@ longer needs its own temporary direct dependency.
 Upstream status: [svg2pdf](https://github.com/typst/svg2pdf),
 [krilla-svg 0.8.1](https://docs.rs/crate/krilla-svg/0.8.1),
 [resvg changelog](https://github.com/linebender/resvg/blob/main/CHANGELOG.md),
-[harumi v1.23.5](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.5).
+[harumi v1.23.7](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.7).
 
 ## Classification rule
 
