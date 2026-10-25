@@ -173,8 +173,9 @@ fn svg_text_anchor_and_baseline_change_pdf_position() {
         start_origin[0] - centered_origin[0] > 10.0,
         "middle anchor should shift the text left: start={start_origin:?}, middle={centered_origin:?}"
     );
+    // SVG y increases downward; PDF text origins increase upward.
     assert!(
-        centered_origin[1] - start_origin[1] > 2.0,
+        start_origin[1] - centered_origin[1] > 2.0,
         "central baseline should shift the text vertically: start={start_origin:?}, central={centered_origin:?}"
     );
 }

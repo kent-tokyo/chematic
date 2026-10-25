@@ -5,8 +5,8 @@
 ## Features
 
 - **SVG output**: vector graphics suitable for web and print
-- **PDF output**: `depict_pdf(mol)` / `depict_pdf_opts(mol, opts)` — via `svg2pdf`; opt-in `pdf` feature
-- **Headless PDF fonts**: an OFL-licensed Lato fallback keeps atom labels visible when generic system fonts are unavailable
+- **PDF output**: `depict_pdf(mol)` / `depict_pdf_opts(mol, opts)` — via `harumi`; opt-in `pdf` feature
+- **Headless PDF fonts**: an embedded OFL-licensed Lato font keeps atom labels visible without system fonts
 - **EPS output**: `depict_eps(mol)` / `depict_eps_opts(mol, opts)` — pure Rust PostScript, no extra deps, always available
 - **Ring templates**: pre-drawn benzene and other common rings for cleaner depiction
 - **Stereo bonds**: wedge (Up) and dash (Down) for 3D stereochemistry

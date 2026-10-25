@@ -50,39 +50,35 @@ so that `standard_inchi` returns IUPAC InChI instead of an error.
 - GitHub Linux AddressSanitizer, LeakSanitizer, and ThreadSanitizer all passed
   on the core/parser scope; focused Miri tests also passed in run 33588355817.
 
-The audit reported two informational unmaintained advisories for `rustybuzz`
-and `ttf-parser` in the PDF depiction chain. Neither advisory reports
-an exploit or patched release. This is an accepted residual dependency risk,
-not a claim that the chain is free of future vulnerabilities.
+The original audit reported two informational unmaintained advisories for
+`rustybuzz` and `ttf-parser` in the `svg2pdf` PDF depiction chain. Neither
+advisory reported an exploit or patched release. The `svg2pdf` repository is
+archived, and its suggested successor `krilla-svg` 0.8.1 requires Rust 1.92,
+above chematic's Rust 1.88 minimum.
 
-As of 2026-10-25, `svg2pdf` is archived and recommends `krilla-svg` as its
-successor. `krilla-svg` 0.8.1 requires Rust 1.92 and still uses `fontdb` 0.23,
-so it cannot meet chematic's Rust 1.88 minimum or clear both advisories.
-`harumi` 1.23.0 resolves the original SVG input, direct `ttf-parser`, and
-dash-pattern gaps ([#50](https://github.com/kent-tokyo/harumi/issues/50),
-[#51](https://github.com/kent-tokyo/harumi/issues/51),
-[#52](https://github.com/kent-tokyo/harumi/issues/52)). Its SVG converter
-passes the original four PDF structure tests after normalizing Chematic's
-`#333` color to `#333333`, but it does not honor `text-anchor` or
-`dominant-baseline`: atom labels shift in the resulting PDF. The new text
-placement regression test guards this behavior. The converter also rejects
-valid three-digit hex colors, and `harumi -> lopdf` still brings in the
-unmaintained `ttf-parser`. These remaining gaps are tracked in harumi issues
+The PDF depiction feature now uses `harumi` 1.23.1 with its SVG converter and
+an embedded OFL-licensed Lato font. This release fixes the text placement,
+three-digit hex colors, marker definitions, SVG path commands, and empty
+transform panics reported in harumi issues
 [#79](https://github.com/kent-tokyo/harumi/issues/79),
-[#80](https://github.com/kent-tokyo/harumi/issues/80), and
-[#81](https://github.com/kent-tokyo/harumi/issues/81). Documented SVG path
-commands that do not work are tracked in
-[#82](https://github.com/kent-tokyo/harumi/issues/82).
-
-Until a replacement passes the PDF export contract test in CI and the Rust
-1.88 all-features check, the existing converter remains behind the `pdf`
-feature. Re-evaluate when a compatible harumi release fixes PDF text placement
-or any new security advisory affects the chain.
+[#80](https://github.com/kent-tokyo/harumi/issues/80),
+[#82](https://github.com/kent-tokyo/harumi/issues/82),
+[#85](https://github.com/kent-tokyo/harumi/issues/85), and
+[#86](https://github.com/kent-tokyo/harumi/issues/86). Updating its `lopdf`
+dependency also removes the transitive `ttf-parser` reported in
+[#81](https://github.com/kent-tokyo/harumi/issues/81). The locked PDF
+depiction graph no longer contains `rustybuzz` or `ttf-parser`. The PDF export
+contract tests cover vector geometry, labels, dashed bonds, reaction and grid
+SVGs, page dimensions, and SVG text alignment. The `pdf` feature remains
+opt-in. Because `lopdf` 0.46 can otherwise select `aes` 0.9.3, which requires
+Rust 1.89, the PDF feature constrains `aes` to 0.9.2 until harumi
+[#89](https://github.com/kent-tokyo/harumi/issues/89) restores a compatible
+dependency resolution for Rust 1.88 consumers.
 
 Upstream status: [svg2pdf](https://github.com/typst/svg2pdf),
 [krilla-svg 0.8.1](https://docs.rs/crate/krilla-svg/0.8.1),
 [resvg changelog](https://github.com/linebender/resvg/blob/main/CHANGELOG.md),
-[harumi v1.23.0](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.0).
+[harumi v1.23.1](https://github.com/kent-tokyo/harumi/releases/tag/v1.23.1).
 
 ## Classification rule
 
