@@ -74,7 +74,7 @@ jobs:
       - name: Keep pinned corpora byte-identical (no CRLF conversion)
         run: git config --global core.autocrlf false
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v6
         with:
           python-version: ${{ matrix.python }}
       - name: Download and install the published wheel (no RDKit)
@@ -131,7 +131,7 @@ jobs:
         label: [linux-x86_64-cp39, macos-arm64-cp312, macos-x86_64-cp312, windows-amd64-cp312]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v6
         with:
           python-version: "3.12"
       - name: Install the pinned RDKit wheel
@@ -210,7 +210,7 @@ jobs:
         shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v6
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v6
         with:
           python-version: "3.12"
       - name: Preserve pinned rule bytes on every platform
