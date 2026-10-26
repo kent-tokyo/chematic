@@ -210,7 +210,7 @@ jobs:
         run: |
           python scripts/release/check_pypi_dist.py --dist dist --version "${GITHUB_REF_NAME#v}"
           python scripts/checks/check_python_stubs.py --wheel "dist/chematic-*.whl"
-      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
         with:
           skip-existing: true
       - name: Verify published file hashes against the built distributions
