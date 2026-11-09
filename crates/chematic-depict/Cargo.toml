@@ -34,4 +34,4 @@ tiny-skia = { version = "0.12", optional = true }
 harumi = { version = "1.23.8", default-features = false, features = ["svg"], optional = true }
 
 [dev-dependencies]
-lopdf = { version = "0.46", default-features = false }
+lopdf = { version = "0.47", default-features = false }
