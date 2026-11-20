@@ -501,19 +501,7 @@ impl Mol {
 
     /// MACCS 166-bit keys as bytes (21 bytes, LSB-first).
     fn maccs(&self) -> Vec<u8> {
-        let fp = chematic_fp::maccs(&self.inner);
-        (0..21usize)
-            .map(|byte_idx| {
-                let mut byte = 0u8;
-                for bit in 0..8usize {
-                    let global_bit = byte_idx * 8 + bit;
-                    if global_bit < 166 && fp.get(global_bit) {
-                        byte |= 1 << bit;
-                    }
-                }
-                byte
-            })
-            .collect()
+        chematic_fp::maccs(&self.inner).to_le_bytes()[..21].to_vec()
     }
 
     // -----------------------------------------------------------------------
