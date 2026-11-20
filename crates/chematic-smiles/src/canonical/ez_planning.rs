@@ -74,6 +74,9 @@ impl<'a> CanonicalWriter<'a> {
     /// end will carry no marker in this output (RDKit drops such tokens, so
     /// writing one would make the canonical form unstable).
     fn suppress_lone_marker(&self, bidx: BondIdx, order: BondOrder) -> BondOrder {
+        if matches!(order, BondOrder::Up | BondOrder::Down) && self.marks_cumulene(bidx) {
+            return order;
+        }
         let order = suppress_standalone_wedge(self.mol, bidx, order);
         if !matches!(order, BondOrder::Up | BondOrder::Down) {
             return order;
@@ -102,6 +105,26 @@ impl<'a> CanonicalWriter<'a> {
         } else {
             Self::plain_order(self.mol.bond(bidx).order)
         }
+    }
+
+    fn marks_cumulene(&self, bond: BondIdx) -> bool {
+        let carrier = self.mol.bond(bond);
+        self.ez_geometry_facts
+            .iter()
+            .filter(|fact| fact.cumulene)
+            .any(|fact| {
+                fact.ends
+                    .iter()
+                    .any(|end| carrier.other(end.atom).is_some())
+                    && fact.ends.iter().all(|end| {
+                        self.mol.neighbors(end.atom).any(|(_, adjacent)| {
+                            matches!(
+                                self.effective_order(adjacent),
+                                BondOrder::Up | BondOrder::Down
+                            )
+                        })
+                    })
+            })
     }
 
     fn effective_order(&self, bidx: BondIdx) -> BondOrder {
@@ -220,10 +243,22 @@ impl<'a> CanonicalWriter<'a> {
             return;
         }
         self.ez_geometry_facts = self.extract_ez_geometry_facts();
-        let stereo_alkene_ends = Self::compute_stereo_alkene_ends(self.mol);
+        let stereo_alkene_ends = self.stereo_ends_for_marker_choice();
         for component in Self::coupling_components(self.mol, &stereo_alkene_ends) {
             self.resolve_component_jointly(&component);
         }
+    }
+
+    fn stereo_ends_for_marker_choice(&self) -> HashSet<AtomIdx> {
+        let mut ends = Self::compute_stereo_alkene_ends(self.mol);
+        ends.extend(
+            self.ez_geometry_facts
+                .iter()
+                .filter(|fact| fact.cumulene)
+                .flat_map(|fact| fact.ends.map(|end| end.atom))
+                .filter(|&end| Self::substituent_count(self.mol, end) == 2),
+        );
+        ends
     }
 
     fn end_has_substituent(mol: &Molecule, end: AtomIdx) -> bool {
@@ -569,11 +604,7 @@ impl<'a> CanonicalWriter<'a> {
         }
     }
 
-    fn resolve_singleton_component(
-        &mut self,
-        end: AtomIdx,
-        pair: [(AtomIdx, BondIdx); 2],
-    ) -> bool {
+    fn resolve_singleton_component(&mut self, end: AtomIdx, pair: [(AtomIdx, BondIdx); 2]) -> bool {
         let preferred = self.preferred_carrier(&pair);
         let Some(reference_up) = self.geometry_reference_up(end, &pair, preferred) else {
             return false;
@@ -583,7 +614,8 @@ impl<'a> CanonicalWriter<'a> {
             if self.is_load_bearing_elsewhere(demoted, end) {
                 continue;
             }
-            let chosen_up = chosen == preferred && reference_up || chosen != preferred && !reference_up;
+            let chosen_up =
+                chosen == preferred && reference_up || chosen != preferred && !reference_up;
             let chosen_bond = pair[chosen].1;
             let order = Self::direction_for_up(self.mol.bond(chosen_bond).atom1, end, chosen_up);
             self.ez_marker.insert(chosen_bond, order);
@@ -614,13 +646,9 @@ impl<'a> CanonicalWriter<'a> {
             let choices: Vec<usize> = (0..ordered.len())
                 .map(|index| ((mask >> index) & 1) as usize)
                 .collect();
-            if let Some(plan) = self.evaluate_choice(
-                ordered,
-                substituents,
-                &preferred,
-                &reference_up,
-                &choices,
-            ) {
+            if let Some(plan) =
+                self.evaluate_choice(ordered, substituents, &preferred, &reference_up, &choices)
+            {
                 let deviations = choices
                     .iter()
                     .zip(&preferred)
@@ -707,33 +735,43 @@ impl<'a> CanonicalWriter<'a> {
     /// relations to preserve, rather than parse-time marker locations to
     /// imitate.
     fn extract_ez_geometry_facts(&self) -> Vec<EzGeometryFact> {
-        let mut facts = Vec::new();
-        for (double_bond, bond) in self.mol.bonds() {
-            if bond.order != BondOrder::Double {
-                continue;
-            }
-            let Some(left) = self.extract_ez_geometry_end(bond.atom1) else {
-                continue;
-            };
-            let Some(right) = self.extract_ez_geometry_end(bond.atom2) else {
-                continue;
-            };
-            let mut double_key = (
-                self.ranks[bond.atom1.0 as usize],
-                self.ranks[bond.atom2.0 as usize],
-            );
-            if double_key.1 < double_key.0 {
-                double_key = (double_key.1, double_key.0);
-            }
-            facts.push(EzGeometryFact {
-                double_bond,
-                double_key,
-                ends: [left, right],
-                same_side: left.up == right.up,
+        let direct = self
+            .mol
+            .bonds()
+            .filter(|(_, bond)| bond.order == BondOrder::Double)
+            .filter_map(|(idx, bond)| {
+                let left = self.extract_ez_geometry_end(bond.atom1, None)?;
+                let right = self.extract_ez_geometry_end(bond.atom2, None)?;
+                Some(self.geometry_fact(idx, [left, right], false))
             });
-        }
+        let cumulative = chematic_core::cumulene::planar_cumulenes(self.mol)
+            .into_iter()
+            .filter_map(|axis| {
+                let [near, far] = axis.ends;
+                let left = self.extract_ez_geometry_end(near.atom, Some(near))?;
+                let right = self.extract_ez_geometry_end(far.atom, Some(far))?;
+                Some(self.geometry_fact(axis.middle_bond, [left, right], true))
+            });
+        let mut facts = direct.chain(cumulative).collect::<Vec<_>>();
         facts.sort_by_key(|fact| fact.double_key);
         facts
+    }
+
+    fn geometry_fact(
+        &self,
+        double_bond: BondIdx,
+        ends: [EzGeometryEnd; 2],
+        cumulene: bool,
+    ) -> EzGeometryFact {
+        let mut ranks = ends.map(|end| self.ranks[end.atom.0 as usize]);
+        ranks.sort_unstable();
+        EzGeometryFact {
+            double_bond,
+            cumulene,
+            double_key: (ranks[0], ranks[1]),
+            ends,
+            same_side: ends[0].up == ends[1].up,
+        }
     }
 
     /// Every physical bond whose token may need an explicit choice for an
@@ -743,7 +781,7 @@ impl<'a> CanonicalWriter<'a> {
     /// component.  The latter is the essential #503 boundary: excluding it
     /// leaves no common semantic output for the held-out residuals.
     fn complete_ez_plan_slots(&self) -> Vec<BondIdx> {
-        let ends = Self::compute_stereo_alkene_ends(self.mol);
+        let ends = self.stereo_ends_for_marker_choice();
         let mut slots: Vec<_> = Self::coupling_components(self.mol, &ends)
             .into_iter()
             .flatten()
@@ -860,20 +898,23 @@ impl<'a> CanonicalWriter<'a> {
     /// Read one rank-fixed reference substituent's side.  A monosubstituted
     /// end has no carrier freedom; a disubstituted end uses the same
     /// rank-fixed/sibling-complement rule as [`Self::reference_up`].
-    fn extract_ez_geometry_end(&self, alkene_end: AtomIdx) -> Option<EzGeometryEnd> {
+    fn extract_ez_geometry_end(
+        &self,
+        alkene_end: AtomIdx,
+        cumulative: Option<chematic_core::ez_markers::EzFactEnd>,
+    ) -> Option<EzGeometryEnd> {
         let subs = Self::substituents(self.mol, alkene_end);
-        let (reference, up) = match subs.as_slice() {
-            [reference] => {
-                let direction = self.raw_input_direction(reference.1)?;
-                (
-                    *reference,
+        let (reference, raw_up) = match subs.as_slice() {
+            [reference] => (
+                *reference,
+                self.raw_input_direction(reference.1).map(|direction| {
                     Self::direction_is_up(
                         direction,
                         self.raw_direction_anchor(reference.1),
                         alkene_end,
-                    ),
-                )
-            }
+                    )
+                }),
+            ),
             [first, second] => {
                 let pair = [*first, *second];
                 let preferred = usize::from(
@@ -881,10 +922,14 @@ impl<'a> CanonicalWriter<'a> {
                 );
                 (
                     pair[preferred],
-                    self.reference_up(alkene_end, &pair, preferred)?,
+                    self.reference_up(alkene_end, &pair, preferred),
                 )
             }
             _ => return None,
+        };
+        let up = match cumulative {
+            Some(configured) => configured.up ^ (configured.reference != reference.1),
+            None => raw_up?,
         };
         Some(EzGeometryEnd {
             atom: alkene_end,
@@ -989,7 +1034,6 @@ impl<'a> CanonicalWriter<'a> {
         }
         Some(votes)
     }
-
 }
 
 fn deviation_count(bits: &[u8]) -> u32 {

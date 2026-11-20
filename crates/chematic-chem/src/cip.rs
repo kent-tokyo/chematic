@@ -1368,8 +1368,12 @@ fn assign_ez_accurate(
     if subs_a1.is_empty() || subs_a2.is_empty() {
         return None;
     }
-    let up_a1 = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker)?;
-    let up_a2 = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker)?;
+    let up_a1 = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker, |sub| {
+        substituent_is_up(mol, a1, sub)
+    })?;
+    let up_a2 = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker, |sub| {
+        substituent_is_up(mol, a2, sub)
+    })?;
     let code = if up_a1 == up_a2 {
         CipCode::Z
     } else {
@@ -1385,18 +1389,16 @@ fn highest_stereo_sub_accurate(
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
     ranker: &LazyEzRanker<'_>,
+    side: impl Fn(AtomIdx) -> Option<bool>,
 ) -> Option<bool> {
     // No marker on either substituent: nothing to read (see
     // `highest_stereo_sub`).
-    if subs
-        .iter()
-        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
-    {
+    if subs.iter().all(|&sub| side(sub).is_none()) {
         return None;
     }
     let (top, other) = match subs {
         [only] => {
-            let up = substituent_is_up(mol, alkene_end, *only)?;
+            let up = side(*only)?;
             if mol.atom(*only).element != Element::H || implicit_hcount(mol, alkene_end) == 0 {
                 return Some(up);
             }
@@ -1418,13 +1420,15 @@ fn highest_stereo_sub_accurate(
         },
         _ => return None,
     };
-    if let Some(up) = substituent_is_up(mol, alkene_end, top) {
+    if let Some(up) = side(top) {
         return Some(up);
     }
-    let other_up = substituent_is_up(mol, alkene_end, other?)?;
+    let other_up = side(other?)?;
     Some(!other_up)
 }
 
+mod cumulene_ez;
+pub use cumulene_ez::{CumuleneEzAssignment, assign_cumulene_ez};
 mod ez_completeness;
 pub use ez_completeness::{EzCompleteness, ez_completeness};
 

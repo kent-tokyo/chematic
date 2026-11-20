@@ -459,17 +459,18 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
 /// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
 /// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+/// Configured odd cumulenes carry the full path as `cumuleneAtoms`, from `atomIdx`.
 /// Saturated ring lone-pair centres use the molecule's recorded ligand order.
 /// Returns `"null"` on an internal engine error (budget-independent computations
 /// should not normally hit this).
 #[wasm_bindgen]
 pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
     match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
-        Ok(result) => cip_code_pairs_to_json_marked(&result.assignments, |idx| {
-            // A cyclophosphazene P's label flips with the ring's Kekulé
-            // spelling (as RDKit's does).
-            chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
-        }),
+        Ok(result) => cip_code_pairs_to_json_marked(
+            &result.assignments,
+            &chematic_chem::assign_cumulene_ez(&mol.inner),
+            |idx| chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx),
+        ),
         Err(_) => "null".to_string(),
     }
 }
@@ -503,16 +504,17 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
 }
 
 fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
-    cip_code_pairs_to_json_marked(pairs, |_| false)
+    cip_code_pairs_to_json_marked(pairs, &[], |_| false)
 }
 
 /// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
 /// `kekule_dependent` selects.
 fn cip_code_pairs_to_json_marked(
     pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
+    cumulenes: &[chematic_chem::CumuleneEzAssignment],
     kekule_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
 ) -> String {
-    let parts: Vec<String> = pairs
+    let mut parts: Vec<String> = pairs
         .iter()
         .map(|(idx, code)| {
             let code_str = match code {
@@ -533,6 +535,16 @@ fn cip_code_pairs_to_json_marked(
             )
         })
         .collect();
+    parts.extend(cumulenes.iter().map(|axis| {
+        let atoms: Vec<_> = axis.atoms.iter().map(|atom| atom.0).collect();
+        let code = if axis.descriptor == chematic_core::CipCode::E {
+            "E"
+        } else {
+            "Z"
+        };
+        serde_json::json!({"atomIdx": atoms[0], "cumuleneAtoms": atoms, "cipCode": code})
+            .to_string()
+    }));
     format!("[{}]", parts.join(","))
 }
 

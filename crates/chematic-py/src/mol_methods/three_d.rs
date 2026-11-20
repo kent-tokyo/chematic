@@ -174,7 +174,9 @@ impl Mol {
     /// An ``"E"``/``"Z"`` entry's ``atom_idx`` is the double bond's first atom;
     /// such entries also carry ``"bond_idx"`` and ``"bond_atoms"`` (the
     /// double bond's index and its two atoms).
-    /// Only assigned stereocenters / double bonds are returned.
+    /// Configured odd cumulenes in ``"accurate"`` mode carry ``"cumulene_atoms"``
+    /// (the full chain in order, starting at ``atom_idx``).
+    /// Only assigned stereogenic units are returned.
     ///
     /// ``mode`` selects the CIP engine:
     ///
@@ -220,7 +222,7 @@ impl Mol {
                 )));
             }
         };
-        assignments
+        let mut entries = assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
@@ -255,7 +257,25 @@ impl Mol {
                 }
                 Ok(d)
             })
-            .collect()
+            .collect::<PyResult<Vec<_>>>()?;
+        if mode == "accurate" {
+            for axis in chematic_chem::assign_cumulene_ez(&self.inner) {
+                let d = PyDict::new(py);
+                let atoms: Vec<_> = axis.atoms.iter().map(|atom| atom.0).collect();
+                d.set_item("atom_idx", atoms[0])?;
+                d.set_item("cumulene_atoms", atoms)?;
+                d.set_item(
+                    "descriptor",
+                    if axis.descriptor == CipCode::E {
+                        "E"
+                    } else {
+                        "Z"
+                    },
+                )?;
+                entries.push(d);
+            }
+        }
+        Ok(entries)
     }
 
     /// Atoms :meth:`cip_stereo`\ (``mode="accurate"``) could not resolve a tetrahedral

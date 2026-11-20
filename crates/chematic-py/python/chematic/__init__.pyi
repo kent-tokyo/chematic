@@ -2387,7 +2387,8 @@ class Mol:
         """CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
 
         ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"`` or ``"s"``;
-        E/Z entries also carry ``"bond_idx"`` and ``"bond_atoms"``.
+        E/Z entries for individual bonds carry ``"bond_idx"`` and ``"bond_atoms"``.
+        Odd cumulenes in accurate mode carry the full path as ``"cumulene_atoms"``.
         ``mode="accurate"`` uses the hierarchical-digraph engine; its labels
         that flip with the ring's Kekulé spelling carry ``"kekule_dependent":
         True``. Saturated ring lone-pair centres use the recorded ligand order.

@@ -16,9 +16,16 @@ CORPORA = (ROOT / 'validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi',
 
 
 def source_labels(values):
-    return sorted(['b', *sorted(v['bond_atoms']), v['descriptor']]
-                   if 'bond_idx' in v else ['a', v['atom_idx'], v['descriptor']]
-                  for v in values)
+    labels = []
+    for row in values:
+        if 'cumulene_atoms' in row:
+            axis = row['cumulene_atoms']
+            labels.append(['c', *min(axis, axis[::-1]), row['descriptor']])
+        elif 'bond_idx' in row:
+            labels.append(['b', *sorted(row['bond_atoms']), row['descriptor']])
+        else:
+            labels.append(['a', row['atom_idx'], row['descriptor']])
+    return sorted(labels)
 
 
 def rdkit_labels(mol):

@@ -19,6 +19,7 @@ pub mod atom;
 pub mod atomic_weight;
 pub mod bond;
 pub mod coords3d;
+pub mod cumulene;
 pub mod derived_cache;
 pub mod element;
 pub mod extension;
