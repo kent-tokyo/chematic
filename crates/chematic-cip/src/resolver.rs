@@ -22,7 +22,7 @@ use crate::assign::{
 use crate::budget::CipBudget;
 use crate::compare::{CipCompareError, CompareContext, rank_children};
 use crate::digraph::CipDigraph;
-use crate::mancude::MancudeContext;
+use crate::mancude::PreparedKekule;
 use crate::node::{CipNodeKind, NodeId};
 use crate::rule4b::break_tie_rule4b;
 
@@ -158,7 +158,7 @@ pub(crate) fn assign_one_with_rule4b(
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
     let mut graph = match kekule {
         Some((kekule_mol, ctx)) => {
@@ -214,7 +214,7 @@ pub(crate) fn assign_one_with_rule4b(
 pub(crate) fn apply_rule4b_pass(
     mol: &Molecule,
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
     pass1: AccurateCipAssignment,
 ) -> AccurateCipAssignment {
     let mut assignments = pass1.assignments;

@@ -86,9 +86,8 @@
 //! `Molecule::stereo_neighbor_order`. This module sources the four substituent
 //! *positions* from `stereo_neighbor_order` (mapping `STEREO_H_SENTINEL` to the
 //! digraph's `ImplicitHydrogen` child), and only the *priority ranking* of those
-//! positions from [`crate::compare::rank_children`] -- reusing the exact swap-counting
-//! parity algorithm already correct in `assign_tetrahedral` (mirrored below, not
-//! redesigned), so this module doesn't reintroduce the order bug on its first day.
+//! positions from [`crate::compare::rank_children`]. The parity of the four physical
+//! ranks determines whether this order agrees with the parsed chirality tag.
 //!
 //! # Physical ligands vs. duplicate nodes
 //!
@@ -103,9 +102,10 @@
 //! included, since a duplicate's presence is real information for ranking a real
 //! neighbor's own priority), but only ever treats a tie as unresolvable when it's between
 //! two of the 4 *physical* positions -- a duplicate tying with anything doesn't block
-//! assignment. Ranks are then dense-remapped to `1..=4` before the swap-parity step,
-//! since a duplicate can occupy a rank slot between two physical positions.
+//! assignment. A duplicate can occupy a rank slot between two physical positions
+//! without changing their relative order or parity.
 
+use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
 
 use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Element, Molecule, STEREO_H_SENTINEL};
@@ -114,7 +114,7 @@ use crate::CipError;
 use crate::budget::CipBudget;
 use crate::compare::{CipCompareError, CompareContext, rank_children};
 use crate::digraph::CipDigraph;
-use crate::mancude::{MancudeContext, prepare_kekule_form};
+use crate::mancude::{PreparedKekule, prepare_kekule_view};
 use crate::node::{CipNodeKind, NodeId};
 
 /// Why a candidate stereocenter got no assignment -- distinct from "assigned but
@@ -274,7 +274,7 @@ fn assign_cip_without_wildcard_probe(
     if !mol.atoms().any(|(_, atom)| atom.chirality.is_tetrahedral()) {
         return Ok(AccurateCipAssignment::default());
     }
-    let kekule = prepare_kekule_form(mol).ok();
+    let kekule = prepare_kekule_view(mol).ok();
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
     // Rule 4b (Milestone 4B-2) must run before Rule 5 -- CIP rule order. Rule 5's own
     // `provisional` map (built inside `apply_rule5_pass` from whatever
@@ -352,7 +352,7 @@ fn phosphorus_on_unsaturated_ring(mol: &Molecule, p: AtomIdx) -> bool {
 fn assign_all(
     mol: &Molecule,
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<AccurateCipAssignment, CipCompareError> {
     let mut result = AccurateCipAssignment::default();
 
@@ -417,7 +417,7 @@ fn assign_all(
 fn apply_rule5_pass(
     mol: &Molecule,
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
     pass1: AccurateCipAssignment,
 ) -> AccurateCipAssignment {
     let mut assignments = pass1.assignments;
@@ -457,9 +457,9 @@ fn apply_rule5_pass(
 /// five-coordinate tagged carbon into a dative bond.  RDKit excludes that
 /// coordinate bond from the tetrahedral positions while retaining the
 /// original stereo tag and its other four positions.
-fn rdkit_cip_position_order(mol: &Molecule, center: AtomIdx, raw: &[u32]) -> Vec<u32> {
+fn rdkit_cip_position_order<'a>(mol: &Molecule, center: AtomIdx, raw: &'a [u32]) -> Cow<'a, [u32]> {
     if raw.len() <= 4 {
-        return raw.to_vec();
+        return Cow::Borrowed(raw);
     }
     let mut filtered: Vec<u32> = raw
         .iter()
@@ -477,9 +477,9 @@ fn rdkit_cip_position_order(mol: &Molecule, center: AtomIdx, raw: &[u32]) -> Vec
         // new dative ligand and applies the corresponding odd permutation.
         // Keep that parity correction explicit in the position order.
         filtered.swap(0, 1);
-        filtered
+        Cow::Owned(filtered)
     } else {
-        raw.to_vec()
+        Cow::Borrowed(raw)
     }
 }
 
@@ -500,7 +500,7 @@ fn assign_one_with_rule5(
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
     // Element-level guard (see module docs, "Element-level guard: phosphorus stays
     // tied"): this auxiliary-resolution path is oracle-verified only for carbon
@@ -534,10 +534,9 @@ fn assign_one_with_rule5(
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
 
-    let position_set: HashSet<NodeId> = position_nodes.iter().copied().collect();
     let mut tied_group_idx = None;
     for (gi, group) in groups.iter().enumerate() {
-        let physical_count = group.iter().filter(|n| position_set.contains(n)).count();
+        let physical_count = group.iter().filter(|n| position_nodes.contains(n)).count();
         if physical_count > 1 {
             // A 3+-way tie in one group, or a second independently-tied group, is
             // outside this milestone's narrow scope -- stay tied rather than guess.
@@ -557,7 +556,7 @@ fn assign_one_with_rule5(
     let physical_in_tied: Vec<NodeId> = tied_group
         .iter()
         .copied()
-        .filter(|n| position_set.contains(n))
+        .filter(|n| position_nodes.contains(n))
         .collect();
     let (pos_a, pos_b) = (physical_in_tied[0], physical_in_tied[1]);
 
@@ -649,7 +648,7 @@ fn assign_one(
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
     // `apply_kekule` preserves `AtomIdx` values exactly (verified Milestone 3B-0), so
     // `idx`/`stereo_order` (sourced from the original `mol`, above) name the same
@@ -674,9 +673,8 @@ fn assign_one(
     // same group -- a duplicate node tying with anything (another duplicate, or even a
     // physical position) doesn't compete for a stereo_neighbor_order slot. See module
     // docs ("Physical ligands vs. duplicate nodes").
-    let position_set: HashSet<NodeId> = position_nodes.iter().copied().collect();
     for group in &groups {
-        if group.iter().filter(|n| position_set.contains(n)).count() > 1 {
+        if group.iter().filter(|n| position_nodes.contains(n)).count() > 1 {
             return Err(SkipReason::Tied);
         }
     }
@@ -703,7 +701,7 @@ fn assign_lone_pair_centre(
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
     if stereo_order.len() != 3
         || stereo_order.contains(&STEREO_H_SENTINEL)
@@ -737,9 +735,8 @@ fn assign_lone_pair_centre(
     };
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
-    let position_set: HashSet<NodeId> = position_nodes.iter().copied().collect();
     for group in &groups {
-        if group.iter().filter(|n| position_set.contains(n)).count() > 1 {
+        if group.iter().filter(|n| position_nodes.contains(n)).count() > 1 {
             return Err(SkipReason::Tied);
         }
     }
@@ -775,9 +772,7 @@ pub(crate) fn lone_pair_is_r(
     // Matched against RDKit 2026.03.6 `rdCIPLabeler` on acyclic sulfoxides,
     // sulfinamides and phosphines over random atom orders: the phantom takes
     // the second slot whether or not the centre has a preceding atom.
-    let lone_pair_slot = 1;
-    let mut ranks = ranks3.to_vec();
-    ranks.insert(lone_pair_slot, 1);
+    let ranks = [ranks3[0], 1, ranks3[1], ranks3[2]];
     Ok(is_r_from_ranks(&ranks, chirality).map(|r| r != invert))
 }
 
@@ -833,71 +828,35 @@ fn atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
 /// order, compute whether the center is *rectus* (R). Shared by [`assign_one`] (Rules
 /// 1a/1b/2 only), [`assign_one_with_rule5`] (which passes a `groups` partition with
 /// one tied group already split by a Rule 5 tiebreak), and (Milestone 4B-2)
-/// `crate::resolver::assign_one_with_rule4b`/`resolve_chirality` -- the swap-counting
-/// parity math itself doesn't know or care which rule produced the ordering.
+/// `crate::resolver::assign_one_with_rule4b`/`resolve_chirality`. The same parity
+/// calculation applies regardless of the rules used to order the ligands.
 pub(crate) fn resolve_is_r_from_groups(
     groups: &[Vec<NodeId>],
     position_nodes: &[NodeId],
     chirality: Chirality,
 ) -> Option<bool> {
-    // Rank every node in every group (not just each group's first member) -- a duplicate
-    // can share a physical position's group, and that position's rank_of lookup below
-    // must still resolve. Highest-priority group first (rank_children's own convention)
-    // -> rank N down to rank 1, matching assign_tetrahedral's swap-counting convention.
-    // This helper is normally reached only after the digraph has supplied four
-    // physical positions and at least one rank group. Keep the boundary explicit,
-    // though: this is an internal fallback path and must decline malformed state
-    // rather than panic on an unchecked map/index conversion.
-    if position_nodes.len() != 4 {
-        return None;
-    }
+    let positions: &[NodeId; 4] = position_nodes.try_into().ok()?;
     let n = u8::try_from(groups.len()).ok()?;
-    if n == 0 {
-        return None;
+    let mut ranks = [0; 4];
+    for (node, rank) in positions.iter().zip(&mut ranks) {
+        let group = groups.iter().rposition(|group| group.contains(node))?;
+        *rank = n - group as u8;
     }
-    let mut rank_of: HashMap<NodeId, u8> = HashMap::new();
-    for (group_idx, group) in groups.iter().enumerate() {
-        for &node in group {
-            rank_of.insert(node, n - group_idx as u8);
-        }
-    }
-
-    let raw_ranks: Vec<u8> = position_nodes
-        .iter()
-        .map(|node| rank_of.get(node).copied())
-        .collect::<Option<_>>()?;
-    // Dense-remap to 1..=4: a duplicate sibling (e.g. from a double bond at the
-    // stereocenter itself) can occupy a rank slot between two physical positions, so
-    // their raw ranks aren't necessarily {1,2,3,4} contiguously.
-    let mut distinct_ranks = raw_ranks.clone();
-    distinct_ranks.sort_unstable();
-    distinct_ranks.dedup();
-    let ranks: Vec<u8> = raw_ranks
-        .iter()
-        .map(|&r| distinct_ranks.iter().position(|&x| x == r).unwrap() as u8 + 1)
-        .collect();
-
     is_r_from_ranks(&ranks, chirality)
 }
 
-/// R/S from four dense position ranks (1 = lowest priority) in
-/// `stereo_neighbor_order` order and the SMILES chirality tag.
-fn is_r_from_ranks(ranks: &[u8], chirality: Chirality) -> Option<bool> {
-    // Mirrors crates/chematic-chem/src/cip.rs::assign_tetrahedral's parity computation
-    // verbatim (already correct there, fixed in d0e726b) -- only the source of
-    // `ranks` differs (the new recursive comparator, not the old shell-pooling one).
-    let lowest_pos = ranks.iter().position(|&r| r == 1)?;
-    let parity_odd = lowest_pos % 2 == 1;
-    let smiles_cw = chirality == Chirality::Clockwise;
-    let cw_from_lowest = smiles_cw ^ parity_odd;
-
-    let remaining_ranks: Vec<u8> = (0..4usize)
-        .filter(|&i| i != lowest_pos)
-        .map(|i| ranks[i])
-        .collect();
-    let remaining_swaps_odd = swap_parity(&remaining_ranks)?;
-
-    Some(cw_from_lowest ^ remaining_swaps_odd)
+/// R/S from four position ranks in stereo-neighbor order, high number first in priority.
+fn is_r_from_ranks(ranks: &[u8; 4], chirality: Chirality) -> Option<bool> {
+    let mut odd = false;
+    for (i, rank) in ranks.iter().enumerate() {
+        for next in &ranks[i + 1..] {
+            if rank == next {
+                return None;
+            }
+            odd ^= rank > next;
+        }
+    }
+    Some((chirality == Chirality::Clockwise) ^ odd)
 }
 
 pub(crate) fn map_digraph_err(e: CipError) -> SkipReason {
@@ -955,22 +914,6 @@ pub(crate) fn position_node_ids(
     Some(result)
 }
 
-/// Count swaps needed to bring `remaining_ranks` (3 elements, each in `{2,3,4}`) into
-/// ascending order `[2,3,4]`. Identical to `assign_tetrahedral`'s own helper.
-fn swap_parity(remaining_ranks: &[u8]) -> Option<bool> {
-    let mut r = remaining_ranks.to_vec();
-    let target = [2u8, 3, 4];
-    let mut swaps = 0usize;
-    for i in 0..3 {
-        if r[i] != target[i] {
-            let j_rel = r[i + 1..].iter().position(|&x| x == target[i])?;
-            r.swap(i, j_rel + i + 1);
-            swaps += 1;
-        }
-    }
-    Some(swaps % 2 == 1)
-}
-
 #[cfg(test)]
 mod tests {
     use super::resolve_is_r_from_groups;
@@ -1005,6 +948,30 @@ mod tests {
         assert_eq!(
             resolve_is_r_from_groups(&[], &four_positions, Chirality::Clockwise),
             None
+        );
+    }
+
+    #[test]
+    fn nonphysical_nodes_do_not_change_tetrahedral_parity() {
+        let order = [NodeId(1), NodeId(2), NodeId(3), NodeId(4)];
+        let groups = [
+            vec![order[0], NodeId(15)],
+            vec![order[1]],
+            vec![NodeId(90)],
+            vec![order[2]],
+            vec![order[3]],
+        ];
+        assert_eq!(
+            resolve_is_r_from_groups(&groups, &order, Chirality::Clockwise),
+            Some(true)
+        );
+        assert_eq!(
+            resolve_is_r_from_groups(
+                &groups,
+                &[order[1], order[0], order[2], order[3]],
+                Chirality::Clockwise,
+            ),
+            Some(false)
         );
     }
 }

@@ -19,7 +19,9 @@ fn eager_without_wildcard_probe(
     mol: &Molecule,
     budget: CipBudget,
 ) -> Result<AccurateCipAssignment, CipCompareError> {
-    let kekule = prepare_kekule_form(mol).ok();
+    let kekule = crate::mancude::prepare_kekule_form(mol)
+        .ok()
+        .map(|(kekule, context)| (Cow::Owned(kekule), context));
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
     let pass2 = crate::resolver::apply_rule4b_pass(mol, budget, kekule.as_ref(), pass1);
     Ok(apply_rule5_pass(mol, budget, kekule.as_ref(), pass2))
