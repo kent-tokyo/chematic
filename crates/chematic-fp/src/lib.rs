@@ -82,7 +82,10 @@ pub use rdkit_layered::{
     rdkit_layered_fp,
 };
 pub use rdkit_pattern::rdkit_pattern_fp;
-pub use rdkit_rdk::{RdkitRdkFingerprintError, rdkit_rdk_fp, rdkit_rdk_fp_ignoring_atoms};
+pub use rdkit_rdk::{
+    RdkitRdkConfig, RdkitRdkConfigError, RdkitRdkConfigResult, RdkitRdkFingerprintError,
+    rdkit_rdk_config, rdkit_rdk_fp, rdkit_rdk_fp_ignoring_atoms,
+};
 pub use rdkit_torsion::{
     RdkitAtomCodeExplanation, RdkitTorsionDiagnosticError, explain_rdkit_atom_code,
     explain_rdkit_topological_torsion_code, rdkit_atom_code, rdkit_legacy_torsion_counts,

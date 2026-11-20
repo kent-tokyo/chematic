@@ -6,6 +6,9 @@ use crate::{
 };
 use wasm_bindgen::prelude::*;
 
+mod rdkit_rdk;
+pub use rdkit_rdk::rdkit_rdk_config_detail_json;
+
 /// Tanimoto similarity between two molecules using ECFP4 fingerprints.
 #[wasm_bindgen]
 pub fn tanimoto_ecfp4(a: &MolHandle, b: &MolHandle) -> f64 {

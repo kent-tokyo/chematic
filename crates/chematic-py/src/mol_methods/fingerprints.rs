@@ -6,6 +6,12 @@ type RdkitAtomPairDetail = (
     std::collections::BTreeMap<u32, u32>,
 );
 
+type RdkitRdkDetail = (
+    Vec<u8>,
+    std::collections::HashMap<u32, u32>,
+    std::collections::HashMap<u32, u32>,
+);
+
 type RdkitTorsionDetail = (
     Vec<u8>,
     std::collections::BTreeMap<u32, u32>,
@@ -328,6 +334,64 @@ impl Mol {
         let fingerprint = chematic_fp::rdkit_rdk_fp_ignoring_atoms(&self.inner, &ignored)
             .map_err(|error| PyValueError::new_err(error.to_string()))?;
         Ok(bitvec2048_to_bytes(&fingerprint))
+    }
+
+    /// Configured RDKit RDK fingerprint on the input's indexed graph.
+    /// Returns packed bits, folded counts, and sparse counts. Input hydrogens
+    /// survive unless `use_hs` is false, and both count outputs are independent
+    /// of count simulation.
+    #[pyo3(signature = (*, min_path = 1, max_path = 7, nbits = 2048, bits_per_feature = 2,
+        use_hs = true, branched_paths = true, use_bond_order = true, from_atoms = None,
+        ignore_atoms = None, atom_invariants = None, count_simulation = false, count_bounds = None,
+        max_visits = 1_000_000, max_paths = 100_000))]
+    #[allow(clippy::too_many_arguments)]
+    fn rdkit_rdk_config_detail(
+        &self,
+        min_path: usize,
+        max_path: usize,
+        nbits: usize,
+        bits_per_feature: usize,
+        use_hs: bool,
+        branched_paths: bool,
+        use_bond_order: bool,
+        from_atoms: Option<Vec<u32>>,
+        ignore_atoms: Option<Vec<u32>>,
+        atom_invariants: Option<Vec<u32>>,
+        count_simulation: bool,
+        count_bounds: Option<Vec<u32>>,
+        max_visits: usize,
+        max_paths: usize,
+    ) -> PyResult<RdkitRdkDetail> {
+        let indices = |atoms: Option<Vec<u32>>| {
+            atoms
+                .unwrap_or_default()
+                .into_iter()
+                .map(chematic_core::AtomIdx)
+                .collect()
+        };
+        let config = chematic_fp::RdkitRdkConfig {
+            min_path,
+            max_path,
+            nbits,
+            bits_per_feature,
+            use_hs,
+            branched_paths,
+            use_bond_order,
+            from_atoms: indices(from_atoms),
+            ignore_atoms: indices(ignore_atoms),
+            atom_invariants,
+            count_bounds: count_simulation
+                .then(|| count_bounds.unwrap_or_else(|| vec![1, 2, 4, 8])),
+            max_visits,
+            max_paths,
+        };
+        let result = chematic_fp::rdkit_rdk_config(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((
+            result.fingerprint.to_le_bytes(),
+            result.folded_counts.into_iter().collect(),
+            result.sparse_counts.into_iter().collect(),
+        ))
     }
 
     /// RDKit-compatible RDK fingerprint as a dense NumPy bit vector.

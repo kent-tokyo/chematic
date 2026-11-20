@@ -1428,6 +1428,26 @@ class Mol:
         """RDKit-compatible pattern fingerprint as a numpy bit vector."""
         ...
 
+    def rdkit_rdk_config_detail(
+        self,
+        *,
+        min_path: int = 1,
+        max_path: int = 7,
+        nbits: int = 2048,
+        bits_per_feature: int = 2,
+        use_hs: bool = True,
+        branched_paths: bool = True,
+        use_bond_order: bool = True,
+        from_atoms: Optional[Sequence[int]] = None,
+        ignore_atoms: Optional[Sequence[int]] = None,
+        atom_invariants: Optional[Sequence[int]] = None,
+        count_simulation: bool = False,
+        count_bounds: Optional[Sequence[int]] = None,
+        max_visits: int = 1000000,
+        max_paths: int = 100000,
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
+        """Packed RDK bits, folded counts, and sparse counts."""
+        ...
     def rdkit_rdk_fp_numpy(
         self, ignore_atoms: Optional[Sequence[int]] = None
     ) -> ndarray:

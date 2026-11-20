@@ -72,6 +72,9 @@ use rustc_hash::{FxHashMap, FxHashSet};
 #[cfg(test)]
 use std::collections::BTreeMap;
 
+mod config;
+pub use config::{RdkitRdkConfig, RdkitRdkConfigError, RdkitRdkConfigResult, rdkit_rdk_config};
+
 const FP_SIZE: u32 = 2048;
 const MIN_PATH: usize = 1;
 const MAX_PATH: usize = 7;
@@ -496,7 +499,8 @@ fn rdkit_rdk_fp_input(mol: &Molecule, trust_view: bool, ignored_atoms: &[AtomIdx
     // observable in the bit vector.
     let mut walker = SubgraphWalker::new(mol, ignored_atoms);
     walker.for_each(MIN_PATH, MAX_PATH, |path, degree, n_atoms| {
-        let seed = path_seed_small(path, &ends, &invariants, &bond_types, degree, n_atoms);
+        let seed =
+            path_seed_small::<MAX_PATH>(path, &ends, &invariants, &bond_types, degree, n_atoms);
         fp.set((seed % FP_SIZE) as usize);
         if NUM_BITS_PER_FEATURE > 1 {
             let mut mt = RdkitWeakMt19937::seeded(seed);
@@ -514,7 +518,7 @@ fn rdkit_rdk_fp_input(mol: &Molecule, trust_view: bool, ignored_atoms: &[AtomIdx
 /// [`path_bond_hashes`] + [`path_seed`] for one subgraph of at most
 /// `MAX_PATH` bonds, on stack buffers. `degree[a]` is atom `a`'s degree
 /// within the path and `n_atoms` the number of atoms the path touches.
-fn path_seed_small(
+fn path_seed_small<const CAPACITY: usize>(
     path: &[u32],
     ends: &[(u32, u32)],
     invariants: &[u32],
@@ -522,9 +526,9 @@ fn path_seed_small(
     degree: &[u32],
     n_atoms: u32,
 ) -> u32 {
-    debug_assert!(!path.is_empty() && path.len() <= MAX_PATH);
+    debug_assert!(!path.is_empty() && path.len() <= CAPACITY);
     let len = path.len();
-    let mut hashes = [0u32; MAX_PATH];
+    let mut hashes = [0u32; CAPACITY];
     for (i, &b) in path.iter().enumerate() {
         let (a1, a2) = ends[b as usize];
         let mut a1_hash = invariants[a1 as usize];
@@ -579,18 +583,6 @@ struct SubgraphWalker {
 impl SubgraphWalker {
     fn new(mol: &Molecule, ignored_atoms: &[AtomIdx]) -> Self {
         let n_bonds = mol.bond_count();
-        // Same lists as `build_bond_adjacency`, indexed by bond.
-        let mut nbrs: Vec<Vec<u32>> = vec![Vec::new(); n_bonds];
-        for (aidx, _) in mol.atoms() {
-            let incident = mol.neighbor_slice(aidx);
-            for &(_, b1) in incident {
-                for &(_, b2) in incident {
-                    if b1 != b2 {
-                        nbrs[b1.0 as usize].push(b2.0);
-                    }
-                }
-            }
-        }
         let mut forbidden = vec![false; n_bonds];
         if !ignored_atoms.is_empty() {
             let mut ignored = vec![false; mol.atom_count()];
@@ -603,13 +595,30 @@ impl SubgraphWalker {
                 }
             }
         }
+        Self::with_mask(mol, forbidden, MAX_PATH)
+    }
+
+    fn with_mask(mol: &Molecule, forbidden: Vec<bool>, max_len: usize) -> Self {
+        let n_bonds = mol.bond_count();
+        // Same lists as `build_bond_adjacency`, indexed by bond.
+        let mut nbrs: Vec<Vec<u32>> = vec![Vec::new(); n_bonds];
+        for (aidx, _) in mol.atoms() {
+            let incident = mol.neighbor_slice(aidx);
+            for &(_, b1) in incident {
+                for &(_, b2) in incident {
+                    if b1 != b2 && !forbidden[b2.0 as usize] {
+                        nbrs[b1.0 as usize].push(b2.0);
+                    }
+                }
+            }
+        }
         Self {
             nbrs,
             ends: mol.bonds().map(|(_, b)| (b.atom1.0, b.atom2.0)).collect(),
             forbidden,
             undo: Vec::new(),
-            stacks: vec![Vec::new(); MAX_PATH + 2],
-            path: Vec::with_capacity(MAX_PATH + 1),
+            stacks: vec![Vec::new(); max_len],
+            path: Vec::with_capacity(max_len),
             degree: vec![0; mol.atom_count()],
             n_atoms: 0,
         }
@@ -645,9 +654,27 @@ impl SubgraphWalker {
         max_len: usize,
         mut visit: impl FnMut(&[u32], &[u32], u32),
     ) {
+        let _: Result<(), core::convert::Infallible> =
+            self.try_for_each(None, min_len, max_len, |path, degree, count| {
+                visit(path, degree, count);
+                Ok(())
+            });
+    }
+
+    fn try_for_each<E>(
+        &mut self,
+        root_atom: Option<AtomIdx>,
+        min_len: usize,
+        max_len: usize,
+        mut visit: impl FnMut(&[u32], &[u32], u32) -> Result<(), E>,
+    ) -> Result<(), E> {
         let n_bonds = self.nbrs.len();
         for root in 0..n_bonds as u32 {
             if self.forbidden[root as usize] {
+                continue;
+            }
+            let (a, b) = self.ends[root as usize];
+            if root_atom.is_some_and(|atom| atom.0 != a && atom.0 != b) {
                 continue;
             }
             // Roots stay forbidden for every later root (as in the original).
@@ -657,26 +684,27 @@ impl SubgraphWalker {
             stack.clear();
             stack.extend_from_slice(&self.nbrs[root as usize]);
             self.stacks[0] = stack;
-            self.walk(0, min_len, max_len, &mut visit);
+            self.walk(0, min_len, max_len, &mut visit)?;
             self.pop_bond();
         }
+        Ok(())
     }
 
     /// One `recurse_walk_range` frame; `self.stacks[depth]` holds its
     /// candidate stack and `self.path` its subgraph.
-    fn walk(
+    fn walk<E>(
         &mut self,
         depth: usize,
         min_len: usize,
         max_len: usize,
-        visit: &mut impl FnMut(&[u32], &[u32], u32),
-    ) {
+        visit: &mut impl FnMut(&[u32], &[u32], u32) -> Result<(), E>,
+    ) -> Result<(), E> {
         let nsize = self.path.len();
         if nsize >= min_len && nsize <= max_len {
-            visit(&self.path, &self.degree, self.n_atoms);
+            visit(&self.path, &self.degree, self.n_atoms)?;
         }
         if nsize >= max_len {
-            return;
+            return Ok(());
         }
         let undo_mark = self.undo.len();
         while let Some(next) = self.stacks[depth].pop() {
@@ -697,7 +725,7 @@ impl SubgraphWalker {
             }
             self.stacks[depth + 1] = child;
             self.push_bond(next);
-            self.walk(depth + 1, min_len, max_len, visit);
+            self.walk(depth + 1, min_len, max_len, visit)?;
             self.pop_bond();
         }
         // Forbidden marks set by this frame were local to it (the original
@@ -706,6 +734,7 @@ impl SubgraphWalker {
             self.forbidden[b as usize] = false;
         }
         self.undo.truncate(undo_mark);
+        Ok(())
     }
 }
 
