@@ -23,11 +23,17 @@ pub(super) fn extend_frontier_atom(
                 .map(|query_idx| (query_idx, mol0.bond(bond_idx).order))
         })
         .collect();
-    let mut seen_tuples = HashSet::new();
+    let mut seen_tuples = (mapped_parents.len() > 1).then(HashSet::new);
 
     for (parent_q, parent_bond_order) in mapped_parents {
         let candidates_per_mol = build_candidates(state, mapping, n0, parent_q, parent_bond_order);
-        explore_candidate_tuples(state, mapping, n0, &candidates_per_mol, &mut seen_tuples);
+        explore_candidate_tuples(
+            state,
+            mapping,
+            n0,
+            &candidates_per_mol,
+            seen_tuples.as_mut(),
+        );
         if state.timed_out || state.resource_limited {
             return;
         }
@@ -39,18 +45,21 @@ fn explore_candidate_tuples(
     mapping: &mut PartialMapping,
     n0: AtomIdx,
     candidates_per_mol: &[Vec<AtomIdx>],
-    seen_tuples: &mut HashSet<Vec<AtomIdx>>,
+    mut seen_tuples: Option<&mut HashSet<Vec<AtomIdx>>>,
 ) {
+    let mut atoms = Vec::with_capacity(state.mols.len());
+    atoms.push(n0);
     for tuple in CartesianProduct::new(candidates_per_mol) {
         if state.timed_out || state.resource_limited {
             return;
         }
-        if !seen_tuples.insert(tuple.clone()) {
+        if let Some(seen) = &mut seen_tuples
+            && !seen.insert(tuple.clone())
+        {
             continue;
         }
 
-        let mut atoms = Vec::with_capacity(state.mols.len());
-        atoms.push(n0);
+        atoms.truncate(1);
         atoms.extend_from_slice(&tuple);
 
         let extra_bonds = count_common_new_bonds(state.mols, mapping, n0, &tuple, state.config);
@@ -121,13 +130,14 @@ fn count_common_new_bonds(
     tuple: &[AtomIdx],
     config: &McsConfig,
 ) -> usize {
-    mapping
-        .query_to_mol
-        .iter()
-        .filter(|row| {
-            let Some((_, bond0)) = mols[0].bond_between(n0, row[0]) else {
+    mols[0]
+        .neighbors(n0)
+        .filter(|&(neighbor, bond_idx)| {
+            let Some(q) = mapping.query_idx_of(0, neighbor) else {
                 return false;
             };
+            let row = &mapping.query_to_mol[q];
+            let bond0 = mols[0].bond(bond_idx);
             tuple.iter().enumerate().all(|(offset, &candidate)| {
                 let mi = offset + 1;
                 mols[mi]
