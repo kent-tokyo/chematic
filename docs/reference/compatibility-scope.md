@@ -22,10 +22,7 @@ Rich-document issue boundaries are listed in the
 - Rust is the reference implementation. Python and WASM/Node expose selected,
   versioned operations rather than every Rust type or RDKit method.
 
-The v1.2.1 source is qualified before publication. The latest completed hosted
-cross-platform runtime and chemistry-gate evidence remains v1.2.0 until the
-v1.2.1 tag workflow finishes. Older package measurements keep their original
-scope and are not relabelled as v1.2.1 results.
+The v1.2.2 tag workflow establishes its exact artifact and platform results. Older package measurements keep their recorded versions and scope.
 
 ## Main bounded surfaces
 

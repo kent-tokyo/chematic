@@ -162,7 +162,7 @@ def check_json_contract(baseline: str) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--baseline", default="v1.2.0")
+    parser.add_argument("--baseline", default="v1.2.1")
     parser.add_argument("--wasm-dts", type=Path)
     args = parser.parse_args()
     check_python(args.baseline)

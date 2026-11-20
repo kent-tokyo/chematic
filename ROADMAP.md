@@ -1,86 +1,23 @@
 # chematic roadmap
 
-> Updated 2026-10-24. Release line: **v1.2.1**. Hosted package evidence keeps
-> its original release label until the tagged workflows finish.
+> Updated 2026-11-21. Release line: **v1.2.2**. Package claims require verification of the exact published artifacts.
 
-chematic is a safe, typed, local-first chemistry kernel for Rust, Python,
-Node, WebAssembly, and agent workflows. The roadmap favors reliable contracts
-and reproducible evidence over feature-count parity.
+chematic shares one Rust chemistry core across Rust, Python, Node and WASM. The priorities are correctness, explicit limits and reproducible evidence.
 
 ## Current position
 
-- Stable selected paths cover SMILES/SMARTS, descriptors, fingerprints,
-  search, and common MOL/SDF workflows through one Rust core.
-- v1.2.1 is the release line. v1.2.0 public wheels passed the hosted
-  three-platform runtime smoke and 11-job chemistry workflow; those results do
-  not become v1.2.1 package evidence.
-- Current source matches the pinned RDKit standardization corpus on Normalize,
-  Cleanup, and Reionize for all 4,069 comparable rows through both the
-  dedicated and public Python Cleanup paths.
-- The focused MCS regression is fixed, but frozen v2 confirms that broad FMCS
-  parity remains open: 29/54 completed rows match atom count and 31/54 match
-  bond count. Do not promote the focused speed result into a broad claim.
-- Frozen v2 preserves SDF graph, title, properties, and stereo on 64/64 rows.
-  Both engines embed all 96 3D rows, but only 4/96 coordinate sets satisfy the
-  strict 1e-4 Å pair-distance contract on both macOS arm64 and Linux x86-64;
-  success and coordinate parity remain separate claims.
-- 3D/MMFF94, pKa/ADMET screening, IUPAC naming, broad Markush/polymer support,
-  and rich CDXML editing remain experimental or bounded.
+- Selected SMILES/SMARTS, descriptor, fingerprint, search and MOL/SDF paths are stable. 3D/MMFF94, pKa/ADMET, IUPAC, broad Markush/polymer support and rich CDXML editing remain bounded or experimental.
+- Focused aromatic MCS has a source fix; broad FMCS parity remains open. The earlier frozen v2 holdout is historical candidate evidence.
+- Cross-format meaning preservation is checked by format-specific contracts. Unsupported or lossy conversions report refusal or explicit loss.
 
-Exact counts belong in [validation](docs/reference/validation.md), dated
-evidence in the [benchmark index](benchmarks/README.md), and unresolved details
-in the [open-work ledger](docs/reference/roadmap-open-work.md).
+See [validation](docs/reference/validation.md), the [benchmark index](benchmarks/README.md) and the [open-work ledger](docs/reference/roadmap-open-work.md).
 
 ## Priority order
 
-### P0 — Release integrity
-
-- Run changed Rust, Python, WASM/Node, compatibility, security, and package
-  checks from the exact release commit.
-- Re-run affected chemistry lanes from exact PyPI, npm, and crates.io
-  artifacts. Keep source, package, browser, and OS evidence separate.
-- Compare every public Rust crate with the preceding release.
-
-**Exit:** versions, hashes, artifacts, corpora, options, and terminal outcomes
-are recorded, and release checks pass on the tagged commit.
-
-### P1 — Correctness residuals
-
-- Keep Cleanup exact while extending standardization to new external inputs;
-  the inspected stress corpus is now development evidence.
-- Classify frozen v2 MCS count differences without tuning on v2 rows; create a
-  future v3 holdout only after the next candidate is frozen.
-- Resolve the remaining CTfile readback and stereo-only differences.
-- Extend reaction, SMARTS, R-group, and interchange tests with stratified
-  real-world inputs while preserving typed refusals and loss reports.
-
-**Exit:** every residual is an exact match, a documented policy difference, a
-typed unsupported case, or a reproducible bug with an owner.
-
-### P2 — Equivalent-work performance
-
-- Require exact or toleranced output agreement before timing.
-- Separate parse-inclusive, first-use, prepared/reuse, startup, RSS, and batch
-  lanes.
-- Re-run ASA, TPSA, chiral Morgan, QED, reaction, and 3D comparisons on a
-  second host and exact public artifacts.
-
-**Exit:** promoted claims use balanced repeated blocks, paired confidence
-bounds, equivalent work, and explicit artifact/host scope.
-
-### P3 — Workflow and 3D quality
-
-- Check graph, charge, isotope, bond order, stereo, coordinates, properties,
-  and metadata before ranking file-I/O speed.
-- Measure 3D typing, energy, gradient, convergence, stereo, clash, conformer
-  quality, time, and memory independently on unused data.
-- Investigate conformer-count and ensemble-quality contracts on development
-  data derived independently of frozen v2; do not optimize against v2 rows.
-- Keep browser workflows local-first, cancellable, resource-bounded, and
-  explicit about failure.
-
-**Exit:** supported rows preserve declared semantics or return a typed
-loss/refusal; no known wrong-confident result remains in the declared domain.
+1. **Release integrity:** run Rust, Python, WASM, compatibility, security and package gates on the exact tag; verify crates.io, npm, PyPI and GitHub artifacts independently.
+2. **Correctness:** classify Cleanup, MCS, CTfile, stereo, reaction, SMARTS, R-group and interchange residuals. Keep typed refusals visible.
+3. **Equivalent-work performance:** separate parsing, first use, prepared reuse, startup, memory and batch work. Use paired blocks and a second host for broad claims.
+4. **Workflow and 3D quality:** assess graph and document semantics, 3D typing, geometry, energy, convergence, stereo, clashes, conformer quality, time and memory on unused inputs.
 
 ## Product phases
 
@@ -108,20 +45,4 @@ loss/refusal; no known wrong-confident result remains in the declared domain.
 
 ## Evidence rules
 
-- Record versions, hashes, corpus, options, host, and failure policy.
-- Count success, failure, refusal, unsupported, and skipped inputs separately.
-- A typed refusal is safer than a wrong answer, but it is not a match.
-- A source pass is not a published-package result.
-- Performance requires equivalent work and acceptable output.
-- Coverage and feature presence are not chemistry validation.
-- Sealed data is evaluated once; inspected rows cannot become sealed again.
-
-## Detailed references
-
-- [Open-work ledger](docs/reference/roadmap-open-work.md)
-- [Validation report](docs/reference/validation.md)
-- [Benchmark method](docs/reference/benchmark.md)
-- [Compatibility scope](docs/reference/compatibility-scope.md)
-- [Format capability matrix](docs/reference/format-capabilities.md)
-- [Refactoring guardrails](docs/plans/refactoring-plan.md)
-- [Historical snapshots](docs/archive/)
+Record versions, hashes, corpus, options, host, failure policy and every refusal or skipped row. A source pass is not a package result; coverage is not chemistry accuracy. Once inspected, a sealed dataset becomes development data. See the [benchmark method](docs/reference/benchmark.md) and [compatibility scope](docs/reference/compatibility-scope.md).

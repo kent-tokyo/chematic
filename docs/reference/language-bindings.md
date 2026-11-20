@@ -35,43 +35,7 @@ absent rows.
 
 ## V3000 either bonds and unknown alkene configuration
 
-[Open Babel #2429](https://github.com/openbabel/openbabel/issues/2429) requests
-retention of V3000 bond `CFG=2`. The
-[BIOVIA CTfile specification](https://www.3ds.com/assets/invest/2026-01/biovia_chemistry_2026_ctfile_formats.pdf)
-defines that bond configuration as either (printed page 13). Chematic retains
-this marker on single and double bonds in `MolMetadata`. A wavy single bond
-also prevents coordinate-based E/Z assignment to double bonds adjacent to
-either endpoint. A remote wavy bond does not suppress unrelated alkene stereo.
-
-| Path | Preserved meaning |
-|---|---|
-| Rust `read_mol_v3000_with_diagnostics` followed by `write_mol_v3000` with its metadata | Original single-bond marker and endpoint order, with normalized output IDs |
-| Rust `write_mol_v3000_with_conformer` with source metadata | Original either marker retained in the 3D block |
-| Python `from_mol_v3000` / `Mol.to_mol_v3000` | Explicitly unknown alkene remains unknown on reparse; output may use double-bond `CFG=2` |
-| WASM `mol_from_v3000_block` / `to_mol_v3000_block` | Same unknown-alkene contract through generated 2D coordinates |
-
-Graph-only bindings retain the semantic fact that an alkene was explicitly
-unknown, but not the original marker's carrier-bond position. Their writers may
-therefore emit `CFG=2` directly on the double bond. An ordinary graph without
-that marker remains free to express caller-supplied E/Z geometry; it is not
-silently changed to unknown. Already declared E/Z stereo follows the existing
-depiction path. Use Python `roundtrip_mol_v3000_source` or WASM
-`roundtrip_mol_v3000_block` for exact unedited source retention; those APIs
-predate this change.
-
-This addresses alkene interpretation and V3000 rewriting. It does not add SVG
-wavy-bond rendering, general tetrahedral either-bond perception, or changes to
-V2000 output.
-Atom-line CFG is separate and remains outside this bond configuration profile.
-
-The fixed packet `validation/openbabel-2429-2026-10-24/` contains 16 authored
-wavy-alkene variants (left/right carrier, reversed endpoints, mirrored geometry,
-2D/3D), a direct double-either control and an unmarked geometry control. Reading,
-writing and reparsing preserve the expected defined/unknown alkene state in
-18/18 patched Python cases and 18/18 independent RDKit 2026.09.1 cases. The
-prior local Chematic runtime and Open Babel 3.2.1 each match 1/18 in their tested
-pipelines. Literal SMILES spelling is not compared. These are local fixed-input
-regression results, not general stereo coverage or published-release evidence.
+V3000 either-bond markers and unknown alkene stereo are preserved in the documented source-aware paths. See [V3000 either bonds](v3000-either-bonds.md) for exact binding behavior and limits.
 
 ## RDKit compatibility namespaces
 
@@ -95,40 +59,7 @@ claim that every RDKit implementation detail is reproduced.
 
 ### Zero-seed conformer ensembles
 
-RDKit [#9738](https://github.com/rdkit/rdkit/issues/9738) reports that
-`EmbedMultipleConfs(randomSeed=0)` repeats the same conformer. Chematic's Rust
-`rdkit_embed_multiple_confs` and Python `Mol.rdkit_embed_multiple_confs` fix
-this by using attempt seeds `0, 2, 3, ...`. Seed one is skipped because zero
-and one alias in the underlying random generator. The first result preserves
-the existing single-conformer seed-zero behavior. Positive base seeds retain
-the existing `base * (index + 1)` schedule.
-
-```python
-import chematic
-
-mol = chematic.from_smiles("CCCCCCO").add_hydrogens()
-conformers = mol.rdkit_embed_multiple_confs(5, random_seed=0)
-assert conformers == mol.rdkit_embed_multiple_confs(5, random_seed=0)
-assert conformers[0] == mol.rdkit_embed(random_seed=0)
-```
-
-Candidate ordering remains independent of native worker count. Corrected
-gradient and MMFF ensemble APIs share this schedule; the quality profile also
-advances across additional seed-zero batches. Impossible signed seed ranges
-are rejected before allocating the candidate ensemble. Failed embeddings are
-still omitted. Different seeds do not guarantee different conformational
-minima, and no RMS pruning is added. Seed-zero ensembles intentionally differ
-from RDKit 2026.09.1 after the first candidate. WASM currently exposes single
-RDKit-style embedding, which is unchanged.
-
-The fixed diagnostic in `validation/rdkit-9738-2026-10-24/` records four flexible
-SMILES, seeds 0/1/42 and five unoptimized conformers each. With seed zero, the
-prior local Chematic runtime and RDKit 2026.09.1 show no change in heavy-atom
-internal distances across candidates; the patched runtime varies by more than
-0.1 angstrom for all four inputs. All 12 runs preserve repetition and prefix
-stability. All 12 first conformers and all eight positive-seed ensembles match
-the prior runtime exactly on the measured host. This small regression packet
-does not establish ensemble coverage, energy quality or a published release.
+`rdkit_embed_multiple_confs(random_seed=0)` uses a distinct, deterministic seed schedule. See [zero-seed conformer ensembles](rdkit-zero-seed-ensembles.md) for the schedule, binding scope and fixed diagnostic.
 
 WASM `MolHandle` exposes separately named `rdkit_*` writers, fingerprints,
 alignment, stereo, scaffold, seeded-embedding, and bounds-matrix operations.
@@ -138,76 +69,7 @@ alignment matches, 4,096 stereo isomers, and 512 atoms for ETKDG/bounds output.
 
 ## Isotope-aware total formula
 
-[Open Babel #1464](https://github.com/openbabel/openbabel/issues/1464) requests
-non-hydrogen isotope labels and total charge in molecular formulas. The
-isotope-aware total formula is available as Rust
-`chematic_chem::calc_mol_formula_with_isotopes(&mol)`, Python's read-only
-`Mol.formula_with_isotopes` property and WASM `MolHandle.formula_with_isotopes()`.
-
-```python
-mol = chematic.from_smiles("[13CH3]C(=O)[O-]")
-assert mol.formula == "C2H3O2-"
-assert mol.formula_with_isotopes == "C[13C]H3O2-"
-assert chematic.from_smiles("[2H]O[2H]").formula_with_isotopes == "[2H]2O"
-```
-
-The operation includes explicit atom counts, bracket/inferred hydrogens and
-net formal charge using the existing formula descriptor's hydrogen/model
-convention, including its original-graph fallback. It does not add or remove
-atoms from the caller's graph. The existing isotope-blind `formula` output is
-unchanged. Total charge already worked in that API and in the measured Open
-Babel 3.2.1; the added capability distinguishes isotope-specific counts.
-
-Carbon and hydrogen families come first, then other symbols alphabetically.
-Within an element, unspecified atoms precede numeric isotope labels in ascending
-mass order. Isotopes use `[13C]`, `[15N]`, `[2H]` and `[3H]`, with a following
-count when greater than one. Explicit `[12C]` remains distinct from unspecified
-carbon. Mass zero means unspecified; declared nonzero mass numbers are retained
-without validating physical isotope existence or abundance. Net charge uses
-`+`, `-`, `+2`, `-3`. Wildcards retain `*` or a bracketed isotope-qualified `*`.
-
-This is a total-composition string. It does not encode isotope locations,
-connectivity, stereo, atom maps or radical state and is not a molecular identity
-key. Existing `parse_formula` does not preserve isotope labels; it is not a
-round-trip reader for this output. The core `Molecule::formula_with_isotopes`
-helper remains a separate explicit-atom-only view; use the chemistry API above
-for hydrogens and net charge. Existing graph/parser budgets still apply.
-
-Authored controls and the open issue snapshot are retained under
-`validation/openbabel-1464-2026-10-24/`; the report and raw outputs are in
-`validation/results/openbabel-1464-2026-10-24*`. The packet covers 47 compositions,
-including isotope order/multiplicity, charge cancellation, explicit/inferred
-hydrogens, aromatic heteroatoms and separate wildcard/mass-label boundaries.
-Native tests also verify formula invariance when adding ordinary H graph atoms.
-Python/WASM tests verify that formula calls leave the graph and legacy output
-unchanged.
-
-```sh
-python3 scripts/validation/validate_isotope_formula.py \
-  --python-root /path/to/candidate-python \
-  --rdkit-python /path/to/rdkit-python \
-  --wasm-module /path/to/candidate/chematic_wasm.js
-```
-
-The Open Babel lane uses the same SMILES with `-ismi -omolreport`, normalized by
-an independent formula observer. D/T aliases count as equivalent to `[2H]`/`[3H]`.
-Repeated charge signs (`++`, `--`) also normalize to `+2`, `-2`.
-Five wildcard/mass-label boundary controls are candidate-only. Expected fields
-are authored before execution; RDKit's isotope-separated output provides an
-additional cross-check. Source/runtime/fixture hashes are retained. This is
-local development evidence, not a published release or a toolkit-wide ranking.
-
-The candidate Python/WASM APIs match all 47 authored compositions. The old
-isotope-blind APIs in the same runtime match 12; their complete composition
-implementation is verified equal to main `38b4c92c`. This is not a separately
-rebuilt main/release binary. In the 42-input common lane, Open Babel 3.2.1
-matches 16 compositions: 23 differ only in isotope-specific counts, and three
-also undercount ordinary hydrogen. Those hydrogen regressions are separate
-from the new isotope capability. No charge differences are introduced as a
-new win. RDKit 2026.09.1 matches composition on 46 accepted controls, with one
-equivalent ordering difference, and refuses the chemically invalid H–H chain
-control. Workers have 30-second/1 MiB combined pipe budgets, with no process
-memory cap.
+Rust, Python and WASM expose an isotope-aware total-composition string with explicit charge. See [isotope-aware formula](isotope-aware-formula.md) for ordering, limits and examples.
 
 ## Copy and serialization semantics
 

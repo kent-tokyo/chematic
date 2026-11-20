@@ -1,22 +1,20 @@
 # Validation report
 
-Updated 2026-10-24. The current release is **v1.2.1**. Completed hosted package
+Updated 2026-11-21 for the **v1.2.2** release line. Completed hosted package
 evidence remains labelled with the release that produced it.
 Every result is limited to its recorded artifact or source revision,
 comparator, corpus, options, platform, and failure policy.
 
 ## Evidence boundary
 
-- v1.2.1 is the current release. The latest completed hosted package evidence
-  is the v1.2.0 Linux, macOS and Windows runtime smoke and 11-job chemistry
-  workflow until the v1.2.1 tag workflow finishes. Source-only timing does not
-  become package timing.
+- v1.2.2 artifact results belong to its tag workflow. The v1.2.1 evaluation reported four-platform chemistry gates and 7,076 Python tests. The retained v1.2.0 workflow links below are older artifact evidence. Source-only timing does not become package timing.
+- A local v1.2.2 candidate wheel on macOS arm64/CPython 3.13 passed the selected RDKit 2026.03.6 gate manifest. One native-parsed bridgehead amine differs in the exposed 10,000-row CIP lane. BioTransformer and A6 remain retained expectations pending the published-artifact workflow.
 - The latest durable checked-in cross-platform row packet is v1.1.3. Hosted
   workflow success does not create missing row-level evidence.
 - The latest indexed public-package speed result is the one-host v1.1.8 Labute
   ASA lane. The broadest published-package RDKit speed packet is v1.0.42.
 - Source and earlier package records are useful development evidence, but they
-  are not relabelled as v1.2.1 package results.
+  are not relabelled as v1.2.2 package results.
 - Typed refusals and abstentions stay in the denominator and are not matches.
 
 ## Current evidence
@@ -54,16 +52,9 @@ comparator, corpus, options, platform, and failure policy.
 - **3D:** typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory are independent gates.
 
-## v1.2.1 release and retained package evidence
+## Retained package evidence
 
-The v1.2.1 release retains v1.2.0 package evidence under its original label
-until its own hosted workflows finish. The v1.2.0 public wheels passed their
-runtime and chemistry workflows. The
-exact v1.1.8 macOS arm64 wheel remains the latest recorded public-package
-performance lane for Labute ASA because v1.2.0 was not timed as a package.
-Neither result supersedes the latest durable cross-platform per-row packet at
-v1.1.3. Availability, chemistry pass/fail evidence, retained row evidence and
-performance evidence remain separate claims.
+The v1.2.0 public wheels passed the linked runtime and chemistry workflows. The exact v1.1.8 macOS arm64 wheel remains the latest indexed public-package Labute ASA timing lane. The latest durable cross-platform per-row packet in this report is v1.1.3. These records cannot establish v1.2.2 results.
 
 ## How to interpret results
 
