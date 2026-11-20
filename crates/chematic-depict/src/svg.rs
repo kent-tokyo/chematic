@@ -255,9 +255,14 @@ pub(crate) fn render_mol_body(mol: &Molecule, layout: &Layout) -> String {
         show_atom_indices: false,
     };
     let mut body = String::new();
-    for (_, bond) in mol.bonds() {
+    for (bond_idx, bond) in mol.bonds() {
         let (p1, p2) = linear_carbon::bond_endpoints(mol, layout, bond.atom1, bond.atom2);
-        body.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+        body.push_str(&render_bond_c(
+            crate::drawing_bond_order(mol, bond_idx),
+            p1,
+            p2,
+            ctx.bond_color,
+        ));
     }
     write_atom_labels_ctx(mol, layout, &ctx, &mut body);
     body
@@ -305,7 +310,12 @@ pub(crate) fn render_mol_body_opts(
         if opts.highlight_bonds.contains(&bond_idx) {
             body.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
         } else {
-            body.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+            body.push_str(&render_bond_c(
+                crate::drawing_bond_order(mol, bond_idx),
+                p1,
+                p2,
+                ctx.bond_color,
+            ));
         }
     }
 
@@ -391,7 +401,12 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
         if opts.highlight_bonds.contains(&bond_idx) {
             svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00")); // R1
         } else {
-            svg.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+            svg.push_str(&render_bond_c(
+                crate::drawing_bond_order(mol, bond_idx),
+                p1,
+                p2,
+                ctx.bond_color,
+            ));
         }
     }
 
@@ -476,7 +491,12 @@ pub fn render_svg_with_metadata(
         if opts.highlight_bonds.contains(&bond_idx) {
             svg.push_str(&render_line(p1, p2, "4.0", "#FF8C00"));
         } else {
-            svg.push_str(&render_bond_c(bond.order, p1, p2, ctx.bond_color));
+            svg.push_str(&render_bond_c(
+                crate::drawing_bond_order(mol, bond_idx),
+                p1,
+                p2,
+                ctx.bond_color,
+            ));
         }
     }
 

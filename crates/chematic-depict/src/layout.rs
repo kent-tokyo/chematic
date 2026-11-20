@@ -23,6 +23,7 @@ use rustc_hash::{FxHashMap as HashMap, FxHashSet as HashSet};
 
 use chematic_core::{AtomIdx, BondIdx, Molecule};
 
+mod alkene;
 #[cfg(test)]
 mod issue_912_tests;
 mod sp_linear;
@@ -134,6 +135,19 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
 
     // One SSSR for the whole molecule (memoized on it), filtered per component.
     let ring_set = chematic_perception::find_sssr_shared(mol);
+    let facts = if mol.has_bond_directions()
+        || mol.bonds().any(|(_, bond)| {
+            matches!(
+                bond.order,
+                chematic_core::BondOrder::Up | chematic_core::BondOrder::Down
+            )
+        }) {
+        chematic_core::ez_markers::read_ez_facts(mol)
+            .map(|(facts, _)| facts)
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    };
     for component_atoms in &components {
         let component_set: HashSet<AtomIdx> = component_atoms.iter().copied().collect();
 
@@ -289,6 +303,18 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
                 }
             }
         }
+
+        let component_facts: Vec<_> = facts
+            .iter()
+            .filter(|fact| component_set.contains(&fact.ends[0].atom))
+            .collect();
+        alkene::match_alkene_geometry(
+            mol,
+            &component_facts,
+            component_atoms,
+            &comp_bonds,
+            &mut placed,
+        );
 
         // Offset this component to the right of the previous one.
         let x_offset = if fragment_max_x == 0.0 {

@@ -112,6 +112,28 @@ pub fn depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictD
     depict_data_from_layout(mol, &layout)
 }
 
+/// Literal Up/Down also encodes wedges imported from drawing formats.
+/// Adjacent paired alkene directions are rendered as ordinary single bonds.
+fn drawing_bond_order(mol: &Molecule, idx: BondIdx) -> BondOrder {
+    let bond = mol.bond(idx);
+    if !matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+        return bond.order;
+    }
+    for end in [bond.atom1, bond.atom2] {
+        for (far, double) in mol.neighbors(end) {
+            if mol.bond(double).order == BondOrder::Double
+                && !(mol.atom(end).aromatic && mol.atom(far).aromatic)
+                && mol.neighbors(far).any(|(_, b)| {
+                    b != double && chematic_core::ez_markers::raw_direction(mol, b).is_some()
+                })
+            {
+                return BondOrder::Single;
+            }
+        }
+    }
+    bond.order
+}
+
 /// Internal helper: build `DepictData` from a pre-computed `Layout`.
 fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
     let atoms: Vec<DepictAtom> = mol
@@ -142,7 +164,7 @@ fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
     let bonds: Vec<DepictBond> = mol
         .bonds()
         .map(|(bidx, bond)| {
-            let kind = match bond.order {
+            let kind = match drawing_bond_order(mol, bidx) {
                 BondOrder::Single => DepictBondKind::Single,
                 BondOrder::Double => DepictBondKind::Double,
                 BondOrder::Triple => DepictBondKind::Triple,
