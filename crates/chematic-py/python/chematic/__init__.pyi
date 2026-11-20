@@ -605,7 +605,7 @@ class Mol:
         include_chirality: bool = False,
         count_simulation: bool = True,
         count_bounds: Sequence[int] | None = None,
-    ) -> tuple[list[int], dict[int, int], dict[int, int]]:
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
         """Return packed bits, folded counts and unhashed counts for 2D Atom Pair."""
         ...
 
