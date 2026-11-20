@@ -635,6 +635,9 @@ pub fn is_saturated_ring_lone_pair_centre(mol: &Molecule, atom: AtomIdx) -> bool
         && atom_in_ring(mol, atom)
 }
 
+/// Compatibility name retained for callers of the v1.2.1 module path.
+pub use is_saturated_ring_lone_pair_centre as label_follows_rdkit_smiles_reading;
+
 /// Whether `idx` lies on a ring: some neighbour reaches another without
 /// passing through `idx`.
 fn atom_in_ring(mol: &Molecule, idx: AtomIdx) -> bool {
