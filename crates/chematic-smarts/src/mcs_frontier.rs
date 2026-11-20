@@ -172,9 +172,12 @@ pub(super) fn mapped_rows_share_common_bond(
 ) -> bool {
     let row1 = &mapping.query_to_mol[q1];
     let row2 = &mapping.query_to_mol[q2];
-    let Some((_, bond0)) = mols[0].bond_between(row1[0], row2[0]) else {
+    let Some((index, bond0)) = mols[0].bond_between(row1[0], row2[0]) else {
         return false;
     };
+    if mapping.omitted_bonds.binary_search(&index).is_ok() {
+        return false;
+    }
     mols.iter().enumerate().skip(1).all(|(mi, mol)| {
         mol.bond_between(row1[mi], row2[mi])
             .is_some_and(|(_, bond)| {

@@ -94,7 +94,27 @@ def test_mcs_smarts_round_trips_a_complete_tetrahedral_frame(left, right, invert
     assert not query.matches(ch.from_smiles(inverted), use_chirality=True)
 
 
-def test_mcs_smarts_reports_an_incomplete_tetrahedral_frame():
-    molecules = [ch.from_smiles(s) for s in ("C[C@H](O)Cl", "C[C@H](I)Cl")]
-    with pytest.raises(ValueError, match="complete absolute tetrahedral frames"):
-        ch.find_mcs_smarts_checked(molecules, match_chiral_tag=True)
+def test_mcs_smarts_missing_fourth_ligand_rejects_inverted_orientation():
+    left, right, inverted = [
+        ch.from_smiles(s) for s in ("F[C@](Cl)(Br)I", "F[C@H](Cl)Br", "F[C@@H](Cl)Br")
+    ]
+    smarts, timed_out = ch.find_mcs_smarts_checked([left, right], match_chiral_tag=True)
+    query = ch.compile_smarts(smarts)
+    assert not timed_out and query.atom_count == 4
+    assert query.matches(left, use_chirality=True) and query.matches(right, use_chirality=True)
+    assert not query.matches(inverted, use_chirality=True)
+
+
+def test_mcs_smarts_two_ligands_require_chirality_presence():
+    molecules = [ch.from_smiles(s) for s in ("C[C@H](O)Cl", "C[C@H](I)Cl", "C[C@@H](I)Cl")]
+    smarts, timed_out = ch.find_mcs_smarts_checked(molecules, match_chiral_tag=True)
+    query = ch.compile_smarts(smarts)
+    assert not timed_out and query.atom_count == 3
+    assert all(query.matches(mol, use_chirality=True) for mol in molecules)
+    assert not query.matches(ch.from_smiles("CC(O)Cl"), use_chirality=True)
+
+
+def test_mcs_smarts_reports_unsupported_square_planar_stereo():
+    molecule = ch.from_smiles("[Pt@SP1](F)(Cl)(Br)I")
+    with pytest.raises(ValueError, match="representable absolute tetrahedral stereo"):
+        ch.find_mcs_smarts_checked([molecule, molecule], match_chiral_tag=True)

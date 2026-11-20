@@ -257,6 +257,14 @@ pub(crate) fn mapped_chirality_primitive_with_map(
     if !matches!(kind, 1 | 2) {
         return true;
     }
+    if !target_chirality.is_tetrahedral() || mol.is_allene_stereo(target_atom) {
+        return false;
+    }
+    if query.adj[query_atom].len() < 3 {
+        // The selected graph fixes chirality presence, but fewer than three
+        // bonded neighbors cannot fix the order in a standard SMARTS query.
+        return true;
+    }
 
     let raw_matches = matches!(
         (kind, target_chirality),
@@ -300,7 +308,12 @@ pub(crate) fn mapped_chirality_primitive_with_map(
         }
     }
 
-    let Some(even) = permutation_parity(&mapped_order, target_order) else {
+    let parity = if target_order.len() == 4 {
+        tetrahedral_frame_parity(&mapped_order, target_order)
+    } else {
+        permutation_parity(&mapped_order, target_order)
+    };
+    let Some(even) = parity else {
         return raw_matches;
     };
     let query_chirality = if kind == 1 {
@@ -320,6 +333,26 @@ pub(crate) fn query_has_positive_h_count(query: &AtomQuery) -> bool {
             AtomQuery::Primitive(AtomPrimitive::HCount(0))
         ),
         AtomQuery::Primitive(_) | AtomQuery::Or(_, _) => false,
+    }
+}
+
+/// Compare the order of a tetrahedral frame after filling a unique omitted
+/// ligand as the final position. Its identity can differ between targets.
+pub(crate) fn tetrahedral_frame_parity(mapped: &[u32], frame: &[u32]) -> Option<bool> {
+    if frame.len() != 4 {
+        return None;
+    }
+    match mapped.len() {
+        4 => permutation_parity(mapped, frame),
+        3 => {
+            let mut missing = frame.iter().filter(|atom| !mapped.contains(atom));
+            let last = *missing.next()?;
+            if missing.next().is_some() {
+                return None;
+            }
+            permutation_parity(&[mapped[0], mapped[1], mapped[2], last], frame)
+        }
+        _ => None,
     }
 }
 

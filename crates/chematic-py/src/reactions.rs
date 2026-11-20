@@ -1257,8 +1257,9 @@ fn find_mcs_checked(
 ///
 /// Optional charge and isotope predicates are preserved for re-search.
 /// Set `bond_count_first` for the bond-first objective used by RDKit FMCS.
-/// `match_chiral_tag` retains complete absolute tetrahedral frames.
-/// Partial, non-tetrahedral and enhanced frames raise a serialization error.
+/// `match_chiral_tag` retains absolute tetrahedral orientation with at least
+/// three common bonds and chirality presence on smaller frames.
+/// Non-tetrahedral and relative stereo raise a serialization error.
 #[pyfunction]
 #[pyo3(signature = (
     mols,

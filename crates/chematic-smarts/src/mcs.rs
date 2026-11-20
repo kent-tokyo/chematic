@@ -22,7 +22,9 @@ use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
 
 #[path = "mcs_stereo.rs"]
 mod stereo;
-use stereo::{constrain_query_chirality, mapped_chirality_compatible};
+use stereo::{
+    StereoConflict, consider_stereo_subgraphs, constrain_query_chirality, mapped_stereo_conflict,
+};
 
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
@@ -88,8 +90,9 @@ pub struct McsConfig {
     pub atom_compare: AtomCompare,
     /// Bond-level comparison strategy.  Defaults to [`BondCompare::OrderOrAromatic`].
     pub bond_compare: BondCompare,
-    /// If `true`, fully mapped tetrahedral centers must have the same stereochemistry
-    /// after accounting for ligand order. If `false`, chirality is ignored (default).
+    /// If `true`, tetrahedral centers with three or more common bonds must have
+    /// the same stereochemistry after accounting for ligand order. Smaller
+    /// frames require specified chirality. The default ignores chirality.
     pub match_chiral_tag: bool,
     /// If `true`, formal charge must match between atoms. If `false` (default), charge is
     /// ignored -- e.g. a carboxylate `[O-]` matches a neutral `O`. Mirrors `match_chiral_tag`.
@@ -344,6 +347,7 @@ struct PartialMapping {
     size: usize,
     /// Number of bonds in the common subgraph (for bond-match mode).
     bond_count: usize,
+    omitted_bonds: Vec<BondIdx>,
 }
 
 impl PartialMapping {
@@ -356,6 +360,7 @@ impl PartialMapping {
             query_to_mol: Vec::new(),
             size: 0,
             bond_count: 0,
+            omitted_bonds: Vec::new(),
         }
     }
 
@@ -379,6 +384,7 @@ impl PartialMapping {
             query_to_mol,
             size: 1,
             bond_count: 0,
+            omitted_bonds: Vec::new(),
         }
     }
 
@@ -563,26 +569,40 @@ fn mcs_tiebreak_key(mapping: &PartialMapping) -> impl Iterator<Item = u32> + '_ 
     mapping.query_to_mol.iter().map(|row| row[0].0)
 }
 
-/// Reject a fully mapped stereocenter with incompatible ligand parity, and
-/// keep the best candidate that satisfies all configured constraints.
 fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
-    // A raw @/@@ tag is relative to the SMILES neighbor order. Only a mapped
-    // ligand permutation can establish whether two fully represented centers
-    // have the same stereochemistry. A partial center remains eligible.
-    if state.config.match_chiral_tag && !mapped_chirality_compatible(state.mols, mapping) {
-        return false;
+    if state.config.match_chiral_tag {
+        match mapped_stereo_conflict(state.mols, mapping, state.config) {
+            Some(StereoConflict::IncompatibleTag) => return false,
+            Some(StereoConflict::Orientation(bonds)) => {
+                consider_stereo_subgraphs(state, mapping, bonds);
+                // Later vertices can supply a path around an omitted bond.
+                return true;
+            }
+            None => {}
+        }
     }
+    record_mapping(state, mapping);
+    true
+}
+
+fn better_mapping(state: &McsState<'_>, mapping: &PartialMapping) -> bool {
     if mapping.size < state.config.min_atoms {
-        return true;
+        return false;
     }
     let score = state.score(mapping);
     let current_best = state.score(&state.best);
-    let is_better = score > current_best
-        || (score == current_best && mcs_tiebreak_key(mapping).lt(mcs_tiebreak_key(&state.best)));
-    // Pruning only the unconstrained winner after the search can discard a
-    // smaller, valid candidate found earlier (for example a common chain next
-    // to two incompatible rings). Keep the best *valid* mapping instead.
-    if is_better
+    score > current_best
+        || (score == current_best
+            && mcs_tiebreak_key(mapping)
+                .cmp(mcs_tiebreak_key(&state.best))
+                .then_with(|| mapping.omitted_bonds.cmp(&state.best.omitted_bonds))
+                .is_lt())
+}
+
+fn record_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) {
+    // Keep the best valid, ring-complete candidate rather than filtering
+    // only the unconstrained winner afterward.
+    if better_mapping(state, mapping)
         && (!state.config.complete_rings_only
             || mapping_has_complete_rings(state.mols, mapping, &state.ring_sets, state.config))
     {
@@ -591,7 +611,6 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
             && ((state.objective == McsObjective::AtomCount && !state.config.maximize_bonds)
                 || state.best.bond_count == state.absolute_bond_upper_bound);
     }
-    true
 }
 
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
@@ -625,16 +644,23 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     }
 }
 
-fn prepare_growth_node(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
-    if state.proven_optimal {
-        return false;
-    }
+fn reserve_search_node(state: &mut McsState<'_>) -> bool {
     if let Some(limit) = state.config.max_search_nodes {
         if state.search_nodes >= limit {
             state.resource_limited = true;
             return false;
         }
         state.search_nodes += 1;
+    }
+    true
+}
+
+fn prepare_growth_node(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
+    if state.proven_optimal {
+        return false;
+    }
+    if !reserve_search_node(state) {
+        return false;
     }
     if !consider_mapping(state, mapping) {
         return false;

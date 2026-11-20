@@ -528,8 +528,8 @@ pub fn mcs_smiles_json_with_config(
 /// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
 /// Set `bondCountFirst` to maximize bonds first, then atoms.
 /// Charge and isotope predicates are preserved. `matchChiralTag` retains
-/// complete absolute tetrahedral frames. Other frames raise a serialization
-/// error.
+/// absolute tetrahedral orientation with at least three common bonds and
+/// chirality presence on smaller frames. Other stereo raises a serialization error.
 #[wasm_bindgen]
 pub fn mcs_smarts_json_with_config(
     smiles_json: &str,

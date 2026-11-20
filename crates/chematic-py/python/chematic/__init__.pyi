@@ -4986,8 +4986,9 @@ def find_mcs_smarts_checked(
     alternatives under relaxed comparison. A resource limit raises
     ``ChematicInputError``. Charge and isotope constraints are preserved when
     requested. Set ``bond_count_first=True`` to maximize bonds first, then atoms.
-    Set ``match_chiral_tag=True`` to retain complete absolute tetrahedral
-    frames. Partial, non-tetrahedral and enhanced frames raise ``ValueError``.
+    Set ``match_chiral_tag=True`` to retain absolute tetrahedral orientation
+    with at least three common bonds and chirality presence on smaller frames.
+    Non-tetrahedral and relative stereo raise ``ValueError``.
     """
     ...
 

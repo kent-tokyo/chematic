@@ -18,7 +18,7 @@ pub enum McsSmartsError {
 impl fmt::Display for McsSmartsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if *self == Self::UnsupportedChirality {
-            return f.write_str("MCS SMARTS can retain only complete absolute tetrahedral frames");
+            return f.write_str("MCS SMARTS requires representable absolute tetrahedral stereo");
         }
         write!(f, "{self:?}")
     }
@@ -105,8 +105,8 @@ fn ring_label(number: usize, out: &mut String) {
 /// Serialize an MCS `QueryMolecule` without collapsing atom or bond alternatives.
 ///
 /// This accepts the `AtomicNum`/`Or` and bond-order/`Or` query subset emitted by
-/// MCS, including trailing charge, isotope and complete absolute tetrahedral
-/// constraints. Other predicates and malformed graphs return an error. An
+/// MCS, including trailing charge, isotope and absolute tetrahedral
+/// constraints projected onto the selected bonds. Other predicates and malformed graphs return an error. An
 /// empty query serializes to `""`.
 pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsError> {
     validate_graph(query)?;
@@ -222,7 +222,10 @@ fn chirality_swapped(
 ) -> Result<bool, McsSmartsError> {
     let stored = &query.adj[atom];
     let bracket_h = query_has_positive_h_count(&query.atoms[atom].query);
-    if stored.len() + usize::from(bracket_h) != 4 || (bracket_h && layout.parent[atom].is_none()) {
+    if stored.len() < 3 {
+        return Ok(false);
+    }
+    if stored.len() > 4 || (bracket_h && (stored.len() != 3 || layout.parent[atom].is_none())) {
         return Err(McsSmartsError::UnsupportedChirality);
     }
     let stored_order: Vec<_> = stored.iter().map(|&(_, n)| n as u32).collect();
@@ -343,19 +346,64 @@ mod tests {
     }
 
     #[test]
-    fn incomplete_stereocenters_do_not_serialize_as_complete_frames() {
+    fn partial_tetrahedral_queries_distinguish_orientation_when_three_bonds_remain() {
         let config = McsConfig {
             match_chiral_tag: true,
             ..McsConfig::default()
         };
-        let left = chematic_smiles::parse("C[C@H](O)Cl").unwrap();
-        let right = chematic_smiles::parse("C[C@H](I)Cl").unwrap();
-        let mcs = find_mcs_with_config(&[&left, &right], &config);
-        assert_eq!(mcs.atom_count(), 3);
-        assert_eq!(
-            mcs_query_to_smarts(&mcs),
-            Err(McsSmartsError::UnsupportedChirality)
-        );
+        let matching = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        let parse = |smiles| chematic_smiles::parse(smiles).unwrap();
+        let iodine = parse("F[C@](Cl)(Br)I");
+        let implicit_h = parse("F[C@H](Cl)Br");
+        let inverted = parse("F[C@@H](Cl)Br");
+        let achiral = parse("FC(Cl)Br");
+        let mcs = find_mcs_with_config(&[&iodine, &implicit_h], &config);
+        assert_eq!((mcs.atom_count(), mcs.bonds.len()), (4, 3));
+        let projected = parse_smarts(&mcs_query_to_smarts(&mcs).unwrap()).unwrap();
+        for query in [&mcs, &projected] {
+            for (mol, hit) in [(&iodine, true), (&implicit_h, true), (&inverted, false), (&achiral, false)] {
+                assert_eq!(crate::has_match_with_config(query, mol, &matching), hit);
+            }
+        }
+        let smaller = find_mcs_with_config(&[&iodine, &inverted], &config);
+        assert_eq!((smaller.atom_count(), smaller.bonds.len()), (3, 2));
+        let projected = parse_smarts(&mcs_query_to_smarts(&smaller).unwrap()).unwrap();
+        for mol in [&iodine, &inverted] {
+            assert!(crate::has_match_with_config(&projected, mol, &matching));
+        }
+        assert!(!crate::has_match_with_config(&projected, &achiral, &matching));
+    }
+
+    #[test]
+    fn stereo_conflict_can_omit_a_ring_edge_and_keep_all_atoms() {
+        let parse = |smiles| chematic_smiles::parse(smiles).unwrap();
+        let left = parse("N[C@H]1CCOC1");
+        let right = parse("N[C@@H]1CCOC1");
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let matching = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        for objective in [crate::McsObjective::AtomCount, crate::McsObjective::BondCount] {
+            let outcome = crate::find_mcs_with_objective_checked(&[&left, &right], &config, objective);
+            assert!(matches!(outcome, crate::McsOutcome::Exhaustive(_)));
+            let query = outcome.into_query();
+            assert_eq!((query.atom_count(), query.bonds.len()), (6, 5));
+            let projected = parse_smarts(&mcs_query_to_smarts(&query).unwrap()).unwrap();
+            assert!(crate::has_match_with_config(&projected, &left, &matching));
+            assert!(crate::has_match_with_config(&projected, &right, &matching));
+
+            let complete_rings = McsConfig { complete_rings_only: true, ..config.clone() };
+            let result = crate::find_mcs_with_objective_checked(&[&left, &right], &complete_rings, objective)
+                .into_query();
+            assert_eq!((result.atom_count(), result.bonds.len()), (5, 5));
+        }
     }
 
     #[test]

@@ -51,9 +51,23 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
       mol.free();
     }
   }
+  const partialInputs = ["F[C@](Cl)(Br)I", "F[C@H](Cl)Br"];
+  const partial = JSON.parse(mcs_smarts_json_with_config(JSON.stringify(partialInputs), options));
+  assert.equal(partial.wasTimedOut, false);
+  assert.equal(partial.wasResourceLimited, false);
+  assert.equal(partial.smarts.match(/#/g).length, 4);
+  for (const [smiles, expected] of [...partialInputs.map(s => [s, true]), ["F[C@@H](Cl)Br", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      const matches = JSON.parse(wasm.smarts_match_atoms_with_chirality(partial.smarts, mol, true));
+      assert.equal(matches.length > 0, expected, partial.smarts);
+    } finally {
+      mol.free();
+    }
+  }
   assert.throws(() => mcs_smarts_json_with_config(
-    JSON.stringify(["C[C@H](O)Cl", "C[C@H](I)Cl"]), options
-  ), /complete absolute tetrahedral frames/);
+    JSON.stringify(["[Pt@SP1](F)(Cl)(Br)I", "[Pt@SP1](F)(Cl)(Br)I"]), options
+  ), /representable absolute tetrahedral stereo/);
 }
 
 {
