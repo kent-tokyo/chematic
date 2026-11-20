@@ -1075,6 +1075,57 @@ pub fn rdkit_ecfp4_detail_json(mol: &MolHandle) -> Result<String, JsValue> {
     ))
 }
 
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct AtomPairOptions {
+    nbits: usize,
+    min_distance: u32,
+    max_distance: u32,
+    include_chirality: bool,
+    count_bounds: Option<Vec<u32>>,
+}
+
+impl Default for AtomPairOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitAtomPairConfig::default();
+        Self {
+            nbits: default.nbits,
+            min_distance: default.min_distance,
+            max_distance: default.max_distance,
+            include_chirality: default.include_chirality,
+            count_bounds: default.count_bounds,
+        }
+    }
+}
+
+/// Return packed bits, folded counts and unhashed counts for 2D Atom Pair.
+/// The JSON options are optional. Set `countBounds` to null to disable count
+/// simulation. Counts are returned as sorted [identifier, count] arrays.
+#[wasm_bindgen]
+pub fn rdkit_atom_pair_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Atom Pair options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: AtomPairOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitAtomPairConfig {
+        nbits: options.nbits,
+        min_distance: options.min_distance,
+        max_distance: options.max_distance,
+        include_chirality: options.include_chirality,
+        count_bounds: options.count_bounds,
+    };
+    let result = chematic_fp::rdkit_atom_pair_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.fingerprint.to_le_bytes(),
+        "foldedCounts": result.folded_counts,
+        "sparseCounts": result.sparse_counts,
+    }))
+}
+
 /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a
 /// bit-packed byte vector (`nbits / 8` bytes, LSB-first).
 ///

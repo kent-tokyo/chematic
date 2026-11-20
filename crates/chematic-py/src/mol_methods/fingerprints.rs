@@ -1,5 +1,11 @@
 use super::*;
 
+type RdkitAtomPairDetail = (
+    Vec<u8>,
+    std::collections::BTreeMap<u32, u32>,
+    std::collections::BTreeMap<u32, u32>,
+);
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -142,6 +148,40 @@ impl Mol {
     /// Does not support chirality (``includeChirality=True`` is not implemented).
     fn rdkit_atom_pair_fp(&self) -> Vec<u8> {
         bitvec2048_to_bytes(&chematic_fp::rdkit_atom_pair_fp(&self.inner))
+    }
+
+    /// Configurable 2D RDKit Atom Pair fingerprint. Returns packed bits, folded
+    /// counts and unhashed counts. The counts are independent of count simulation.
+    #[pyo3(signature = (*, nbits = 2048, min_distance = 1, max_distance = 30,
+        include_chirality = false, count_simulation = true, count_bounds = None))]
+    fn rdkit_atom_pair_config_detail(
+        &self,
+        nbits: usize,
+        min_distance: u32,
+        max_distance: u32,
+        include_chirality: bool,
+        count_simulation: bool,
+        count_bounds: Option<Vec<u32>>,
+    ) -> PyResult<RdkitAtomPairDetail> {
+        let mut config = chematic_fp::RdkitAtomPairConfig {
+            nbits,
+            min_distance,
+            max_distance,
+            include_chirality,
+            ..Default::default()
+        };
+        if !count_simulation {
+            config.count_bounds = None;
+        } else if count_bounds.is_some() {
+            config.count_bounds = count_bounds;
+        }
+        let result = chematic_fp::rdkit_atom_pair_config(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((
+            result.fingerprint.to_le_bytes(),
+            result.folded_counts.into_iter().collect(),
+            result.sparse_counts.into_iter().collect(),
+        ))
     }
 
     /// RDKit-compatible atom-pair fingerprint as a dense NumPy bit vector.

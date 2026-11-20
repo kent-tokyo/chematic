@@ -596,6 +596,19 @@ class Mol:
     ) -> dict[int, int]:
         """``GetMorganGenerator(radius).GetSparseCountFingerprint(m)`` elements."""
         ...
+    def rdkit_atom_pair_config_detail(
+        self,
+        *,
+        nbits: int = 2048,
+        min_distance: int = 1,
+        max_distance: int = 30,
+        include_chirality: bool = False,
+        count_simulation: bool = True,
+        count_bounds: Sequence[int] | None = None,
+    ) -> tuple[list[int], dict[int, int], dict[int, int]]:
+        """Return packed bits, folded counts and unhashed counts for 2D Atom Pair."""
+        ...
+
     def rdkit_atom_pair_sparse_counts(self) -> dict[int, int]:
         """``GetAtomPairGenerator().GetSparseCountFingerprint(m)`` elements."""
         ...

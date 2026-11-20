@@ -71,6 +71,7 @@ pub use fold_density::{
     fold_to_target_density,
 };
 pub use rdkit_atom_pair::{
+    RdkitAtomPairConfig, RdkitAtomPairError, RdkitAtomPairResult, rdkit_atom_pair_config,
     rdkit_atom_pair_counts, rdkit_atom_pair_fp, rdkit_atom_pair_sparse_counts,
 };
 pub use rdkit_avalon::{RdkitAvalonError, rdkit_avalon_fp};
