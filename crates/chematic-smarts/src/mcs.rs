@@ -14,7 +14,7 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 
 #[path = "mcs_bounds.rs"]
 mod bounds;
-use bounds::{upper_bound_additional, upper_bound_for_seeds};
+use bounds::AtomUpperBound;
 
 #[path = "mcs_frontier.rs"]
 mod frontier;
@@ -293,7 +293,7 @@ fn find_mcs_impl(
         absolute_bond_upper_bound,
         proven_optimal: false,
         ring_sets,
-        excluded: vec![false; n0],
+        atom_bound: AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy),
     };
 
     'outer: for a0 in 0..n0 {
@@ -328,23 +328,11 @@ fn find_mcs_impl(
                 break 'outer;
             }
 
-            // Prune with a conservative bound under the selected atom comparator.
-            let ub = upper_bound_for_seeds(
-                mols,
-                AtomIdx(a0 as u32),
-                &seed,
-                &config.atom_compare,
-                rdkit_heavy,
-            );
-            if !state.atom_bound_can_improve(ub) {
+            if !state.atom_bound_can_improve(state.atom_bound.total()) {
                 continue;
             }
 
             let mut mapping = PartialMapping::from_seed(mols, AtomIdx(a0 as u32), &seed);
-            // Exclusion is a per-seed-tree decision; every push/pop in `grow`
-            // unwinds back to all-`false`, but reset explicitly so a fresh
-            // seed never inherits state from a prior seed's search tree.
-            state.excluded.iter_mut().for_each(|b| *b = false);
             grow(&mut state, &mut mapping);
         }
     }
@@ -477,11 +465,7 @@ struct McsState<'a> {
     /// seed permutations can be skipped without weakening completeness.
     proven_optimal: bool,
     ring_sets: Vec<RingSet>,
-    /// `excluded[a.0]` = `true` if mol[0] atom `a` has been decided OUT of
-    /// the current search-tree branch (see the include/exclude split in
-    /// `grow`). Reset to all-`false` before growing from each new seed --
-    /// exclusion is a per-branch decision, not global across seeds.
-    excluded: Vec<bool>,
+    atom_bound: AtomUpperBound,
 }
 
 impl McsState<'_> {
@@ -534,8 +518,8 @@ impl McsState<'_> {
 /// nondeterminism (DFS-visit-order dependence for a FIXED mols[0]
 /// labeling) and is kept for that reason, not because it solves the
 /// general problem.
-fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
-    mapping.query_to_mol.iter().map(|row| row[0].0).collect()
+fn mcs_tiebreak_key(mapping: &PartialMapping) -> impl Iterator<Item = u32> + '_ {
+    mapping.query_to_mol.iter().map(|row| row[0].0)
 }
 
 /// Reject a fully mapped stereocenter with incompatible ligand parity, and
@@ -553,7 +537,7 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
     let score = state.score(mapping);
     let current_best = state.score(&state.best);
     let is_better = score > current_best
-        || (score == current_best && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best));
+        || (score == current_best && mcs_tiebreak_key(mapping).lt(mcs_tiebreak_key(&state.best)));
     // Pruning only the unconstrained winner after the search can discard a
     // smaller, valid candidate found earlier (for example a common chain next
     // to two incompatible rings). Keep the best *valid* mapping instead.
@@ -595,18 +579,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
         return;
     }
 
-    // Upper bound pruning: compute max additional atoms reachable from current state.
-    let additional_ub = upper_bound_additional(
-        state.mols,
-        mapping,
-        &state.excluded,
-        &state.config.atom_compare,
-        state.rdkit_heavy,
-    );
-    // Atom-only bounds cannot prove that a tied-size branch has no better
-    // bond count. In particular, a chain found before a triangle must not
-    // prevent the latter from becoming the best MCS.
-    if !state.atom_bound_can_improve(mapping.size + additional_ub) {
+    if !state.atom_bound_can_improve(state.atom_bound.total()) {
         return;
     }
 
@@ -615,22 +588,14 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // include it in the mapping or exclude it from this branch entirely.
     let mol0 = state.mols[0];
 
-    let mut frontier: Vec<AtomIdx> = Vec::new();
-    for row in &mapping.query_to_mol {
-        let a0 = row[0];
-        for (nb, _) in mol0.neighbors(a0) {
-            if !mapping.is_mapped(0, nb)
-                && !state.excluded[nb.0 as usize]
-                && !frontier.contains(&nb)
-            {
-                frontier.push(nb);
-            }
-        }
-    }
-
-    if frontier.is_empty() {
+    let next = mapping.query_to_mol.iter().find_map(|row| {
+        mol0.neighbors(row[0])
+            .map(|(atom, _)| atom)
+            .find(|&atom| !mapping.is_mapped(0, atom) && !state.atom_bound.is_excluded(atom))
+    });
+    let Some(n0) = next else {
         return;
-    }
+    };
 
     // Only the first frontier atom is branched on per call (the "connected growth"
     // property), but BOTH outcomes for it are explored -- include it now, or exclude
@@ -639,17 +604,15 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // the whole subtree even when skipping it (and mapping a different frontier atom
     // instead) would reach a strictly larger common substructure -- see
     // scratch_repro_frontier0_only_incompleteness.
-    let n0 = frontier[0];
-
     extend_frontier_atom(state, mapping, n0);
 
     // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
     // gets a turn. Reset on the way back out -- exclusion only applies within this
     // subtree, not to sibling branches elsewhere in the search.
     if !state.timed_out && !state.resource_limited {
-        state.excluded[n0.0 as usize] = true;
+        state.atom_bound.set_excluded(n0, true);
         grow(state, mapping);
-        state.excluded[n0.0 as usize] = false;
+        state.atom_bound.set_excluded(n0, false);
     }
 }
 
