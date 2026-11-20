@@ -551,8 +551,10 @@ fn compare_by_level<K>(
     key_fn: impl Fn(&CipDigraph, LevelSlot) -> K + Copy,
     cmp_fn: impl Fn(&K, &K, &mut CompareContext) -> Ordering + Copy,
 ) -> Result<LevelOutcome<K>, CipCompareError> {
-    let mut left_level = vec![LevelSlot::Node(left)];
-    let mut right_level = vec![LevelSlot::Node(right)];
+    let roots = [(LevelSlot::Node(left), LevelSlot::Node(right))];
+    let mut first_level = true;
+    let mut level = Vec::new();
+    let mut next_level = Vec::new();
 
     loop {
         ctx.recursive_calls += 1;
@@ -563,33 +565,18 @@ fn compare_by_level<K>(
             });
         }
 
-        // Invariant: left_level.len() == right_level.len() always -- any per-position
-        // substituent-count mismatch is padded with a Phantom slot at the position it
-        // originates (see the next_left/next_right construction below), never left to
-        // shift later positions out of alignment.
-        debug_assert_eq!(left_level.len(), right_level.len());
-        let n = left_level.len();
-
-        let mut decided = None;
-        for i in 0..n {
-            let lk = key_fn(graph, left_level[i]);
-            let rk = key_fn(graph, right_level[i]);
-            match cmp_fn(&lk, &rk, ctx) {
-                Ordering::Greater => {
-                    decided = Some((BranchComparison::Higher, lk, rk));
-                    break;
-                }
-                Ordering::Less => {
-                    decided = Some((BranchComparison::Lower, lk, rk));
-                    break;
-                }
-                Ordering::Equal => {}
-            }
-        }
-        if let Some((outcome, lk, rk)) = decided {
+        let pairs = if first_level { &roots[..] } else { &level };
+        for &(left_slot, right_slot) in pairs {
+            let lk = key_fn(graph, left_slot);
+            let rk = key_fn(graph, right_slot);
+            let outcome = match cmp_fn(&lk, &rk, ctx) {
+                Ordering::Greater => BranchComparison::Higher,
+                Ordering::Less => BranchComparison::Lower,
+                Ordering::Equal => continue,
+            };
             return Ok(LevelOutcome::Decided(outcome, lk, rk));
         }
-        if n == 0 {
+        if pairs.is_empty() {
             return Ok(LevelOutcome::FullyTied);
         }
 
@@ -599,35 +586,27 @@ fn compare_by_level<K>(
         // `rank_children` and module docs) before being placed into the next level;
         // per-position padding (not a global flatten) keeps "position i" well-defined on
         // both sides even when a tied pair's substituent counts differ.
-        let mut next_left = Vec::new();
-        let mut next_right = Vec::new();
-        for i in 0..n {
-            let left_children = match left_level[i] {
+        next_level.clear();
+        for &(left_slot, right_slot) in pairs {
+            let left_children = match left_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
                 LevelSlot::Phantom => Vec::new(),
             };
-            let right_children = match right_level[i] {
+            let right_children = match right_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
                 LevelSlot::Phantom => Vec::new(),
             };
-            let max_len = left_children.len().max(right_children.len());
-            for j in 0..max_len {
-                next_left.push(
-                    left_children
-                        .get(j)
-                        .map(|&n| LevelSlot::Node(n))
-                        .unwrap_or(LevelSlot::Phantom),
-                );
-                next_right.push(
-                    right_children
-                        .get(j)
-                        .map(|&n| LevelSlot::Node(n))
-                        .unwrap_or(LevelSlot::Phantom),
-                );
+            for position in 0..left_children.len().max(right_children.len()) {
+                let left = left_children.get(position).copied();
+                let right = right_children.get(position).copied();
+                next_level.push((
+                    left.map_or(LevelSlot::Phantom, LevelSlot::Node),
+                    right.map_or(LevelSlot::Phantom, LevelSlot::Node),
+                ));
             }
         }
-        left_level = next_left;
-        right_level = next_right;
+        std::mem::swap(&mut level, &mut next_level);
+        first_level = false;
     }
 }
 
@@ -644,7 +623,7 @@ pub fn compare_ligands(
     // CIP's rules apply in order over the whole hierarchical digraph: Rule 2
     // (isotopes) only breaks what Rule 1a leaves tied at every sphere, so a
     // labelled methyl does not outrank a carboxyl (`[13CH3][C@H](N)C(=O)O`).
-    if ctx.pass.is_none() && graph.molecule().atoms().any(|(_, a)| a.isotope.is_some()) {
+    if ctx.pass.is_none() && graph.has_isotopes() {
         ctx.pass = Some(RuleMode::Rule1a);
         let first = compare_ligands(graph, left, right, ctx);
         let result = match first {
@@ -679,7 +658,8 @@ pub fn compare_ligands(
         } else {
             invert(cached)
         };
-        (outcome, "1a/2 (cached)".to_string())
+        let rule = ctx.trace.is_some().then(|| "1a/2 (cached)".to_owned());
+        (outcome, rule)
     } else {
         let (outcome, rule) = match compare_by_level(
             graph,
@@ -694,14 +674,16 @@ pub fn compare_ligands(
             cmp_key_instrumented,
         )? {
             LevelOutcome::Decided(c, lk, rk) => {
-                let rule = if ctx.trace.is_some() {
-                    format!("1a/2 ({lk:?} vs {rk:?})")
-                } else {
-                    String::new()
-                };
+                let rule = ctx
+                    .trace
+                    .is_some()
+                    .then(|| format!("1a/2 ({lk:?} vs {rk:?})"));
                 (c, rule)
             }
-            LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+            LevelOutcome::FullyTied => (
+                BranchComparison::Equal,
+                ctx.trace.is_some().then(|| "leaf".to_owned()),
+            ),
         };
         ctx.cache_misses += 1;
         let canonical_outcome = if already_canonical {
@@ -714,7 +696,7 @@ pub fn compare_ligands(
     };
 
     let ranking_parent = ctx.ranking_parent;
-    if let Some(trace) = ctx.trace.as_deref_mut() {
+    if let (Some(trace), Some(rule)) = (ctx.trace.as_deref_mut(), rule) {
         trace.decisions.push(DecisionStep {
             depth,
             left_node: left,

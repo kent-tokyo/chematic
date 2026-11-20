@@ -51,6 +51,7 @@ use crate::rational::AtomicNumberKey;
 /// real replacement for shell-multiset pooling.
 pub struct CipDigraph<'m> {
     mol: &'m Molecule,
+    has_isotopes: std::sync::OnceLock<bool>,
     /// `None` for [`Self::new`]. The accurate-CIP path supplies a context through
     /// [`Self::new_with_mancude`]. Attaching a `MancudeContext` computed for a *different*
     /// molecule than `mol` would silently misattribute fractional values -- callers are
@@ -107,6 +108,13 @@ impl<'m> CipDigraph<'m> {
     /// [`Self::new_with_mancude`] to additionally apply MANCUDE fractional atomic numbers.
     pub fn new(mol: &'m Molecule, root_atom: AtomIdx, budget: CipBudget) -> Result<Self, CipError> {
         Self::new_impl(mol, root_atom, budget, None, None)
+    }
+
+    /// The digraph borrows an immutable molecule, so this scan is needed once.
+    pub(crate) fn has_isotopes(&self) -> bool {
+        *self
+            .has_isotopes
+            .get_or_init(|| self.mol.atoms().any(|(_, atom)| atom.isotope.is_some()))
     }
 
     /// Stable identity for the attached [`MancudeContext`], if any -- the raw pointer
@@ -183,6 +191,7 @@ impl<'m> CipDigraph<'m> {
     ) -> Result<Self, CipError> {
         let mut g = Self {
             mol,
+            has_isotopes: std::sync::OnceLock::new(),
             mancude,
             artificial_ancestor,
             nodes: Vec::new(),
