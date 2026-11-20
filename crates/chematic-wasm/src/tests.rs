@@ -823,13 +823,19 @@ fn depict_svg_opts_dark_theme() {
 #[test]
 fn depict_svg_single_atom_water_shows_h2o() {
     let svg = parse("O").depict_svg();
-    assert!(svg.contains("H2O"), "water 'O' should render as H2O");
+    assert!(
+        svg.contains(">H₂O</text>"),
+        "water 'O' should render as H₂O"
+    );
 }
 
 #[test]
 fn depict_svg_single_atom_methane_shows_ch4() {
     let svg = parse("C").depict_svg();
-    assert!(svg.contains("CH4"), "methane 'C' should render as CH4");
+    assert!(
+        svg.contains(">CH₄</text>"),
+        "methane 'C' should render as CH₄"
+    );
 }
 
 // ── Sprint L: disconnected SMILES ────────────────────────────────────────
@@ -851,10 +857,10 @@ fn depict_svg_disconnected_nacl() {
 #[test]
 fn depict_svg_disconnected_water_dimer() {
     let svg = parse("O.O").depict_svg();
-    // Degree-0 O atoms use isolated (Hill) notation: H2O
+    // Degree-0 O atoms use isolated (Hill) notation: H₂O
     assert!(
-        svg.matches("H2O").count() >= 2,
-        "both water O atoms should render as H2O"
+        svg.matches(">H₂O</text>").count() == 2,
+        "both water O atoms should render as H₂O"
     );
     assert!(!svg.is_empty());
 }

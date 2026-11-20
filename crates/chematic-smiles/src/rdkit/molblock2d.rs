@@ -279,15 +279,11 @@ fn should_be_a_crossed_bond(mol: &Mol, b: usize, cip: &[u32]) -> bool {
         return false;
     }
     let (beg, end) = (bond.begin, bond.end);
-    if mol.degree(beg) > 1
+    mol.degree(beg) > 1
         && mol.degree(end) > 1
         && mol.total_valence(beg) - mol.total_degree(beg) as i32 == 1
         && mol.total_valence(end) - mol.total_degree(end) as i32 == 1
         && can_be_stereo_bond(mol, b, cip)
-    {
-        return true;
-    }
-    false
 }
 
 /// `hasNonDefaultValence`; `bare_dummy` marks a dummy atom written as a
