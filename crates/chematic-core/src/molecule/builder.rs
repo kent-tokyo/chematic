@@ -245,6 +245,11 @@ impl MoleculeBuilder {
         self.atoms.len()
     }
 
+    /// Number of bonds added so far.
+    pub fn bond_count(&self) -> usize {
+        self.bonds.len()
+    }
+
     /// Iterate over already-added neighbors of `idx` as `(bond_idx, neighbor_atom_idx)`.
     /// Used by kekulization tests to check whether a bond already exists in the builder.
     pub fn atom_neighbors(&self, idx: AtomIdx) -> impl Iterator<Item = (BondIdx, AtomIdx)> + '_ {

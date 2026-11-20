@@ -94,9 +94,7 @@ pub(crate) fn resolve_chirality(
 
     let chirality = mol.atom(atom_idx).chirality;
     let result = if stereo_order.len() == 3 {
-        // A saturated ring centre has a lowest-priority phantom ligand.
-        // Use the same parity for auxiliary and top-level descriptors.
-        if crate::assign::is_saturated_ring_lone_pair_centre(mol, atom_idx) {
+        if crate::assign::lone_pair_centre_eligible(mol, atom_idx, stereo_order) {
             crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality)
                 .ok()
                 .flatten()

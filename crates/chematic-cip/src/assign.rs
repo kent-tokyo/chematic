@@ -546,23 +546,7 @@ fn assign_lone_pair_centre(
     budget: CipBudget,
     kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
-    if stereo_order.len() != 3
-        || stereo_order.contains(&STEREO_H_SENTINEL)
-        || chematic_core::implicit_hcount(mol, idx) > 0
-        || stereo_order
-            .iter()
-            .any(|&a| mol.atom(AtomIdx(a)).element == Element::H)
-    {
-        return Ok(None);
-    }
-    let saturated_ring_centre = is_saturated_ring_lone_pair_centre(mol, idx);
-    if atom_in_ring(mol, idx)
-        && !saturated_ring_centre
-        && !mol
-            .neighbors(idx)
-            .any(|(_, b)| mol.bond(b).order == chematic_core::BondOrder::Double)
-    {
-        // An aromatic ring centre.
+    if !lone_pair_centre_eligible(mol, idx, stereo_order) {
         return Ok(None);
     }
     let mut graph = match kekule {
@@ -578,13 +562,27 @@ fn assign_lone_pair_centre(
     };
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
-    for group in &groups {
-        if group.iter().filter(|n| position_nodes.contains(n)).count() > 1 {
-            return Err(SkipReason::Tied);
-        }
-    }
     Ok(lone_pair_is_r(&groups, &position_nodes, chirality)?
         .map(|r| if r { CipCode::R } else { CipCode::S }))
+}
+
+/// Whether the physical ligands can be completed by a phantom of priority zero.
+pub(crate) fn lone_pair_centre_eligible(
+    mol: &Molecule,
+    idx: AtomIdx,
+    stereo_order: &[u32],
+) -> bool {
+    stereo_order.len() == 3
+        && !stereo_order.contains(&STEREO_H_SENTINEL)
+        && chematic_core::implicit_hcount(mol, idx) == 0
+        && stereo_order
+            .iter()
+            .all(|&a| mol.atom(AtomIdx(a)).element != Element::H)
+        && (!atom_in_ring(mol, idx)
+            || is_saturated_ring_lone_pair_centre(mol, idx)
+            || mol
+                .neighbors(idx)
+                .any(|(_, b)| mol.bond(b).order == BondOrder::Double))
 }
 
 /// Whether a three-ligand centre with a lone pair is R, given its ligands'
@@ -605,6 +603,9 @@ pub(crate) fn lone_pair_is_r(
         .collect::<Option<_>>()
         .ok_or(SkipReason::NotFourSubstituents)?;
     by_priority.sort_unstable();
+    if by_priority.windows(2).any(|pair| pair[0].0 == pair[1].0) {
+        return Err(SkipReason::Tied);
+    }
     let mut ranks3 = [0u8; 3];
     for (k, &(_, slot)) in by_priority.iter().enumerate() {
         ranks3[slot] = 4 - k as u8;
