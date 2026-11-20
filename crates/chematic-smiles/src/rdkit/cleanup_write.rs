@@ -5,16 +5,14 @@ pub(super) fn write_cleanup_smiles(
     params: &RdkitSmilesParams,
 ) -> Result<String, RdkitSmilesError> {
     let mut model = parse::from_chematic(mol)?;
-    let in_place_oxide = has_in_place_oxide(mol);
     let lithium_nitrogen_ring = has_lithium_nitrogen_ring(mol);
     let iron_cyclopentadienyl_dianion = has_iron_cyclopentadienyl_dianion(mol);
     let before_sanitize =
-        (in_place_oxide || lithium_nitrogen_ring || iron_cyclopentadienyl_dianion)
-            .then(|| model.clone());
+        (lithium_nitrogen_ring || iron_cyclopentadienyl_dianion).then(|| model.clone());
     let initial_atom_count = model.atoms.len();
     let isolated_tags = isolated_nontetrahedral_tags(mol, &model);
     if let Err(error) = sanitize::sanitize_cleanup_output(&mut model, has_added_hydrogens(mol)) {
-        return write_unsanitized_fallback(before_sanitize, in_place_oxide, params, error);
+        return write_unsanitized_fallback(before_sanitize, params, error);
     }
     if lithium_nitrogen_ring
         && let Some(raw) = before_sanitize.as_ref()
@@ -36,23 +34,6 @@ pub(super) fn write_cleanup_smiles(
         }
     }
     write::mol_to_smiles_owned(model, params)
-}
-
-fn has_in_place_oxide(mol: &Molecule) -> bool {
-    mol.atoms()
-        .filter(|(_, atom)| atom.aromatic && atom.element.atomic_number() == 7)
-        .count()
-        >= 4
-        && mol.bonds().any(|(_, bond)| {
-            let (a, b) = (mol.atom(bond.atom1), mol.atom(bond.atom2));
-            bond.order == chematic_core::BondOrder::Double
-                && ((a.aromatic
-                    && a.element.atomic_number() == 6
-                    && b.element.atomic_number() == 8)
-                    || (b.aromatic
-                        && b.element.atomic_number() == 6
-                        && a.element.atomic_number() == 8))
-        })
 }
 
 fn has_lithium_nitrogen_ring(mol: &Molecule) -> bool {
@@ -102,7 +83,6 @@ fn isolated_nontetrahedral_tags(
 
 fn write_unsanitized_fallback(
     before_sanitize: Option<mol::Mol>,
-    in_place_oxide: bool,
     params: &RdkitSmilesParams,
     error: RdkitSmilesError,
 ) -> Result<String, RdkitSmilesError> {
@@ -110,13 +90,6 @@ fn write_unsanitized_fallback(
         return Err(error);
     };
     raw.find_rings()?;
-    if in_place_oxide {
-        for bond in &mut raw.bonds {
-            if bond.aromatic {
-                bond.bt = mol::BondType::Single;
-            }
-        }
-    }
     write::mol_to_smiles_owned(raw, params)
 }
 

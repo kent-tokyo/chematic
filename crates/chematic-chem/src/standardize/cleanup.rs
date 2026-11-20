@@ -185,21 +185,29 @@ fn normalize_for_cleanup(mol: &Molecule) -> Molecule {
             })
             .collect();
         if let ([cation], [(carbon, oxygen, bond)]) = (cations.as_slice(), oxides.as_slice()) {
+            let mut candidate = normalized.clone();
             for &idx in &component {
-                normalized.set_atom_aromatic(idx, true);
+                candidate.set_atom_aromatic(idx, true);
             }
             for (idx, edge) in mol.bonds() {
                 if component.contains(&edge.atom1)
                     && component.contains(&edge.atom2)
                     && aromatic_bond(idx)
                 {
-                    normalized.set_bond_order(idx, BondOrder::Aromatic);
+                    candidate.set_bond_order(idx, BondOrder::Aromatic);
                 }
             }
-            normalized.set_charge(*cation, 0);
-            normalized.set_charge(*oxygen, 0);
-            normalized.set_bond_order(*bond, BondOrder::Double);
+            candidate.set_charge(*cation, 0);
+            candidate.set_charge(*oxygen, 0);
+            candidate.set_bond_order(*bond, BondOrder::Double);
             debug_assert_eq!(mol.atom(*carbon).element.atomic_number(), 6);
+            // Removing the second charge can leave a carbon without a
+            // permissible double bond (two adjacent neutral trivalent
+            // nitrogens, for example). Retain the original valence form
+            // unless the proposed one admits a Kekulé assignment.
+            if chematic_core::kekulize(&candidate).is_ok() {
+                normalized = candidate;
+            }
         }
     }
     normalized
@@ -657,32 +665,32 @@ mod tests {
     use chematic_smiles::parse;
 
     #[test]
-    fn cleanup_matches_rdkit_in_place_normalization_on_fused_oxido_imidazolium() {
-        for (input, expected) in [
-            (
-                "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
-                "Cc1cn2c(=O)c3c(nc2n1)n(C[200O]CCO)cn3C",
-            ),
-            (
-                "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
-                "[CH]c1cn2c(=O)c3c(nc2n1)n(COCC[O-])cn3C",
-            ),
-            (
-                "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
-                "Cc1cn2c(=O)c3c(nc2n1)n(COCCO)cn3C",
-            ),
+    fn cleanup_keeps_fused_oxido_imidazolium_when_neutralization_cannot_kekulize() {
+        for input in [
+            "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
+            "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
+            "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
         ] {
             let mol = parse(input).unwrap();
+            let cleaned = cleanup(&mol);
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            for (element, charge) in [(7, 1), (8, -1)] {
+                assert!(
+                    cleaned
+                        .atoms()
+                        .any(|(_, atom)| atom.element.atomic_number() == element
+                            && atom.charge == charge),
+                    "{input} -> {serialized}"
+                );
+            }
             assert_eq!(
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&mol)).as_deref(),
-                Ok(expected),
+                crate::calc_mol_formula_with_isotopes(&mol),
+                crate::calc_mol_formula_with_isotopes(&cleaned),
                 "{input}"
             );
-            assert_eq!(
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&super::normalize_groups(&mol))
-                    .unwrap(),
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&mol).unwrap(),
-                "copy-returning Normalize must retain the RDKit distinction: {input}"
+            assert!(
+                chematic_smiles::rdkit_canonical_smiles(&parse(&serialized).unwrap()).is_ok(),
+                "{input} -> {serialized}"
             );
         }
     }
