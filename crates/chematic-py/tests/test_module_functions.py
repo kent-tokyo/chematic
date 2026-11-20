@@ -88,6 +88,16 @@ def test_prepared_smarts_screen_preserves_exact_matches(pattern):
     assert query.matches_batch(batch, use_chirality=True) == expected
 
 
+def test_dummy_element_query_is_preserved_in_all_matching_modes():
+    mol = chematic.from_smiles("[*]O")
+    batch = chematic.MoleculeBatch([mol, chematic.from_smiles("CO")])
+    for pattern, hits in (("[#0]", [[0]]), ("[#0;+0]", [[0]]), ("[#0]-[#8]", [[0, 1]])):
+        query = chematic.compile_smarts(pattern)
+        assert query.matches_batch(batch) == [True, False]
+        assert query.matches(mol)
+        assert query.find_matches(mol) == hits
+
+
 def test_compiled_smarts_rejects_invalid_query():
     with pytest.raises(ValueError):
         chematic.compile_smarts("[C;")

@@ -63,3 +63,16 @@ def test_mcs_bond_first_can_choose_the_smaller_dense_component():
         query = ch.compile_smarts(smarts)
         assert not timed_out and query.atom_count == atoms
         assert query.matches(molecule)
+
+
+def test_mcs_round_trips_dummy_atoms_in_element_comparator():
+    dummy = ch.from_smiles("[*]O")
+    carbon = ch.from_smiles("CO")
+    smarts, timed_out = ch.find_mcs_smarts_checked([dummy, dummy])
+    assert not timed_out and "[#0]" in smarts
+    query = ch.compile_smarts(smarts)
+    assert query.matches(dummy) and not query.matches(carbon)
+    projected = ch.find_mcs([dummy, dummy])
+    assert query.matches(projected)
+    mixed, timed_out = ch.find_mcs_smarts_checked([dummy, carbon])
+    assert not timed_out and ch.compile_smarts(mixed).atom_count == 1

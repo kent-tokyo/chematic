@@ -247,6 +247,21 @@ mod tests {
     use crate::{McsConfig, find_matches, find_mcs_with_config, parse_smarts};
 
     #[test]
+    fn dummy_atom_in_mcs_serializes_with_its_effective_atomic_number() {
+        let dummy = chematic_smiles::parse("[*]O").unwrap();
+        let carbon = chematic_smiles::parse("CO").unwrap();
+        let config = McsConfig::default();
+        let common = find_mcs_with_config(&[&dummy, &carbon], &config);
+        assert_eq!(common.atom_count(), 1);
+        let common = find_mcs_with_config(&[&dummy, &dummy], &config);
+        let smarts = mcs_query_to_smarts(&common).unwrap();
+        assert!(smarts.contains("[#0]"), "{smarts}");
+        let round_trip = parse_smarts(&smarts).unwrap();
+        assert_eq!(find_matches(&round_trip, &dummy).len(), 1);
+        assert!(find_matches(&round_trip, &carbon).is_empty());
+    }
+
+    #[test]
     fn round_trip_relaxed_atom_and_bond_alternatives() {
         for (left, right, config) in [
             (

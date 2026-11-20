@@ -69,6 +69,15 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   assert.match(full.smiles, /[Oo]/, `MCS lost its oxygen atom: ${full.smiles}`);
 }
 
+// Both result formats retain an input dummy atom.
+{
+  const input = JSON.stringify(["[*]O", "[*]O"]);
+  const query = JSON.parse(mcs_smarts_json_with_config(input, "{}"));
+  const projected = JSON.parse(mcs_smiles_json_with_config(input, "{}"));
+  assert.match(query.smarts, /\[#0\]/);
+  assert.match(projected.smiles, /\*/);
+}
+
 // Resource limits are distinct from timeouts and cannot be mistaken for an
 // exhaustive result.
 {

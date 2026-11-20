@@ -2,15 +2,20 @@
 use std::collections::HashMap;
 
 use super::{AtomCompare, AtomIdx, Molecule, PartialMapping, rdkit_heavy_atom_class};
+use crate::match_vf2::effective_atomic_number;
 
-fn atom_class(atom: &chematic_core::Atom, compare: &AtomCompare, rdkit_heavy: bool) -> Option<u8> {
+pub(super) fn atom_class(
+    atom: &chematic_core::Atom,
+    compare: &AtomCompare,
+    rdkit_heavy: bool,
+) -> Option<u8> {
     if rdkit_heavy {
         return Some(rdkit_heavy_atom_class(atom));
     }
     match compare {
-        AtomCompare::Elements => Some(atom.element.atomic_number()),
+        AtomCompare::Elements => Some(effective_atomic_number(atom)),
         AtomCompare::Any => Some(0),
-        AtomCompare::AnyHeavyAtom => (atom.element.atomic_number() > 1).then_some(0),
+        AtomCompare::AnyHeavyAtom => (effective_atomic_number(atom) > 1).then_some(0),
     }
 }
 

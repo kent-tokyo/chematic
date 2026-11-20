@@ -15,6 +15,7 @@ FIXTURES = (
     "C", "CC", "CCC", "CCCCC", "CC(C)C", "C=C", "CC=O", "COC",
     "C1CC1", "C1CCC1", "C1CCOC1", "C1CC2CC12", "C12C3C1C23.CCCCC",
     "[13CH3]CN", "[12CH3]CN", "[13CH3][NH3+]", "[NH3+]C", "NCC",
+    "[*]O", "[*]C",
 )
 MULTI = (
     ("C1CC1", "CCC", "C1CCC1"),

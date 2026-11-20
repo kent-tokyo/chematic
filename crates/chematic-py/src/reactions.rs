@@ -1073,10 +1073,16 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
 
     let mut builder = MoleculeBuilder::new();
     for (idx, qa) in qmol.atoms.iter().enumerate() {
-        let elem = extract_atomic_num(&qa.query)
-            .and_then(Element::from_atomic_number)
-            .unwrap_or(Element::C);
-        let mut atom = Atom::new(elem);
+        let number = extract_atomic_num(&qa.query);
+        let mut atom = if number == Some(0) {
+            Atom::wildcard()
+        } else {
+            Atom::new(
+                number
+                    .and_then(Element::from_atomic_number)
+                    .unwrap_or(Element::C),
+            )
+        };
         atom.aromatic = aromatic_atoms[idx];
         builder.add_atom(atom);
     }

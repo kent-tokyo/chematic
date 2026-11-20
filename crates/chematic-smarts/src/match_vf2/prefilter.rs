@@ -50,7 +50,7 @@ pub(super) fn element_counts_allow_match(query: &QueryMolecule, mol: &Molecule) 
         return true;
     }
     for (_, atom) in mol.atoms() {
-        let z = atom.element.atomic_number() as usize;
+        let z = effective_atomic_number(atom) as usize;
         if z < need.len() && need[z] > 0 {
             need[z] -= 1;
         }

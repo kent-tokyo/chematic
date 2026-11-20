@@ -703,9 +703,9 @@ fn collect_seed_candidates(
 // ---------------------------------------------------------------------------
 
 fn rdkit_heavy_atom_class(atom: &chematic_core::Atom) -> u8 {
-    match (atom.wildcard, atom.element.atomic_number()) {
-        (true, _) => 0,
-        (false, 1) => 1,
+    match crate::match_vf2::effective_atomic_number(atom) {
+        0 => 0,
+        1 => 1,
         _ => 2,
     }
 }
@@ -720,18 +720,8 @@ fn atoms_compatible(
     match_charge: bool,
     match_isotope: bool,
 ) -> bool {
-    let base = if rdkit_heavy {
-        rdkit_heavy_atom_class(a) == rdkit_heavy_atom_class(b)
-    } else {
-        match compare {
-            AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
-            AtomCompare::AnyHeavyAtom => {
-                a.element.atomic_number() > 1 && b.element.atomic_number() > 1
-            }
-            AtomCompare::Any => true,
-        }
-    };
-    if !base {
+    let class = bounds::atom_class(a, compare, rdkit_heavy);
+    if class.is_none() || class != bounds::atom_class(b, compare, rdkit_heavy) {
         return false;
     }
     if match_chiral
@@ -838,7 +828,7 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
         // input even though the search mapped it successfully.
         let mut numbers = Vec::new();
         for (&mol, &atom_idx) in mols.iter().zip(row) {
-            let number = mol.atom(atom_idx).element.atomic_number();
+            let number = crate::match_vf2::effective_atomic_number(mol.atom(atom_idx));
             if !numbers.contains(&number) {
                 numbers.push(number);
             }
@@ -927,7 +917,7 @@ fn molecule_to_query(mol: &Molecule, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
 
     for (_, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
+        let an = crate::match_vf2::effective_atomic_number(atom);
         let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
         qmol.add_atom(constrain_atom(query, atom, config));
     }

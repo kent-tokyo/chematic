@@ -449,7 +449,8 @@ fn visit_recursive(
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next]
+            .is_some_and(|z| effective_atomic_number(ctx.mol.atom(t_idx)) != z)
         {
             continue;
         }
@@ -496,7 +497,7 @@ pub fn has_match_with_config(query: &QueryMolecule, mol: &Molecule, config: &Mat
     {
         return mol
             .atoms()
-            .any(|(_, atom)| !atom.wildcard && atom.element.atomic_number() == *atomic_number);
+            .any(|(_, atom)| effective_atomic_number(atom) == *atomic_number);
     }
     // The element screen skips work a budgeted search would have counted, so
     // it is only used when no visit budget is configured.
@@ -737,7 +738,8 @@ fn match_recursive(
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next]
+            .is_some_and(|z| effective_atomic_number(ctx.mol.atom(t_idx)) != z)
         {
             continue;
         }
@@ -1070,18 +1072,19 @@ fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     }
 }
 
+pub(crate) fn effective_atomic_number(atom: &chematic_core::Atom) -> u8 {
+    // A target `*` carries a placeholder element but has atomic number zero.
+    if atom.wildcard {
+        0
+    } else {
+        atom.element.atomic_number()
+    }
+}
+
 fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     let atom = ctx.mol.atom(idx);
     match p {
-        // A target `*` atom has atomic number 0 (its element is a
-        // placeholder), as in RDKit: `[#6]` and `C` do not match it.
-        AtomPrimitive::AtomicNum(n) => {
-            if atom.wildcard {
-                *n == 0
-            } else {
-                atom.element.atomic_number() == *n
-            }
-        }
+        AtomPrimitive::AtomicNum(n) => effective_atomic_number(atom) == *n,
         AtomPrimitive::Symbol(s) => !atom.wildcard && atom.element.symbol() == s.as_str(),
         AtomPrimitive::Aromatic(a) => atom.aromatic == *a,
         AtomPrimitive::Charge(c) => atom.charge == *c,
@@ -1316,7 +1319,8 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next]
+            .is_some_and(|z| effective_atomic_number(ctx.mol.atom(t_idx)) != z)
         {
             continue;
         }

@@ -66,6 +66,31 @@ fn single_atomic_number_existence_query_is_exact() {
 }
 
 #[test]
+fn dummy_atomic_number_survives_both_existence_and_embedding_screens() {
+    let mol = parse("[*]O").unwrap();
+    let config = MatchConfig::default();
+    for (smarts, count) in [
+        ("[#0]", 1),
+        ("[#0;+0]", 1),
+        ("[#0]-[#8]", 1),
+        ("[#6]", 0),
+        ("[#6]-[#8]", 0),
+    ] {
+        let query = parse_smarts(smarts).unwrap();
+        assert_eq!(
+            has_match_with_config(&query, &mol, &config),
+            count != 0,
+            "{smarts}"
+        );
+        assert_eq!(
+            find_matches_with_config(&query, &mol, &config).len(),
+            count,
+            "{smarts}"
+        );
+    }
+}
+
+#[test]
 fn query_cycle_flags() {
     let q = parse_smarts("*1~*~*~1-C").unwrap();
     assert_eq!(query_cyclic_atoms(&q), vec![true, true, true, false]);
