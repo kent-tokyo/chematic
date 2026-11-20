@@ -28,7 +28,7 @@ jobs:
         include:
           # v1.0.15 publishes Linux wheels for CPython 3.9 only. Keep this
           # explicit instead of silently permitting a source-build fallback.
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             python-version: "3.9"
           - os: macos-latest
             python-version: "3.13"
