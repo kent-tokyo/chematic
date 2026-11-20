@@ -161,7 +161,7 @@ fn visit_paths(mol: &Molecule, config: &RdkitTorsionConfig, mut visit: impl FnMu
         // RDKit seeds every atom for a length-one path, including retained H.
         if path.len() == 1 {
             visit(path);
-        } else if eligible(mol, start) {
+        } else if config.only_shortest_paths || eligible(mol, start) {
             let distances = distances
                 .as_mut()
                 .map(|distances| distances.fill_from(mol, start, path.len() - 1));
@@ -181,9 +181,13 @@ fn extend_path(
     let end = path[filled - 1];
     let last = filled + 1 == path.len();
     for (neighbor, _) in mol.neighbors(end) {
-        if !eligible(mol, neighbor)
-            || distances.is_some_and(|d| usize::from(d[neighbor.0 as usize]) < filled)
-        {
+        // RDKit builds shortest-path adjacency from the distance matrix,
+        // which includes retained hydrogen atoms.
+        let eligible_step = match distances {
+            Some(distance) => usize::from(distance[neighbor.0 as usize]) >= filled,
+            None => eligible(mol, neighbor),
+        };
+        if !eligible_step {
             continue;
         }
         if path[..filled].contains(&neighbor) {
@@ -277,6 +281,23 @@ mod tests {
         let result = rdkit_torsion_config(&mol, &config).unwrap();
         assert_eq!(result.fingerprint.to_le_bytes(), [0; 9]);
         assert!(result.sparse_counts.is_empty());
+    }
+
+    #[test]
+    fn shortest_paths_include_retained_isotopic_hydrogen() {
+        let mol = parse("[2H]O").unwrap();
+        let mut config = RdkitTorsionConfig {
+            atom_count: 2,
+            nbits: 31,
+            count_bounds: None,
+            ..Default::default()
+        };
+        let all_paths = rdkit_torsion_config(&mol, &config).unwrap();
+        assert!(all_paths.sparse_counts.is_empty());
+        config.only_shortest_paths = true;
+        let shortest = rdkit_torsion_config(&mol, &config).unwrap();
+        assert_eq!(shortest.fingerprint.to_le_bytes(), [0, 8, 0, 0]);
+        assert_eq!(shortest.sparse_counts, [(245_856, 1)]);
     }
 
     #[test]
