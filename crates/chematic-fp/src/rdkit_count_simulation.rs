@@ -27,7 +27,7 @@ pub(crate) fn default_count_bits(counts: &[u32]) -> BitVec2048 {
     debug_assert_eq!(counts.len(), 512);
     const BITS_BY_COUNT: [u64; 9] = [0, 1, 3, 3, 7, 7, 7, 7, 15];
     let mut words = [0u64; 32];
-    for (word, buckets) in words.iter_mut().zip(counts.chunks_exact(16)) {
+    for (word, buckets) in words.iter_mut().zip(counts.as_chunks::<16>().0) {
         for (position, &count) in buckets.iter().enumerate() {
             *word |= BITS_BY_COUNT[count.min(8) as usize] << (4 * position);
         }
