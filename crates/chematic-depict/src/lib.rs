@@ -489,7 +489,7 @@ mod tests {
     }
 
     // -------------------------------------------------------------------
-    // 12. depict_svg — single carbon (C): shows molecular formula "CH4".
+    // 12. depict_svg — single carbon (C): shows molecular formula "CH₄".
     // -------------------------------------------------------------------
     #[test]
     fn test_depict_svg_single_carbon_shows_ch4() {
@@ -498,17 +498,17 @@ mod tests {
         assert!(svg.starts_with("<svg"), "Single C SVG must start with <svg");
         assert!(svg.ends_with("</svg>"), "Single C SVG must end with </svg>");
         // Isolated carbon shows molecular formula label.
-        assert!(svg.contains("CH4"), "Single C SVG must show CH4 label");
+        assert!(svg.contains("CH₄"), "Single C SVG must show CH₄ label");
     }
 
     // -------------------------------------------------------------------
-    // 13. depict_svg — single oxygen (O): shows "H2O" label.
+    // 13. depict_svg — single oxygen (O): shows "H₂O" label.
     // -------------------------------------------------------------------
     #[test]
     fn test_depict_svg_single_oxygen_shows_h2o() {
         let m = mol("O");
         let svg = depict_svg(&m);
-        assert!(svg.contains("H2O"), "Single O SVG must show H2O label");
+        assert!(svg.contains("H₂O"), "Single O SVG must show H₂O label");
     }
 
     #[test]

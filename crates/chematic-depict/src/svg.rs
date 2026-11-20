@@ -359,7 +359,7 @@ pub fn render_svg_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions) ->
     let ctx = DrawCtx::from_opts(opts);
     let mut svg = String::new();
 
-    write_svg_header_opts(layout, opts, &mut svg);
+    write_svg_header_opts(mol, layout, opts, &mut svg);
 
     // Highlight atom circles (beneath bonds).
     // Union of highlight_atoms and atom_color_map keys; per-atom color overrides highlight_color.
@@ -439,7 +439,7 @@ pub fn render_svg_with_metadata(
     let ctx = DrawCtx::from_opts(opts);
     let mut svg = String::new();
 
-    write_svg_header_opts(layout, opts, &mut svg);
+    write_svg_header_opts(mol, layout, opts, &mut svg);
 
     // Embed metadata with SMILES
     let display_smiles = if smiles.is_empty() {
@@ -510,17 +510,27 @@ pub fn render_svg_with_metadata(
 // SVG header
 // ---------------------------------------------------------------------------
 
-fn write_svg_header_opts(layout: &Layout, opts: &RenderOptions, svg: &mut String) {
+fn write_svg_header_opts(mol: &Molecule, layout: &Layout, opts: &RenderOptions, svg: &mut String) {
     let padding = opts.padding;
     let (min_x, min_y, max_x, max_y) = layout.bounding_box();
 
     let raw_w = (max_x - min_x).max(BOND_LEN);
     let raw_h = (max_y - min_y).max(BOND_LEN);
 
-    let view_x = min_x - padding;
-    let view_y = min_y - padding;
-    let view_w = raw_w + 2.0 * padding;
-    let view_h = raw_h + 2.0 * padding;
+    let mut view_x = min_x - padding;
+    let mut view_y = min_y - padding;
+    let mut right = min_x + raw_w + padding;
+    let mut bottom = min_y + raw_h + padding;
+    for (idx, _) in mol.atoms().filter(|(idx, _)| mol.degree(*idx) == 0) {
+        let p = layout.get(idx);
+        let half_width = isolated_label(mol, idx).chars().count() as f64 * FONT_SIZE * 0.4;
+        view_x = view_x.min(p.x - half_width);
+        right = right.max(p.x + half_width);
+        view_y = view_y.min(p.y - FONT_SIZE * 0.65);
+        bottom = bottom.max(p.y + FONT_SIZE * 0.65);
+    }
+    let view_w = right - view_x;
+    let view_h = bottom - view_y;
 
     let display_w = opts.width.unwrap_or_else(|| view_w.round() as u32);
     let display_h = opts.height.unwrap_or_else(|| view_h.round() as u32);
@@ -938,7 +948,7 @@ fn format_charge(c: i8) -> String {
 /// Compute the display label for an atom.
 ///
 /// Isolated atoms (single-atom molecule or degree-0 in a multi-atom molecule)
-/// use Hill-notation molecular-formula style: H2O, CH4, NH3.
+/// use a typeset formula, with the element first for ions.
 /// Plain carbons in bonded multi-atom molecules return "" unless collinear.
 fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
     let atom = mol.atom(idx);
@@ -946,16 +956,8 @@ fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
     let has_charge = atom.charge != 0;
     let has_isotope = atom.isotope.is_some();
 
-    // Isolated atom: use molecular-formula style (H2O, CH4, etc.).
-    // This covers both single-atom molecules and degree-0 atoms in disconnected SMILES (B4).
-    if mol.atom_count() == 1 || mol.degree(idx) == 0 {
-        let h = chematic_core::implicit_hcount(mol, idx);
-        return build_isolated_label(
-            atom.element.symbol(),
-            atom.element.atomic_number(),
-            h,
-            atom.charge,
-        );
+    if mol.degree(idx) == 0 {
+        return isolated_label(mol, idx);
     }
 
     // Suppress only carbons whose bond geometry still reveals their position.
@@ -984,28 +986,48 @@ fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
     label
 }
 
-/// Build a molecular-formula-style label for an isolated atom.
-///
-/// Hill notation: C first, then H, then alphabetical.
-/// Examples: C→"CH4", O→"H2O", N→"H3N", S→"H2S", noble gas→"He"
-fn build_isolated_label(symbol: &str, atomic_number: u8, h: u8, charge: i8) -> String {
-    let base = match atomic_number {
-        6 => match h {
-            0 => symbol.to_string(),
-            1 => format!("{}H", symbol),
-            n => format!("{}H{}", symbol, n),
-        },
-        _ => match h {
-            0 => symbol.to_string(),
-            1 => format!("H{}", symbol),
-            n => format!("H{}{}", n, symbol),
-        },
-    };
+/// Typeset the atom as a single SVG text run so PDF and browsers can render it.
+fn isolated_label(mol: &Molecule, idx: AtomIdx) -> String {
+    const SUBSCRIPT: [char; 10] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+    const SUPERSCRIPT: [char; 10] = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
 
-    if charge == 0 {
-        return base;
+    fn digits(number: u16, glyphs: &[char; 10]) -> impl Iterator<Item = char> {
+        number
+            .to_string()
+            .into_bytes()
+            .into_iter()
+            .map(|b| glyphs[(b - b'0') as usize])
     }
-    format!("{}{}", base, format_charge(charge)) // R3, B5
+
+    let atom = mol.atom(idx);
+    let mut element = String::new();
+    if let Some(isotope) = atom.isotope {
+        element.extend(digits(isotope, &SUPERSCRIPT));
+    }
+    element.push_str(atom.element.symbol());
+
+    let h = chematic_core::implicit_hcount(mol, idx);
+    let mut hydrogen = String::new();
+    if h > 0 {
+        hydrogen.push('H');
+    }
+    if h > 1 {
+        hydrogen.extend(digits(u16::from(h), &SUBSCRIPT));
+    }
+
+    if atom.charge != 0 {
+        element.push_str(&hydrogen);
+        let magnitude = atom.charge.unsigned_abs();
+        if magnitude > 1 {
+            element.extend(digits(u16::from(magnitude), &SUPERSCRIPT));
+        }
+        element.push(if atom.charge > 0 { '⁺' } else { '⁻' });
+        element
+    } else if atom.element.atomic_number() == 6 {
+        element + &hydrogen
+    } else {
+        hydrogen + &element
+    }
 }
 
 /// Position where H count should be displayed relative to the atom symbol.

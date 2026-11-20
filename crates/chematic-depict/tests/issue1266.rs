@@ -42,3 +42,29 @@ fn explicit_wedge_is_retained() {
     let svg = depict_svg_opts(&mol, &RenderOptions::default());
     assert_eq!(svg.matches("<polygon ").count(), 1, "{svg}");
 }
+
+#[test]
+fn isolated_labels_show_hydrogen_counts_isotopes_and_charge() {
+    for (smiles, expected) in [
+        ("[NH4+]", "NH₄⁺"),
+        ("O", "H₂O"),
+        ("[15NH4+]", "¹⁵NH₄⁺"),
+        ("[Ca+2]", "Ca²⁺"),
+        ("[Cl-]", "Cl⁻"),
+    ] {
+        let mol = parse(smiles).unwrap();
+        for kekulize in [false, true] {
+            let svg = depict_svg_opts(
+                &mol,
+                &RenderOptions {
+                    kekulize,
+                    ..Default::default()
+                },
+            );
+            assert!(
+                svg.contains(&format!(">{expected}</text>")),
+                "{smiles}: {svg}"
+            );
+        }
+    }
+}
