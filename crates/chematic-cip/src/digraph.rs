@@ -47,7 +47,7 @@ use crate::mancude::MancudeContext;
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::AtomicNumberKey;
 
-type ChildIds = SmallVec<[NodeId; 8]>;
+pub(crate) type ChildIds = SmallVec<[NodeId; 8]>;
 
 /// A lazily-expanding hierarchical digraph rooted at one atom (typically a candidate
 /// stereocenter). See the module docs for the two structural rules that make this a

@@ -116,7 +116,7 @@ use chematic_core::Molecule;
 
 use crate::CipError;
 use crate::budget::CipBudget;
-use crate::digraph::CipDigraph;
+use crate::digraph::{ChildIds, CipDigraph};
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::{AtomicNumberKey, cmp_atomic_number_key};
 use crate::trace::{ComparisonTrace, DecisionStep};
@@ -514,14 +514,38 @@ pub(crate) fn ranked_child_ids(
     graph: &mut CipDigraph,
     node: NodeId,
     ctx: &mut CompareContext,
-) -> Result<Vec<NodeId>, CipCompareError> {
-    let children = graph
+) -> Result<ChildIds, CipCompareError> {
+    let mut children = graph
         .expand_child_ids(node)
         .map_err(CipCompareError::Digraph)?;
-    Ok(rank_children(graph, &children, ctx)?
-        .into_iter()
-        .flatten()
-        .collect())
+    match children.as_slice() {
+        [] | [_] => {}
+        &[left, right] => {
+            if compare_siblings(graph, left, right, ctx)? == BranchComparison::Lower {
+                children.swap(0, 1);
+            }
+        }
+        _ => {
+            return Ok(rank_children(graph, &children, ctx)?
+                .into_iter()
+                .flatten()
+                .collect());
+        }
+    }
+    Ok(children)
+}
+
+fn compare_siblings(
+    graph: &mut CipDigraph,
+    left: NodeId,
+    right: NodeId,
+    ctx: &mut CompareContext,
+) -> Result<BranchComparison, CipCompareError> {
+    let saved_parent = ctx.ranking_parent;
+    ctx.ranking_parent = graph.node(left).parent;
+    let comparison = compare_ligands(graph, left, right, ctx);
+    ctx.ranking_parent = saved_parent;
+    comparison
 }
 
 /// The result of one key-parameterized sphere-by-sphere walk (see [`compare_by_level`]):
@@ -592,11 +616,11 @@ fn compare_by_level<K>(
         for &(left_slot, right_slot) in pairs {
             let left_children = match left_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
-                LevelSlot::Phantom => Vec::new(),
+                LevelSlot::Phantom => ChildIds::new(),
             };
             let right_children = match right_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
-                LevelSlot::Phantom => Vec::new(),
+                LevelSlot::Phantom => ChildIds::new(),
             };
             for position in 0..left_children.len().max(right_children.len()) {
                 let left = left_children.get(position).copied();
@@ -733,6 +757,13 @@ pub fn rank_children(
     }
     if n == 1 {
         return Ok(vec![vec![children[0]]]);
+    }
+    if let &[left, right] = children {
+        return Ok(match compare_siblings(graph, left, right, ctx)? {
+            BranchComparison::Higher => vec![vec![left], vec![right]],
+            BranchComparison::Lower => vec![vec![right], vec![left]],
+            BranchComparison::Equal | BranchComparison::Unresolved => vec![vec![left, right]],
+        });
     }
 
     let cells = n
