@@ -20,17 +20,22 @@ fn chiral_mcs_uses_mapped_neighbor_parity_not_smiles_tag_spelling() {
             let outcome = find_mcs_with_config_checked(&refs, &config);
             assert!(matches!(outcome, McsOutcome::Exhaustive(_)));
             let query = outcome.into_query();
+            // The archived score treated any incomplete four-ligand frame
+            // as unoriented. Three mapped ligands distinguish this pair.
+            let expected = if pair["left"] == "F[C@](Cl)(Br)I" && pair["right"] == "Cl[C@](F)(Br)I"
+            {
+                [3, 2]
+            } else {
+                [0, 1].map(|i| pair["expected"][i].as_u64().unwrap() as usize)
+            };
             assert_eq!(
                 query.atom_count(),
-                pair["expected"][0].as_u64().unwrap() as usize,
+                expected[0],
                 "{} versus {}",
                 pair["left"].as_str().unwrap(),
                 pair["right"].as_str().unwrap()
             );
-            assert_eq!(
-                query.bonds.len(),
-                pair["expected"][1].as_u64().unwrap() as usize
-            );
+            assert_eq!(query.bonds.len(), expected[1]);
         }
     }
 }
@@ -409,4 +414,77 @@ fn mcs_comparator_query_excludes_unobserved_alternatives() {
     let query = find_mcs_with_config(&[&double, &single], &any_bonds);
     assert_eq!(query.bonds.len(), 1);
     assert!(find_matches(&query, &triple).is_empty());
+}
+
+#[test]
+fn bond_first_reaches_dense_component_after_finding_larger_chain() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    let first = chematic_smiles::parse("CCCCC.C12C3C1C23").unwrap();
+    let second = chematic_smiles::parse("C12C3C1C23.CCCCC").unwrap();
+    for mols in [[&first, &second], [&second, &first]] {
+        for (objective, expected) in [
+            (McsObjective::AtomCount, (5, 4)),
+            (McsObjective::BondCount, (4, 6)),
+        ] {
+            let result = find_mcs_with_objective_checked(&mols, &McsConfig::default(), objective);
+            assert!(!result.was_timed_out() && !result.was_resource_limited());
+            let query = result.into_query();
+            assert_eq!((query.atom_count(), query.bonds.len()), expected);
+        }
+        let config = McsConfig {
+            min_atoms: 5,
+            ..McsConfig::default()
+        };
+        let query =
+            find_mcs_with_objective_checked(&mols, &config, McsObjective::BondCount).into_query();
+        assert_eq!((query.atom_count(), query.bonds.len()), (5, 4));
+    }
+}
+
+#[test]
+fn bond_first_can_grow_through_a_later_common_edge() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    for (left, right, expected) in [
+        ("C1NOS1", "CSON", (4, 3)),
+        (
+            "c1cc(-c2ccnc(NC3CCCC3)n2)ccn1",
+            "O=C(O)C1Nc2cc(Cl)cc(Cl)c2S(=O)(=O)N1CCCCc1ccccc1",
+            (7, 6),
+        ),
+        (
+            "NS(=O)(=O)c1ccc(C2=C(c3ccc(C(F)(F)F)cc3)CCC2)cc1",
+            "O=C(Nc1ccc(Cl)cc1)N1CCCCC1C12CC3CC(CC(C3)C1)C2",
+            (7, 6),
+        ),
+    ] {
+        let left = parse(left).unwrap();
+        let right = parse(right).unwrap();
+        let result = find_mcs_with_objective_checked(
+            &[&left, &right],
+            &McsConfig::default(),
+            McsObjective::BondCount,
+        );
+        assert!(matches!(result, McsOutcome::Exhaustive(_)));
+        let q = result.into_query();
+        assert_eq!((q.atom_count(), q.bonds.len()), expected);
+    }
+}
+
+#[test]
+fn bond_first_reports_completion_when_class_bounds_are_met_at_the_node_limit() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    let left = parse("CCO").unwrap();
+    let right = parse("CCN").unwrap();
+    let config = McsConfig {
+        max_search_nodes: Some(2),
+        ..McsConfig::default()
+    };
+    let result =
+        find_mcs_with_objective_checked(&[&left, &right], &config, McsObjective::BondCount);
+    assert!(matches!(result, McsOutcome::Exhaustive(_)));
+    let query = result.into_query();
+    assert_eq!((query.atom_count(), query.bonds.len()), (2, 1));
 }

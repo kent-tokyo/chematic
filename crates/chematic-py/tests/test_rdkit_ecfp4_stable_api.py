@@ -120,3 +120,24 @@ def test_rdkit_ecfp4_differs_from_legacy_ecfp4():
     # Different hash function/byte layout by design -- never silently interchanged.
     mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
     assert mol.rdkit_ecfp4() != mol.ecfp4()
+
+
+
+def test_morgan_batch_preserves_input_order_and_configuration():
+    smiles = ["C[C@H](O)Cl", "c1ccccc1", "C[C@@H](O)Cl", "C[C@H](O)Cl"]
+    molecules = [chematic.from_smiles(smi) for smi in smiles]
+    batch = chematic.MoleculeBatch(molecules)
+    options = dict(radius=3, nbits=128, include_chirality=True, count_simulation=True)
+    expected = [mol.rdkit_ecfp_config(**options) for mol in molecules]
+    actual = batch.rdkit_ecfp_config(**options)
+    assert actual == expected
+    assert all(isinstance(fp, bytes) and len(fp) == 16 for fp in actual)
+
+
+def test_morgan_batch_fails_with_original_index_instead_of_dropping_input():
+    unsupported = next(fx["smiles"] for fx in _FIXTURES if fx["expect"] == "error")
+    batch = chematic.MoleculeBatch.from_smiles(["CCO", unsupported, "CC"])
+    with pytest.raises(ValueError, match="molecule 1:"):
+        batch.rdkit_ecfp_config()
+    with pytest.raises(ValueError, match="unsupported radius"):
+        chematic.MoleculeBatch([]).rdkit_ecfp_config(radius=4)

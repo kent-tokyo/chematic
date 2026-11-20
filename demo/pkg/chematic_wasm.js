@@ -183,9 +183,10 @@ export class DepictOptions {
      * @param {string} color
      */
     set_atom_color(idx, color) {
+        const val2 = +idx;
         const ptr0 = passStringToWasm0(color, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        wasm.depictoptions_set_atom_color(this.__wbg_ptr, idx, ptr0, len0);
+        wasm.depictoptions_set_atom_color(this.__wbg_ptr, val2, ptr0, len0);
     }
     /**
      * @param {boolean} v
@@ -214,7 +215,7 @@ export class DepictOptions {
         wasm.depictoptions_set_height(this.__wbg_ptr, h);
     }
     /**
-     * @param {Uint32Array} atoms
+     * @param {Uint32Array | number[]} atoms
      */
     set_highlight_atoms(atoms) {
         const ptr0 = passArray32ToWasm0(atoms, wasm.__wbindgen_malloc);
@@ -222,7 +223,7 @@ export class DepictOptions {
         wasm.depictoptions_set_highlight_atoms(this.__wbg_ptr, ptr0, len0);
     }
     /**
-     * @param {Uint32Array} bonds
+     * @param {Uint32Array | number[]} bonds
      */
     set_highlight_bonds(bonds) {
         const ptr0 = passArray32ToWasm0(bonds, wasm.__wbindgen_malloc);
@@ -327,23 +328,24 @@ export class MhfpLshHandle {
      * @returns {string}
      */
     query_json(query_smiles, threshold) {
-        let deferred3_0;
-        let deferred3_1;
+        let deferred4_0;
+        let deferred4_1;
         try {
+            const val2 = +threshold;
             const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.mhfplshhandle_query_json(this.__wbg_ptr, ptr0, len0, threshold);
-            var ptr2 = ret[0];
-            var len2 = ret[1];
+            const ret = wasm.mhfplshhandle_query_json(this.__wbg_ptr, ptr0, len0, val2);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
             if (ret[3]) {
-                ptr2 = 0; len2 = 0;
+                ptr3 = 0; len3 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred3_0 = ptr2;
-            deferred3_1 = len2;
-            return getStringFromWasm0(ptr2, len2);
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
         }
     }
 }
@@ -687,6 +689,23 @@ export class MolHandle {
         let deferred1_1;
         try {
             const ret = wasm.molhandle_formula(this.__wbg_ptr);
+            deferred1_0 = ret[0];
+            deferred1_1 = ret[1];
+            return getStringFromWasm0(ret[0], ret[1]);
+        } finally {
+            wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+        }
+    }
+    /**
+     * Total formula with explicit isotope labels, hydrogens and net charge.
+     * D/T use [2H]/[3H]; maps/stereo and isotope locations are not encoded.
+     * @returns {string}
+     */
+    formula_with_isotopes() {
+        let deferred1_0;
+        let deferred1_1;
+        try {
+            const ret = wasm.molhandle_formula_with_isotopes(this.__wbg_ptr);
             deferred1_0 = ret[0];
             deferred1_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
@@ -1067,29 +1086,40 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_align_json(probe_coords_json, reference_coords_json, atom_map_json, weights_json, reflect, max_iterations) {
-        let deferred6_0;
-        let deferred6_1;
+        let deferred8_0;
+        let deferred8_1;
         try {
-            const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len1 = WASM_VECTOR_LEN;
-            var ptr2 = isLikeNone(atom_map_json) ? 0 : passStringToWasm0(atom_map_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            var len2 = WASM_VECTOR_LEN;
-            var ptr3 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            var len3 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_align_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, reflect, max_iterations);
-            var ptr5 = ret[0];
-            var len5 = ret[1];
+            const val5 = +reflect;
+            const val6 = +max_iterations;
+            let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+            try {
+                ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len0 = WASM_VECTOR_LEN;
+                ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len1 = WASM_VECTOR_LEN;
+                ptr2 = isLikeNone(atom_map_json) ? 0 : passStringToWasm0(atom_map_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len2 = WASM_VECTOR_LEN;
+                ptr3 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len3 = WASM_VECTOR_LEN;
+            } catch (e) {
+                if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+                if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+                if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+                if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+                throw e;
+            }
+            const ret = wasm.molhandle_rdkit_align_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3, val5, val6);
+            var ptr7 = ret[0];
+            var len7 = ret[1];
             if (ret[3]) {
-                ptr5 = 0; len5 = 0;
+                ptr7 = 0; len7 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred6_0 = ptr5;
-            deferred6_1 = len5;
-            return getStringFromWasm0(ptr5, len5);
+            deferred8_0 = ptr7;
+            deferred8_1 = len7;
+            return getStringFromWasm0(ptr7, len7);
         } finally {
-            wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+            wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
         }
     }
     /**
@@ -1103,25 +1133,34 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_all_conformer_best_rms_json(conformers_json, max_matches, symmetrize, weights_json) {
-        let deferred4_0;
-        let deferred4_1;
+        let deferred6_0;
+        let deferred6_1;
         try {
-            const ptr0 = passStringToWasm0(conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            var ptr1 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            var len1 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_json(this.__wbg_ptr, ptr0, len0, max_matches, symmetrize, ptr1, len1);
-            var ptr3 = ret[0];
-            var len3 = ret[1];
+            const val3 = +max_matches;
+            const val4 = +symmetrize;
+            let ptr0, len0, ptr1, len1;
+            try {
+                ptr0 = passStringToWasm0(conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len0 = WASM_VECTOR_LEN;
+                ptr1 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len1 = WASM_VECTOR_LEN;
+            } catch (e) {
+                if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+                if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+                throw e;
+            }
+            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_json(this.__wbg_ptr, ptr0, len0, val3, val4, ptr1, len1);
+            var ptr5 = ret[0];
+            var len5 = ret[1];
             if (ret[3]) {
-                ptr3 = 0; len3 = 0;
+                ptr5 = 0; len5 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred4_0 = ptr3;
-            deferred4_1 = len3;
-            return getStringFromWasm0(ptr3, len3);
+            deferred6_0 = ptr5;
+            deferred6_1 = len5;
+            return getStringFromWasm0(ptr5, len5);
         } finally {
-            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+            wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
         }
     }
     /**
@@ -1137,28 +1176,38 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_all_conformer_best_rms_to_reference_json(reference, probe_conformers_json, reference_conformers_json, max_matches, symmetrize, weights_json) {
-        let deferred5_0;
-        let deferred5_1;
+        let deferred7_0;
+        let deferred7_1;
         try {
             _assertClass(reference, MolHandle);
-            const ptr0 = passStringToWasm0(probe_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(reference_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len1 = WASM_VECTOR_LEN;
-            var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            var len2 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_to_reference_json(this.__wbg_ptr, reference.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
-            var ptr4 = ret[0];
-            var len4 = ret[1];
+            const val4 = +max_matches;
+            const val5 = +symmetrize;
+            let ptr0, len0, ptr1, len1, ptr2, len2;
+            try {
+                ptr0 = passStringToWasm0(probe_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len0 = WASM_VECTOR_LEN;
+                ptr1 = passStringToWasm0(reference_conformers_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len1 = WASM_VECTOR_LEN;
+                ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len2 = WASM_VECTOR_LEN;
+            } catch (e) {
+                if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+                if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+                if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+                throw e;
+            }
+            const ret = wasm.molhandle_rdkit_all_conformer_best_rms_to_reference_json(this.__wbg_ptr, reference.__wbg_ptr, ptr0, len0, ptr1, len1, val4, val5, ptr2, len2);
+            var ptr6 = ret[0];
+            var len6 = ret[1];
             if (ret[3]) {
-                ptr4 = 0; len4 = 0;
+                ptr6 = 0; len6 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred5_0 = ptr4;
-            deferred5_1 = len4;
-            return getStringFromWasm0(ptr4, len4);
+            deferred7_0 = ptr6;
+            deferred7_1 = len6;
+            return getStringFromWasm0(ptr6, len6);
         } finally {
-            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+            wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
         }
     }
     /**
@@ -1171,27 +1220,37 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_best_alignment_json(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
-        let deferred5_0;
-        let deferred5_1;
+        let deferred7_0;
+        let deferred7_1;
         try {
-            const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len0 = WASM_VECTOR_LEN;
-            const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            const len1 = WASM_VECTOR_LEN;
-            var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-            var len2 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_best_alignment_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
-            var ptr4 = ret[0];
-            var len4 = ret[1];
+            const val4 = +max_matches;
+            const val5 = +symmetrize;
+            let ptr0, len0, ptr1, len1, ptr2, len2;
+            try {
+                ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len0 = WASM_VECTOR_LEN;
+                ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len1 = WASM_VECTOR_LEN;
+                ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+                len2 = WASM_VECTOR_LEN;
+            } catch (e) {
+                if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+                if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+                if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+                throw e;
+            }
+            const ret = wasm.molhandle_rdkit_best_alignment_json(this.__wbg_ptr, ptr0, len0, ptr1, len1, val4, val5, ptr2, len2);
+            var ptr6 = ret[0];
+            var len6 = ret[1];
             if (ret[3]) {
-                ptr4 = 0; len4 = 0;
+                ptr6 = 0; len6 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred5_0 = ptr4;
-            deferred5_1 = len4;
-            return getStringFromWasm0(ptr4, len4);
+            deferred7_0 = ptr6;
+            deferred7_1 = len6;
+            return getStringFromWasm0(ptr6, len6);
         } finally {
-            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
+            wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
         }
     }
     /**
@@ -1204,13 +1263,23 @@ export class MolHandle {
      * @returns {number}
      */
     rdkit_best_rms(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
-        const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len2 = WASM_VECTOR_LEN;
-        const ret = wasm.molhandle_rdkit_best_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+        const val4 = +max_matches;
+        const val5 = +symmetrize;
+        let ptr0, len0, ptr1, len1, ptr2, len2;
+        try {
+            ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.molhandle_rdkit_best_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, val4, val5, ptr2, len2);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -1257,23 +1326,26 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_bounds_matrix_with_constraints_json(constraints_json, set15bounds, do_triangle_smoothing, use_macrocycle_14_config) {
-        let deferred3_0;
-        let deferred3_1;
+        let deferred6_0;
+        let deferred6_1;
         try {
+            const val2 = +set15bounds;
+            const val3 = +do_triangle_smoothing;
+            const val4 = +use_macrocycle_14_config;
             const ptr0 = passStringToWasm0(constraints_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_bounds_matrix_with_constraints_json(this.__wbg_ptr, ptr0, len0, set15bounds, do_triangle_smoothing, use_macrocycle_14_config);
-            var ptr2 = ret[0];
-            var len2 = ret[1];
+            const ret = wasm.molhandle_rdkit_bounds_matrix_with_constraints_json(this.__wbg_ptr, ptr0, len0, val2, val3, val4);
+            var ptr5 = ret[0];
+            var len5 = ret[1];
             if (ret[3]) {
-                ptr2 = 0; len2 = 0;
+                ptr5 = 0; len5 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred3_0 = ptr2;
-            deferred3_1 = len2;
-            return getStringFromWasm0(ptr2, len2);
+            deferred6_0 = ptr5;
+            deferred6_1 = len5;
+            return getStringFromWasm0(ptr5, len5);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
         }
     }
     /**
@@ -1286,13 +1358,23 @@ export class MolHandle {
      * @returns {number}
      */
     rdkit_calc_rms(probe_coords_json, reference_coords_json, max_matches, symmetrize, weights_json) {
-        const ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        var ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len2 = WASM_VECTOR_LEN;
-        const ret = wasm.molhandle_rdkit_calc_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, max_matches, symmetrize, ptr2, len2);
+        const val4 = +max_matches;
+        const val5 = +symmetrize;
+        let ptr0, len0, ptr1, len1, ptr2, len2;
+        try {
+            ptr0 = passStringToWasm0(probe_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(reference_coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = isLikeNone(weights_json) ? 0 : passStringToWasm0(weights_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.molhandle_rdkit_calc_rms(this.__wbg_ptr, ptr0, len0, ptr1, len1, val4, val5, ptr2, len2);
         if (ret[2]) {
             throw takeFromExternrefTable0(ret[1]);
         }
@@ -1351,23 +1433,24 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_distance_matrix_3d_checked_json(coords_json, use_atom_wts) {
-        let deferred3_0;
-        let deferred3_1;
+        let deferred4_0;
+        let deferred4_1;
         try {
+            const val2 = +use_atom_wts;
             const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_distance_matrix_3d_checked_json(this.__wbg_ptr, ptr0, len0, use_atom_wts);
-            var ptr2 = ret[0];
-            var len2 = ret[1];
+            const ret = wasm.molhandle_rdkit_distance_matrix_3d_checked_json(this.__wbg_ptr, ptr0, len0, val2);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
             if (ret[3]) {
-                ptr2 = 0; len2 = 0;
+                ptr3 = 0; len3 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred3_0 = ptr2;
-            deferred3_1 = len2;
-            return getStringFromWasm0(ptr2, len2);
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
         }
     }
     /**
@@ -1404,23 +1487,25 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_embed_with_constraints_json(constraints_json, random_seed, max_iterations) {
-        let deferred3_0;
-        let deferred3_1;
+        let deferred5_0;
+        let deferred5_1;
         try {
+            const val2 = +random_seed;
+            const val3 = +max_iterations;
             const ptr0 = passStringToWasm0(constraints_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_embed_with_constraints_json(this.__wbg_ptr, ptr0, len0, random_seed, max_iterations);
-            var ptr2 = ret[0];
-            var len2 = ret[1];
+            const ret = wasm.molhandle_rdkit_embed_with_constraints_json(this.__wbg_ptr, ptr0, len0, val2, val3);
+            var ptr4 = ret[0];
+            var len4 = ret[1];
             if (ret[3]) {
-                ptr2 = 0; len2 = 0;
+                ptr4 = 0; len4 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred3_0 = ptr2;
-            deferred3_1 = len2;
-            return getStringFromWasm0(ptr2, len2);
+            deferred5_0 = ptr4;
+            deferred5_1 = len4;
+            return getStringFromWasm0(ptr4, len4);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
         }
     }
     /**
@@ -1430,23 +1515,24 @@ export class MolHandle {
      * @returns {string}
      */
     rdkit_mol_hash(_function, use_cx_smiles) {
-        let deferred3_0;
-        let deferred3_1;
+        let deferred4_0;
+        let deferred4_1;
         try {
+            const val2 = +use_cx_smiles;
             const ptr0 = passStringToWasm0(_function, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.molhandle_rdkit_mol_hash(this.__wbg_ptr, ptr0, len0, use_cx_smiles);
-            var ptr2 = ret[0];
-            var len2 = ret[1];
+            const ret = wasm.molhandle_rdkit_mol_hash(this.__wbg_ptr, ptr0, len0, val2);
+            var ptr3 = ret[0];
+            var len3 = ret[1];
             if (ret[3]) {
-                ptr2 = 0; len2 = 0;
+                ptr3 = 0; len3 = 0;
                 throw takeFromExternrefTable0(ret[2]);
             }
-            deferred3_0 = ptr2;
-            deferred3_1 = len2;
-            return getStringFromWasm0(ptr2, len2);
+            deferred4_0 = ptr3;
+            deferred4_1 = len3;
+            return getStringFromWasm0(ptr3, len3);
         } finally {
-            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
         }
     }
     /**
@@ -1495,6 +1581,19 @@ export class MolHandle {
         } finally {
             wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
         }
+    }
+    /**
+     * Copy the molecule with RDKit's SMILES reader conventions, including
+     * its stereo tags and hydrogen suppression. Throws when conversion
+     * cannot represent the input.
+     * @returns {MolHandle}
+     */
+    rdkit_parsed() {
+        const ret = wasm.molhandle_rdkit_parsed(this.__wbg_ptr);
+        if (ret[2]) {
+            throw takeFromExternrefTable0(ret[1]);
+        }
+        return MolHandle.__wrap(ret[0]);
     }
     /**
      * RDKit-compatible PDB block. Optional coordinates are a JSON array in
@@ -1906,17 +2005,18 @@ export class RdkitSearchIndex {
      * @returns {string}
      */
     search_json(query_smiles, k) {
-        let deferred2_0;
-        let deferred2_1;
+        let deferred3_0;
+        let deferred3_1;
         try {
+            const val2 = +k;
             const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.rdkitsearchindex_search_json(this.__wbg_ptr, ptr0, len0, k);
-            deferred2_0 = ret[0];
-            deferred2_1 = ret[1];
+            const ret = wasm.rdkitsearchindex_search_json(this.__wbg_ptr, ptr0, len0, val2);
+            deferred3_0 = ret[0];
+            deferred3_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
         } finally {
-            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
         }
     }
     /**
@@ -1930,17 +2030,18 @@ export class RdkitSearchIndex {
      * @returns {string}
      */
     search_json_precise(query_smiles, k) {
-        let deferred2_0;
-        let deferred2_1;
+        let deferred3_0;
+        let deferred3_1;
         try {
+            const val2 = +k;
             const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.rdkitsearchindex_search_json_precise(this.__wbg_ptr, ptr0, len0, k);
-            deferred2_0 = ret[0];
-            deferred2_1 = ret[1];
+            const ret = wasm.rdkitsearchindex_search_json_precise(this.__wbg_ptr, ptr0, len0, val2);
+            deferred3_0 = ret[0];
+            deferred3_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
         } finally {
-            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+            wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
         }
     }
     /**
@@ -1952,17 +2053,19 @@ export class RdkitSearchIndex {
      * @returns {string}
      */
     search_json_threshold_precise(query_smiles, threshold, k) {
-        let deferred2_0;
-        let deferred2_1;
+        let deferred4_0;
+        let deferred4_1;
         try {
+            const val2 = +threshold;
+            const val3 = +k;
             const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             const len0 = WASM_VECTOR_LEN;
-            const ret = wasm.rdkitsearchindex_search_json_threshold_precise(this.__wbg_ptr, ptr0, len0, threshold, k);
-            deferred2_0 = ret[0];
-            deferred2_1 = ret[1];
+            const ret = wasm.rdkitsearchindex_search_json_threshold_precise(this.__wbg_ptr, ptr0, len0, val2, val3);
+            deferred4_0 = ret[0];
+            deferred4_1 = ret[1];
             return getStringFromWasm0(ret[0], ret[1]);
         } finally {
-            wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+            wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
         }
     }
 }
@@ -2305,6 +2408,56 @@ export function batch_report_html(smiles_lines) {
 }
 
 /**
+ * @param {string} json
+ * @returns {string}
+ */
+export function bgf_from_record_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.bgf_from_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function bgf_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.bgf_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Predict GI absorption and BBB penetration using the BOILED-Egg method
  * (Daina & Zoete 2016).
  *
@@ -2431,23 +2584,24 @@ export function brics_fragments_json(mol) {
  * @returns {string}
  */
 export function butina_cluster_ecfp4_json(smiles_json, cutoff) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        const val2 = +cutoff;
         const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.butina_cluster_ecfp4_json(ptr0, len0, cutoff);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.butina_cluster_ecfp4_json(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -2503,26 +2657,35 @@ export function canonical_tautomer_with_blocked_atoms_json(mol, blocked_atom_ind
  * @returns {string}
  */
 export function canonicalize_conformer_from_coords_json(mol, coords_json, center_json, normalize_covar, ignore_hs) {
-    let deferred4_0;
-    let deferred4_1;
+    let deferred6_0;
+    let deferred6_1;
     try {
         _assertClass(mol, MolHandle);
-        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        var ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len1 = WASM_VECTOR_LEN;
-        const ret = wasm.canonicalize_conformer_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, normalize_covar, ignore_hs);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const val3 = +normalize_covar;
+        const val4 = +ignore_hs;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.canonicalize_conformer_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, val3, val4);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr5 = 0; len5 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -2542,10 +2705,17 @@ export function canonicalize_smiles_batch_json(smiles_batch, delimiter) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.canonicalize_smiles_batch_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -2713,23 +2883,24 @@ export function cdxml_to_smiles_json(cdxml) {
  * @returns {string}
  */
 export function cdxml_to_smiles_json_with_options(cdxml, infer_nondirectional_stereo) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        const val2 = +infer_nondirectional_stereo;
         const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.cdxml_to_smiles_json_with_options(ptr0, len0, infer_nondirectional_stereo);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.cdxml_to_smiles_json_with_options(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -2776,31 +2947,39 @@ export function chematic_version() {
 /**
  * Exact source bytes, projected XML, fragment coordinates and CDX omission tags.
  * CDXML uses the existing graph projection; omissions lists CDX tags only.
- * @param {Uint8Array} data
+ * @param {Uint8Array | number[]} data
  * @param {string} format
  * @param {boolean} allow_metadata_loss
  * @returns {string}
  */
 export function chemdraw_block_report_json(data, format, allow_metadata_loss) {
-    let deferred4_0;
-    let deferred4_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.chemdraw_block_report_json(ptr0, len0, ptr1, len1, allow_metadata_loss);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const val3 = +allow_metadata_loss;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.chemdraw_block_report_json(ptr0, len0, ptr1, len1, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -2813,9 +2992,9 @@ export function chemdraw_block_report_json(data, format, allow_metadata_loss) {
  * [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
  * unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
  * with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
- * A ring centre with three single bonds and a lone pair (bridgehead amine)
- * gets RDKit's label for the parsed SMILES spelling and carries
- * `"spellingDependent": true`.
+ * `seqCis` and `seqTrans` entries carry `bondIdx` and `bondAtoms`.
+ * Configured odd cumulenes carry the full path as `cumuleneAtoms`, from `atomIdx`.
+ * Saturated ring lone-pair centres use the molecule's recorded ligand order.
  * Returns `"null"` on an internal engine error (budget-independent computations
  * should not normally hit this).
  * @param {MolHandle} mol
@@ -2881,6 +3060,17 @@ export function cip_unresolved_json(mol) {
 }
 
 /**
+ * Apply Cleanup and return a new molecule with all fragments retained.
+ * @param {MolHandle} mol
+ * @returns {MolHandle}
+ */
+export function cleanup_mol(mol) {
+    _assertClass(mol, MolHandle);
+    const ret = wasm.cleanup_mol(mol.__wbg_ptr);
+    return MolHandle.__wrap(ret);
+}
+
+/**
  * Compare multiple SMILES strings (up to 256 by default).
  * Accepts a delimiter-separated list (e.g., newline or comma).
  * The input is limited to 1 MiB, 1,024 records, and 10,000 atoms per parsed
@@ -2900,10 +3090,17 @@ export function compare_molecules_batch_json(smiles_batch, delimiter) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.compare_molecules_batch_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -2937,10 +3134,17 @@ export function compare_molecules_json(smiles1, smiles2) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.compare_molecules_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -2969,26 +3173,35 @@ export function compare_molecules_json(smiles1, smiles2) {
  * @returns {string}
  */
 export function compute_canonical_transform_from_coords_json(mol, coords_json, center_json, normalize_covar, ignore_hs) {
-    let deferred4_0;
-    let deferred4_1;
+    let deferred6_0;
+    let deferred6_1;
     try {
         _assertClass(mol, MolHandle);
-        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        var ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        var len1 = WASM_VECTOR_LEN;
-        const ret = wasm.compute_canonical_transform_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, normalize_covar, ignore_hs);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const val3 = +normalize_covar;
+        const val4 = +ignore_hs;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = isLikeNone(center_json) ? 0 : passStringToWasm0(center_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.compute_canonical_transform_from_coords_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1, val3, val4);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr5 = 0; len5 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -3023,7 +3236,11 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
  * GJF/COM supports only
  * same-format retention of a bounded single Cartesian job, including opaque
  * job sections (not a Gaussian job validator).
- * V3000-to-CJSON also
+ * V2000/V3000-to-CJSON also
+ * CJSON-to-CML retains the local indexed graph, source XYZ and name after reparse;
+ * opaque fields/stereo/unit cells, partial charges and conflicting names throw.
+ * Source chemistry and coordinate-derived stereo are not validated.
+ * V2000/V3000-to-CJSON also
  * carries source-order x/y/z values; it does not retain opaque metadata or
  * verify cross-format stereo.
  * MOL2-to-CJSON checks
@@ -3033,10 +3250,17 @@ export function conformer_ensemble_json(mol, n, rmsd_threshold) {
  * NO_CHARGES zero placeholders are omitted as explicitly unassigned values.
  * Other conversions use
  * the topology-only bridge and do not carry format-specific metadata.
+ * CML-to-CML retains one bounded XML 1.0 CML-namespace molecule document exactly;
+ * chemistry/references/stereo remain opaque, with no edits or validation promised.
  * SDF-to-SDF retains every validated source record. Other MOL/SDF input routes
  * require exactly one CTAB and omit SD fields; SDF output is one framed record.
- * CML-to-CJSON carries complete source Cartesian coordinates, leaving absent
- * 3D geometry absent and refusing partial/nonfinite data and multiple molecules.
+ * CML-to-CJSON verifies a bounded graph/Cartesian/name profile on reparse,
+ * including inferred H counts, and refuses unrepresented payload (2D, stereo,
+ * aromatic/query/zero bonds, unknown attributes/elements).
+ * Molecule/atom/bond IDs are document-local references; their spelling and
+ * lexical XML are omitted.
+ * Graph-projected CJSON output refuses in-memory properties outside the local
+ * profile. MOL2 projection and exact CJSON retention keep separate contracts.
  * @param {string} text
  * @param {string} input_format
  * @param {string} output_format
@@ -3046,12 +3270,20 @@ export function convert_common_format(text, input_format, output_format) {
     let deferred5_0;
     let deferred5_1;
     try {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2;
+        try {
+            ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.convert_common_format(ptr0, len0, ptr1, len1, ptr2, len2);
         var ptr4 = ret[0];
         var len4 = ret[1];
@@ -3079,14 +3311,23 @@ export function convert_with_report_json(text, input_format, output_format, poli
     let deferred6_0;
     let deferred6_1;
     try {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(input_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(output_format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.convert_with_report_json(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
         var ptr5 = ret[0];
         var len5 = ret[1];
@@ -3294,17 +3535,18 @@ export function depict_reaction_svg(rxn_smiles) {
  * @returns {string}
  */
 export function depict_svg_grid(smiles_block, cols) {
-    let deferred2_0;
-    let deferred2_1;
+    let deferred3_0;
+    let deferred3_1;
     try {
+        const val2 = +cols;
         const ptr0 = passStringToWasm0(smiles_block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.depict_svg_grid(ptr0, len0, cols);
-        deferred2_0 = ret[0];
-        deferred2_1 = ret[1];
+        const ret = wasm.depict_svg_grid(ptr0, len0, val2);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -3327,19 +3569,27 @@ export function depict_svg_grid(smiles_block, cols) {
  * @returns {string}
  */
 export function depict_svg_grid_highlighted(smiles_block, cols, match_smarts) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(match_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.depict_svg_grid_highlighted(ptr0, len0, cols, ptr1, len1);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +cols;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_block, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(match_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.depict_svg_grid_highlighted(ptr0, len0, val3, ptr1, len1);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -3404,6 +3654,106 @@ export function dice_maccs(a, b) {
     _assertClass(b, MolHandle);
     const ret = wasm.dice_maccs(a.__wbg_ptr, b.__wbg_ptr);
     return ret;
+}
+
+/**
+ * @param {string} json
+ * @returns {string}
+ */
+export function dlpoly_config_from_record_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.dlpoly_config_from_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function dlpoly_config_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.dlpoly_config_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} json
+ * @returns {string}
+ */
+export function dlpoly_history_from_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.dlpoly_history_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function dlpoly_history_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.dlpoly_history_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -3507,10 +3857,17 @@ export function edit_cdxml_document_json(cdxml, edit_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.edit_cdxml_document_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -3538,10 +3895,17 @@ export function edit_cdxml_document_json_v1(document_json, edit_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.edit_cdxml_document_json_v1(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -3567,10 +3931,17 @@ export function edit_reaction_document_json_v1(document_json, edit_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(edit_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.edit_reaction_document_json_v1(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -3702,12 +4073,20 @@ export function enumerate_library_2way(template, scaffolds_smiles, building_bloc
     let deferred5_0;
     let deferred5_1;
     try {
-        const ptr0 = passStringToWasm0(template, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(scaffolds_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(building_blocks_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2;
+        try {
+            ptr0 = passStringToWasm0(template, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(scaffolds_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(building_blocks_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.enumerate_library_2way(ptr0, len0, ptr1, len1, ptr2, len2);
         var ptr4 = ret[0];
         var len4 = ret[1];
@@ -3847,23 +4226,24 @@ export function explain_rdkit_atom_code_json(code) {
  * @returns {string}
  */
 export function explain_rdkit_topological_torsion_code_json(code_decimal, size) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        const val2 = +size;
         const ptr0 = passStringToWasm0(code_decimal, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.explain_rdkit_topological_torsion_code_json(ptr0, len0, size);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.explain_rdkit_topological_torsion_code_json(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -3880,7 +4260,8 @@ export function explain_rdkit_topological_torsion_code_json(code_decimal, size) 
  * "info":{"key":"value", ...}}`.
  *
  * Returns a JS error on parse failure or if the frame exceeds the WASM
- * atom-count limit.
+ * atom-count limit. Coordinates, cell entries and R atom data must be finite;
+ * nonzero decimals that round to binary64 zero are refused.
  * @param {string} text
  * @returns {string}
  */
@@ -3914,23 +4295,25 @@ export function extxyz_frame_json(text) {
  * @returns {string}
  */
 export function extxyz_frames_batch_json(text, offset, batch_size) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
+        const val2 = +offset;
+        const val3 = +batch_size;
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.extxyz_frames_batch_json(ptr0, len0, offset, batch_size);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.extxyz_frames_batch_json(ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -4270,9 +4653,12 @@ export function get_atom_info(mol, idx) {
  */
 export function get_bond_angle_from_coords_json(mol, coords_json, i, j, k) {
     _assertClass(mol, MolHandle);
+    const val2 = +i;
+    const val3 = +j;
+    const val4 = +k;
     const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.get_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k);
+    const ret = wasm.get_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3, val4);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -4345,9 +4731,11 @@ export function get_bond_info(mol, idx) {
  */
 export function get_bond_length_from_coords_json(mol, coords_json, i, j) {
     _assertClass(mol, MolHandle);
+    const val2 = +i;
+    const val3 = +j;
     const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.get_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j);
+    const ret = wasm.get_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -4373,9 +4761,11 @@ export function get_bond_length_from_coords_json(mol, coords_json, i, j) {
  * @returns {number}
  */
 export function get_bond_length_json(smiles, a, b) {
+    const val2 = +a;
+    const val3 = +b;
     const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.get_bond_length_json(ptr0, len0, a, b);
+    const ret = wasm.get_bond_length_json(ptr0, len0, val2, val3);
     return ret;
 }
 
@@ -4413,9 +4803,13 @@ export function get_descriptors_json(mol) {
  */
 export function get_dihedral_from_coords_json(mol, coords_json, i, j, k, l) {
     _assertClass(mol, MolHandle);
+    const val2 = +i;
+    const val3 = +j;
+    const val4 = +k;
+    const val5 = +l;
     const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.get_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, l);
+    const ret = wasm.get_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3, val4, val5);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -4442,9 +4836,13 @@ export function get_dihedral_from_coords_json(mol, coords_json, i, j, k, l) {
  * @returns {any}
  */
 export function get_dihedral_json(smiles, a, b, c, d) {
+    const val2 = +a;
+    const val3 = +b;
+    const val4 = +c;
+    const val5 = +d;
     const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.get_dihedral_json(ptr0, len0, a, b, c, d);
+    const ret = wasm.get_dihedral_json(ptr0, len0, val2, val3, val4, val5);
     return ret;
 }
 
@@ -4497,6 +4895,32 @@ export function getaway_descriptors_json(mol) {
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
         wasm.__wbindgen_free(deferred1_0, deferred1_1, 1);
+    }
+}
+
+/**
+ * Explicit checked binary64 Angstrom positions; raw parse/write is independent.
+ * @param {string} text
+ * @returns {string}
+ */
+export function gromos96_geometry_angstrom_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.gromos96_geometry_angstrom_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -4722,10 +5146,17 @@ export function lammps_data_to_json(text, atom_style) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(atom_style, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(atom_style, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.lammps_data_to_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -4944,6 +5375,32 @@ export function logp_per_atom_json(mol) {
 }
 
 /**
+ * Explicit checked binary64 Angstrom positions; raw parse/write is independent.
+ * @param {string} text
+ * @returns {string}
+ */
+export function lpmd_positions_angstrom_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.lpmd_positions_angstrom_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * MACCS 166-bit structural keys fingerprint as a byte array (21 bytes, LSB-first).
  *
  * Bit `i` (0-indexed) corresponds to MACCS key `i+1`.
@@ -4972,10 +5429,17 @@ export function match_smarts_smiles(smiles, smarts) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.match_smarts_smiles(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -5002,23 +5466,66 @@ export function match_smarts_smiles(smiles, smarts) {
  * @returns {string}
  */
 export function maxmin_picks_ecfp4_json(smiles_json, n) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        const val2 = +n;
         const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.maxmin_picks_ecfp4_json(ptr0, len0, n);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.maxmin_picks_ecfp4_json(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * MCS SMARTS with status, preserving atom and bond query alternatives.
+ *
+ * Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
+ * Set `bondCountFirst` to maximize bonds first, then atoms.
+ * Charge and isotope predicates are preserved. `matchChiralTag` retains
+ * absolute tetrahedral orientation with at least three common bonds and
+ * chirality presence on smaller frames. Other stereo raises a serialization error.
+ * @param {string} smiles_json
+ * @param {string} config_json
+ * @returns {string}
+ */
+export function mcs_smarts_json_with_config(smiles_json, config_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.mcs_smarts_json_with_config(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -5078,10 +5585,17 @@ export function mcs_smiles_json_with_config(smiles_json, config_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.mcs_smiles_json_with_config(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -5110,23 +5624,25 @@ export function mcs_smiles_json_with_config(smiles_json, config_json) {
  * @returns {string}
  */
 export function mcs_smiles_json_with_ring_config(smiles_json, ring_matches_ring_only, complete_rings_only) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
+        const val2 = +ring_matches_ring_only;
+        const val3 = +complete_rings_only;
         const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.mcs_smiles_json_with_ring_config(ptr0, len0, ring_matches_ring_only, complete_rings_only);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.mcs_smiles_json_with_ring_config(ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -5242,19 +5758,27 @@ export function minimize_mmff94_lbfgs_json(mol, max_iter) {
  * @returns {string}
  */
 export function minimize_uff_json(smiles, coords_json, max_iter) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.minimize_uff_json(ptr0, len0, ptr1, len1, max_iter);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +max_iter;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.minimize_uff_json(ptr0, len0, ptr1, len1, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -5435,18 +5959,19 @@ export function mmff94_energy_breakdown_from_coords_json(mol, coords_json) {
  * @returns {string}
  */
 export function mmff94_energy_breakdown_from_coords_json_with_options(mol, coords_json, ignore_interfrag_interactions) {
-    let deferred2_0;
-    let deferred2_1;
+    let deferred3_0;
+    let deferred3_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +ignore_interfrag_interactions;
         const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.mmff94_energy_breakdown_from_coords_json_with_options(mol.__wbg_ptr, ptr0, len0, ignore_interfrag_interactions);
-        deferred2_0 = ret[0];
-        deferred2_1 = ret[1];
+        const ret = wasm.mmff94_energy_breakdown_from_coords_json_with_options(mol.__wbg_ptr, ptr0, len0, val2);
+        deferred3_0 = ret[0];
+        deferred3_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
     }
 }
 
@@ -5680,9 +6205,10 @@ export function mol_block_stereo_loss_json(mol) {
  * @returns {MolHandle}
  */
 export function mol_from_ccd(text, allow_stereo_loss) {
+    const val2 = +allow_stereo_loss;
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.mol_from_ccd(ptr0, len0, allow_stereo_loss);
+    const ret = wasm.mol_from_ccd(ptr0, len0, val2);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -5714,9 +6240,10 @@ export function mol_from_cdxml(cdxml) {
  * @returns {MolHandle}
  */
 export function mol_from_cdxml_with_options(cdxml, infer_nondirectional_stereo) {
+    const val2 = +infer_nondirectional_stereo;
     const ptr0 = passStringToWasm0(cdxml, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.mol_from_cdxml_with_options(ptr0, len0, infer_nondirectional_stereo);
+    const ret = wasm.mol_from_cdxml_with_options(ptr0, len0, val2);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -5804,7 +6331,8 @@ export function mol_from_cube(text) {
  * too. Only the first frame of a multi-frame file is read.
  *
  * Returns a JS error on parse failure or if the frame exceeds the WASM
- * atom-count limit.
+ * atom-count limit. Coordinates, cell entries and R atom data must be finite;
+ * nonzero decimals that round to binary64 zero are refused.
  * @param {string} text
  * @returns {MolHandle}
  */
@@ -5838,10 +6366,10 @@ export function mol_from_mmcif(text) {
 }
 
 /**
- * Parse a MolJSON string into a `MolHandle`.
- *
- * MolJSON is a JSON-based molecular representation designed for LLM
- * (large language model) compatibility.  Returns a JS error on invalid input.
+ * Parse chematic's atom-record MolJSON graph dialect, not oxpig MolJSON.
+ * Range/type checks, exact bond orders (4 = quadruple), unique keys/IDs and
+ * valid nonduplicate bonds are enforced. Throws on invalid input; source
+ * metadata and stereochemistry are outside this graph profile.
  * @param {string} json
  * @returns {MolHandle}
  */
@@ -5903,9 +6431,10 @@ export function mol_from_pdb(pdb) {
  * @returns {MolHandle}
  */
 export function mol_from_pdb_conect(input, allow_extended_targets) {
+    const val2 = +allow_extended_targets;
     const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.mol_from_pdb_conect(ptr0, len0, allow_extended_targets);
+    const ret = wasm.mol_from_pdb_conect(ptr0, len0, val2);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -6022,7 +6551,9 @@ export function mol_from_v3000_block(block) {
 /**
  * Parse an XYZ file and return a `MolHandle` (topology only; coordinates are discarded).
  *
- * Returns a JS error on parse failure.
+ * Returns a JS error on parse failure, nonfinite coordinates or a nonzero
+ * decimal coordinate that rounds to binary64 zero. Literal signed zero and
+ * finite subnormals remain valid.
  * @param {string} xyz
  * @returns {MolHandle}
  */
@@ -6124,9 +6655,10 @@ export function mol_with_atom_charge(mol, idx, charge) {
  */
 export function mol_with_atom_element(mol, idx, element_symbol) {
     _assertClass(mol, MolHandle);
+    const val2 = +idx;
     const ptr0 = passStringToWasm0(element_symbol, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.mol_with_atom_element(mol.__wbg_ptr, idx, ptr0, len0);
+    const ret = wasm.mol_with_atom_element(mol.__wbg_ptr, val2, ptr0, len0);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -6142,9 +6674,10 @@ export function mol_with_atom_element(mol, idx, element_symbol) {
  */
 export function mol_with_atom_pseudo_label(mol, idx, label) {
     _assertClass(mol, MolHandle);
+    const val2 = +idx;
     const ptr0 = passStringToWasm0(label, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.mol_with_atom_pseudo_label(mol.__wbg_ptr, idx, ptr0, len0);
+    const ret = wasm.mol_with_atom_pseudo_label(mol.__wbg_ptr, val2, ptr0, len0);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -6208,6 +6741,56 @@ export function mol_with_bond_removed(mol, idx) {
 }
 
 /**
+ * @param {string} json
+ * @returns {string}
+ */
+export function molden_from_record_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.molden_from_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function molden_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.molden_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Generate a complete molecular report (JSON string) from a SMILES.
  * Returns the JSON representation of a `MoleculeReport` struct.
  *
@@ -6243,23 +6826,31 @@ export function molecule_report_json(smiles) {
 
 /**
  * Concrete CDX/CDXML fragment handles, in source fragment order.
- * @param {Uint8Array} data
+ * @param {Uint8Array | number[]} data
  * @param {string} format
  * @param {boolean} allow_metadata_loss
  * @returns {MolHandle[]}
  */
 export function mols_from_chemdraw_block(data, format, allow_metadata_loss) {
-    const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.mols_from_chemdraw_block(ptr0, len0, ptr1, len1, allow_metadata_loss);
+    const val3 = +allow_metadata_loss;
+    let ptr0, len0, ptr1, len1;
+    try {
+        ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+        len0 = WASM_VECTOR_LEN;
+        ptr1 = passStringToWasm0(format, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len1 = WASM_VECTOR_LEN;
+    } catch (e) {
+        if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+        if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+        throw e;
+    }
+    const ret = wasm.mols_from_chemdraw_block(ptr0, len0, ptr1, len1, val3);
     if (ret[3]) {
         throw takeFromExternrefTable0(ret[2]);
     }
-    var v3 = getArrayJsValueFromWasm0(ret[0], ret[1]);
+    var v4 = getArrayJsValueFromWasm0(ret[0], ret[1]);
     wasm.__wbindgen_free(ret[0], ret[1] * 4, 4);
-    return v3;
+    return v4;
 }
 
 /**
@@ -6325,19 +6916,27 @@ export function murcko_scaffold(mol) {
  * @returns {string}
  */
 export function nearest_neighbors_json(query_smiles, db_smiles_json, k) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.nearest_neighbors_json(ptr0, len0, ptr1, len1, k);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +k;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.nearest_neighbors_json(ptr0, len0, ptr1, len1, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -6382,6 +6981,35 @@ export function normalize_cxsmiles(s) {
 }
 
 /**
+ * Enhanced-atom-stereo reaction CXSMILES with group indices remapped after
+ * component/atom ordering (RDKit #9732). Other CX fields are rejected.
+ * @param {string} text
+ * @param {boolean} canonical
+ * @returns {string}
+ */
+export function normalize_reaction_cxsmiles(text, canonical) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const val2 = +canonical;
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.normalize_reaction_cxsmiles(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Parse and re-serialise a reaction SMILES string, returning the normalised form.
  *
  * Useful for validating reaction SMILES and obtaining a canonical representation.
@@ -6421,10 +7049,17 @@ export function nucleic_acid_apply_json_command(document_json, command_json) {
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(document_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.nucleic_acid_apply_json_command(ptr0, len0, ptr1, len1);
         deferred3_0 = ret[0];
         deferred3_1 = ret[1];
@@ -6467,6 +7102,56 @@ export function num_hydrogens(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.num_hydrogens(mol.__wbg_ptr);
     return ret >>> 0;
+}
+
+/**
+ * @param {string} json
+ * @returns {string}
+ */
+export function nwchem_geometry_from_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.nwchem_geometry_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * @param {string} text
+ * @returns {string}
+ */
+export function nwchem_geometry_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.nwchem_geometry_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -6789,6 +7474,33 @@ export function parse_cxsmiles_json(s) {
 }
 
 /**
+ * Read a bounded fract record as editable JSON. All numeric fields are strings
+ * retaining nominal precision and optional opaque uncertainty digits.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_fract_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_fract_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Inspect every ordered Cartesian job with UTF-8 byte ranges in the original source.
  * Coordinate units are unchanged; no inferred bonds or external resource reads.
  * @param {string} text
@@ -6816,6 +7528,69 @@ export function parse_gjf_document_json(text) {
 }
 
 /**
+ * Read gpr 100 / one coordinate set as editable JSON. Coordinates stay in nm;
+ * partial charges and all decimal tokens retain source representation.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_gpr_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_gpr_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Read geometry as editable JSON, with all blocks, fixed-width payload and caller-owned length-unit context.
+ * @param {string} text
+ * @param {string} length_unit
+ * @returns {string}
+ */
+export function parse_gromos96_json(text, length_unit) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(length_unit, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.parse_gromos96_json(ptr0, len0, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
  * Inspect the bounded HIN record, including literal aromatic bonds and charges.
  * @param {string} text
  * @returns {string}
@@ -6827,6 +7602,32 @@ export function parse_hin_record_json(text) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.parse_hin_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Read geometry as editable JSON, with raw decimal fields, all frames and column order.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_lpmd_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_lpmd_json(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -6885,19 +7686,18 @@ export function parse_smiles(s) {
 }
 
 /**
- * Indexed atoms/charges, bonds, coordinates and source serials for the same
- * explicit CONECT projection. Molecular identity and coordinate order agree.
- * @param {string} input
- * @param {boolean} allow_extended_targets
+ * Read a bounded UniChem XYZ record as editable JSON. Coordinate fields are decimal strings
+ * retaining precision and signed zero in Angstrom.
+ * @param {string} text
  * @returns {string}
  */
-export function pdb_conect_frame_json(input, allow_extended_targets) {
+export function parse_unixyz_json(text) {
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.pdb_conect_frame_json(ptr0, len0, allow_extended_targets);
+        const ret = wasm.parse_unixyz_json(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -6909,6 +7709,61 @@ export function pdb_conect_frame_json(input, allow_extended_targets) {
         return getStringFromWasm0(ptr2, len2);
     } finally {
         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Read geometry as editable JSON, with raw factor/coordinate strings and fixed axes.
+ * @param {string} text
+ * @returns {string}
+ */
+export function parse_viewmol_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.parse_viewmol_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Indexed atoms/charges, bonds, coordinates and source serials for the same
+ * explicit CONECT projection. Molecular identity and coordinate order agree.
+ * @param {string} input
+ * @param {boolean} allow_extended_targets
+ * @returns {string}
+ */
+export function pdb_conect_frame_json(input, allow_extended_targets) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        const val2 = +allow_extended_targets;
+        const ptr0 = passStringToWasm0(input, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.pdb_conect_frame_json(ptr0, len0, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -7001,10 +7856,17 @@ export function periodic_structure_fingerprint_json(json, source) {
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(source, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.periodic_structure_fingerprint_json(ptr0, len0, ptr1, len1);
         deferred3_0 = ret[0];
         deferred3_1 = ret[1];
@@ -7103,10 +7965,17 @@ export function pipeline_v2_stereo_safe_config_json(force_field, ring_torsion_po
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(force_field, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(ring_torsion_policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(force_field, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(ring_torsion_policy, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.pipeline_v2_stereo_safe_config_json(ptr0, len0, ptr1, len1);
         deferred3_0 = ret[0];
         deferred3_1 = ret[1];
@@ -7153,12 +8022,20 @@ export function pqr_coords_json(text) {
  * @returns {string | undefined}
  */
 export function pqr_infer_element(group_pdb, res_name, atom_name) {
-    const ptr0 = passStringToWasm0(group_pdb, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(res_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
-    const ptr2 = passStringToWasm0(atom_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len2 = WASM_VECTOR_LEN;
+    let ptr0, len0, ptr1, len1, ptr2, len2;
+    try {
+        ptr0 = passStringToWasm0(group_pdb, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len0 = WASM_VECTOR_LEN;
+        ptr1 = passStringToWasm0(res_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len1 = WASM_VECTOR_LEN;
+        ptr2 = passStringToWasm0(atom_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len2 = WASM_VECTOR_LEN;
+    } catch (e) {
+        if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+        if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+        if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+        throw e;
+    }
     const ret = wasm.pqr_infer_element(ptr0, len0, ptr1, len1, ptr2, len2);
     let v4;
     if (ret[0] !== 0) {
@@ -7233,17 +8110,19 @@ export function predict_pka_json(smiles) {
  * @returns {string}
  */
 export function preflight_smiles_json(smiles, width, height) {
-    let deferred2_0;
-    let deferred2_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        const val2 = +width;
+        const val3 = +height;
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.preflight_smiles_json(ptr0, len0, width, height);
-        deferred2_0 = ret[0];
-        deferred2_1 = ret[1];
+        const ret = wasm.preflight_smiles_json(ptr0, len0, val2, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -7263,6 +8142,59 @@ export function prepare_rdkit_ecfp4(mol) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return PreparedRdkitEcfp4Handle.__wrap(ret[0]);
+}
+
+/**
+ * Checked local CJSON graph/Cartesian/name projection; throws on opaque
+ * fields, partial charges or conflicting names. No source chemistry validation.
+ * @param {string} text
+ * @returns {string}
+ */
+export function project_cjson_to_cml(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.project_cjson_to_cml(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Checked CML graph/Cartesian/name profile; refuses unrepresented payload.
+ * @param {string} text
+ * @returns {string}
+ */
+export function project_cml_to_cjson(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.project_cml_to_cjson(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -7430,23 +8362,25 @@ export function qcschema_validate_atomic_result(json) {
  * @returns {string}
  */
 export function random_smiles_json(smiles, count, seed) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
+        const val2 = +count;
+        const val3 = BigInt.asIntN(64, seed);
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.random_smiles_json(ptr0, len0, count, seed);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.random_smiles_json(ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -7467,6 +8401,36 @@ export function rdkit_atom_code(mol, atom_index, branch_subtract) {
         throw takeFromExternrefTable0(ret[1]);
     }
     return ret[0] >>> 0;
+}
+
+/**
+ * Return packed bits, folded counts and unhashed counts for 2D Atom Pair.
+ * The JSON options are optional. Set `countBounds` to null to disable count
+ * simulation. Counts are returned as sorted [identifier, count] arrays.
+ * @param {MolHandle} mol
+ * @param {string} options_json
+ * @returns {string}
+ */
+export function rdkit_atom_pair_config_detail_json(mol, options_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rdkit_atom_pair_config_detail_json(mol.__wbg_ptr, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -7638,9 +8602,12 @@ export function rdkit_ecfp_config_detail_json(mol, radius, nbits) {
  * @returns {RdkitReadResult}
  */
 export function rdkit_from_mol2_block(text, sanitize, remove_hs, cleanup_substructures) {
+    const val2 = +sanitize;
+    const val3 = +remove_hs;
+    const val4 = +cleanup_substructures;
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.rdkit_from_mol2_block(ptr0, len0, sanitize, remove_hs, cleanup_substructures);
+    const ret = wasm.rdkit_from_mol2_block(ptr0, len0, val2, val3, val4);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -7657,9 +8624,13 @@ export function rdkit_from_mol2_block(text, sanitize, remove_hs, cleanup_substru
  * @returns {RdkitReadResult}
  */
 export function rdkit_from_pdb_block(text, sanitize, remove_hs, flavor, proximity_bonding) {
+    const val2 = +sanitize;
+    const val3 = +remove_hs;
+    const val4 = +flavor;
+    const val5 = +proximity_bonding;
     const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.rdkit_from_pdb_block(ptr0, len0, sanitize, remove_hs, flavor, proximity_bonding);
+    const ret = wasm.rdkit_from_pdb_block(ptr0, len0, val2, val3, val4, val5);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -7682,6 +8653,36 @@ export function rdkit_from_xyz_block(text) {
 }
 
 /**
+ * Return the configured RDKit Layered fingerprint and per-atom counters as JSON.
+ * Pass `{}` for defaults. `setOnlyBits` is an optional LSB-first packed byte
+ * array, and `atomCounts` optionally seeds the returned u32 counters.
+ * @param {MolHandle} mol
+ * @param {string} options_json
+ * @returns {string}
+ */
+export function rdkit_layered_config_detail_json(mol, options_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rdkit_layered_config_detail_json(mol.__wbg_ptr, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Find the k nearest neighbours using the RDKit-compatible Morgan/ECFP4
  * profile. This is intentionally separate from [`nearest_neighbors_json`],
  * whose historical contract uses chematic's native ECFP4 profile.
@@ -7695,19 +8696,27 @@ export function rdkit_from_xyz_block(text) {
  * @returns {string}
  */
 export function rdkit_nearest_neighbors_json(query_smiles, db_smiles_json, k) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.rdkit_nearest_neighbors_json(ptr0, len0, ptr1, len1, k);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +k;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(query_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.rdkit_nearest_neighbors_json(ptr0, len0, ptr1, len1, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -7747,7 +8756,7 @@ export function rdkit_rdk_bitvec(mol) {
  * containing one of `ignored_atoms` is excluded. Invalid indices return a JS
  * error; an empty list is bit-identical to [`rdkit_rdk_bitvec`].
  * @param {MolHandle} mol
- * @param {Uint32Array} ignored_atoms
+ * @param {Uint32Array | number[]} ignored_atoms
  * @returns {Uint8Array}
  */
 export function rdkit_rdk_bitvec_ignoring_atoms(mol, ignored_atoms) {
@@ -7761,6 +8770,36 @@ export function rdkit_rdk_bitvec_ignoring_atoms(mol, ignored_atoms) {
     var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v2;
+}
+
+/**
+ * Packed RDK bits and folded and sparse counts, using input atom indices.
+ * A supplied `countBounds` array enables count simulation for the bit vector.
+ * Packed bytes are LSB-first and counts are sorted [identifier, count] pairs.
+ * @param {MolHandle} mol
+ * @param {string} options_json
+ * @returns {string}
+ */
+export function rdkit_rdk_config_detail_json(mol, options_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rdkit_rdk_config_detail_json(mol.__wbg_ptr, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -7807,6 +8846,36 @@ export function rdkit_torsion_bitvec(mol) {
     var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v1;
+}
+
+/**
+ * Return packed bits, folded counts and unhashed Topological Torsion counts.
+ * Pass JSON options or `{}` for defaults. A null `countBounds` disables
+ * simulation. Sparse identifiers are decimal strings to retain all 64 bits.
+ * @param {MolHandle} mol
+ * @param {string} options_json
+ * @returns {string}
+ */
+export function rdkit_torsion_config_detail_json(mol, options_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        _assertClass(mol, MolHandle);
+        const ptr0 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.rdkit_torsion_config_detail_json(mol.__wbg_ptr, ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
 }
 
 /**
@@ -7878,10 +8947,17 @@ export function reaction_document_to_rxn_v1(document_json) {
  * @returns {boolean}
  */
 export function reaction_smarts_match(smarts, reaction_smiles) {
-    const ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(reaction_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
+    let ptr0, len0, ptr1, len1;
+    try {
+        ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len0 = WASM_VECTOR_LEN;
+        ptr1 = passStringToWasm0(reaction_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len1 = WASM_VECTOR_LEN;
+    } catch (e) {
+        if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+        if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+        throw e;
+    }
     const ret = wasm.reaction_smarts_match(ptr0, len0, ptr1, len1);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
@@ -7947,24 +9023,25 @@ export function remove_redundant_tetrahedral_stereo(mol, atom_index, max_visits)
  * @returns {string}
  */
 export function retro_disconnect_json(mol, max_results, reaction_class) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +max_results;
         const ptr0 = passStringToWasm0(reaction_class, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.retro_disconnect_json(mol.__wbg_ptr, max_results, ptr0, len0);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.retro_disconnect_json(mol.__wbg_ptr, val2, ptr0, len0);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -7985,10 +9062,17 @@ export function rgroup_decompose_columns_json(smiles_json, core_smarts) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.rgroup_decompose_columns_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -8032,10 +9116,17 @@ export function rgroup_decompose_json(smiles_json, core_smarts) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(core_smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.rgroup_decompose_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -8089,6 +9180,34 @@ export function roundtrip_cjson_record(text) {
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.roundtrip_cjson_record(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Exact bounded XML 1.0 CML source retention. Requires one CML-namespace
+ * molecule root; rejects nested molecules/DTDs. Chemistry, references and
+ * stereo remain opaque, with no interpretation or schema validation promised.
+ * @param {string} text
+ * @returns {string}
+ */
+export function roundtrip_cml_source(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.roundtrip_cml_source(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -8285,10 +9404,17 @@ export function run_reactants(smirks, reactants_smiles) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smirks, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(reactants_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smirks, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(reactants_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.run_reactants(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -8328,19 +9454,27 @@ export function run_reactants(smirks, reactants_smiles) {
  * @returns {string}
  */
 export function run_reactants_checked(smirks, reactants_smiles, rdkit_compat) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(smirks, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(reactants_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.run_reactants_checked(ptr0, len0, ptr1, len1, rdkit_compat);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +rdkit_compat;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smirks, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(reactants_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.run_reactants_checked(ptr0, len0, ptr1, len1, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -8433,10 +9567,17 @@ export function screen_smiles_json(smiles_batch, delimiter) {
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smiles_batch, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(delimiter, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.screen_smiles_json(ptr0, len0, ptr1, len1);
         deferred3_0 = ret[0];
         deferred3_1 = ret[1];
@@ -8470,12 +9611,20 @@ export function sdf_from_records_json(smiles_json, names_json, props_json) {
     let deferred5_0;
     let deferred5_1;
     try {
-        const ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(names_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(props_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2;
+        try {
+            ptr0 = passStringToWasm0(smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(names_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(props_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.sdf_from_records_json(ptr0, len0, ptr1, len1, ptr2, len2);
         var ptr4 = ret[0];
         var len4 = ret[1];
@@ -8504,23 +9653,25 @@ export function sdf_from_records_json(smiles_json, names_json, props_json) {
  * @returns {string}
  */
 export function sdf_records_batch_json(sdf, offset, batch_size) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
+        const val2 = +offset;
+        const val3 = +batch_size;
         const ptr0 = passStringToWasm0(sdf, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.sdf_records_batch_json(ptr0, len0, offset, batch_size);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.sdf_records_batch_json(ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -8588,10 +9739,17 @@ export function semantic_apply_json_command(model_json, command_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(command_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.semantic_apply_json_command(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -8618,10 +9776,17 @@ export function semantic_expand_json(base_smiles, model_json) {
     let deferred4_0;
     let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(base_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(base_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.semantic_expand_json(ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -8646,25 +9811,34 @@ export function semantic_expand_json(base_smiles, model_json) {
  * @returns {string}
  */
 export function semantic_expand_json_with_limits(base_smiles, model_json, max_atoms, max_repeat_count) {
-    let deferred4_0;
-    let deferred4_1;
+    let deferred6_0;
+    let deferred6_1;
     try {
-        const ptr0 = passStringToWasm0(base_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.semantic_expand_json_with_limits(ptr0, len0, ptr1, len1, max_atoms, max_repeat_count);
-        var ptr3 = ret[0];
-        var len3 = ret[1];
+        const val3 = +max_atoms;
+        const val4 = +max_repeat_count;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(base_smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(model_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.semantic_expand_json_with_limits(ptr0, len0, ptr1, len1, val3, val4);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
         if (ret[3]) {
-            ptr3 = 0; len3 = 0;
+            ptr5 = 0; len5 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred4_0 = ptr3;
-        deferred4_1 = len3;
-        return getStringFromWasm0(ptr3, len3);
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
     } finally {
-        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -8708,24 +9882,28 @@ export function semantic_model_json(model_json) {
  * @returns {string}
  */
 export function set_bond_angle_from_coords_json(mol, coords_json, i, j, k, angle_deg) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred7_0;
+    let deferred7_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +i;
+        const val3 = +j;
+        const val4 = +k;
+        const val5 = +angle_deg;
         const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.set_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, angle_deg);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.set_bond_angle_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3, val4, val5);
+        var ptr6 = ret[0];
+        var len6 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr6 = 0; len6 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred7_0 = ptr6;
+        deferred7_1 = len6;
+        return getStringFromWasm0(ptr6, len6);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred7_0, deferred7_1, 1);
     }
 }
 
@@ -8742,24 +9920,27 @@ export function set_bond_angle_from_coords_json(mol, coords_json, i, j, k, angle
  * @returns {string}
  */
 export function set_bond_length_from_coords_json(mol, coords_json, i, j, length) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred6_0;
+    let deferred6_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +i;
+        const val3 = +j;
+        const val4 = +length;
         const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.set_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, length);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.set_bond_length_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3, val4);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr5 = 0; len5 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -8777,24 +9958,29 @@ export function set_bond_length_from_coords_json(mol, coords_json, i, j, length)
  * @returns {string}
  */
 export function set_dihedral_from_coords_json(mol, coords_json, i, j, k, l, angle_deg) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred8_0;
+    let deferred8_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +i;
+        const val3 = +j;
+        const val4 = +k;
+        const val5 = +l;
+        const val6 = +angle_deg;
         const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.set_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, i, j, k, l, angle_deg);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.set_dihedral_from_coords_json(mol.__wbg_ptr, ptr0, len0, val2, val3, val4, val5, val6);
+        var ptr7 = ret[0];
+        var len7 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr7 = 0; len7 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred8_0 = ptr7;
+        deferred8_1 = len7;
+        return getStringFromWasm0(ptr7, len7);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
     }
 }
 
@@ -8821,23 +10007,28 @@ export function set_dihedral_from_coords_json(mol, coords_json, i, j, k, l, angl
  * @returns {string}
  */
 export function set_dihedral_json(smiles, a, b, c, d, angle_deg) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred8_0;
+    let deferred8_1;
     try {
+        const val2 = +a;
+        const val3 = +b;
+        const val4 = +c;
+        const val5 = +d;
+        const val6 = +angle_deg;
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.set_dihedral_json(ptr0, len0, a, b, c, d, angle_deg);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.set_dihedral_json(ptr0, len0, val2, val3, val4, val5, val6);
+        var ptr7 = ret[0];
+        var len7 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr7 = 0; len7 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred8_0 = ptr7;
+        deferred8_1 = len7;
+        return getStringFromWasm0(ptr7, len7);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred8_0, deferred8_1, 1);
     }
 }
 
@@ -8897,9 +10088,9 @@ export function smarts_match_atoms(smarts, mol) {
     let deferred3_0;
     let deferred3_1;
     try {
+        _assertClass(mol, MolHandle);
         const ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        _assertClass(mol, MolHandle);
         const ret = wasm.smarts_match_atoms(ptr0, len0, mol.__wbg_ptr);
         var ptr2 = ret[0];
         var len2 = ret[1];
@@ -8927,24 +10118,65 @@ export function smarts_match_atoms(smarts, mol) {
  * @returns {string}
  */
 export function smarts_match_atoms_with_chirality(smarts, mol, use_chirality) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
+        _assertClass(mol, MolHandle);
+        const val2 = +use_chirality;
         const ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        _assertClass(mol, MolHandle);
-        const ret = wasm.smarts_match_atoms_with_chirality(ptr0, len0, mol.__wbg_ptr, use_chirality);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.smarts_match_atoms_with_chirality(ptr0, len0, mol.__wbg_ptr, val2);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr3 = 0; len3 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
+    }
+}
+
+/**
+ * Match SMARTS with optional `useChirality` and `useIsotopes` JSON flags.
+ * Returns sorted atom indices for each hit. The existing WASM match and visit
+ * limits apply. Pass `{}` to use the default settings.
+ * @param {string} smarts
+ * @param {MolHandle} mol
+ * @param {string} config_json
+ * @returns {string}
+ */
+export function smarts_match_atoms_with_config(smarts, mol, config_json) {
+    let deferred4_0;
+    let deferred4_1;
+    try {
+        _assertClass(mol, MolHandle);
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(smarts, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(config_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.smarts_match_atoms_with_config(ptr0, len0, mol.__wbg_ptr, ptr1, len1);
+        var ptr3 = ret[0];
+        var len3 = ret[1];
+        if (ret[3]) {
+            ptr3 = 0; len3 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred4_0 = ptr3;
+        deferred4_1 = len3;
+        return getStringFromWasm0(ptr3, len3);
+    } finally {
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -9020,14 +10252,23 @@ export function smiles_to_pdbqt(smiles, coords_json, charges_json, name) {
     let deferred5_0;
     let deferred5_1;
     try {
-        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.smiles_to_pdbqt(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
         deferred5_0 = ret[0];
         deferred5_1 = ret[1];
@@ -9043,6 +10284,7 @@ export function smiles_to_pdbqt(smiles, coords_json, charges_json, name) {
  * contain exactly one value per graph atom, including explicit H. No defaults,
  * charge calculation, atom removal or ligand torsion preparation are applied.
  * AutoDock types retain the legacy heuristic, with unknown `X` types rejected.
+ * Isotopes are refused; smiles_to_pdbqt_isotope_projection records their omission.
  * @param {string} smiles
  * @param {string} coords_json
  * @param {string} charges_json
@@ -9053,15 +10295,71 @@ export function smiles_to_pdbqt_checked(smiles, coords_json, charges_json, name)
     let deferred6_0;
     let deferred6_1;
     try {
-        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.smiles_to_pdbqt_checked(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
+        var ptr5 = ret[0];
+        var len5 = ret[1];
+        if (ret[3]) {
+            ptr5 = 0; len5 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred6_0 = ptr5;
+        deferred6_1 = len5;
+        return getStringFromWasm0(ptr5, len5);
+    } finally {
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
+    }
+}
+
+/**
+ * Explicit isotope projection. Returns JSON {pdbqt, isotopes_omitted} with
+ * zero-based source_atom_index, one-based pdbqt_serial, atomic_number and
+ * mass_number for each label omitted from PDBQT. Retains all explicit atoms,
+ * without H merging, charge recalculation or ligand torsion preparation.
+ * @param {string} smiles
+ * @param {string} coords_json
+ * @param {string} charges_json
+ * @param {string} name
+ * @returns {string}
+ */
+export function smiles_to_pdbqt_isotope_projection(smiles, coords_json, charges_json, name) {
+    let deferred6_0;
+    let deferred6_1;
+    try {
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(charges_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.smiles_to_pdbqt_isotope_projection(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
         var ptr5 = ret[0];
         var len5 = ret[1];
         if (ret[3]) {
@@ -9085,8 +10383,8 @@ export function smiles_to_pdbqt_checked(smiles, coords_json, charges_json, name)
  *
  * Returns a JS error on SMILES parse failure.
  * @param {string} smiles
- * @param {Uint32Array} atoms
- * @param {Uint32Array} bonds
+ * @param {Uint32Array | number[]} atoms
+ * @param {Uint32Array | number[]} bonds
  * @param {string} color
  * @returns {string}
  */
@@ -9094,14 +10392,23 @@ export function smiles_to_svg_highlighted(smiles, atoms, bonds, color) {
     let deferred6_0;
     let deferred6_1;
     try {
-        const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passArray32ToWasm0(atoms, wasm.__wbindgen_malloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passArray32ToWasm0(bonds, wasm.__wbindgen_malloc);
-        const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(color, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passArray32ToWasm0(atoms, wasm.__wbindgen_malloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passArray32ToWasm0(bonds, wasm.__wbindgen_malloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(color, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 4, 4); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 4, 4); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.smiles_to_svg_highlighted(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
         var ptr5 = ret[0];
         var len5 = ret[1];
@@ -9194,17 +10501,21 @@ export function standardize_smiles(smiles) {
  * @returns {string}
  */
 export function standardize_smiles_report_json(smiles, largest_fragment_only, neutralize_charges, remove_explicit_h, canonical_tautomer) {
-    let deferred2_0;
-    let deferred2_1;
+    let deferred6_0;
+    let deferred6_1;
     try {
+        const val2 = +largest_fragment_only;
+        const val3 = +neutralize_charges;
+        const val4 = +remove_explicit_h;
+        const val5 = +canonical_tautomer;
         const ptr0 = passStringToWasm0(smiles, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.standardize_smiles_report_json(ptr0, len0, largest_fragment_only, neutralize_charges, remove_explicit_h, canonical_tautomer);
-        deferred2_0 = ret[0];
-        deferred2_1 = ret[1];
+        const ret = wasm.standardize_smiles_report_json(ptr0, len0, val2, val3, val4, val5);
+        deferred6_0 = ret[0];
+        deferred6_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred2_0, deferred2_1, 1);
+        wasm.__wbindgen_free(deferred6_0, deferred6_1, 1);
     }
 }
 
@@ -9383,10 +10694,17 @@ export function tanimoto_maccs(a, b) {
  * @returns {number}
  */
 export function tanimoto_mhfp_smiles(smi1, smi2) {
-    const ptr0 = passStringToWasm0(smi1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(smi2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
+    let ptr0, len0, ptr1, len1;
+    try {
+        ptr0 = passStringToWasm0(smi1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len0 = WASM_VECTOR_LEN;
+        ptr1 = passStringToWasm0(smi2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len1 = WASM_VECTOR_LEN;
+    } catch (e) {
+        if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+        if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+        throw e;
+    }
     const ret = wasm.tanimoto_mhfp_smiles(ptr0, len0, ptr1, len1);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
@@ -9410,10 +10728,17 @@ export function tanimoto_row_json(query_smi, db_smiles_json) {
     let deferred3_0;
     let deferred3_1;
     try {
-        const ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.tanimoto_row_json(ptr0, len0, ptr1, len1);
         deferred3_0 = ret[0];
         deferred3_1 = ret[1];
@@ -9432,10 +10757,17 @@ export function tanimoto_row_json(query_smi, db_smiles_json) {
  * @returns {number}
  */
 export function tanimoto_smiles(smiles1, smiles2) {
-    const ptr0 = passStringToWasm0(smiles1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len0 = WASM_VECTOR_LEN;
-    const ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-    const len1 = WASM_VECTOR_LEN;
+    let ptr0, len0, ptr1, len1;
+    try {
+        ptr0 = passStringToWasm0(smiles1, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len0 = WASM_VECTOR_LEN;
+        ptr1 = passStringToWasm0(smiles2, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        len1 = WASM_VECTOR_LEN;
+    } catch (e) {
+        if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+        if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+        throw e;
+    }
     const ret = wasm.tanimoto_smiles(ptr0, len0, ptr1, len1);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
@@ -9495,6 +10827,58 @@ export function tautomer_parent_json(mol, max_transforms, max_tautomers, timeout
 }
 
 /**
+ * Write an edited record, refusing unsupported keys rather than dropping them.
+ * @param {string} json
+ * @returns {string}
+ */
+export function tinker_xyz_from_record_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.tinker_xyz_from_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Read one Tinker XYZ frame. Names/types and declared adjacency remain opaque.
+ * @param {string} text
+ * @returns {string}
+ */
+export function tinker_xyz_record_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.tinker_xyz_record_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Serialise a `MolHandle` to a CML string with 2D coordinates.
  *
  * Coordinates are generated using the same 2D layout engine as `to_mol_block`.
@@ -9531,7 +10915,11 @@ export function to_cml(mol) {
  *
  * Returns a JS error if `coords_json`/`options_json` are malformed, if
  * `coords_json`'s length doesn't match `mol`'s atom count, or if a
- * `properties` column's row count doesn't match it.
+ * `properties` column's row count doesn't match it. Options must be an object
+ * with only lattice/properties/info; duplicate keys and malformed values fail.
+ * Nonfinite values, ambiguous/reserved names and invalid frame data fail before
+ * output. Bare empty info values require explicit typed metadata encoding.
+ * Molecular bonds, formal charges, isotope and stereo are not projected.
  * @param {MolHandle} mol
  * @param {string} coords_json
  * @param {string} options_json
@@ -9542,10 +10930,17 @@ export function to_extxyz_json(mol, coords_json, options_json) {
     let deferred4_1;
     try {
         _assertClass(mol, MolHandle);
-        const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(options_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.to_extxyz_json(mol.__wbg_ptr, ptr0, len0, ptr1, len1);
         var ptr3 = ret[0];
         var len3 = ret[1];
@@ -9669,24 +11064,26 @@ export function to_moljson(mol) {
  * @returns {string}
  */
 export function to_qcschema_molecule_json(mol, coords_json, charge, multiplicity) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
         _assertClass(mol, MolHandle);
+        const val2 = +charge;
+        const val3 = BigInt.asIntN(64, multiplicity);
         const ptr0 = passStringToWasm0(coords_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.to_qcschema_molecule_json(mol.__wbg_ptr, ptr0, len0, charge, multiplicity);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.to_qcschema_molecule_json(mol.__wbg_ptr, ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 
@@ -9816,6 +11213,32 @@ export function validate_nmr_spectrum_json(json) {
 }
 
 /**
+ * Explicit checked binary64 Angstrom positions; raw parse/write is independent.
+ * @param {string} text
+ * @returns {string}
+ */
+export function viewmol_positions_angstrom_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.viewmol_positions_angstrom_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Virtual screen a query SMILES against a database of SMILES using ECFP4 Tanimoto.
  *
  * `db_smiles_json`: JSON array of SMILES strings (max 1024 via WASM_MAX_BATCH_ITEMS).
@@ -9829,19 +11252,27 @@ export function validate_nmr_spectrum_json(json) {
  * @returns {string}
  */
 export function virtual_screen_ecfp4_json(query_smi, db_smiles_json, k) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred4_0;
+    let deferred4_1;
     try {
-        const ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ret = wasm.virtual_screen_ecfp4_json(ptr0, len0, ptr1, len1, k);
-        deferred3_0 = ret[0];
-        deferred3_1 = ret[1];
+        const val3 = +k;
+        let ptr0, len0, ptr1, len1;
+        try {
+            ptr0 = passStringToWasm0(query_smi, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(db_smiles_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
+        const ret = wasm.virtual_screen_ecfp4_json(ptr0, len0, ptr1, len1, val3);
+        deferred4_0 = ret[0];
+        deferred4_1 = ret[1];
         return getStringFromWasm0(ret[0], ret[1]);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred4_0, deferred4_1, 1);
     }
 }
 
@@ -9915,6 +11346,84 @@ export function write_cube_json(grid_json) {
         const ptr0 = passStringToWasm0(grid_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
         const ret = wasm.write_cube_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Serialize validated edited fields; duplicate/unknown JSON keys refuse.
+ * @param {string} json
+ * @returns {string}
+ */
+export function write_fract_from_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_fract_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Write current fields. Duplicate/unknown keys and unsupported semantics refuse.
+ * @param {string} json
+ * @returns {string}
+ */
+export function write_gpr_from_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_gpr_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Write current fields without rescaling; unknown or duplicate keys refuse.
+ * @param {string} text
+ * @returns {string}
+ */
+export function write_gromos96_from_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_gromos96_from_json(ptr0, len0);
         var ptr2 = ret[0];
         var len2 = ret[1];
         if (ret[3]) {
@@ -10012,6 +11521,32 @@ export function write_lammps_trajectory_json(json) {
 }
 
 /**
+ * Write current fields without rescaling; unknown or duplicate keys refuse.
+ * @param {string} text
+ * @returns {string}
+ */
+export function write_lpmd_from_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_lpmd_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Write an mmCIF file from atom records in the JSON shape
  * [`mmcif_to_json`]'s `"atoms"` array uses (a full record per atom, not
  * just element+coordinates -- mmCIF has no equivalent of "build from a
@@ -10020,6 +11555,8 @@ export function write_lammps_trajectory_json(json) {
  *
  * `cell_json`: `"null"` or `{"a":...,"b":...,"c":...,"alpha":...,"beta":...,"gamma":...}`.
  * `space_group`: pass `""` for none.
+ * Finite numeric fields retain their binary64 values without fixed decimal
+ * rounding. This does not retain original spelling or uncertainty suffixes.
  * @param {string} records_json
  * @param {string} cell_json
  * @param {string} space_group
@@ -10030,14 +11567,23 @@ export function write_mmcif_json(records_json, cell_json, space_group, data_bloc
     let deferred6_0;
     let deferred6_1;
     try {
-        const ptr0 = passStringToWasm0(records_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len0 = WASM_VECTOR_LEN;
-        const ptr1 = passStringToWasm0(cell_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len1 = WASM_VECTOR_LEN;
-        const ptr2 = passStringToWasm0(space_group, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len2 = WASM_VECTOR_LEN;
-        const ptr3 = passStringToWasm0(data_block_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
-        const len3 = WASM_VECTOR_LEN;
+        let ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3;
+        try {
+            ptr0 = passStringToWasm0(records_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len0 = WASM_VECTOR_LEN;
+            ptr1 = passStringToWasm0(cell_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len1 = WASM_VECTOR_LEN;
+            ptr2 = passStringToWasm0(space_group, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len2 = WASM_VECTOR_LEN;
+            ptr3 = passStringToWasm0(data_block_name, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+            len3 = WASM_VECTOR_LEN;
+        } catch (e) {
+            if (ptr3) { wasm.__wbindgen_free(ptr3, len3 * 1, 1); }
+            if (ptr2) { wasm.__wbindgen_free(ptr2, len2 * 1, 1); }
+            if (ptr1) { wasm.__wbindgen_free(ptr1, len1 * 1, 1); }
+            if (ptr0) { wasm.__wbindgen_free(ptr0, len0 * 1, 1); }
+            throw e;
+        }
         const ret = wasm.write_mmcif_json(ptr0, len0, ptr1, len1, ptr2, len2, ptr3, len3);
         var ptr5 = ret[0];
         var len5 = ret[1];
@@ -10142,6 +11688,35 @@ export function write_orca_input_json(json) {
 }
 
 /**
+ * Write represented ORCA input fields with exact finite Cartesian values.
+ * Requires explicit fields, rejects unknown/duplicate JSON fields, unit
+ * conflicts, %coords and any metadata that would change on structured reparse.
+ * Accepts either kind or type coordinate tags, never both. No job validation.
+ * @param {string} input_json
+ * @returns {string}
+ */
+export function write_orca_input_json_checked(input_json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(input_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_orca_input_json_checked(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Write a PQR file from atom records in the JSON shape [`pqr_to_json`]'s
  * `"atoms"` array uses. Each atom's `chain_id` independently controls
  * whether that line is written with or without the (optional) chain
@@ -10222,6 +11797,58 @@ export function write_smiles(mol) {
 }
 
 /**
+ * Serialize validated edited fields; duplicate/unknown JSON keys refuse.
+ * @param {string} json
+ * @returns {string}
+ */
+export function write_unixyz_from_json(json) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_unixyz_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
+ * Write current fields without rescaling; unknown or duplicate keys refuse.
+ * @param {string} text
+ * @returns {string}
+ */
+export function write_viewmol_from_json(text) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.write_viewmol_from_json(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * XLogP3 partition coefficient (alternative to Crippen LogP).
  * Returns JSON: `{"xlogp3": float}`.
  * @param {MolHandle} mol
@@ -10270,61 +11897,63 @@ export function xlogp3_per_atom_json(mol) {
  * @returns {string}
  */
 export function xyz_frames_batch_json(text, offset, batch_size) {
-    let deferred3_0;
-    let deferred3_1;
+    let deferred5_0;
+    let deferred5_1;
     try {
+        const val2 = +offset;
+        const val3 = +batch_size;
         const ptr0 = passStringToWasm0(text, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
         const len0 = WASM_VECTOR_LEN;
-        const ret = wasm.xyz_frames_batch_json(ptr0, len0, offset, batch_size);
-        var ptr2 = ret[0];
-        var len2 = ret[1];
+        const ret = wasm.xyz_frames_batch_json(ptr0, len0, val2, val3);
+        var ptr4 = ret[0];
+        var len4 = ret[1];
         if (ret[3]) {
-            ptr2 = 0; len2 = 0;
+            ptr4 = 0; len4 = 0;
             throw takeFromExternrefTable0(ret[2]);
         }
-        deferred3_0 = ptr2;
-        deferred3_1 = len2;
-        return getStringFromWasm0(ptr2, len2);
+        deferred5_0 = ptr4;
+        deferred5_1 = len4;
+        return getStringFromWasm0(ptr4, len4);
     } finally {
-        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+        wasm.__wbindgen_free(deferred5_0, deferred5_1, 1);
     }
 }
 function __wbg_get_imports() {
     const import0 = {
         __proto__: null,
-        __wbg___wbindgen_is_undefined_8865fb403f8fe9d8: function(arg0) {
+        __wbg___wbindgen_is_undefined_be5b34249ff1fc15: function(arg0) {
             const ret = arg0 === undefined;
             return ret;
         },
-        __wbg___wbindgen_number_get_2e0e7dee9f701a71: function(arg0, arg1) {
+        __wbg___wbindgen_number_get_934b640d0889af78: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'number' ? obj : undefined;
-            getDataViewMemory0().setFloat64(arg0 + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
-            getDataViewMemory0().setInt32(arg0 + 4 * 0, !isLikeNone(ret), true);
+            getDataViewMemory0().setFloat64((arg0 >>> 0) + 8 * 1, isLikeNone(ret) ? 0 : ret, true);
+            getDataViewMemory0().setInt32((arg0 >>> 0) + 4 * 0, !isLikeNone(ret), true);
         },
-        __wbg___wbindgen_string_get_0380ccaa2f57f0d9: function(arg0, arg1) {
+        __wbg___wbindgen_string_get_7ce8eee7fd327545: function(arg0, arg1) {
             const obj = arg1;
             const ret = typeof(obj) === 'string' ? obj : undefined;
             var ptr1 = isLikeNone(ret) ? 0 : passStringToWasm0(ret, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
             var len1 = WASM_VECTOR_LEN;
-            getDataViewMemory0().setInt32(arg0 + 4 * 1, len1, true);
-            getDataViewMemory0().setInt32(arg0 + 4 * 0, ptr1, true);
+            getDataViewMemory0().setInt32((arg0 >>> 0) + 4 * 1, len1, true);
+            getDataViewMemory0().setInt32((arg0 >>> 0) + 4 * 0, ptr1, true);
         },
-        __wbg___wbindgen_throw_41e9ee4f547fc59a: function(arg0, arg1) {
+        __wbg___wbindgen_throw_4c88d8bf264fd984: function(arg0, arg1) {
             throw new Error(getStringFromWasm0(arg0, arg1));
         },
-        __wbg_error_c9cf3fc2064683a9: function(arg0) {
+        __wbg_error_d1fc0193610e0e39: function(arg0) {
             console.error(arg0);
         },
         __wbg_molhandle_new: function(arg0) {
             const ret = MolHandle.__wrap(arg0);
             return ret;
         },
-        __wbg_new_from_slice_37a3c3a194266cb8: function(arg0, arg1) {
+        __wbg_new_from_slice_3512352010266e02: function(arg0, arg1) {
             const ret = new Uint32Array(getArrayU32FromWasm0(arg0, arg1));
             return ret;
         },
-        __wbg_new_from_slice_f545fd22ddc142b8: function(arg0, arg1) {
+        __wbg_new_from_slice_aaf85a9746711968: function(arg0, arg1) {
             const ret = new Float64Array(getArrayF64FromWasm0(arg0, arg1));
             return ret;
         },
@@ -10332,24 +11961,24 @@ function __wbg_get_imports() {
             const ret = arg0.now();
             return ret;
         },
-        __wbg_performance_3fcf6e32a7e1ed0a: function(arg0) {
+        __wbg_performance_7e4e4494fdc9d07a: function(arg0) {
             const ret = arg0.performance;
             return ret;
         },
-        __wbg_static_accessor_GLOBAL_266715b9d96ba635: function() {
-            const ret = typeof global === 'undefined' ? null : global;
+        __wbg_static_accessor_GLOBAL_THIS_003ee833af9699fc: function() {
+            const ret = typeof globalThis === 'undefined' ? undefined : globalThis;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_GLOBAL_THIS_10fb7dc1ae063179: function() {
-            const ret = typeof globalThis === 'undefined' ? null : globalThis;
+        __wbg_static_accessor_GLOBAL_e4293fb22cbe77da: function() {
+            const ret = typeof global === 'undefined' ? undefined : global;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_SELF_0b583911f537483a: function() {
-            const ret = typeof self === 'undefined' ? null : self;
+        __wbg_static_accessor_SELF_53bb20457401453d: function() {
+            const ret = typeof self === 'undefined' ? undefined : self;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
-        __wbg_static_accessor_WINDOW_d7f903d1508cbdc4: function() {
-            const ret = typeof window === 'undefined' ? null : window;
+        __wbg_static_accessor_WINDOW_b5e0810bfecb7feb: function() {
+            const ret = typeof window === 'undefined' ? undefined : window;
             return isLikeNone(ret) ? 0 : addToExternrefTable0(ret);
         },
         __wbindgen_generic_0000000000000001: function(arg0) {
@@ -10364,12 +11993,11 @@ function __wbg_get_imports() {
         },
         __wbindgen_init_externref_table: function() {
             const table = wasm.__wbindgen_externrefs;
-            const offset = table.grow(4);
             table.set(0, undefined);
-            table.set(offset + 0, undefined);
-            table.set(offset + 1, null);
-            table.set(offset + 2, true);
-            table.set(offset + 3, false);
+            table.set(1024, undefined);
+            table.set(1025, null);
+            table.set(1026, true);
+            table.set(1027, false);
         },
     };
     return {
@@ -10461,7 +12089,8 @@ function getFloat64ArrayMemory0() {
 }
 
 function getStringFromWasm0(ptr, len) {
-    return decodeText(ptr >>> 0, len);
+    ptr = ptr >>> 0;
+    return decodeText(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
 
 let cachedUint32ArrayMemory0 = null;
@@ -10541,18 +12170,18 @@ function takeFromExternrefTable0(idx) {
     return value;
 }
 
-let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+let cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true });
 cachedTextDecoder.decode();
 const MAX_SAFARI_DECODE_BYTES = 2146435072;
 let numBytesDecoded = 0;
-function decodeText(ptr, len) {
-    numBytesDecoded += len;
+function decodeText(bytes) {
+    numBytesDecoded += bytes.length;
     if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
-        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true, fatal: true });
+        cachedTextDecoder = new TextDecoder('utf-8', { ignoreBOM: true });
         cachedTextDecoder.decode();
-        numBytesDecoded = len;
+        numBytesDecoded = bytes.length;
     }
-    return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
+    return cachedTextDecoder.decode(bytes);
 }
 
 const cachedTextEncoder = new TextEncoder();
@@ -10642,9 +12271,17 @@ function initSync(module) {
     return __wbg_finalize_init(instance, module);
 }
 
+let __wbg_init_promise;
 async function __wbg_init(module_or_path) {
     if (wasm !== undefined) return wasm;
+    if (__wbg_init_promise === undefined) {
+        __wbg_init_promise = __wbg_init_once(module_or_path);
+        __wbg_init_promise.catch(() => { __wbg_init_promise = undefined; });
+    }
+    return __wbg_init_promise;
+}
 
+async function __wbg_init_once(module_or_path) {
 
     if (module_or_path !== undefined) {
         if (Object.getPrototypeOf(module_or_path) === Object.prototype) {

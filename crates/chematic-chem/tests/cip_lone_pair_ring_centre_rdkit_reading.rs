@@ -1,24 +1,17 @@
 //! Accurate CIP on a ring centre with three single bonds and a lone pair
 //! (bridgehead amine, cyclic phosphine, arsine, sulfonium, selenonium).
 //!
-//! RDKit's SMILES parser (`chiralAtomNeedsTagInversion`) inverts `@`/`@@` on
-//! such a centre when exactly one ring-closure digit is written on it, so the
-//! same stereoisomer has spellings that RDKit and an OpenSMILES reader read
-//! as mirror images. chematic parses as OpenSMILES; the accurate engine
-//! reports RDKit's label for the spelling parsed and marks it
-//! spelling-dependent. Expected labels are RDKit 2026.03.6 `rdCIPLabeler` on
-//! `MolFromSmiles` of each spelling: the spellings of one molecule were
-//! written by RDKit (`MolToSmiles(doRandom=True)`), so they all read as one
-//! stereoisomer there and carry one label. 520 such spellings (13
-//! molecules x 40) agree; the cases below are a sample with zero, one and
-//! two ring-closure digits on the centre.
+//! The native reader records the ordered ligands described by the SMILES.
+//! RDKit has its own parser parity rule. The RDKit model records that rule's
+//! result in the graph before CIP assignment.
 
 use chematic_chem::{CipMode, assign_cip_with_mode, cip_label_depends_on_smiles_spelling};
 use chematic_core::{AtomIdx, CipCode};
-use chematic_smiles::parse;
+use chematic_smiles::{parse, rdkit_parsed_molecule};
 
-fn accurate(smiles: &str, atom: u32) -> Option<CipCode> {
+fn accurate_on_rdkit_model(smiles: &str, atom: u32) -> Option<CipCode> {
     let mol = parse(smiles).expect("parses");
+    let mol = rdkit_parsed_molecule(&mol).expect("RDKit reader");
     assign_cip_with_mode(&mol, CipMode::Accurate)
         .expect("accurate CIP")
         .assignments
@@ -58,30 +51,47 @@ const CASES: &[(&str, u32, CipCode)] = &[
 ];
 
 #[test]
-fn ring_lone_pair_centre_gets_rdkits_label_for_the_spelling() {
+fn rdkit_model_retains_pinned_ring_lone_pair_labels() {
     for &(smiles, atom, want) in CASES {
-        assert_eq!(accurate(smiles, atom), Some(want), "{smiles} atom {atom}");
-        let mol = parse(smiles).unwrap();
-        assert!(
-            cip_label_depends_on_smiles_spelling(&mol, AtomIdx(atom)),
-            "{smiles} atom {atom} is spelling-dependent"
+        assert_eq!(
+            accurate_on_rdkit_model(smiles, atom),
+            Some(want),
+            "{smiles} atom {atom}"
         );
     }
 }
 
 #[test]
-fn other_centres_are_not_spelling_dependent() {
-    for (smiles, atom) in [
-        ("C[S@@](=O)CC", 1),         // acyclic sulfoxide
-        ("C[C@H]1CC[S@@](=O)C1", 4), // ring sulfoxide: RDKit reads it as written
-        ("C[C@H](N)O", 1),           // carbon
-        ("C[P@](CC)c1ccccc1", 1),    // acyclic phosphine
-    ] {
-        let mol = parse(smiles).unwrap();
-        assert!(
-            !cip_label_depends_on_smiles_spelling(&mol, AtomIdx(atom)),
-            "{smiles} atom {atom}"
+fn hanson_vs132_native_cip_preserves_ligand_order_through_serialization() {
+    // Hanson et al., ValidationSuite (VS132). Both nitrogen labels are S.
+    let native = parse("CC=1C=CC=2[N@@]3CC=4C=C(C=CC4[N@](CC2C1)C3)C").unwrap();
+    let assigned = assign_cip_with_mode(&native, CipMode::Accurate).unwrap();
+    for index in [AtomIdx(5), AtomIdx(13)] {
+        assert_eq!(assigned.get(index), Some(CipCode::S));
+        assert!(!cip_label_depends_on_smiles_spelling(&native, index));
+    }
+
+    let (text, order) = chematic_smiles::canonical_smiles_with_atom_order(&native);
+    let reread = parse(&text).unwrap();
+    let mapped = assign_cip_with_mode(&reread, CipMode::Accurate).unwrap();
+    for (output_index, source_index) in order.into_iter().enumerate() {
+        assert_eq!(
+            mapped.get(AtomIdx(output_index as u32)),
+            assigned.get(source_index),
+            "{text} source atom {source_index:?}"
         );
+    }
+    for seed in 1..=100 {
+        let text = chematic_smiles::random_smiles(&native, seed);
+        let reread = parse(&text).unwrap();
+        let mapped = assign_cip_with_mode(&reread, CipMode::Accurate).unwrap();
+        let nitrogen_labels: Vec<_> = mapped
+            .assignments
+            .iter()
+            .filter(|&&(idx, _)| reread.atom(idx).element == chematic_core::Element::N)
+            .map(|&(_, label)| label)
+            .collect();
+        assert_eq!(nitrogen_labels, [CipCode::S, CipCode::S], "{text}");
     }
 }
 
@@ -99,7 +109,11 @@ fn pseudoasymmetric_ring_lone_pair_centres_get_rdkits_r_s() {
         ("C[C@@H]1C[S@+](C)C[C@H](C)C1", 3, CipCode::LowerS),
         ("C[C@@H]1CC[P@](C)CC[C@H](C)C1", 4, CipCode::LowerS),
     ] {
-        assert_eq!(accurate(smiles, atom), Some(want), "{smiles} atom {atom}");
+        assert_eq!(
+            accurate_on_rdkit_model(smiles, atom),
+            Some(want),
+            "{smiles} atom {atom}"
+        );
     }
 }
 
@@ -110,6 +124,7 @@ fn carbon_whose_rule5_needs_a_lone_pair_centre_gets_rdkits_label() {
     // rule 5 now takes as an auxiliary descriptor (lone pair lowest, RDKit's
     // reading of the spelling).
     let mol = parse("O=C1C[N@]2CC[C@H]1CC2").unwrap();
+    let mol = rdkit_parsed_molecule(&mol).expect("RDKit reader");
     let r = assign_cip_with_mode(&mol, CipMode::Accurate).unwrap();
     assert_eq!(r.get(AtomIdx(3)), Some(CipCode::LowerS));
     assert_eq!(r.get(AtomIdx(6)), Some(CipCode::LowerS));

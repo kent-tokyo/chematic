@@ -28,8 +28,7 @@ fn lazy_sphere_generator_matches_eager_reference() {
 use super::*;
 
 /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
-/// not depend on input atom order (random SMILES now keep stereo), apart
-/// from labels marked spelling-dependent.
+/// follow the same configuration after serializing in a different atom order.
 #[test]
 fn accurate_labels_and_abstentions_survive_atom_reordering() {
     use std::collections::BTreeMap;
@@ -40,14 +39,7 @@ fn accurate_labels_and_abstentions_survive_atom_reordering() {
         let mut out = BTreeMap::new();
         for (a, c) in &r.assignments {
             if !matches!(c, CipCode::E | CipCode::Z) {
-                // A saturated ring lone-pair centre gets RDKit's label for
-                // the spelling parsed, which a reordered spelling may flip.
-                let label = if cip_label_depends_on_smiles_spelling(m, *a) {
-                    "spelling_dependent".to_string()
-                } else {
-                    format!("{c:?}")
-                };
-                out.insert(pos[&a.0], label);
+                out.insert(pos[&a.0], format!("{c:?}"));
             }
         }
         for (a, why) in &r.unresolved {
@@ -132,6 +124,68 @@ fn accurate_ez_ranks_aryl_above_alkyl() {
         );
     }
 }
+#[test]
+fn accurate_ez_uses_distal_alkenes_to_rank_tied_ligands() {
+    // Hanson VS191. The 4=5 bond takes its Z label from a cis distal
+    // alkene outranking a trans one. Both arms of atom 8 have the same
+    // configuration, so the 7=8 bond receives no descriptor.
+    let smiles = r"C/C=C\C/C(=C\[C@H](C=C(C/C=C\C)C/C=C\C)O)/C/C=C/C";
+    let mol = chematic_smiles::parse(smiles).unwrap();
+    let specified = mol.bond_between(AtomIdx(4), AtomIdx(5)).unwrap().0;
+    let nonstereogenic = mol.bond_between(AtomIdx(7), AtomIdx(8)).unwrap().0;
+    let labels = assign_ez_bonds_with_mode(&mol, CipMode::Accurate);
+    assert!(labels.contains(&(specified, CipCode::Z)));
+    assert!(labels.iter().all(|&(bond, _)| bond != nonstereogenic));
+    assert!(
+        !assign_ez_bonds_with_mode(&mol, CipMode::LegacyFast)
+            .iter()
+            .any(|&(bond, _)| bond == specified)
+    );
+}
+
+#[test]
+fn accurate_ez_ranks_implicit_hydrogen_against_explicit_isotopes() {
+    for (left, left_flip) in [
+        ("H", None),
+        ("1H", Some(true)),
+        ("2H", Some(false)),
+        ("3H", Some(false)),
+    ] {
+        for (right, right_flip) in [
+            ("H", None),
+            ("1H", Some(true)),
+            ("2H", Some(false)),
+            ("3H", Some(false)),
+        ] {
+            for direction in ['/', '\\'] {
+                let smiles = format!("[{left}]/C=C{direction}[{right}]");
+                let molecule = chematic_smiles::parse(&smiles).unwrap();
+                let expected = left_flip.zip(right_flip).map(|(l, r)| {
+                    if l ^ r ^ (direction == '\\') {
+                        CipCode::Z
+                    } else {
+                        CipCode::E
+                    }
+                });
+                let variants = std::iter::once(smiles.clone())
+                    .chain((1..=8).map(|seed| chematic_smiles::random_smiles(&molecule, seed)));
+                for variant in variants {
+                    let mol = chematic_smiles::parse(&variant).unwrap();
+                    let labels: Vec<_> = assign_ez_bonds_with_mode(&mol, CipMode::Accurate)
+                        .into_iter()
+                        .map(|(_, code)| code)
+                        .collect();
+                    assert_eq!(
+                        labels,
+                        expected.into_iter().collect::<Vec<_>>(),
+                        "{smiles} -> {variant}"
+                    );
+                }
+            }
+        }
+    }
+}
+
 #[test]
 fn squaraine_diimine_canonical_smiles_keeps_both_ez() {
     // Two exocyclic imines on a Kekulé four-membered ring, coupled
@@ -1094,15 +1148,15 @@ fn cip_mode_accurate_labels_cyclophosphazene_phosphorus_like_rdkit() {
 #[test]
 fn cip_mode_accurate_reports_lone_pair_centres() {
     // Issue #634, rebaseline row 2960: a stereo-tagged bridgehead amine has
-    // three explicit ligands and a lone pair. It gets RDKit's label for this
-    // spelling (RDKit inverts `@@` here: one ring-closure digit on the
-    // centre), marked spelling-dependent; the carbon centres keep theirs.
+    // three explicit ligands and a lone pair. The RDKit reader applies a
+    // parity adjustment to the centre on this spelling.
     let mol = chematic_smiles::parse("Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21")
         .expect("valid SMILES");
     let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-    assert_eq!(result.get(AtomIdx(9)), Some(CipCode::S));
-    assert!(cip_label_depends_on_smiles_spelling(&mol, AtomIdx(9)));
-    assert!(!cip_label_depends_on_smiles_spelling(&mol, AtomIdx(7)));
+    assert_eq!(result.get(AtomIdx(9)), Some(CipCode::R));
+    let rdkit_model = chematic_smiles::rdkit_parsed_molecule(&mol).unwrap();
+    let rdkit_result = assign_cip_with_mode(&rdkit_model, CipMode::Accurate).unwrap();
+    assert_eq!(rdkit_result.get(AtomIdx(9)), Some(CipCode::S));
     assert!(result.unresolved.is_empty());
     assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
     assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
@@ -1333,4 +1387,79 @@ fn test_ez_completeness_aggregates_mixed_specified_and_unspecified() {
     assert_eq!(ec.specified, 1, "{ec:?}");
     assert_eq!(ec.unspecified, 1, "{ec:?}");
     assert_eq!(ec.total, 2, "{ec:?}");
+}
+
+#[test]
+fn assigns_hanson_double_bonds_ranked_by_auxiliary_stereo() {
+    use DoubleBondCip::{E, SeqCis, SeqTrans, Z};
+    type DoubleBondCase<'a> = (&'a str, &'a [(u32, u32, DoubleBondCip)]);
+    let cases: &[DoubleBondCase<'_>] = &[
+        (r"CC[C@@H]1CC/C(/CC1)=C\2/CC[C@H](CC2)CC", &[(5, 8, E)]), // VS214
+        (r"C/C=C(/[C@H](Cl)C)\[C@H](C)Cl", &[(1, 2, SeqTrans)]),   // VS229
+        (
+            r"C(=C(/[C@H](C)Cl)\[C@H](Cl)C)(\[C@H](C)Br)/[C@H](Br)C",
+            &[(0, 1, E)],
+        ), // VS245
+        (r"C/C=C/1\CC[C@H](C)CC1", &[(1, 2, SeqCis)]),             // VS246
+        (r"O/N=C/1\CC[C@@H](CC1)C", &[(1, 2, SeqCis)]),            // VS247
+        (r"CCC[C@H]1C/C(/C1)=C/Br", &[(5, 7, SeqCis)]),            // VS248
+        (
+            r"C[C@H]([C@H]([C@H](\C(=C/1\[C@H](Br)/C(=C(\[C@@H]([C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)/[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@@H](C)Cl)/[C@@H]1Br)\[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)[C@H](C)Cl)Cl",
+            &[(4, 5, Z), (8, 9, Z)],
+        ), // VS272
+        (
+            r"C\C=C/1\C[C@]2(C\C(\C2)=C\C)C1",
+            &[(1, 2, SeqCis), (6, 8, SeqCis)],
+        ), // VS299
+    ];
+    for &(text, expected) in cases {
+        let mol = chematic_smiles::parse(text).unwrap();
+        let actual: Vec<_> = assign_accurate_double_bond_cip(&mol)
+            .into_iter()
+            .map(|(idx, code)| {
+                let bond = mol.bond(idx);
+                (
+                    bond.atom1.0.min(bond.atom2.0),
+                    bond.atom1.0.max(bond.atom2.0),
+                    code,
+                )
+            })
+            .collect();
+        assert_eq!(actual, expected, "{text}");
+        let mut want: Vec<_> = expected.iter().map(|&(_, _, code)| code.as_str()).collect();
+        want.sort_unstable();
+        for spelling in std::iter::once(chematic_smiles::canonical_smiles(&mol))
+            .chain((1..=16).map(|seed| chematic_smiles::random_smiles(&mol, seed)))
+        {
+            let reparsed = chematic_smiles::parse(&spelling).unwrap();
+            let mut labels: Vec<_> = assign_accurate_double_bond_cip(&reparsed)
+                .into_iter()
+                .map(|(_, code)| code.as_str())
+                .collect();
+            labels.sort_unstable();
+            assert_eq!(labels, want, "{text} -> {spelling}");
+        }
+    }
+}
+
+#[test]
+fn relative_double_bond_label_changes_under_reflection_of_one_pseudoasymmetric_end() {
+    for (text, want) in [
+        (
+            r"C/C=C(/[C@H](Cl)C)\[C@H](C)Cl",
+            Some(DoubleBondCip::SeqTrans),
+        ),
+        (
+            r"C/C=C(/[C@@H](Cl)C)\[C@@H](C)Cl",
+            Some(DoubleBondCip::SeqCis),
+        ),
+        (r"C/C=C(/[C@H](Cl)C)\[C@@H](C)Cl", None),
+    ] {
+        let mol = chematic_smiles::parse(text).unwrap();
+        let labels: Vec<_> = assign_accurate_double_bond_cip(&mol)
+            .into_iter()
+            .map(|(_, code)| code)
+            .collect();
+        assert_eq!(labels, want.into_iter().collect::<Vec<_>>(), "{text}");
+    }
 }

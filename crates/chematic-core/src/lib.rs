@@ -15,8 +15,11 @@
 //! - Domain-aware abstractions: graph types carry chemical semantics, not just topology.
 
 pub mod atom;
+#[doc(hidden)]
+pub mod atomic_weight;
 pub mod bond;
 pub mod coords3d;
+pub mod cumulene;
 pub mod derived_cache;
 pub mod element;
 pub mod extension;
@@ -27,6 +30,8 @@ pub mod nontetrahedral;
 pub mod stereo_geometry;
 pub mod stereo_group;
 pub mod valence;
+
+mod rdkit_isotope_mass_table;
 
 // Re-export the most commonly used types at crate root.
 pub use atom::{Atom, Chirality, CipCode, RGroupLabel, SquarePlanarPermutation};

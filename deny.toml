@@ -1,7 +1,10 @@
 [advisories]
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-ignore = []
+# Informational unmaintained advisory with no patched chrono release.
+# chrono is transitive through harumi -> lopdf in the PDF depiction path.
+# Keep the dependency visible here until that chain can be replaced.
+ignore = ["RUSTSEC-2026-0543"]
 
 [licenses]
 allow = [

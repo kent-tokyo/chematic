@@ -17,7 +17,7 @@ still open.
 ```bash
 python -m venv .venv
 . .venv/bin/activate
-pip install chematic==1.2.1
+pip install chematic==1.2.2
 ```
 
 ```python

@@ -189,8 +189,8 @@ fn exhausted_budgets_return_no_partial_mutation() {
     );
 }
 #[test]
-fn query_zero_and_dative_bonds_are_rejected() {
-    for order in [BondOrder::QueryAny, BondOrder::Zero, BondOrder::Dative] {
+fn query_and_zero_order_bonds_are_rejected() {
+    for order in [BondOrder::QueryAny, BondOrder::Zero] {
         let mut b = MoleculeBuilder::new();
         let a = b.add_atom(Atom::new(Element::C));
         let z = b.add_atom(Atom::new(Element::C));
@@ -203,6 +203,29 @@ fn query_zero_and_dative_bonds_are_rejected() {
         );
     }
 }
+#[test]
+fn dative_bonds_participate_in_paths_without_closing_rings() {
+    // RDKit 2026.09.2 includes the dative edge in path enumeration, and
+    // excludes it from ring perception. Check both layers independently.
+    let m = mol("C1CN->[Cu]1");
+    let mut config = Config {
+        layer_flags: 2,
+        atom_counts: Some(vec![11; 4]),
+        ..Default::default()
+    };
+    let bond_order = diagnostic(rdkit_layered_config(&m, &config)).unwrap();
+    assert_eq!(bond_order.atom_counts, [21; 4]);
+    let on_bits: Vec<_> = (0..2048)
+        .filter(|bit| bond_order.bits[bit / 8] & (1 << (bit % 8)) != 0)
+        .collect();
+    assert_eq!(on_bits, [333, 360, 1783, 1949]);
+
+    config.layer_flags = 8;
+    let in_ring = diagnostic(rdkit_layered_config(&m, &config)).unwrap();
+    assert_eq!(in_ring.atom_counts, [11; 4]);
+    assert!(in_ring.bits.iter().all(|&byte| byte == 0));
+}
+
 #[test]
 fn explicit_hydrogen_roots_keep_original_indices_but_set_no_bits() {
     let m = mol("[2H]OC");

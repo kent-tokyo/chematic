@@ -18,17 +18,26 @@ pub(super) fn extend_frontier_atom(
     let mapped_parents: Vec<(usize, BondOrder)> = mol0
         .neighbors(n0)
         .filter_map(|(neighbor, bond_idx)| {
+            if !state.source_bond_allowed(bond_idx) {
+                return None;
+            }
             mapping
                 .query_idx_of(0, neighbor)
                 .map(|query_idx| (query_idx, mol0.bond(bond_idx).order))
         })
         .collect();
-    let mut seen_tuples = HashSet::new();
+    let mut seen_tuples = (mapped_parents.len() > 1).then(HashSet::new);
 
     for (parent_q, parent_bond_order) in mapped_parents {
         let candidates_per_mol = build_candidates(state, mapping, n0, parent_q, parent_bond_order);
-        explore_candidate_tuples(state, mapping, n0, &candidates_per_mol, &mut seen_tuples);
-        if state.timed_out || state.resource_limited {
+        explore_candidate_tuples(
+            state,
+            mapping,
+            n0,
+            &candidates_per_mol,
+            seen_tuples.as_mut(),
+        );
+        if state.timed_out || state.resource_limited || state.proven_optimal {
             return;
         }
     }
@@ -39,21 +48,26 @@ fn explore_candidate_tuples(
     mapping: &mut PartialMapping,
     n0: AtomIdx,
     candidates_per_mol: &[Vec<AtomIdx>],
-    seen_tuples: &mut HashSet<Vec<AtomIdx>>,
+    mut seen_tuples: Option<&mut HashSet<Vec<AtomIdx>>>,
 ) {
+    let mut atoms = Vec::with_capacity(state.mols.len());
+    atoms.push(n0);
     for tuple in CartesianProduct::new(candidates_per_mol) {
-        if state.timed_out || state.resource_limited {
+        if state.timed_out || state.resource_limited || state.proven_optimal {
             return;
         }
-        if !seen_tuples.insert(tuple.clone()) {
+        if let Some(seen) = &mut seen_tuples
+            && !seen.insert(tuple.clone())
+        {
             continue;
         }
 
-        let mut atoms = Vec::with_capacity(state.mols.len());
-        atoms.push(n0);
+        atoms.truncate(1);
         atoms.extend_from_slice(&tuple);
 
-        let extra_bonds = count_common_new_bonds(state.mols, mapping, n0, &tuple, state.config);
+        let Some(extra_bonds) = count_common_new_bonds(state, mapping, n0, &tuple) else {
+            continue;
+        };
         debug_assert!(extra_bonds > 0);
 
         mapping.extend(&atoms, extra_bonds);
@@ -80,13 +94,14 @@ fn build_candidates(
 
     for mi in 1..mols.len() {
         let parent_i = mapping.query_to_mol[parent_q][mi];
-        let candidates = mols[mi]
-            .atoms()
-            .filter(|(ai, atom_i)| {
-                !mapping.is_mapped(mi, *ai)
+        let mol = mols[mi];
+        let mut candidates: Vec<_> = mol
+            .neighbors(parent_i)
+            .filter(|&(ai, bond_idx)| {
+                !mapping.is_mapped(mi, ai)
                     && atoms_compatible(
                         atom0,
-                        atom_i,
+                        mol.atom(ai),
                         &config.atom_compare,
                         state.rdkit_heavy,
                         config.match_chiral_tag,
@@ -94,20 +109,18 @@ fn build_candidates(
                         config.match_isotope,
                     )
                     && (!config.ring_matches_ring_only
-                        || n0_in_ring == ring_sets[mi].contains_atom(*ai))
-                    && mols[mi]
-                        .bond_between(*ai, parent_i)
-                        .is_some_and(|(_, bond)| {
-                            !config.match_bonds
-                                || bonds_compatible(
-                                    parent_bond_order,
-                                    bond.order,
-                                    &config.bond_compare,
-                                )
-                        })
+                        || n0_in_ring == ring_sets[mi].contains_atom(ai))
+                    && (!config.match_bonds
+                        || bonds_compatible(
+                            parent_bond_order,
+                            mol.bond(bond_idx).order,
+                            &config.bond_compare,
+                        ))
             })
             .map(|(atom_idx, _)| atom_idx)
             .collect();
+        // Preserve the previous atom-index traversal order for ties and limits.
+        candidates.sort_unstable_by_key(|idx| idx.0);
         result.push(candidates);
     }
 
@@ -116,30 +129,38 @@ fn build_candidates(
 
 /// Count edges from a proposed new atom that are common to every molecule.
 fn count_common_new_bonds(
-    mols: &[&Molecule],
+    state: &McsState<'_>,
     mapping: &PartialMapping,
     n0: AtomIdx,
     tuple: &[AtomIdx],
-    config: &McsConfig,
-) -> usize {
-    mapping
-        .query_to_mol
-        .iter()
-        .filter(|row| {
-            let Some((_, bond0)) = mols[0].bond_between(n0, row[0]) else {
-                return false;
-            };
-            tuple.iter().enumerate().all(|(offset, &candidate)| {
-                let mi = offset + 1;
-                mols[mi]
-                    .bond_between(candidate, row[mi])
-                    .is_some_and(|(_, bond)| {
-                        !config.match_bonds
-                            || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
-                    })
-            })
-        })
-        .count()
+) -> Option<usize> {
+    let mols = state.mols;
+    let config = state.config;
+    let mut count = 0;
+    for (neighbor, bond_idx) in mols[0].neighbors(n0) {
+        let Some(q) = mapping.query_idx_of(0, neighbor) else {
+            continue;
+        };
+        let row = &mapping.query_to_mol[q];
+        let bond0 = mols[0].bond(bond_idx);
+        let common = tuple.iter().enumerate().all(|(offset, &candidate)| {
+            let mi = offset + 1;
+            mols[mi]
+                .bond_between(candidate, row[mi])
+                .is_some_and(|(_, bond)| {
+                    !config.match_bonds
+                        || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
+                })
+        });
+        if common {
+            // An earlier include branch already covered this mapping.
+            if !state.source_bond_allowed(bond_idx) {
+                return None;
+            }
+            count += 1;
+        }
+    }
+    Some(count)
 }
 
 pub(super) fn mapped_rows_share_common_bond(
@@ -151,9 +172,12 @@ pub(super) fn mapped_rows_share_common_bond(
 ) -> bool {
     let row1 = &mapping.query_to_mol[q1];
     let row2 = &mapping.query_to_mol[q2];
-    let Some((_, bond0)) = mols[0].bond_between(row1[0], row2[0]) else {
+    let Some((index, bond0)) = mols[0].bond_between(row1[0], row2[0]) else {
         return false;
     };
+    if mapping.omitted_bonds.binary_search(&index).is_ok() {
+        return false;
+    }
     mols.iter().enumerate().skip(1).all(|(mi, mol)| {
         mol.bond_between(row1[mi], row2[mi])
             .is_some_and(|(_, bond)| {

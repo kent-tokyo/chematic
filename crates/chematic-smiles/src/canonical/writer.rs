@@ -53,6 +53,13 @@ impl<'a> CanonicalWriter<'a> {
         if Self::substituents(self.mol, other_end).len() != 1 {
             return false; // other_end is itself ambiguous -- has its own resolution path
         }
+        if self
+            .ez_geometry_facts
+            .iter()
+            .any(|fact| fact.cumulene && fact.ends.iter().any(|end| end.atom == other_end))
+        {
+            return true;
+        }
         // Only a double bond that is specified -- its far end carries a
         // marker too, and it is not held cis by a small ring -- depends on
         // this marker; a lone marker means nothing and is dropped on output.
@@ -134,16 +141,21 @@ impl<'a> CanonicalWriter<'a> {
             }
         }
 
-        for bidx in 0..self.mol.bond_count() {
-            let bidx = BondIdx(bidx as u32);
-            let bond = self.mol.bond(bidx);
-            if bond.order != BondOrder::Double {
-                continue;
-            }
+        let direct = self
+            .mol
+            .bonds()
+            .filter(|(_, bond)| bond.order == BondOrder::Double)
+            .map(|(idx, bond)| (Some(idx), [bond.atom1, bond.atom2]));
+        let cumulated = self
+            .ez_geometry_facts
+            .iter()
+            .filter(|fact| fact.cumulene)
+            .map(|fact| (None, fact.ends.map(|end| end.atom)));
+        for (double, endpoints) in direct.chain(cumulated) {
             let mut side_bonds = Vec::new();
-            for endpoint in [bond.atom1, bond.atom2] {
+            for endpoint in endpoints {
                 for (_, nb_bidx) in self.mol.neighbors(endpoint) {
-                    if nb_bidx == bidx {
+                    if Some(nb_bidx) == double {
                         continue;
                     }
                     // `effective_order` (not the raw bond order/stash) so a
@@ -166,6 +178,7 @@ impl<'a> CanonicalWriter<'a> {
             // spellings flip independently (two exocyclic imines on a
             // squaraine ring were written in either relative orientation).
             if side_bonds.len() > 1
+                && let Some(bidx) = double
                 && *self
                     .small_ring_double
                     .borrow_mut()
@@ -591,9 +604,7 @@ impl<'a> CanonicalWriter<'a> {
                 Self::reorient_for_write(self.raw_direction_anchor(bond), atom, normalized)
             } else {
                 match self.effective_order(bond) {
-                    BondOrder::Up | BondOrder::Down => {
-                        Self::plain_order(self.mol.bond(bond).order)
-                    }
+                    BondOrder::Up | BondOrder::Down => Self::plain_order(self.mol.bond(bond).order),
                     other => other,
                 }
             };
@@ -746,9 +757,7 @@ impl<'a> CanonicalWriter<'a> {
                 Chirality::CounterClockwise if self.mol.is_allene_stereo(idx) => {
                     self.out.push_str("@AL1")
                 }
-                Chirality::Clockwise if self.mol.is_allene_stereo(idx) => {
-                    self.out.push_str("@AL2")
-                }
+                Chirality::Clockwise if self.mol.is_allene_stereo(idx) => self.out.push_str("@AL2"),
                 Chirality::CounterClockwise => self.out.push('@'),
                 Chirality::Clockwise => self.out.push_str("@@"),
                 Chirality::None => {}
@@ -965,9 +974,11 @@ impl<'a> CanonicalWriter<'a> {
                     <[u32; 3]>::try_from(original).ok(),
                     <[u32; 3]>::try_from(canonical).ok(),
                 ) {
-                    (Some(o), Some(c)) => crate::writer::remap_three_ligand_square_planar(tag, o, c)
-                        .map(Chirality::SquarePlanar)
-                        .unwrap_or(Chirality::None),
+                    (Some(o), Some(c)) => {
+                        crate::writer::remap_three_ligand_square_planar(tag, o, c)
+                            .map(Chirality::SquarePlanar)
+                            .unwrap_or(Chirality::None)
+                    }
                     _ => Chirality::None,
                 },
             },

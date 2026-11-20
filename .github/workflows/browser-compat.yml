@@ -28,7 +28,7 @@ permissions:
 jobs:
   browser-smoke:
     name: ${{ matrix.browser }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -62,7 +62,7 @@ jobs:
 
   explorer-native-worker-parity:
     name: Explorer native-worker parity (${{ matrix.browser }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     strategy:
       fail-fast: false

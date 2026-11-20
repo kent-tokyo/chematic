@@ -200,7 +200,7 @@ const MAX_ATOMS: usize = 100_000;
 // additionally uses `%(n)` for labels >= 100. Keeping only currently-open
 // labels makes the extended form bounded by the parsed graph rather than by a
 // label value supplied by untrusted input.
-type OpenRings = HashMap<u32, (AtomIdx, Option<ParsedBond>, u32)>;
+type OpenRings = HashMap<u32, (AtomIdx, Option<ParsedBond>, u32, u32)>;
 const MAX_OPEN_RING_LABELS: usize = MAX_ATOMS;
 
 /// An entry in the stereo neighbor sequence accumulated during parsing.
@@ -230,6 +230,7 @@ struct Parser<'a> {
     /// `PendingRing`). Monotonically increasing, never reused, so it uniquely
     /// identifies one specific open/close pair regardless of ring-digit reuse.
     next_ring_slot: u32,
+    ring_openings: smallvec::SmallVec<[crate::allene::RingOpening; 8]>,
     /// slot id → index in `stereo_records` for records with an unresolved `PendingRing(slot)`.
     pending_ring_stereo: HashMap<u32, usize>,
     /// slot id → close_atom, populated when rings close, for final resolution.
@@ -245,6 +246,7 @@ impl<'a> Parser<'a> {
             stereo_records: Vec::new(),
             current_stereo: None,
             next_ring_slot: 0,
+            ring_openings: smallvec::SmallVec::new(),
             pending_ring_stereo: HashMap::new(),
             ring_close_partners: smallvec::SmallVec::new(),
         }
@@ -297,6 +299,7 @@ impl<'a> Parser<'a> {
     fn parse_smiles(&mut self) -> Result<Molecule, SmilesError> {
         let mut mol = MoleculeBuilder::new();
         let mut open_rings = OpenRings::new();
+        let mut fragment_starts: smallvec::SmallVec<[AtomIdx; 4]> = smallvec::smallvec![AtomIdx(0)];
 
         // Parse the first fragment
         self.parse_chain(&mut mol, None, None, &mut open_rings)?;
@@ -304,6 +307,7 @@ impl<'a> Parser<'a> {
         // Parse additional disconnected fragments separated by '.'
         while self.peek() == Some(b'.') {
             self.advance(); // consume '.'
+            fragment_starts.push(AtomIdx(mol.atom_count() as u32));
             self.parse_chain(&mut mol, None, None, &mut open_rings)?;
         }
 
@@ -353,7 +357,12 @@ impl<'a> Parser<'a> {
         let mut molecule = mol.build();
         normalize_ring_wildcards(&mut molecule);
         stereo::retain_vacant_sites(&mut molecule, &tagged_atoms);
-        crate::allene::normalize_allene_stereo(&mut molecule, &tagged_atoms);
+        crate::allene::normalize_allene_stereo(
+            &mut molecule,
+            &tagged_atoms,
+            &fragment_starts,
+            &self.ring_openings,
+        );
         // A SMILES graph with no ring-closure token is a forest by
         // construction. Publish that already-known result so the first
         // fingerprint or descriptor call does not need a full bridge DFS to
@@ -590,7 +599,7 @@ impl<'a> Parser<'a> {
         ring_bond: Option<ParsedBond>,
         open_rings: &mut OpenRings,
     ) -> Result<StereoEntry, SmilesError> {
-        if let Some((open_atom, open_bond, slot)) = open_rings.remove(&ring_num) {
+        if let Some((open_atom, open_bond, slot, before_bond)) = open_rings.remove(&ring_num) {
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -634,6 +643,12 @@ impl<'a> Parser<'a> {
                 mol.set_bond_direction_anchor(new_bond_idx, a1);
             }
             mol.set_smiles_ring_closure(new_bond_idx, ring_num, slot);
+            self.ring_openings.push(crate::allene::RingOpening {
+                bond: new_bond_idx,
+                atom: open_atom,
+                before_bond,
+                slot,
+            });
             // RDKit's `CloseMolRings` keeps the opening partial bond (begin =
             // opening atom) only when it carried an explicit, non-directional
             // bond symbol; dative arrows set their own orientation.
@@ -676,7 +691,10 @@ impl<'a> Parser<'a> {
                     limit: MAX_OPEN_RING_LABELS,
                 });
             }
-            open_rings.insert(ring_num, (current, ring_bond, slot));
+            open_rings.insert(
+                ring_num,
+                (current, ring_bond, slot, mol.bond_count() as u32),
+            );
             // Return: we opened a ring; partner not yet known.
             Ok(StereoEntry::PendingRing(slot))
         }

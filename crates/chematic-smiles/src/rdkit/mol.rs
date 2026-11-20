@@ -886,6 +886,16 @@ impl Mol {
     }
 }
 
+// RDKit 2026.09.2 depiction uses these two axial pairs. The SMILES
+// permutation and across tables use the OpenSMILES pairs instead.
+fn rdkit_tb_axial(permutation: u32) -> Option<[usize; 2]> {
+    match permutation {
+        10 => Some([1, 4]),
+        11 => Some([1, 3]),
+        _ => nontetrahedral::tb_axial(permutation),
+    }
+}
+
 impl Mol {
     /// `Chirality::getChiralAcrossAtom(cen, lig)`.
     pub(crate) fn chiral_across_atom(&self, cen: usize, lig: usize) -> Option<usize> {
@@ -910,7 +920,7 @@ impl Mol {
         if self.atoms[cen].chiral != ChiralTag::TrigonalBipyramidal || self.degree(cen) > 5 {
             return None;
         }
-        let ax = nontetrahedral::tb_axial(self.atoms[cen].chiral_perm)?;
+        let ax = rdkit_tb_axial(self.atoms[cen].chiral_perm)?;
         let idx = if axial != -1 { ax[0] } else { ax[1] };
         self.atom_bonds[cen]
             .get(idx)
@@ -922,7 +932,7 @@ impl Mol {
         if self.atoms[cen].chiral != ChiralTag::TrigonalBipyramidal || self.degree(cen) > 5 {
             return false;
         }
-        let Some(ax) = nontetrahedral::tb_axial(self.atoms[cen].chiral_perm) else {
+        let Some(ax) = rdkit_tb_axial(self.atoms[cen].chiral_perm) else {
             return false;
         };
         match self.atom_bonds[cen]
@@ -1146,6 +1156,18 @@ mod primitive_contract_tests {
         atom.no_implicit = true;
         fixed.add_atom(atom);
         assert_eq!(fixed.calc_implicit_valence_value(0, true).unwrap(), 0);
+    }
+
+    #[test]
+    fn rdkit_depiction_uses_rdkit_axial_positions_for_tb10_and_tb11() {
+        for (tag, second) in [(10, 5), (11, 4)] {
+            let mut center = Atom::new(15);
+            center.chiral = ChiralTag::TrigonalBipyramidal;
+            center.chiral_perm = tag;
+            let mol = star(center, 5);
+            assert_eq!(mol.tb_axial_atom(0, 1), Some(2));
+            assert_eq!(mol.tb_axial_atom(0, -1), Some(second));
+        }
     }
 
     #[test]

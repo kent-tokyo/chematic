@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.2.1</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.2.2</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -85,11 +85,7 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Current evidence boundary
 
-The v1.2.0 wheels passed the hosted three-platform runtime smoke and 11-job
-chemistry workflow. That establishes package pass/fail evidence, not a general
-speed or accuracy claim. Source experiments and older package measurements keep
-their original versions, denominators, and host scope; typed refusals are not
-counted as matches.
+The dated package, source and benchmark records in the [validation report](reference/validation.md) retain their original versions. The v1.2.2 tag workflow determines exact artifact and platform results. Typed refusals remain in each denominator and are not matches.
 
 Use [validation](reference/validation.md) for current denominators,
 [benchmark method](reference/benchmark.md) for timing rules, and

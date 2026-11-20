@@ -1073,10 +1073,16 @@ fn qmol_to_mol(qmol: &chematic_smarts::QueryMolecule) -> Option<Mol> {
 
     let mut builder = MoleculeBuilder::new();
     for (idx, qa) in qmol.atoms.iter().enumerate() {
-        let elem = extract_atomic_num(&qa.query)
-            .and_then(Element::from_atomic_number)
-            .unwrap_or(Element::C);
-        let mut atom = Atom::new(elem);
+        let number = extract_atomic_num(&qa.query);
+        let mut atom = if number == Some(0) {
+            Atom::wildcard()
+        } else {
+            Atom::new(
+                number
+                    .and_then(Element::from_atomic_number)
+                    .unwrap_or(Element::C),
+            )
+        };
         atom.aromatic = aromatic_atoms[idx];
         builder.add_atom(atom);
     }
@@ -1249,8 +1255,11 @@ fn find_mcs_checked(
 /// Return the actual MCS query as SMARTS, preserving observed atom and bond
 /// alternatives. The status distinguishes a partial timeout result.
 ///
-/// Charge, isotope, and chirality matching flags are deliberately absent:
-/// the native MCS query does not yet encode those predicates for re-search.
+/// Optional charge and isotope predicates are preserved for re-search.
+/// Set `bond_count_first` for the bond-first objective used by RDKit FMCS.
+/// `match_chiral_tag` retains absolute tetrahedral orientation with at least
+/// three common bonds and chirality presence on smaller frames.
+/// Non-tetrahedral and relative stereo raise a serialization error.
 #[pyfunction]
 #[pyo3(signature = (
     mols,
@@ -1263,6 +1272,11 @@ fn find_mcs_checked(
     bond_compare="order_or_aromatic",
     maximize_bonds=true,
     max_search_nodes=None,
+    *,
+    match_charge=false,
+    match_isotope=false,
+    bond_count_first=false,
+    match_chiral_tag=false,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn find_mcs_smarts_checked(
@@ -1276,6 +1290,10 @@ fn find_mcs_smarts_checked(
     bond_compare: &str,
     maximize_bonds: bool,
     max_search_nodes: Option<usize>,
+    match_charge: bool,
+    match_isotope: bool,
+    bond_count_first: bool,
+    match_chiral_tag: bool,
 ) -> PyResult<(Option<String>, bool)> {
     let mut config = build_mcs_config(
         match_bonds,
@@ -1285,19 +1303,24 @@ fn find_mcs_smarts_checked(
         complete_rings_only,
         atom_compare,
         bond_compare,
-        false,
-        false,
-        false,
+        match_chiral_tag,
+        match_charge,
+        match_isotope,
         maximize_bonds,
     )?;
     if let Some(limit) = max_search_nodes {
         config.max_search_nodes = Some(limit);
     }
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config)
+    let objective = if bond_count_first {
+        chematic_smarts::McsObjective::BondCount
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&refs, &config)
+        chematic_smarts::McsObjective::AtomCount
+    };
+    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(&refs, &config, objective)
+    } else {
+        chematic_smarts::find_mcs_with_objective_checked(&refs, &config, objective)
     };
     let timed_out = outcome.was_timed_out();
     if outcome.was_resource_limited() {

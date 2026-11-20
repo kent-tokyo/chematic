@@ -51,7 +51,7 @@ mod transformations;
 /// unsupported value raises `ValueError` explicitly rather than being coerced to the
 /// nearest supported one -- there is no guessed conversion for an option this API
 /// doesn't (yet) support.
-fn python_rdkit_morgan_config(
+pub(crate) fn python_rdkit_morgan_config(
     radius: u32,
     nbits: usize,
     include_chirality: bool,
@@ -93,6 +93,19 @@ fn python_rdkit_morgan_config(
 /// widths (always a multiple of 8: 128/256/512/1024/2048).
 fn bitvecn_to_bytes(fp: &chematic_fp::bitvec::BitVecN) -> Vec<u8> {
     fp.to_le_bytes()
+}
+
+pub(crate) fn rdkit_morgan_bytes(
+    mol: &chematic_core::Molecule,
+    config: &chematic_fp::RdkitMorganConfig,
+    count_simulation: bool,
+) -> Result<Vec<u8>, chematic_fp::RdkitMorganError> {
+    if count_simulation {
+        chematic_fp::rdkit_morgan_count_simulation(mol, config)
+    } else {
+        chematic_fp::rdkit_morgan_bitvec(mol, config)
+    }
+    .map(|fp| bitvecn_to_bytes(&fp))
 }
 
 /// Expand an LSB-first packed fingerprint into the dense ``uint8`` shape used

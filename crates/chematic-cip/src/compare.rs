@@ -86,14 +86,12 @@
 //! `refine_tied_groups(_, rule_2)` -> ...), so a comparison Rule 1a already decided never
 //! pays for a later rule's pass.
 //!
-//! # Rule 2, scoped
+//! # Rule 2
 //!
-//! Rule 2 compares `Atom.isotope: Option<u16>` (the literal isotope label -- what
-//! distinguishes `13C` from `12C`), never `Element::atomic_mass()` (a fixed per-element
-//! default that cannot). The old engine's `atom_key`/`cmp_key` conflates isotope
-//! (Rule 2) with atomic mass (Rule 4, a tiebreaker) in one tuple; this module keeps
-//! them separate and implements only Rule 2, since Rule 4 is out of scope this
-//! milestone.
+//! Only a tie under Rule 1a for the complete comparison can reach Rule 2.
+//! An explicitly labeled isotope uses its nuclide mass and an atom with
+//! unspecified isotopic composition uses the average atomic weight. Duplicate
+//! nodes have zero mass. See the IUPAC Blue Book, P-92.3.
 //!
 //! # Why `rank_children` never calls `sort_by`
 //!
@@ -107,14 +105,17 @@
 //! only then orders the *classes* using their already-computed pairwise results --
 //! sorting fully-resolved, deduplicated data, not a lazily-evaluated comparator.
 
+use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use chematic_core::Molecule;
+use chematic_core::atomic_weight::{rdkit_average_atomic_weight, rdkit_isotope_mass};
+use chematic_core::{Element, Molecule};
 
 use crate::CipError;
 use crate::budget::CipBudget;
-use crate::digraph::CipDigraph;
+use crate::digraph::{ChildIds, CipDigraph};
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::{AtomicNumberKey, cmp_atomic_number_key};
 use crate::trace::{ComparisonTrace, DecisionStep};
@@ -323,7 +324,7 @@ pub struct CompareContext<'t> {
     /// or molecules. Measured in practice (5,000-molecule corpus, `docs/
     /// cip_perf_memoization_107.md`) to hold a few hundred entries per resolution
     /// even on the corpus's own worst-case fixtures -- nowhere near that ceiling.
-    cache: HashMap<PairwiseCacheKey, BranchComparison>,
+    cache: FxHashMap<PairwiseCacheKey, BranchComparison>,
     /// Diagnostic only (never read to decide a comparison): how many
     /// `compare_ligands` calls were satisfied from `cache` instead of recomputed.
     pub cache_hits: u64,
@@ -350,7 +351,7 @@ impl<'t> CompareContext<'t> {
             ranking_parent: None,
             fractional_comparisons: 0,
             fractional_decisions: 0,
-            cache: HashMap::new(),
+            cache: FxHashMap::default(),
             cache_hits: 0,
             cache_misses: 0,
             pass: None,
@@ -363,7 +364,7 @@ impl<'t> CompareContext<'t> {
             max_recursive_calls: 1_000_000,
             trace: Some(trace),
             ranking_parent: None,
-            cache: HashMap::new(),
+            cache: FxHashMap::default(),
             cache_hits: 0,
             cache_misses: 0,
             fractional_comparisons: 0,
@@ -373,66 +374,55 @@ impl<'t> CompareContext<'t> {
     }
 }
 
-/// `(atomic_number, isotope)` for a node's *effective* atom, Rule 1a's comparison key.
-/// The atomic-number half is simply `node.atomic_number` -- already computed once at
-/// digraph-construction time (see `crate::digraph`'s `atomic_number_for`), plain integer
-/// for every node except a MANCUDE-affected `MultipleBondDuplicate`, which carries a
-/// `Rational` (see `crate::mancude`'s module docs for why the owner's, not the
-/// represented atom's, fraction is correct here).
-///
-/// The isotope half needs its own atom lookup and, for a MANCUDE-affected duplicate,
-/// its own owner-vs-represented decision: `duplicated_atom` is a *specific* Kekulé-form-
-/// dependent partner (exactly the value `atomic_number` deliberately stops depending on
-/// for this same node), so reading isotope from it *would* reintroduce Kekulé-form
-/// dependence into Rule 2 while Rule 1a stays invariant -- by the same argument that
-/// motivates the atomic-number owner decision. Whenever `atomic_number` is `Rational`,
-/// isotope is read from `source_atom` (the owner) instead. **Unverified against RDKit,
-/// corpus-inert**, not "correct by the same reasoning" -- unlike the atomic-number
-/// decision (checked against a concrete RDKit-reimplemented value), this branch has never
-/// been exercised: 0 isotope-labeled atoms exist anywhere in the frozen 155-row corpus,
-/// and the one isotope label in the full ~5,000-molecule verification corpus
-/// (`[3H]` on a plain aliphatic ring, unrelated to any MANCUDE system) never reaches this
-/// code path. Structurally consistent with the atomic-number decision, not empirically
-/// confirmed by it. An ordinary (non-MANCUDE) duplicate keeps today's existing behavior
-/// unchanged: `duplicated_atom`'s real isotope.
-fn node_key(mol: &Molecule, node: &CipNode) -> (AtomicNumberKey, Option<u16>) {
-    let isotope_atom = match node.kind {
-        CipNodeKind::Atom { atom_idx } => Some(atom_idx),
-        CipNodeKind::MultipleBondDuplicate {
-            source_atom,
-            duplicated_atom,
-            ..
-        } => Some(match node.atomic_number {
-            AtomicNumberKey::Rational(_) => source_atom,
-            AtomicNumberKey::Integral(_) => duplicated_atom,
-        }),
-        CipNodeKind::RingDuplicate { closure_atom, .. } => Some(closure_atom),
-        CipNodeKind::ImplicitHydrogen => None,
-    };
-    let isotope = isotope_atom.and_then(|idx| mol.atom(idx).isotope);
-    (node.atomic_number, isotope)
+#[derive(Clone, Copy, Debug)]
+enum NodeMass {
+    Natural(Element),
+    Isotope(Element, u16),
+    Duplicate,
 }
 
-/// Rule 1a (atomic number, via `cmp_atomic_number_key` -- promotes a plain integer to a
-/// `RationalAtomicNumber` when compared against a MANCUDE fraction) then Rule 2 (isotope:
-/// `Some` beats `None`, higher isotope number beats lower).
-fn cmp_key(a: &(AtomicNumberKey, Option<u16>), b: &(AtomicNumberKey, Option<u16>)) -> Ordering {
-    match cmp_atomic_number_key(a.0, b.0) {
-        Ordering::Equal => {}
-        other => return other,
+impl NodeMass {
+    fn daltons(self) -> f64 {
+        match self {
+            Self::Natural(element) => rdkit_average_atomic_weight(element),
+            Self::Isotope(element, isotope) => rdkit_isotope_mass(element, isotope),
+            Self::Duplicate => 0.0,
+        }
     }
-    match (a.1, b.1) {
-        (Some(x), Some(y)) => x.cmp(&y),
-        (Some(_), None) => Ordering::Greater,
-        (None, Some(_)) => Ordering::Less,
-        (None, None) => Ordering::Equal,
-    }
+}
+
+type NodeKey = (AtomicNumberKey, NodeMass);
+
+fn node_key(mol: &Molecule, node: &CipNode) -> NodeKey {
+    let mass = match node.kind {
+        CipNodeKind::Atom { atom_idx } => {
+            let atom = mol.atom(atom_idx);
+            match atom.isotope.filter(|&isotope| isotope != 0) {
+                Some(isotope) => NodeMass::Isotope(atom.element, isotope),
+                None => NodeMass::Natural(atom.element),
+            }
+        }
+        CipNodeKind::ImplicitHydrogen => NodeMass::Natural(Element::H),
+        CipNodeKind::MultipleBondDuplicate { .. } | CipNodeKind::RingDuplicate { .. } => {
+            NodeMass::Duplicate
+        }
+    };
+    (node.atomic_number, mass)
+}
+
+fn cmp_key(a: &NodeKey, b: &NodeKey) -> Ordering {
+    cmp_atomic_number_key(a.0, b.0).then_with(|| match (a.1, b.1) {
+        (NodeMass::Isotope(..), _) | (_, NodeMass::Isotope(..)) => {
+            a.1.daltons().total_cmp(&b.1.daltons())
+        }
+        _ => Ordering::Equal,
+    })
 }
 
 /// `key`, with a `Rational` atomic-number half collapsed to its integer part -- used only
 /// to detect whether a fraction *decided* a comparison (see
 /// `CompareContext::fractional_decisions`), never for a real ranking decision.
-fn collapse_to_integer(key: (AtomicNumberKey, Option<u16>)) -> (AtomicNumberKey, Option<u16>) {
+fn collapse_to_integer(key: NodeKey) -> NodeKey {
     let atomic_number = match key.0 {
         AtomicNumberKey::Integral(n) => AtomicNumberKey::Integral(n),
         AtomicNumberKey::Rational(r) => {
@@ -447,11 +437,7 @@ fn collapse_to_integer(key: (AtomicNumberKey, Option<u16>)) -> (AtomicNumberKey,
 /// site (not inside `cmp_key` itself, which stays pure and independently unit-tested, and
 /// not inside `compare_by_level`, which stays fully generic over `K` with no
 /// MANCUDE-specific knowledge).
-fn cmp_key_instrumented(
-    a: &(AtomicNumberKey, Option<u16>),
-    b: &(AtomicNumberKey, Option<u16>),
-    ctx: &mut CompareContext,
-) -> Ordering {
+fn cmp_key_instrumented(a: &NodeKey, b: &NodeKey, ctx: &mut CompareContext) -> Ordering {
     let ordering = cmp_key(a, b);
     let fractional_involved =
         matches!(a.0, AtomicNumberKey::Rational(_)) || matches!(b.0, AtomicNumberKey::Rational(_));
@@ -494,14 +480,18 @@ enum LevelSlot {
 }
 
 /// [`rule1a2_slot_key`] without the isotope (Rule 1a alone).
-fn rule1a_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
-    (rule1a2_slot_key(graph, slot).0, None)
+fn rule1a_slot_key(graph: &CipDigraph, slot: LevelSlot) -> NodeKey {
+    let atomic_number = match slot {
+        LevelSlot::Node(node) => graph.node(node).atomic_number,
+        LevelSlot::Phantom => AtomicNumberKey::Integral(0),
+    };
+    (atomic_number, NodeMass::Duplicate)
 }
 
-fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
+fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> NodeKey {
     match slot {
         LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n)),
-        LevelSlot::Phantom => (AtomicNumberKey::Integral(0), None),
+        LevelSlot::Phantom => (AtomicNumberKey::Integral(0), NodeMass::Duplicate),
     }
 }
 
@@ -512,14 +502,38 @@ pub(crate) fn ranked_child_ids(
     graph: &mut CipDigraph,
     node: NodeId,
     ctx: &mut CompareContext,
-) -> Result<Vec<NodeId>, CipCompareError> {
-    let children = graph
-        .expand_children(node)
+) -> Result<ChildIds, CipCompareError> {
+    let mut children = graph
+        .expand_child_ids(node)
         .map_err(CipCompareError::Digraph)?;
-    Ok(rank_children(graph, &children, ctx)?
-        .into_iter()
-        .flatten()
-        .collect())
+    match children.as_slice() {
+        [] | [_] => {}
+        &[left, right] => {
+            if compare_siblings(graph, left, right, ctx)? == BranchComparison::Lower {
+                children.swap(0, 1);
+            }
+        }
+        _ => {
+            return Ok(rank_children(graph, &children, ctx)?
+                .into_iter()
+                .flatten()
+                .collect());
+        }
+    }
+    Ok(children)
+}
+
+fn compare_siblings(
+    graph: &mut CipDigraph,
+    left: NodeId,
+    right: NodeId,
+    ctx: &mut CompareContext,
+) -> Result<BranchComparison, CipCompareError> {
+    let saved_parent = ctx.ranking_parent;
+    ctx.ranking_parent = graph.node(left).parent;
+    let comparison = compare_ligands(graph, left, right, ctx);
+    ctx.ranking_parent = saved_parent;
+    comparison
 }
 
 /// The result of one key-parameterized sphere-by-sphere walk (see [`compare_by_level`]):
@@ -551,8 +565,10 @@ fn compare_by_level<K>(
     key_fn: impl Fn(&CipDigraph, LevelSlot) -> K + Copy,
     cmp_fn: impl Fn(&K, &K, &mut CompareContext) -> Ordering + Copy,
 ) -> Result<LevelOutcome<K>, CipCompareError> {
-    let mut left_level = vec![LevelSlot::Node(left)];
-    let mut right_level = vec![LevelSlot::Node(right)];
+    let roots = [(LevelSlot::Node(left), LevelSlot::Node(right))];
+    let mut first_level = true;
+    let mut level = SmallVec::<[(LevelSlot, LevelSlot); 8]>::new();
+    let mut next_level = SmallVec::new();
 
     loop {
         ctx.recursive_calls += 1;
@@ -563,33 +579,18 @@ fn compare_by_level<K>(
             });
         }
 
-        // Invariant: left_level.len() == right_level.len() always -- any per-position
-        // substituent-count mismatch is padded with a Phantom slot at the position it
-        // originates (see the next_left/next_right construction below), never left to
-        // shift later positions out of alignment.
-        debug_assert_eq!(left_level.len(), right_level.len());
-        let n = left_level.len();
-
-        let mut decided = None;
-        for i in 0..n {
-            let lk = key_fn(graph, left_level[i]);
-            let rk = key_fn(graph, right_level[i]);
-            match cmp_fn(&lk, &rk, ctx) {
-                Ordering::Greater => {
-                    decided = Some((BranchComparison::Higher, lk, rk));
-                    break;
-                }
-                Ordering::Less => {
-                    decided = Some((BranchComparison::Lower, lk, rk));
-                    break;
-                }
-                Ordering::Equal => {}
-            }
-        }
-        if let Some((outcome, lk, rk)) = decided {
+        let pairs = if first_level { &roots[..] } else { &level[..] };
+        for &(left_slot, right_slot) in pairs {
+            let lk = key_fn(graph, left_slot);
+            let rk = key_fn(graph, right_slot);
+            let outcome = match cmp_fn(&lk, &rk, ctx) {
+                Ordering::Greater => BranchComparison::Higher,
+                Ordering::Less => BranchComparison::Lower,
+                Ordering::Equal => continue,
+            };
             return Ok(LevelOutcome::Decided(outcome, lk, rk));
         }
-        if n == 0 {
+        if pairs.is_empty() {
             return Ok(LevelOutcome::FullyTied);
         }
 
@@ -599,35 +600,27 @@ fn compare_by_level<K>(
         // `rank_children` and module docs) before being placed into the next level;
         // per-position padding (not a global flatten) keeps "position i" well-defined on
         // both sides even when a tied pair's substituent counts differ.
-        let mut next_left = Vec::new();
-        let mut next_right = Vec::new();
-        for i in 0..n {
-            let left_children = match left_level[i] {
+        next_level.clear();
+        for &(left_slot, right_slot) in pairs {
+            let left_children = match left_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
-                LevelSlot::Phantom => Vec::new(),
+                LevelSlot::Phantom => ChildIds::new(),
             };
-            let right_children = match right_level[i] {
+            let right_children = match right_slot {
                 LevelSlot::Node(node) => ranked_child_ids(graph, node, ctx)?,
-                LevelSlot::Phantom => Vec::new(),
+                LevelSlot::Phantom => ChildIds::new(),
             };
-            let max_len = left_children.len().max(right_children.len());
-            for j in 0..max_len {
-                next_left.push(
-                    left_children
-                        .get(j)
-                        .map(|&n| LevelSlot::Node(n))
-                        .unwrap_or(LevelSlot::Phantom),
-                );
-                next_right.push(
-                    right_children
-                        .get(j)
-                        .map(|&n| LevelSlot::Node(n))
-                        .unwrap_or(LevelSlot::Phantom),
-                );
+            for position in 0..left_children.len().max(right_children.len()) {
+                let left = left_children.get(position).copied();
+                let right = right_children.get(position).copied();
+                next_level.push((
+                    left.map_or(LevelSlot::Phantom, LevelSlot::Node),
+                    right.map_or(LevelSlot::Phantom, LevelSlot::Node),
+                ));
             }
         }
-        left_level = next_left;
-        right_level = next_right;
+        std::mem::swap(&mut level, &mut next_level);
+        first_level = false;
     }
 }
 
@@ -644,7 +637,7 @@ pub fn compare_ligands(
     // CIP's rules apply in order over the whole hierarchical digraph: Rule 2
     // (isotopes) only breaks what Rule 1a leaves tied at every sphere, so a
     // labelled methyl does not outrank a carboxyl (`[13CH3][C@H](N)C(=O)O`).
-    if ctx.pass.is_none() && graph.molecule().atoms().any(|(_, a)| a.isotope.is_some()) {
+    if ctx.pass.is_none() && graph.has_isotopes() {
         ctx.pass = Some(RuleMode::Rule1a);
         let first = compare_ligands(graph, left, right, ctx);
         let result = match first {
@@ -657,7 +650,7 @@ pub fn compare_ligands(
         ctx.pass = None;
         return result;
     }
-    let rule_mode = ctx.pass.unwrap_or(RuleMode::Rule1a2);
+    let rule_mode = ctx.pass.unwrap_or(RuleMode::Rule1a);
     let left_kind = graph.node(left).kind;
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
@@ -679,7 +672,8 @@ pub fn compare_ligands(
         } else {
             invert(cached)
         };
-        (outcome, "1a/2 (cached)".to_string())
+        let rule = ctx.trace.is_some().then(|| "1a/2 (cached)".to_owned());
+        (outcome, rule)
     } else {
         let (outcome, rule) = match compare_by_level(
             graph,
@@ -694,14 +688,16 @@ pub fn compare_ligands(
             cmp_key_instrumented,
         )? {
             LevelOutcome::Decided(c, lk, rk) => {
-                let rule = if ctx.trace.is_some() {
-                    format!("1a/2 ({lk:?} vs {rk:?})")
-                } else {
-                    String::new()
-                };
+                let rule = ctx
+                    .trace
+                    .is_some()
+                    .then(|| format!("1a/2 ({lk:?} vs {rk:?})"));
                 (c, rule)
             }
-            LevelOutcome::FullyTied => (BranchComparison::Equal, "leaf".to_string()),
+            LevelOutcome::FullyTied => (
+                BranchComparison::Equal,
+                ctx.trace.is_some().then(|| "leaf".to_owned()),
+            ),
         };
         ctx.cache_misses += 1;
         let canonical_outcome = if already_canonical {
@@ -714,7 +710,7 @@ pub fn compare_ligands(
     };
 
     let ranking_parent = ctx.ranking_parent;
-    if let Some(trace) = ctx.trace.as_deref_mut() {
+    if let (Some(trace), Some(rule)) = (ctx.trace.as_deref_mut(), rule) {
         trace.decisions.push(DecisionStep {
             depth,
             left_node: left,
@@ -750,6 +746,31 @@ pub fn rank_children(
     if n == 1 {
         return Ok(vec![vec![children[0]]]);
     }
+    if let &[left, right] = children {
+        return Ok(match compare_siblings(graph, left, right, ctx)? {
+            BranchComparison::Higher => vec![vec![left], vec![right]],
+            BranchComparison::Lower => vec![vec![right], vec![left]],
+            BranchComparison::Equal | BranchComparison::Unresolved => vec![vec![left, right]],
+        });
+    }
+
+    let cells = n
+        .checked_mul(n)
+        .ok_or_else(|| CipCompareError::BudgetExceeded {
+            expanded_nodes: graph.nodes().len(),
+            recursive_calls: ctx.recursive_calls,
+        })?;
+    const INLINE_CHILDREN: usize = 8;
+    let mut inline_pairs = [BranchComparison::Equal; INLINE_CHILDREN * INLINE_CHILDREN];
+    let mut inline_parents = [0; INLINE_CHILDREN];
+    let (mut heap_pairs, mut heap_parents);
+    let (pairwise, parent) = if n <= INLINE_CHILDREN {
+        (&mut inline_pairs[..cells], &mut inline_parents[..n])
+    } else {
+        heap_pairs = vec![BranchComparison::Equal; cells];
+        heap_parents = vec![0; n];
+        (heap_pairs.as_mut_slice(), heap_parents.as_mut_slice())
+    };
 
     // Every child in `children` is a sibling under the same parent (by construction --
     // this is always called with one node's own `expand_children` output) -- record it
@@ -764,14 +785,13 @@ pub fn rank_children(
     ctx.ranking_parent = siblings_parent;
 
     // Full pairwise matrix, computed once, up front.
-    let mut pairwise = vec![vec![BranchComparison::Equal; n]; n];
     let mut fill_err = None;
     'fill: for i in 0..n {
         for j in (i + 1)..n {
             match compare_ligands(graph, children[i], children[j], ctx) {
                 Ok(cmp) => {
-                    pairwise[i][j] = cmp;
-                    pairwise[j][i] = invert(cmp);
+                    pairwise[i * n + j] = cmp;
+                    pairwise[j * n + i] = invert(cmp);
                 }
                 Err(e) => {
                     fill_err = Some(e);
@@ -788,21 +808,23 @@ pub fn rank_children(
     // Union-find: Equal and Unresolved pairs merge into one equivalence class --
     // Unresolved is treated as "tied for this ranking's purposes," never used to
     // establish an order (see BranchComparison::Unresolved's doc comment).
-    let mut parent: Vec<usize> = (0..n).collect();
+    for (i, slot) in parent.iter_mut().enumerate() {
+        *slot = i;
+    }
     for i in 0..n {
         for j in (i + 1)..n {
             if matches!(
-                pairwise[i][j],
+                pairwise[i * n + j],
                 BranchComparison::Equal | BranchComparison::Unresolved
             ) {
-                union(&mut parent, i, j);
+                union(parent, i, j);
             }
         }
     }
 
     let mut groups_map: HashMap<usize, Vec<usize>> = HashMap::new();
     for i in 0..n {
-        let root = find(&mut parent, i);
+        let root = find(parent, i);
         groups_map.entry(root).or_default().push(i);
     }
     let mut groups: Vec<Vec<usize>> = groups_map.into_values().collect();
@@ -810,7 +832,7 @@ pub fn rank_children(
     // Order the (already deduplicated, already fully-resolved) classes using their
     // precomputed representative comparison -- sorting resolved data, not invoking the
     // comparator lazily mid-sort.
-    groups.sort_by(|a, b| match pairwise[a[0]][b[0]] {
+    groups.sort_by(|a, b| match pairwise[a[0] * n + b[0]] {
         BranchComparison::Higher => Ordering::Less,
         BranchComparison::Lower => Ordering::Greater,
         BranchComparison::Equal | BranchComparison::Unresolved => Ordering::Equal,
@@ -823,7 +845,7 @@ pub fn rank_children(
     debug_assert!(
         groups
             .windows(2)
-            .all(|w| !matches!(pairwise[w[1][0]][w[0][0]], BranchComparison::Higher)),
+            .all(|w| !matches!(pairwise[w[1][0] * n + w[0][0]], BranchComparison::Higher)),
         "rank_children: inconsistent (non-transitive) pairwise comparison among children"
     );
 

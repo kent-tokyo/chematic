@@ -1,14 +1,4 @@
-//! Milestone 4B-2 production port of the validated Rule 4b reference engine
-//! (`examples/rule4b_bottom_up.rs`, 72/72 across 4 oracle corpora including mirrors --
-//! see `docs/rfcs/cip_accurate_rfc.md`). Mechanical port: [`resolve_chirality`] is
-//! unchanged from the example. [`assign_one_with_rule4b`]/[`apply_rule4b_pass`] are
-//! new, fitting the validated algorithm into `assign.rs`'s existing pass-based
-//! architecture (mirroring [`crate::assign`]'s own `assign_one_with_rule5`/
-//! `apply_rule5_pass` plumbing shape, but the tie-detection loop itself mirrors the
-//! reference engine's `resolve_outer_root` -- looping over *every* group and
-//! attempting a Rule 4b tiebreak on each clean 2-way tie found, not
-//! `assign_one_with_rule5`'s narrower "exactly one tied group" restriction, since
-//! that restriction was never part of what was validated 72/72).
+//! Resolve auxiliary tetrahedral descriptors and refine constitutional ties.
 
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -22,9 +12,9 @@ use crate::assign::{
 use crate::budget::CipBudget;
 use crate::compare::{CipCompareError, CompareContext, rank_children};
 use crate::digraph::CipDigraph;
-use crate::mancude::MancudeContext;
+use crate::mancude::PreparedKekule;
 use crate::node::{CipNodeKind, NodeId};
-use crate::rule4b::break_tie_rule4b;
+use crate::rule4b::{StereoRuleLimit, compare_tied_ligands};
 
 /// The core recursive, memoized, in-place resolver. `node_id` must be a real `Atom`
 /// node (not the true digraph root -- the root has no "back to root" ligand and is
@@ -34,9 +24,8 @@ pub(crate) fn resolve_chirality(
     graph: &mut CipDigraph,
     mol: &Molecule,
     node_id: NodeId,
-    budget: CipBudget,
-    cache: &mut HashMap<NodeId, Option<bool>>,
-) -> Result<Option<bool>, CipCompareError> {
+    cache: &mut HashMap<NodeId, Option<CipCode>>,
+) -> Result<Option<CipCode>, CipCompareError> {
     if let Some(&cached) = cache.get(&node_id) {
         return Ok(cached);
     }
@@ -62,50 +51,6 @@ pub(crate) fn resolve_chirality(
         .expand_children(node_id)
         .map_err(CipCompareError::Digraph)?;
     let mut ctx = CompareContext::new();
-    let mut groups = rank_children(graph, &forward_children, &mut ctx)?;
-
-    // Rule 4b tiebreak: only a clean 2-way tie is handled (scope match with every case
-    // seen in this residual family). 3+-way ties are reported, not guessed.
-    for gi in 0..groups.len() {
-        if groups[gi].len() == 2 {
-            let (a, b) = (groups[gi][0], groups[gi][1]);
-            if let Some(ord) = break_tie_rule4b(graph, mol, a, b, budget, cache)? {
-                let (higher, lower) = match ord {
-                    Ordering::Greater => (a, b),
-                    Ordering::Less => (b, a),
-                    Ordering::Equal => (a, b),
-                };
-                if ord != Ordering::Equal {
-                    groups[gi] = vec![lower];
-                    groups.insert(gi, vec![higher]);
-                }
-            }
-        } else if groups[gi].len() > 2 {
-            cache.insert(node_id, None);
-            return Ok(None); // out of scope this round
-        }
-    }
-
-    // Insert the back-to-root ligand at its Rule-1a-only rank among `groups`. Compare
-    // sphere-1-to-sphere-1: the back ligand's sphere 1 is `ancestor` itself; the
-    // forward ligand's sphere 1 is `rep` itself -- NOT `rep`'s children (that would be
-    // off by one sphere).
-    let mut insert_at = groups.len();
-    for (gi, group) in groups.iter().enumerate() {
-        let rep = group[0];
-        let back = crate::auxiliary::BackItem::Ascending {
-            ancestor: parent_id,
-            came_from: node_id,
-        };
-        let ord = crate::auxiliary::compare_rule1a_only(graph, back, rep, &mut ctx)?;
-        if ord == Ordering::Greater {
-            insert_at = gi;
-            break;
-        }
-    }
-    let mut final_groups = groups.clone();
-    final_groups.insert(insert_at, vec![parent_id]);
-
     let stereo_order = match mol.stereo_neighbor_order(atom_idx) {
         Some(o) => o,
         None => {
@@ -122,15 +67,35 @@ pub(crate) fn resolve_chirality(
             return Ok(None);
         }
     };
+    let groups = rank_children(graph, &forward_children, &mut ctx)?;
+    let groups = crate::rule3::refine(graph, groups, &mut ctx)?;
+    let (ranked_groups, pseudo_count) =
+        crate::rule4b::refine_stereo_groups(graph, mol, groups, &position_nodes, cache)?;
+
+    // Insert the back-to-root ligand at its Rule-1a-only rank among `groups`. Compare
+    // sphere-1-to-sphere-1: the back ligand's sphere 1 is `ancestor` itself; the
+    // forward ligand's sphere 1 is `rep` itself -- NOT `rep`'s children (that would be
+    // off by one sphere).
+    let mut insert_at = ranked_groups.len();
+    for (gi, group) in ranked_groups.iter().enumerate() {
+        let rep = group[0];
+        let back = crate::auxiliary::BackItem::Ascending {
+            ancestor: parent_id,
+            came_from: node_id,
+        };
+        let ord = crate::auxiliary::compare_rule1a_only(graph, back, rep, &mut ctx)?;
+        if ord == Ordering::Greater {
+            insert_at = gi;
+            break;
+        }
+    }
+    let mut final_groups = ranked_groups;
+    final_groups.insert(insert_at, vec![parent_id]);
+
     let chirality = mol.atom(atom_idx).chirality;
     let result = if stereo_order.len() == 3 {
-        // A saturated ring centre with a lone pair (bridgehead amine,
-        // cyclic phosphine): its auxiliary sign with the lone pair as the
-        // lowest ligand, read from the spelling as RDKit reads it (as for
-        // its own label, `crate::assign::lone_pair_is_r`).
-        if crate::assign::label_follows_rdkit_smiles_reading(mol, atom_idx) {
-            let invert = mol.smiles_ring_closure_count(atom_idx) == 1;
-            crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality, invert)
+        if crate::assign::lone_pair_centre_eligible(mol, atom_idx, stereo_order) {
+            crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality)
                 .ok()
                 .flatten()
         } else {
@@ -139,26 +104,39 @@ pub(crate) fn resolve_chirality(
     } else {
         resolve_is_r_from_groups(&final_groups, &position_nodes, chirality)
     };
+    let mut result = result.map(|is_r| match (is_r, pseudo_count % 2 == 1) {
+        (true, false) => CipCode::R,
+        (false, false) => CipCode::S,
+        (true, true) => CipCode::LowerR,
+        (false, true) => CipCode::LowerS,
+    });
+    if result.is_none()
+        && position_nodes.len() == 4
+        && crate::rule6::has_reference_partition(&final_groups)
+        && crate::rule6::eligible(mol, atom_idx)
+    {
+        result = crate::rule6::assign(
+            graph,
+            &final_groups,
+            &position_nodes,
+            chirality,
+            &mut ctx,
+            cache,
+            pseudo_count % 2 == 1,
+        )?;
+    }
     cache.insert(node_id, result);
     Ok(result)
 }
 
-/// Retry a Pass-1-tied atom with Rule 4b. Builds one fresh digraph rooted at the
-/// outer atom itself (`idx`) -- matching `assign_one`/`assign_one_with_rule5`'s
-/// existing per-outer-atom pattern -- and resolves every embedded stereocenter *in
-/// place* within that same digraph via [`resolve_chirality`], never re-rooting a
-/// second digraph at any embedded atom. Loops over every group produced by
-/// Rules-1a/1b/2 (mirroring the reference engine's `resolve_outer_root`), attempting
-/// the Rule 4b tiebreak on each clean 2-way tie found -- not restricted to exactly one
-/// tied group the way [`crate::assign::assign_one_with_rule5`] is, since that
-/// restriction isn't part of what the reference engine validated 72/72.
+/// Try the reflection-invariant auxiliary rules on a constitutional tie.
 pub(crate) fn assign_one_with_rule4b(
     mol: &Molecule,
     idx: AtomIdx,
     chirality: Chirality,
     stereo_order: &[u32],
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
     let mut graph = match kekule {
         Some((kekule_mol, ctx)) => {
@@ -174,24 +152,23 @@ pub(crate) fn assign_one_with_rule4b(
     };
 
     let mut ctx = CompareContext::new();
-    let mut groups =
-        rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+    let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+    let mut groups = crate::rule3::refine(&mut graph, groups, &mut ctx).map_err(map_compare_err)?;
 
     let mut cache = HashMap::new();
-    for gi in 0..groups.len() {
+    for gi in (0..groups.len()).rev() {
         if groups[gi].len() == 2 {
             let (a, b) = (groups[gi][0], groups[gi][1]);
-            if let Some(ord) = break_tie_rule4b(&mut graph, mol, a, b, budget, &mut cache)
-                .map_err(map_compare_err)?
+            if let Some((ord, _)) =
+                compare_tied_ligands(&mut graph, mol, a, b, &mut cache, StereoRuleLimit::Rule4c)
+                    .map_err(map_compare_err)?
             {
                 let (higher, lower) = match ord {
                     Ordering::Greater => (a, b),
                     _ => (b, a),
                 };
-                if ord != Ordering::Equal {
-                    groups[gi] = vec![lower];
-                    groups.insert(gi, vec![higher]);
-                }
+                groups[gi] = vec![lower];
+                groups.insert(gi, vec![higher]);
             }
         } else if groups[gi].len() > 2 {
             return Err(SkipReason::Tied);
@@ -204,17 +181,11 @@ pub(crate) fn assign_one_with_rule4b(
     Ok(Some(if is_r { CipCode::R } else { CipCode::S }))
 }
 
-/// Milestone 4B-2's Rule 4b refinement -- see module docs for scope. Only ever touches
-/// atoms Pass 1 (`assign_all`) left [`SkipReason::Tied`]; every other atom is carried
-/// through unchanged. Mirrors [`crate::assign::apply_rule5_pass`]'s exact shape and,
-/// crucially, runs *before* it in [`crate::assign::assign_cip_accurate_experimental`]
-/// (Rule 4b precedes Rule 5 in CIP rule order) -- Rule 5's own `provisional` map
-/// (built from whatever `AccurateCipAssignment` it's handed) sees Rule 4b's
-/// newly-resolved atoms for free, no changes needed inside `apply_rule5_pass` itself.
+/// Refine centers with a constitutional tie. Other results pass through unchanged.
 pub(crate) fn apply_rule4b_pass(
     mol: &Molecule,
     budget: CipBudget,
-    kekule: Option<&(Molecule, MancudeContext)>,
+    kekule: Option<&PreparedKekule<'_>>,
     pass1: AccurateCipAssignment,
 ) -> AccurateCipAssignment {
     let mut assignments = pass1.assignments;

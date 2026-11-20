@@ -320,35 +320,12 @@ mod tests {
     }
 
     #[test]
-    fn rdkit_mw_uses_complete_generated_isotope_table() {
+    fn rdkit_mw_uses_generated_isotope_masses() {
         // This representative is deliberately not one of the historical
         // hand-written entries. RDKit's public PeriodicTable reports
         // 11.0114336 Da for carbon-11, rather than the label's integer 11.
         let carbon11 = mol("[11C]");
         assert!(approx(rdkit_molecular_weight(&carbon11), 11.0114336, 1e-10));
-
-        let table = crate::rdkit_isotope_mass_table::RDKIT_ISOTOPE_MASS_TABLE;
-        assert_eq!(
-            table.len(),
-            3111,
-            "unexpected generated RDKit isotope count"
-        );
-        for pair in table.windows(2) {
-            let (left_z, left_a, _) = pair[0];
-            let (right_z, right_a, _) = pair[1];
-            assert!(
-                (left_z, left_a) < (right_z, right_a),
-                "isotope mass table must be sorted for binary search"
-            );
-        }
-        for &(atomic_number, isotope, expected) in table.iter() {
-            let element = Element::from_atomic_number(atomic_number)
-                .expect("generated table contains a valid element");
-            assert!(
-                approx(rdkit_isotope_mass(element, isotope), expected, 0.0),
-                "isotope mass lookup mismatch for Z={atomic_number}, A={isotope}"
-            );
-        }
     }
 
     #[test]

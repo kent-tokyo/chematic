@@ -31,8 +31,9 @@ pub use match_vf2::{
     first_anchored_match_per_atom, for_each_embedding, has_match_bounded, has_match_with_config,
 };
 pub use mcs::{
-    AtomCompare, BondCompare, McsConfig, McsOutcome, find_mcs, find_mcs_with_config,
-    find_mcs_with_config_checked, find_mcs_with_rdkit_any_heavy_checked,
+    AtomCompare, BondCompare, McsConfig, McsObjective, McsOutcome, find_mcs, find_mcs_with_config,
+    find_mcs_with_config_checked, find_mcs_with_objective_checked,
+    find_mcs_with_rdkit_any_heavy_checked, find_mcs_with_rdkit_any_heavy_objective_checked,
 };
 pub use mcs_smarts::{McsSmartsError, mcs_query_to_smarts};
 pub use merge_hydrogens::{QueryHydrogenError, merge_query_hydrogens};

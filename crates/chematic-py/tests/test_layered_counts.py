@@ -225,8 +225,16 @@ def test_roots_duplicates_match_existing_core(mol):
             )
 
 
+def test_dative_bond_updates_atom_counts():
+    mol = C.MolFromSmiles("N->[Cu+2]")
+    counts = [7, 7, 99]
+    fingerprint = C.LayeredFingerprint(mol, atomCounts=counts)
+    assert list(fingerprint.GetOnBits()) == [360, 610, 611, 674, 2027]
+    assert counts == [8, 8, 99]
+
+
 def test_unsupported_graph_and_graph_cap_do_not_mutate():
-    for smiles in ("N->[Cu+2]", ".".join(["C"] * 513)):
+    for smiles in ("C~C", ".".join(["C"] * 513)):
         mol = C.MolFromSmiles(smiles)
         counts = [7] * mol.GetNumAtoms()
         with pytest.raises(ValueError):

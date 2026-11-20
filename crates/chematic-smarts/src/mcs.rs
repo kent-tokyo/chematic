@@ -6,7 +6,7 @@
 //! search that grows the common subgraph one atom at a time, pruning subtrees whose upper
 //! bound on reachable size is no better than the current best.
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use chematic_perception::{RingSet, find_sssr};
 
 use crate::clock::Instant;
@@ -14,7 +14,7 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 
 #[path = "mcs_bounds.rs"]
 mod bounds;
-use bounds::{upper_bound_additional, upper_bound_for_seeds};
+use bounds::{AtomUpperBound, BondUpperBound};
 
 #[path = "mcs_frontier.rs"]
 mod frontier;
@@ -22,7 +22,9 @@ use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
 
 #[path = "mcs_stereo.rs"]
 mod stereo;
-use stereo::mapped_chirality_compatible;
+use stereo::{
+    StereoConflict, consider_stereo_subgraphs, constrain_query_chirality, mapped_stereo_conflict,
+};
 
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
@@ -66,9 +68,8 @@ pub struct McsConfig {
     /// If `true`, bond orders must match between molecules. If `false`, any bond order is
     /// accepted (atom-only MCS).
     pub match_bonds: bool,
-    /// Minimum number of atoms required for the result to be returned.  If the best
-    /// common substructure has fewer atoms than `min_atoms`, an empty `QueryMolecule` is
-    /// returned instead.
+    /// Minimum number of atoms for a candidate when comparing two or more molecules.
+    /// If none reaches `min_atoms`, return an empty `QueryMolecule`.
     pub min_atoms: usize,
     /// Optional time limit in milliseconds.  The search is aborted when the deadline is
     /// reached and the best result found so far is returned.
@@ -89,8 +90,9 @@ pub struct McsConfig {
     pub atom_compare: AtomCompare,
     /// Bond-level comparison strategy.  Defaults to [`BondCompare::OrderOrAromatic`].
     pub bond_compare: BondCompare,
-    /// If `true`, fully mapped tetrahedral centers must have the same stereochemistry
-    /// after accounting for ligand order. If `false`, chirality is ignored (default).
+    /// If `true`, tetrahedral centers with three or more common bonds must have
+    /// the same stereochemistry after accounting for ligand order. Smaller
+    /// frames require specified chirality. The default ignores chirality.
     pub match_chiral_tag: bool,
     /// If `true`, formal charge must match between atoms. If `false` (default), charge is
     /// ignored -- e.g. a carboxylate `[O-]` matches a neutral `O`. Mirrors `match_chiral_tag`.
@@ -100,7 +102,8 @@ pub struct McsConfig {
     /// Mirrors `match_chiral_tag`.
     pub match_isotope: bool,
     /// If `true`, when multiple MCS of the same atom count exist, prefer the one with more bonds.
-    /// Defaults to `true` (matching RDKit's default behavior).
+    /// Defaults to `true` for the atom-first objective. Select
+    /// [`McsObjective::BondCount`] to make bonds the primary objective.
     pub maximize_bonds: bool,
 }
 
@@ -123,6 +126,15 @@ impl Default for McsConfig {
             maximize_bonds: true,
         }
     }
+}
+
+/// What the MCS search maximizes before resolving ties.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum McsObjective {
+    /// Maximize atoms, using `McsConfig::maximize_bonds` for tied atom counts.
+    AtomCount,
+    /// Maximize bonds first, then prefer more atoms.
+    BondCount,
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +215,7 @@ impl McsOutcome {
 /// Like [`find_mcs_with_config`], but reports whether `config.timeout_ms`
 /// was reached before the search finished exhaustively -- see [`McsOutcome`].
 pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
-    find_mcs_impl(mols, config, false)
+    find_mcs_with_objective_checked(mols, config, McsObjective::AtomCount)
 }
 
 /// Find an MCS using RDKit's `CompareAnyHeavyAtom` atom policy while retaining
@@ -212,10 +224,33 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
 /// The policy overrides `config.atom_compare`; [`find_mcs_with_config_checked`]
 /// retains the original heavy-only behavior.
 pub fn find_mcs_with_rdkit_any_heavy_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
-    find_mcs_impl(mols, config, true)
+    find_mcs_with_rdkit_any_heavy_objective_checked(mols, config, McsObjective::AtomCount)
 }
 
-fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> McsOutcome {
+/// Maximum common substructure with an explicit primary objective.
+pub fn find_mcs_with_objective_checked(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    objective: McsObjective,
+) -> McsOutcome {
+    find_mcs_impl(mols, config, false, objective)
+}
+
+/// Explicit objective under the RDKit any-heavy-atom matching policy.
+pub fn find_mcs_with_rdkit_any_heavy_objective_checked(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    objective: McsObjective,
+) -> McsOutcome {
+    find_mcs_impl(mols, config, true, objective)
+}
+
+fn find_mcs_impl(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    rdkit_heavy: bool,
+    objective: McsObjective,
+) -> McsOutcome {
     if mols.iter().any(|mol| {
         mol.atom_count() > config.max_atoms_per_molecule
             || mol.bond_count() > config.max_bonds_per_molecule
@@ -229,39 +264,12 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         return if config.max_search_nodes == Some(0) {
             McsOutcome::ResourceLimited(QueryMolecule::new())
         } else {
-            McsOutcome::Exhaustive(molecule_to_query(mols[0]))
+            McsOutcome::Exhaustive(molecule_to_query(mols[0], config))
         };
     }
 
-    let deadline = config
-        .timeout_ms
-        .map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
-
-    let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only {
-        mols.iter().map(|m| find_sssr(m)).collect()
-    } else {
-        Vec::new()
-    };
-
     let n0 = mols[0].atom_count();
-    let absolute_atom_upper_bound = mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0);
-    let absolute_bond_upper_bound = mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0);
-
-    let mut state = McsState {
-        mols,
-        config,
-        rdkit_heavy,
-        best: PartialMapping::empty(mols.len()),
-        deadline,
-        timed_out: false,
-        resource_limited: false,
-        search_nodes: 0,
-        absolute_atom_upper_bound,
-        absolute_bond_upper_bound,
-        proven_optimal: false,
-        ring_sets,
-        excluded: vec![false; n0],
-    };
+    let mut state = McsState::new(mols, config, rdkit_heavy, objective);
 
     'outer: for a0 in 0..n0 {
         if state.timed_out || state.resource_limited || state.proven_optimal {
@@ -272,6 +280,12 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         {
             state.timed_out = true;
             break;
+        }
+
+        // The edge-based partition used by bond-first search can reach every
+        // connected mapping from its smallest-index vertex.
+        if objective == McsObjective::BondCount && a0 > 0 {
+            state.exclude_prior_seed(AtomIdx((a0 - 1) as u32));
         }
 
         // Gather compatible atoms from each other molecule for this seed atom.
@@ -295,38 +309,20 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
                 break 'outer;
             }
 
-            // Prune with a conservative bound under the selected atom comparator.
-            let ub = upper_bound_for_seeds(
-                mols,
-                AtomIdx(a0 as u32),
-                &seed,
-                &config.atom_compare,
-                rdkit_heavy,
-            );
-            if ub < state.best.size {
+            if !state.bounds_can_improve() {
                 continue;
             }
 
             let mut mapping = PartialMapping::from_seed(mols, AtomIdx(a0 as u32), &seed);
-            // Exclusion is a per-seed-tree decision; every push/pop in `grow`
-            // unwinds back to all-`false`, but reset explicitly so a fresh
-            // seed never inherits state from a prior seed's search tree.
-            state.excluded.iter_mut().for_each(|b| *b = false);
             grow(&mut state, &mut mapping);
         }
     }
 
-    // Apply min_atoms filter.
-    if state.best.size < config.min_atoms {
-        return if state.resource_limited {
-            McsOutcome::ResourceLimited(QueryMolecule::new())
-        } else if state.timed_out {
-            McsOutcome::TimedOut(QueryMolecule::new())
-        } else {
-            McsOutcome::Exhaustive(QueryMolecule::new())
-        };
-    }
-    let result = build_query(mols, &state.best, config);
+    let result = if state.best.size < config.min_atoms {
+        QueryMolecule::new()
+    } else {
+        build_query(mols, &state.best, config)
+    };
     if state.resource_limited {
         McsOutcome::ResourceLimited(result)
     } else if state.timed_out {
@@ -351,6 +347,7 @@ struct PartialMapping {
     size: usize,
     /// Number of bonds in the common subgraph (for bond-match mode).
     bond_count: usize,
+    omitted_bonds: Vec<BondIdx>,
 }
 
 impl PartialMapping {
@@ -363,6 +360,7 @@ impl PartialMapping {
             query_to_mol: Vec::new(),
             size: 0,
             bond_count: 0,
+            omitted_bonds: Vec::new(),
         }
     }
 
@@ -386,6 +384,7 @@ impl PartialMapping {
             query_to_mol,
             size: 1,
             bond_count: 0,
+            omitted_bonds: Vec::new(),
         }
     }
 
@@ -435,13 +434,13 @@ struct McsState<'a> {
     mols: &'a [&'a Molecule],
     config: &'a McsConfig,
     rdkit_heavy: bool,
+    objective: McsObjective,
     best: PartialMapping,
     deadline: Option<Instant>,
     timed_out: bool,
     resource_limited: bool,
     search_nodes: usize,
-    /// Absolute graph-theoretic upper bounds: a common subgraph cannot have
-    /// more atoms or bonds than the smallest input on the corresponding axis.
+    /// Upper bounds on the size of any mapping under the selected comparators.
     absolute_atom_upper_bound: usize,
     absolute_bond_upper_bound: usize,
     /// Set once a valid mapping reaches both absolute bounds. At that point
@@ -449,11 +448,101 @@ struct McsState<'a> {
     /// seed permutations can be skipped without weakening completeness.
     proven_optimal: bool,
     ring_sets: Vec<RingSet>,
-    /// `excluded[a.0]` = `true` if mol[0] atom `a` has been decided OUT of
-    /// the current search-tree branch (see the include/exclude split in
-    /// `grow`). Reset to all-`false` before growing from each new seed --
-    /// exclusion is a per-branch decision, not global across seeds.
-    excluded: Vec<bool>,
+    atom_bound: AtomUpperBound,
+    bond_bound: Option<BondUpperBound>,
+}
+
+impl<'a> McsState<'a> {
+    fn new(
+        mols: &'a [&'a Molecule],
+        config: &'a McsConfig,
+        rdkit_heavy: bool,
+        objective: McsObjective,
+    ) -> Self {
+        let deadline = config
+            .timeout_ms
+            .map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
+
+        let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only
+        {
+            mols.iter().map(|m| find_sssr(m)).collect()
+        } else {
+            Vec::new()
+        };
+
+        let atom_bound = AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy);
+        let bond_bound = (objective == McsObjective::BondCount)
+            .then(|| BondUpperBound::new(mols, config, rdkit_heavy));
+        let (absolute_atom_upper_bound, absolute_bond_upper_bound) = match &bond_bound {
+            Some(bonds) => (atom_bound.total().min(bonds.total() + 1), bonds.total()),
+            None => (
+                mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0),
+                mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0),
+            ),
+        };
+
+        Self {
+            mols,
+            config,
+            rdkit_heavy,
+            objective,
+            best: PartialMapping::empty(mols.len()),
+            deadline,
+            timed_out: false,
+            resource_limited: false,
+            search_nodes: 0,
+            absolute_atom_upper_bound,
+            absolute_bond_upper_bound,
+            proven_optimal: false,
+            ring_sets,
+            atom_bound,
+            bond_bound,
+        }
+    }
+
+    fn source_bond_allowed(&self, bond: BondIdx) -> bool {
+        self.bond_bound
+            .as_ref()
+            .is_none_or(|bound| bound.is_allowed(bond))
+    }
+
+    fn exclude_prior_seed(&mut self, atom: AtomIdx) {
+        self.atom_bound.set_excluded(atom, true);
+        if let Some(bonds) = &mut self.bond_bound {
+            for (_, bond) in self.mols[0].neighbors(atom) {
+                if bonds.is_allowed(bond) {
+                    bonds.set_excluded(bond, true);
+                }
+            }
+        }
+    }
+
+    fn score(&self, mapping: &PartialMapping) -> (usize, usize) {
+        match self.objective {
+            McsObjective::AtomCount => (
+                mapping.size,
+                if self.config.maximize_bonds {
+                    mapping.bond_count
+                } else {
+                    0
+                },
+            ),
+            McsObjective::BondCount => (mapping.bond_count, mapping.size),
+        }
+    }
+
+    fn bounds_can_improve(&self) -> bool {
+        let mut atoms = self.atom_bound.total();
+        if let Some(bond_bound) = &self.bond_bound {
+            let bonds = bond_bound.total();
+            // A connected result has at most one more vertex than edges.
+            atoms = atoms.min(bonds + 1);
+            if bonds != self.best.bond_count {
+                return atoms >= self.config.min_atoms && bonds > self.best.bond_count;
+            }
+        }
+        atoms >= self.config.min_atoms && atoms >= self.best.size
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -476,125 +565,148 @@ struct McsState<'a> {
 /// nondeterminism (DFS-visit-order dependence for a FIXED mols[0]
 /// labeling) and is kept for that reason, not because it solves the
 /// general problem.
-fn mcs_tiebreak_key(mapping: &PartialMapping) -> Vec<u32> {
-    mapping.query_to_mol.iter().map(|row| row[0].0).collect()
+fn mcs_tiebreak_key(mapping: &PartialMapping) -> impl Iterator<Item = u32> + '_ {
+    mapping.query_to_mol.iter().map(|row| row[0].0)
 }
 
-/// Reject a fully mapped stereocenter with incompatible ligand parity, and
-/// keep the best candidate that satisfies all configured constraints.
 fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
-    // A raw @/@@ tag is relative to the SMILES neighbor order. Only a mapped
-    // ligand permutation can establish whether two fully represented centers
-    // have the same stereochemistry. A partial center remains eligible.
-    if state.config.match_chiral_tag && !mapped_chirality_compatible(state.mols, mapping) {
+    if state.config.match_chiral_tag {
+        match mapped_stereo_conflict(state.mols, mapping, state.config) {
+            Some(StereoConflict::IncompatibleTag) => return false,
+            Some(StereoConflict::Orientation(bonds)) => {
+                consider_stereo_subgraphs(state, mapping, bonds);
+                // Later vertices can supply a path around an omitted bond.
+                return true;
+            }
+            None => {}
+        }
+    }
+    record_mapping(state, mapping);
+    true
+}
+
+fn better_mapping(state: &McsState<'_>, mapping: &PartialMapping) -> bool {
+    if mapping.size < state.config.min_atoms {
         return false;
     }
-    // Update best if this mapping is larger, or same size but more bonds (if enabled),
-    // or a same-size-and-bond-count tie broken by a canonical key (not "first found in
-    // DFS order", which depends on mols[0]'s atom insertion order -- the same bug shape
-    // as scaffold.rs Rule 8 / is_fused_ring found elsewhere in this project).
-    let is_better = mapping.size > state.best.size
-        || (mapping.size == state.best.size
-            && ((state.config.maximize_bonds && mapping.bond_count > state.best.bond_count)
-                || ((!state.config.maximize_bonds
-                    || mapping.bond_count == state.best.bond_count)
-                    && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best))));
-    // Pruning only the unconstrained winner after the search can discard a
-    // smaller, valid candidate found earlier (for example a common chain next
-    // to two incompatible rings). Keep the best *valid* mapping instead.
-    if is_better
+    let score = state.score(mapping);
+    let current_best = state.score(&state.best);
+    score > current_best
+        || (score == current_best
+            && mcs_tiebreak_key(mapping)
+                .cmp(mcs_tiebreak_key(&state.best))
+                .then_with(|| mapping.omitted_bonds.cmp(&state.best.omitted_bonds))
+                .is_lt())
+}
+
+fn record_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) {
+    // Keep the best valid, ring-complete candidate rather than filtering
+    // only the unconstrained winner afterward.
+    if better_mapping(state, mapping)
         && (!state.config.complete_rings_only
             || mapping_has_complete_rings(state.mols, mapping, &state.ring_sets, state.config))
     {
         state.best = mapping.clone();
         state.proven_optimal = state.best.size == state.absolute_atom_upper_bound
-            && (!state.config.maximize_bonds
+            && ((state.objective == McsObjective::AtomCount && !state.config.maximize_bonds)
                 || state.best.bond_count == state.absolute_bond_upper_bound);
+    }
+}
+
+fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
+    let mut excluded_atoms = Vec::new();
+    let mut excluded_bonds = Vec::new();
+    while prepare_growth_node(state, mapping) {
+        let Some(frontier) = next_frontier_atom(state, mapping) else {
+            break;
+        };
+        extend_frontier_atom(state, mapping, frontier);
+        if state.timed_out || state.resource_limited || state.proven_optimal {
+            break;
+        }
+        match state.objective {
+            McsObjective::AtomCount => {
+                state.atom_bound.set_excluded(frontier, true);
+                excluded_atoms.push(frontier);
+            }
+            McsObjective::BondCount => {
+                exclude_frontier_bonds(state, mapping, frontier, &mut excluded_bonds);
+            }
+        }
+    }
+    for atom in excluded_atoms.into_iter().rev() {
+        state.atom_bound.set_excluded(atom, false);
+    }
+    if let Some(bonds) = &mut state.bond_bound {
+        for bond in excluded_bonds {
+            bonds.set_excluded(bond, false);
+        }
+    }
+}
+
+fn reserve_search_node(state: &mut McsState<'_>) -> bool {
+    if let Some(limit) = state.config.max_search_nodes {
+        if state.search_nodes >= limit {
+            state.resource_limited = true;
+            return false;
+        }
+        state.search_nodes += 1;
     }
     true
 }
 
-fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
-    if let Some(limit) = state.config.max_search_nodes {
-        if state.search_nodes >= limit {
-            state.resource_limited = true;
-            return;
-        }
-        state.search_nodes += 1;
+fn prepare_growth_node(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
+    if state.proven_optimal {
+        return false;
+    }
+    if !reserve_search_node(state) {
+        return false;
     }
     if !consider_mapping(state, mapping) {
-        return;
+        return false;
     }
-
-    // Check timeout.
-    if let Some(d) = state.deadline
-        && Instant::now() >= d
+    if let Some(deadline) = state.deadline
+        && Instant::now() >= deadline
     {
         state.timed_out = true;
-        return;
+        return false;
     }
-    if state.timed_out || state.resource_limited {
-        return;
-    }
-    if state.proven_optimal {
-        return;
-    }
+    !state.timed_out
+        && !state.resource_limited
+        && !state.proven_optimal
+        && state.bounds_can_improve()
+}
 
-    // Upper bound pruning: compute max additional atoms reachable from current state.
-    let additional_ub = upper_bound_additional(
-        state.mols,
-        mapping,
-        &state.excluded,
-        &state.config.atom_compare,
-        state.rdkit_heavy,
-    );
-    // Atom-only bounds cannot prove that a tied-size branch has no better
-    // bond count. In particular, a chain found before a triangle must not
-    // prevent the latter from becoming the best MCS.
-    if mapping.size + additional_ub < state.best.size {
-        return;
-    }
+fn next_frontier_atom(state: &McsState<'_>, mapping: &PartialMapping) -> Option<AtomIdx> {
+    let source = state.mols[0];
+    mapping.query_to_mol.iter().find_map(|row| {
+        source
+            .neighbors(row[0])
+            .find(|&(atom, bond)| {
+                !mapping.is_mapped(0, atom)
+                    && !state.atom_bound.is_excluded(atom)
+                    && state.source_bond_allowed(bond)
+            })
+            .map(|(atom, _)| atom)
+    })
+}
 
-    // Find frontier candidates: unmapped, non-excluded neighbors of already-mapped
-    // atoms in mol[0]. For each such neighbor `n0`, decide (in a moment) whether to
-    // include it in the mapping or exclude it from this branch entirely.
-    let mol0 = state.mols[0];
-
-    let mut frontier: Vec<AtomIdx> = Vec::new();
-    for row in &mapping.query_to_mol {
-        let a0 = row[0];
-        for (nb, _) in mol0.neighbors(a0) {
-            if !mapping.is_mapped(0, nb)
-                && !state.excluded[nb.0 as usize]
-                && !frontier.contains(&nb)
-            {
-                frontier.push(nb);
+fn exclude_frontier_bonds(
+    state: &mut McsState<'_>,
+    mapping: &PartialMapping,
+    frontier: AtomIdx,
+    excluded: &mut Vec<BondIdx>,
+) {
+    // The include branch covered every assignment in which any current
+    // edge from the mapping to this vertex is common. Exclude those edges.
+    // Later vertices can still connect the frontier by other edges.
+    if let Some(bonds) = &mut state.bond_bound {
+        for (neighbor, bond) in state.mols[0].neighbors(frontier) {
+            if mapping.is_mapped(0, neighbor) && bonds.is_allowed(bond) {
+                bonds.set_excluded(bond, true);
+                excluded.push(bond);
             }
         }
-    }
-
-    if frontier.is_empty() {
-        return;
-    }
-
-    // Only the first frontier atom is branched on per call (the "connected growth"
-    // property), but BOTH outcomes for it are explored -- include it now, or exclude
-    // it and let a later frontier atom be tried in its place. Without the exclude
-    // branch, a `n0` that happens to be incompatible with every other molecule kills
-    // the whole subtree even when skipping it (and mapping a different frontier atom
-    // instead) would reach a strictly larger common substructure -- see
-    // scratch_repro_frontier0_only_incompleteness.
-    let n0 = frontier[0];
-
-    extend_frontier_atom(state, mapping, n0);
-
-    // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
-    // gets a turn. Reset on the way back out -- exclusion only applies within this
-    // subtree, not to sibling branches elsewhere in the search.
-    if !state.timed_out && !state.resource_limited {
-        state.excluded[n0.0 as usize] = true;
-        grow(state, mapping);
-        state.excluded[n0.0 as usize] = false;
     }
 }
 
@@ -648,9 +760,9 @@ fn collect_seed_candidates(
 // ---------------------------------------------------------------------------
 
 fn rdkit_heavy_atom_class(atom: &chematic_core::Atom) -> u8 {
-    match (atom.wildcard, atom.element.atomic_number()) {
-        (true, _) => 0,
-        (false, 1) => 1,
+    match crate::match_vf2::effective_atomic_number(atom) {
+        0 => 0,
+        1 => 1,
         _ => 2,
     }
 }
@@ -665,18 +777,8 @@ fn atoms_compatible(
     match_charge: bool,
     match_isotope: bool,
 ) -> bool {
-    let base = if rdkit_heavy {
-        rdkit_heavy_atom_class(a) == rdkit_heavy_atom_class(b)
-    } else {
-        match compare {
-            AtomCompare::Elements => a.element.atomic_number() == b.element.atomic_number(),
-            AtomCompare::AnyHeavyAtom => {
-                a.element.atomic_number() > 1 && b.element.atomic_number() > 1
-            }
-            AtomCompare::Any => true,
-        }
-    };
-    if !base {
+    let class = bounds::atom_class(a, compare, rdkit_heavy);
+    if class.is_none() || class != bounds::atom_class(b, compare, rdkit_heavy) {
         return false;
     }
     if match_chiral
@@ -688,7 +790,7 @@ fn atoms_compatible(
     if match_charge && a.charge != b.charge {
         return false;
     }
-    if match_isotope && a.isotope != b.isotope {
+    if match_isotope && a.isotope.unwrap_or(0) != b.isotope.unwrap_or(0) {
         return false;
     }
     true
@@ -743,6 +845,28 @@ fn mapping_has_complete_rings(
 // Build output QueryMolecule
 // ---------------------------------------------------------------------------
 
+fn constrain_atom(
+    mut query: AtomQuery,
+    atom: &chematic_core::Atom,
+    config: &McsConfig,
+) -> AtomQuery {
+    if config.match_charge {
+        query = AtomQuery::And(
+            Box::new(query),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge))),
+        );
+    }
+    if config.match_isotope {
+        query = AtomQuery::And(
+            Box::new(query),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Isotope(
+                atom.isotope.unwrap_or(0),
+            ))),
+        );
+    }
+    query
+}
+
 fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
     let mol0 = mols[0];
@@ -761,7 +885,7 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
         // input even though the search mapped it successfully.
         let mut numbers = Vec::new();
         for (&mol, &atom_idx) in mols.iter().zip(row) {
-            let number = mol.atom(atom_idx).element.atomic_number();
+            let number = crate::match_vf2::effective_atomic_number(mol.atom(atom_idx));
             if !numbers.contains(&number) {
                 numbers.push(number);
             }
@@ -771,7 +895,7 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
             .map(|number| AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)))
             .reduce(|left, right| AtomQuery::Or(Box::new(left), Box::new(right)))
             .expect("an MCS mapping includes its first input");
-        qmol.add_atom(query);
+        qmol.add_atom(constrain_atom(query, mol0.atom(row[0]), config));
     }
 
     // Add only bonds present in every input.  Extra edges in any one input
@@ -808,6 +932,9 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
         }
     }
 
+    if config.match_chiral_tag {
+        constrain_query_chirality(&mut qmol, mols, |q, m| mapping.query_to_mol[q][m]);
+    }
     qmol
 }
 
@@ -846,13 +973,13 @@ fn bond_order_to_query(order: BondOrder) -> BondQuery {
 // Convert a single molecule to a QueryMolecule (for the single-mol case)
 // ---------------------------------------------------------------------------
 
-fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
+fn molecule_to_query(mol: &Molecule, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
 
     for (_, atom) in mol.atoms() {
-        let an = atom.element.atomic_number();
+        let an = crate::match_vf2::effective_atomic_number(atom);
         let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
-        qmol.add_atom(query);
+        qmol.add_atom(constrain_atom(query, atom, config));
     }
 
     for (_, bond) in mol.bonds() {
@@ -860,6 +987,9 @@ fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }
 
+    if config.match_chiral_tag {
+        constrain_query_chirality(&mut qmol, &[mol], |q, _| AtomIdx(q as u32));
+    }
     qmol
 }
 

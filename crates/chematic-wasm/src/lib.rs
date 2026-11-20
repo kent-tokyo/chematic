@@ -208,6 +208,17 @@ impl MolHandle {
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }
 
+    /// Copy the molecule with RDKit's SMILES reader conventions, including
+    /// its stereo tags and hydrogen suppression. Throws when conversion
+    /// cannot represent the input.
+    pub fn rdkit_parsed(&self) -> Result<MolHandle, JsValue> {
+        let molecule = chematic_smiles::rdkit_parsed_molecule(&self.inner)
+            .ok_or_else(|| JsValue::from_str("RDKit could not represent this molecule"))?;
+        Ok(MolHandle {
+            inner: std::rc::Rc::new(molecule),
+        })
+    }
+
     /// Average molecular weight (Da).
     pub fn molecular_weight(&self) -> f64 {
         chematic_chem::molecular_weight(&self.inner)

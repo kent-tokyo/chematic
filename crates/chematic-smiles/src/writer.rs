@@ -46,7 +46,7 @@ pub(crate) fn flanks_marked_double_bond(mol: &Molecule, bidx: BondIdx) -> bool {
                     .neighbors(far)
                     .any(|(_, sb)| sb != db && sb != bidx && raw_bond_direction(mol, sb).is_some())
                 && !in_ring_smaller_than_eight(mol, db)
-        })
+        }) || chematic_core::cumulene::planar_cumulene_at(mol, end).is_some()
     })
 }
 

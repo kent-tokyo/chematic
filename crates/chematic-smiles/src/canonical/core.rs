@@ -802,6 +802,7 @@ pub(crate) struct CanonicalWriter<'a> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 struct EzGeometryFact {
     double_bond: BondIdx,
+    cumulene: bool,
     double_key: (u64, u64),
     ends: [EzGeometryEnd; 2],
     same_side: bool,

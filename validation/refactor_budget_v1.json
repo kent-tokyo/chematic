@@ -1,7 +1,7 @@
 {
   "excluded_paths": [
     "crates/chematic-3d/src/rdkit_embed/torsion_prefs.rs",
-    "crates/chematic-chem/src/rdkit_isotope_mass_table.rs",
+    "crates/chematic-core/src/rdkit_isotope_mass_table.rs",
     "crates/chematic-ff/src/mmff94_energy/angle/table.rs",
     "crates/chematic-ff/src/mmff94_energy/mmff94s.rs",
     "crates/chematic-ff/src/mmff94_numeric_type_registry.rs",
@@ -30,10 +30,6 @@
     "crates/chematic-chem/src/hydrogen.rs::remove_hydrogens#1": {
       "decisions": 29,
       "lines": 188
-    },
-    "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
-      "decisions": 24,
-      "lines": 148
     },
     "crates/chematic-core/src/element.rs::from_symbol#1": {
       "decisions": 1,
@@ -106,10 +102,6 @@
     "crates/chematic-rxn/src/reaction.rs::expand_atomic_number_primitives_normalized#1": {
       "decisions": 58,
       "lines": 303
-    },
-    "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
-      "decisions": 33,
-      "lines": 171
     },
     "crates/chematic-smiles/src/parser.rs::parse_chain#1": {
       "decisions": 27,

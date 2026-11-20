@@ -32,6 +32,16 @@ pub(crate) fn remove_hs_with(
     update_explicit_count: bool,
     sanitize: bool,
 ) -> Result<Vec<usize>, RdkitSmilesError> {
+    remove_hs_inner(mol, update_explicit_count, sanitize.then_some(sanitize_mol))
+}
+
+type Sanitize = fn(&mut Mol) -> Result<(), RdkitSmilesError>;
+
+fn remove_hs_inner(
+    mol: &mut Mol,
+    update_explicit_count: bool,
+    sanitize: Option<Sanitize>,
+) -> Result<Vec<usize>, RdkitSmilesError> {
     for a in 0..mol.atoms.len() {
         mol.update_atom_property_cache(a, false)?;
     }
@@ -45,8 +55,8 @@ pub(crate) fn remove_hs_with(
     }
     // `atomsToRemove` is never empty for a non-empty molecule.
     if !mol.atoms.is_empty() {
-        if sanitize {
-            sanitize_mol(mol)?;
+        if let Some(sanitize) = sanitize {
+            sanitize(mol)?;
         }
         for a in 0..mol.atoms.len() {
             if !mol.atoms[a].no_implicit
@@ -64,11 +74,30 @@ pub(crate) fn remove_hs_with(
 /// `sanitizeMol` on a molecule whose hydrogen atoms all stay graph atoms
 /// (RDKit's state after `Chem.AddHs`).
 pub(crate) fn sanitize_keeping_hs(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+    sanitize_keeping_hs_with(mol, sanitize_mol)
+}
+
+pub(super) fn sanitize_cleanup_output(
+    mol: &mut Mol,
+    keep_hs: bool,
+) -> Result<(), RdkitSmilesError> {
+    fn sanitize_cleanup(mol: &mut Mol) -> Result<(), RdkitSmilesError> {
+        sanitize_impl(mol, true, set_cleanup_output_aromaticity)
+    }
+
+    if keep_hs {
+        sanitize_keeping_hs_with(mol, sanitize_cleanup)
+    } else {
+        remove_hs_inner(mol, true, Some(sanitize_cleanup)).map(|_| ())
+    }
+}
+
+fn sanitize_keeping_hs_with(mol: &mut Mol, sanitize: Sanitize) -> Result<(), RdkitSmilesError> {
     for a in 0..mol.atoms.len() {
         mol.update_atom_property_cache(a, false)?;
     }
     if !mol.atoms.is_empty() {
-        sanitize_mol(mol)?;
+        sanitize(mol)?;
     }
     Ok(())
 }
@@ -207,6 +236,14 @@ pub(crate) fn sanitize_mol_with(
     mol: &mut Mol,
     organometallics: bool,
 ) -> Result<(), RdkitSmilesError> {
+    sanitize_impl(mol, organometallics, set_aromaticity)
+}
+
+fn sanitize_impl(
+    mol: &mut Mol,
+    organometallics: bool,
+    assign_aromaticity: fn(&mut Mol),
+) -> Result<(), RdkitSmilesError> {
     clean_up(mol)?;
     if organometallics {
         clean_up_organometallics(mol)?;
@@ -215,13 +252,37 @@ pub(crate) fn sanitize_mol_with(
     mol.find_rings()?;
     kekulize(mol)?;
     assign_radicals(mol);
-    set_aromaticity(mol);
+    assign_aromaticity(mol);
     set_conjugation(mol);
     set_hybridization(mol);
     cleanup_chirality(mol);
     adjust_hs(mol)?;
     mol.update_property_cache(true)?;
     Ok(())
+}
+
+// Aromatic perception can turn a valid Kekulé azole into a representation
+// that cannot be parsed back, for example `C1=N[N+2]=NN1`. Preserve the
+// sanitized Kekulé graph when the newly assigned aromatic bonds cannot be
+// kekulized again. Ordinary RDKit-compatible parsing keeps RDKit's behavior.
+fn set_cleanup_output_aromaticity(mol: &mut Mol) {
+    let is_dicationic_nitrogen = |atom: &super::mol::Atom| atom.anum == 7 && atom.charge == 2;
+    let kekule_form = mol
+        .atoms
+        .iter()
+        .enumerate()
+        .any(|(a, atom)| is_dicationic_nitrogen(atom) && mol.num_atom_rings(a) != 0)
+        .then(|| mol.clone());
+    set_aromaticity(mol);
+    if let Some(kekule) = kekule_form
+        && mol
+            .atoms
+            .iter()
+            .any(|atom| atom.aromatic && is_dicationic_nitrogen(atom))
+        && kekulize(&mut mol.clone()).is_err()
+    {
+        *mol = kekule;
+    }
 }
 
 /// `cleanUp`: nitro-like nitrogens, P(=O)=C/N, halogen oxides.

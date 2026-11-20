@@ -6,6 +6,9 @@ use crate::{
 };
 use wasm_bindgen::prelude::*;
 
+mod rdkit_rdk;
+pub use rdkit_rdk::rdkit_rdk_config_detail_json;
+
 /// Tanimoto similarity between two molecules using ECFP4 fingerprints.
 #[wasm_bindgen]
 pub fn tanimoto_ecfp4(a: &MolHandle, b: &MolHandle) -> f64 {
@@ -1073,6 +1076,182 @@ pub fn rdkit_ecfp4_detail_json(mol: &MolHandle) -> Result<String, JsValue> {
         &sorted_bit_info(&result.raw_bit_info),
         &sorted_bit_info(&result.folded_bit_info),
     ))
+}
+
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct AtomPairOptions {
+    nbits: usize,
+    min_distance: u32,
+    max_distance: u32,
+    include_chirality: bool,
+    count_bounds: Option<Vec<u32>>,
+}
+
+impl Default for AtomPairOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitAtomPairConfig::default();
+        Self {
+            nbits: default.nbits,
+            min_distance: default.min_distance,
+            max_distance: default.max_distance,
+            include_chirality: default.include_chirality,
+            count_bounds: default.count_bounds,
+        }
+    }
+}
+
+/// Return packed bits, folded counts and unhashed counts for 2D Atom Pair.
+/// The JSON options are optional. Set `countBounds` to null to disable count
+/// simulation. Counts are returned as sorted [identifier, count] arrays.
+#[wasm_bindgen]
+pub fn rdkit_atom_pair_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Atom Pair options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: AtomPairOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitAtomPairConfig {
+        nbits: options.nbits,
+        min_distance: options.min_distance,
+        max_distance: options.max_distance,
+        include_chirality: options.include_chirality,
+        count_bounds: options.count_bounds,
+    };
+    let result = chematic_fp::rdkit_atom_pair_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.fingerprint.to_le_bytes(),
+        "foldedCounts": result.folded_counts,
+        "sparseCounts": result.sparse_counts,
+    }))
+}
+
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct TorsionOptions {
+    atom_count: usize,
+    nbits: usize,
+    only_shortest_paths: bool,
+    include_chirality: bool,
+    count_bounds: Option<Vec<u32>>,
+}
+
+impl Default for TorsionOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitTorsionConfig::default();
+        Self {
+            atom_count: default.atom_count,
+            nbits: default.nbits,
+            only_shortest_paths: default.only_shortest_paths,
+            include_chirality: default.include_chirality,
+            count_bounds: default.count_bounds,
+        }
+    }
+}
+
+/// Return packed bits, folded counts and unhashed Topological Torsion counts.
+/// Pass JSON options or `{}` for defaults. A null `countBounds` disables
+/// simulation. Sparse identifiers are decimal strings to retain all 64 bits.
+#[wasm_bindgen]
+pub fn rdkit_torsion_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Topological Torsion options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: TorsionOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitTorsionConfig {
+        atom_count: options.atom_count,
+        nbits: options.nbits,
+        only_shortest_paths: options.only_shortest_paths,
+        include_chirality: options.include_chirality,
+        count_bounds: options.count_bounds,
+    };
+    let result = chematic_fp::rdkit_torsion_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let sparse_counts: Vec<_> = result
+        .sparse_counts
+        .into_iter()
+        .map(|(code, count)| (code.to_string(), count))
+        .collect();
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.fingerprint.to_le_bytes(),
+        "foldedCounts": result.folded_counts,
+        "sparseCounts": sparse_counts,
+    }))
+}
+
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct LayeredOptions {
+    layer_flags: u32,
+    min_path: usize,
+    max_path: usize,
+    nbits: usize,
+    branched_paths: bool,
+    from_atoms: Vec<u32>,
+    set_only_bits: Option<Vec<u8>>,
+    atom_counts: Option<Vec<u32>>,
+    max_visits: u64,
+    max_paths: usize,
+}
+
+impl Default for LayeredOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitLayeredConfig::default();
+        Self {
+            layer_flags: default.layer_flags,
+            min_path: default.min_path,
+            max_path: default.max_path,
+            nbits: default.fp_size,
+            branched_paths: default.branched_paths,
+            from_atoms: Vec::new(),
+            set_only_bits: default.set_only_bits,
+            atom_counts: default.atom_counts,
+            max_visits: default.max_visits,
+            max_paths: default.max_paths,
+        }
+    }
+}
+
+/// Return the configured RDKit Layered fingerprint and per-atom counters as JSON.
+/// Pass `{}` for defaults. `setOnlyBits` is an optional LSB-first packed byte
+/// array, and `atomCounts` optionally seeds the returned u32 counters.
+#[wasm_bindgen]
+pub fn rdkit_layered_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Layered options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: LayeredOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitLayeredConfig {
+        layer_flags: options.layer_flags,
+        min_path: options.min_path,
+        max_path: options.max_path,
+        fp_size: options.nbits,
+        branched_paths: options.branched_paths,
+        from_atoms: options
+            .from_atoms
+            .into_iter()
+            .map(chematic_core::AtomIdx)
+            .collect(),
+        set_only_bits: options.set_only_bits,
+        atom_counts: options.atom_counts,
+        max_visits: options.max_visits,
+        max_paths: options.max_paths,
+    };
+    let result = chematic_fp::rdkit_layered_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.bits,
+        "atomCounts": result.atom_counts,
+    }))
 }
 
 /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a

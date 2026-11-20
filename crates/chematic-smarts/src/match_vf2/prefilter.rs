@@ -22,30 +22,58 @@ pub(super) fn implied_atomic_number(q: &AtomQuery) -> Option<u8> {
     }
 }
 
+/// Atom elements an embedding requires, packed by atomic number.
+pub fn required_element_mask(query: &QueryMolecule) -> u128 {
+    query.atoms.iter().fold(0, |mask, atom| {
+        let Some(z) = implied_atomic_number(&atom.query).filter(|&z| (1..128).contains(&z)) else {
+            return mask;
+        };
+        mask | (1u128 << z)
+    })
+}
+
+/// Positive atomic numbers present in a molecule, in the format used by
+/// [`required_element_mask`].
+pub fn element_presence(mol: &Molecule) -> u128 {
+    mol.atoms()
+        .map(|(_, atom)| effective_atomic_number(atom))
+        .filter(|number| (1..128).contains(number))
+        .fold(0, |mask, number| mask | (1u128 << number))
+}
+
 /// Necessary condition for any embedding: the target has at least as many
 /// atoms of each element as the query has atoms pinned to that element
 /// (embeddings are injective). `false` proves there is no match.
 pub(super) fn element_counts_allow_match(query: &QueryMolecule, mol: &Molecule) -> bool {
+    // For very large queries the compact counters may not fit. Skipping this
+    // optional screen leaves the exact match decision to the search.
+    if query.atoms.len() > usize::from(u16::MAX) {
+        return true;
+    }
     let mut need = [0u16; 128];
-    let mut any = false;
+    let mut remaining = 0;
     for atom in &query.atoms {
         if let Some(z) = implied_atomic_number(&atom.query)
             && (z as usize) < need.len()
         {
             need[z as usize] += 1;
-            any = true;
+            remaining += 1;
         }
     }
-    if !any {
+    if remaining == 0 {
         return true;
     }
     for (_, atom) in mol.atoms() {
-        let z = atom.element.atomic_number() as usize;
+        let z = effective_atomic_number(atom) as usize;
         if z < need.len() && need[z] > 0 {
             need[z] -= 1;
+            remaining -= 1;
+            if remaining == 0 {
+                return true;
+            }
         }
     }
-    need.iter().all(|&n| n == 0)
+    false
 }
 
 /// The screens [`has_match_with_config`] applies before searching: `false`

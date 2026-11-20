@@ -380,99 +380,13 @@ fn find_matches_impl(
     (results, budget_exhausted)
 }
 
-/// Visit every embedding [`find_matches_with_config`] returns for `config`
-/// with `uniquify: false` and `max_matches: None`, in the same order, without
-/// materializing result maps. `visit` receives the mapping as a slice indexed
-/// by query atom (`mapping[q]` is the target atom index of query atom `q`).
-///
-/// `config.uniquify` and `config.max_matches` are ignored; a configured
-/// `max_visit_budget` is honored exactly as in the map-returning search, and
-/// the returned flag reports whether it was exhausted.
-pub fn for_each_embedding(
-    query: &QueryMolecule,
-    mol: &Molecule,
-    config: &MatchConfig,
-    mut visit: impl FnMut(&[u32]),
-) -> bool {
-    if query.atoms.is_empty() || query.atoms.len() > mol.atom_count() {
-        return false;
-    }
-    if config.max_visit_budget.is_none() && !element_counts_allow_match(query, mol) {
-        return false;
-    }
-    let ctx = EvalCtx {
-        mol,
-        rings_given: None,
-        rings_lazy: std::cell::OnceCell::new(),
-        ring_atoms_lazy: std::cell::OnceCell::new(),
-        hybridization_lazy: std::cell::OnceCell::new(),
-        ez_facts_lazy: std::sync::OnceLock::new(),
-        config,
-        visit_budget: std::cell::Cell::new(config.max_visit_budget.unwrap_or(u64::MAX)),
-        budget_exhausted: std::cell::Cell::new(false),
-        min_ring_size_by_atom: std::cell::RefCell::new(None),
-        cycle_atoms: std::cell::OnceCell::new(),
-        prune_warmup: std::cell::Cell::new(0),
-        plans: std::cell::RefCell::new(FxHashMap::default()),
-        scratch: std::cell::RefCell::new(Vec::new()),
-    };
-    let mut st = MapState::new(query, mol.atom_count(), None, &ctx);
-    visit_recursive(query, &ctx, &mut st, &mut visit);
-    ctx.budget_exhausted.get()
-}
+mod embedding_visitor;
+pub use embedding_visitor::{for_each_embedding, has_at_least_distinct_embeddings};
 
-/// [`match_recursive`] without result maps: the same candidates, checks and
-/// visiting order, calling `visit` at every complete embedding.
-fn visit_recursive(
-    query: &QueryMolecule,
-    ctx: &EvalCtx<'_>,
-    st: &mut MapState,
-    visit: &mut impl FnMut(&[u32]),
-) {
-    let remaining = ctx.visit_budget.get();
-    if remaining == 0 {
-        ctx.budget_exhausted.set(true);
-        return;
-    }
-    ctx.visit_budget.set(remaining - 1);
-
-    if st.count == query.atoms.len() {
-        if mapped_chirality_compatible(query, &st.q2t, ctx) {
-            visit(&st.q2t);
-        }
-        return;
-    }
-    let q_next = st.info.plan[st.count];
-    let candidates = Candidates::new(q_next, st, query, ctx);
-    for t in candidates.iter() {
-        let t_idx = AtomIdx(t);
-        if st.used[t as usize] {
-            continue;
-        }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
-        {
-            continue;
-        }
-        // Exact pruning (dead branches only); no result-map layout to keep.
-        if ctx.prunes_low_degree(st, q_next, t_idx)
-            || ctx.prunes_acyclic_target(query, st, q_next, t_idx)
-        {
-            continue;
-        }
-        if !eval_atom_query(&query.atoms[q_next].query, t_idx, ctx) {
-            continue;
-        }
-        if !bonds_compatible(q_next, t_idx, st, query, ctx) {
-            continue;
-        }
-        st.set(q_next, t_idx);
-        visit_recursive(query, ctx, st, visit);
-        st.unset(q_next, t_idx);
-    }
-}
 mod prefilter;
 pub(crate) use prefilter::passes_size_and_element_screen;
 use prefilter::{element_counts_allow_match, implied_atomic_number};
+pub use prefilter::{element_presence, required_element_mask};
 
 /// Whether `query` has at least one embedding in `mol`.
 ///
@@ -495,7 +409,7 @@ pub fn has_match_with_config(query: &QueryMolecule, mol: &Molecule, config: &Mat
     {
         return mol
             .atoms()
-            .any(|(_, atom)| !atom.wildcard && atom.element.atomic_number() == *atomic_number);
+            .any(|(_, atom)| effective_atomic_number(atom) == *atomic_number);
     }
     // The element screen skips work a budgeted search would have counted, so
     // it is only used when no visit budget is configured.
@@ -530,6 +444,16 @@ fn exists_match(
         plans: std::cell::RefCell::new(FxHashMap::default()),
         scratch: std::cell::RefCell::new(Vec::new()),
     };
+    if let [atom] = query.atoms.as_slice()
+        && query.bonds.is_empty()
+        && config.max_visit_budget.is_none()
+        && !config.use_chirality
+    {
+        let found = mol
+            .atoms()
+            .any(|(idx, _)| eval_atom_query(&atom.query, idx, &ctx));
+        return (found, false);
+    }
     let mut st = MapState::new(query, mol.atom_count(), None, &ctx);
     let found = has_match_recursive(query, &ctx, &mut st);
     (found, ctx.budget_exhausted.get())
@@ -736,7 +660,8 @@ fn match_recursive(
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next]
+            .is_some_and(|z| effective_atomic_number(ctx.mol.atom(t_idx)) != z)
         {
             continue;
         }
@@ -1069,18 +994,19 @@ fn eval_atom_query(q: &AtomQuery, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     }
 }
 
+pub(crate) fn effective_atomic_number(atom: &chematic_core::Atom) -> u8 {
+    // A target `*` carries a placeholder element but has atomic number zero.
+    if atom.wildcard {
+        0
+    } else {
+        atom.element.atomic_number()
+    }
+}
+
 fn eval_atom_primitive(p: &AtomPrimitive, idx: AtomIdx, ctx: &EvalCtx<'_>) -> bool {
     let atom = ctx.mol.atom(idx);
     match p {
-        // A target `*` atom has atomic number 0 (its element is a
-        // placeholder), as in RDKit: `[#6]` and `C` do not match it.
-        AtomPrimitive::AtomicNum(n) => {
-            if atom.wildcard {
-                *n == 0
-            } else {
-                atom.element.atomic_number() == *n
-            }
-        }
+        AtomPrimitive::AtomicNum(n) => effective_atomic_number(atom) == *n,
         AtomPrimitive::Symbol(s) => !atom.wildcard && atom.element.symbol() == s.as_str(),
         AtomPrimitive::Aromatic(a) => atom.aromatic == *a,
         AtomPrimitive::Charge(c) => atom.charge == *c,
@@ -1315,7 +1241,8 @@ fn has_match_recursive(query: &QueryMolecule, ctx: &EvalCtx<'_>, st: &mut MapSta
         if st.used[t as usize] {
             continue;
         }
-        if st.info.implied[q_next].is_some_and(|z| ctx.mol.atom(t_idx).element.atomic_number() != z)
+        if st.info.implied[q_next]
+            .is_some_and(|z| effective_atomic_number(ctx.mol.atom(t_idx)) != z)
         {
             continue;
         }

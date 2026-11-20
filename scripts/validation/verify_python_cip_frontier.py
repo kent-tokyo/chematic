@@ -16,16 +16,29 @@ CORPORA = (ROOT / 'validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi',
 
 
 def source_labels(values):
-    return sorted(['b', *sorted(v['bond_atoms']), v['descriptor']]
-                   if 'bond_idx' in v else ['a', v['atom_idx'], v['descriptor']]
-                  for v in values)
+    labels = []
+    for row in values:
+        if 'cumulene_atoms' in row:
+            axis = row['cumulene_atoms']
+            labels.append(['c', *min(axis, axis[::-1]), row['descriptor']])
+        elif 'bond_idx' in row:
+            labels.append(['b', *sorted(row['bond_atoms']), row['descriptor']])
+        else:
+            labels.append(['a', row['atom_idx'], row['descriptor']])
+    return sorted(labels)
 
 
 def rdkit_labels(mol):
-    return sorted([['a', a.GetIdx(), a.GetProp('_CIPCode')]
-                   for a in mol.GetAtoms() if a.HasProp('_CIPCode')]
-                  + [['b', *sorted((b.GetBeginAtomIdx(), b.GetEndAtomIdx())), b.GetProp('_CIPCode')]
-                     for b in mol.GetBonds() if b.HasProp('_CIPCode')])
+    relative = {'e': 'seqTrans', 'z': 'seqCis'}
+    atoms = [['a', atom.GetIdx(), atom.GetProp('_CIPCode')]
+             for atom in mol.GetAtoms() if atom.HasProp('_CIPCode')]
+    bonds = []
+    for bond in mol.GetBonds():
+        if bond.HasProp('_CIPCode'):
+            code = bond.GetProp('_CIPCode')
+            ends = sorted((bond.GetBeginAtomIdx(), bond.GetEndAtomIdx()))
+            bonds.append(['b', *ends, relative.get(code, code)])
+    return sorted(atoms + bonds)
 
 
 def main():

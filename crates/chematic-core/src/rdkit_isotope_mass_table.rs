@@ -1,4 +1,4 @@
-//! RDKit explicit-isotope mass table for `rdkit_molecular_weight`.
+//! RDKit explicit-isotope mass table for descriptors and CIP.
 //!
 //! Generated from RDKit's `PeriodicTable.GetMassForIsotope` for every
 //! recognized isotope. Unknown syntactically valid labels deliberately

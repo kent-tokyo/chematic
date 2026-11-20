@@ -2,6 +2,7 @@
 
 use std::fmt;
 
+use crate::match_chirality::{permutation_parity, query_has_positive_h_count};
 use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMolecule};
 
 /// An MCS query cannot be represented faithfully as SMARTS.
@@ -9,29 +10,64 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 pub enum McsSmartsError {
     InvalidGraph,
     UnsupportedAtomQuery,
+    UnsupportedChirality,
     UnsupportedBondQuery,
     TooManyRingClosures,
 }
 
 impl fmt::Display for McsSmartsError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if *self == Self::UnsupportedChirality {
+            return f.write_str("MCS SMARTS requires representable absolute tetrahedral stereo");
+        }
         write!(f, "{self:?}")
     }
 }
 
 impl std::error::Error for McsSmartsError {}
 
-fn atom_expression(query: &AtomQuery, out: &mut String) -> Result<(), McsSmartsError> {
+fn atom_alternatives(query: &AtomQuery, out: &mut String) -> Result<(), McsSmartsError> {
     match query {
         AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)) => {
             out.push('#');
             out.push_str(&number.to_string());
         }
         AtomQuery::Or(left, right) => {
-            atom_expression(left, out)?;
+            atom_alternatives(left, out)?;
             out.push(',');
-            atom_expression(right, out)?;
+            atom_alternatives(right, out)?;
         }
+        _ => return Err(McsSmartsError::UnsupportedAtomQuery),
+    }
+    Ok(())
+}
+
+fn atom_expression(
+    query: &AtomQuery,
+    out: &mut String,
+    chirality_swapped: &impl Fn() -> Result<bool, McsSmartsError>,
+) -> Result<(), McsSmartsError> {
+    let AtomQuery::And(left, right) = query else {
+        return atom_alternatives(query, out);
+    };
+    atom_expression(left, out, chirality_swapped)?;
+    // ';' binds more loosely than ',', so the predicate applies to every
+    // observed element alternative rather than just to its last branch.
+    match right.as_ref() {
+        AtomQuery::Primitive(AtomPrimitive::Charge(charge)) => {
+            out.push_str(&format!(";{charge:+}"));
+        }
+        AtomQuery::Primitive(AtomPrimitive::Isotope(mass)) => {
+            out.push_str(&format!(";{mass}*"));
+        }
+        AtomQuery::Primitive(AtomPrimitive::Chirality(kind @ (1 | 2))) => {
+            let clockwise = (*kind == 2) ^ chirality_swapped()?;
+            out.push_str(if clockwise { ";@@" } else { ";@" });
+        }
+        AtomQuery::Primitive(AtomPrimitive::Chirality(_)) => {
+            return Err(McsSmartsError::UnsupportedChirality);
+        }
+        AtomQuery::Primitive(AtomPrimitive::HCount(1)) => out.push_str(";H1"),
         _ => return Err(McsSmartsError::UnsupportedAtomQuery),
     }
     Ok(())
@@ -69,8 +105,9 @@ fn ring_label(number: usize, out: &mut String) {
 /// Serialize an MCS `QueryMolecule` without collapsing atom or bond alternatives.
 ///
 /// This accepts the `AtomicNum`/`Or` and bond-order/`Or` query subset emitted by
-/// MCS. Other query predicates and malformed graphs return an error rather than
-/// silently changing which molecules match. An empty query serializes to `""`.
+/// MCS, including trailing charge, isotope and absolute tetrahedral
+/// constraints projected onto the selected bonds. Other predicates and malformed graphs return an error. An
+/// empty query serializes to `""`.
 pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsError> {
     validate_graph(query)?;
     let layout = forest_layout(query)?;
@@ -111,6 +148,7 @@ fn validate_graph(query: &QueryMolecule) -> Result<(), McsSmartsError> {
 }
 
 struct Layout {
+    parent: Vec<Option<usize>>,
     children: Vec<Vec<(usize, usize)>>,
     ring_marks: Vec<Vec<(usize, usize, bool)>>,
     roots: Vec<usize>,
@@ -118,6 +156,7 @@ struct Layout {
 
 fn forest_layout(query: &QueryMolecule) -> Result<Layout, McsSmartsError> {
     let atom_count = query.atoms.len();
+    let mut parent = vec![None; atom_count];
     let mut children: Vec<Vec<(usize, usize)>> = vec![Vec::new(); atom_count];
     let mut ring_marks: Vec<Vec<(usize, usize, bool)>> = vec![Vec::new(); atom_count];
     let mut visited = vec![false; atom_count];
@@ -126,7 +165,13 @@ fn forest_layout(query: &QueryMolecule) -> Result<Layout, McsSmartsError> {
     let mut roots = Vec::new();
     let mut next_ring = 1;
 
-    for root in 0..atom_count {
+    // With a preceding atom, a bracket H has the same parity convention
+    // in the native and RDKit SMARTS readers.
+    let has_bracket_h = |i: usize| query_has_positive_h_count(&query.atoms[i].query);
+    let root_candidates = (0..atom_count)
+        .filter(|&i| !has_bracket_h(i))
+        .chain((0..atom_count).filter(|&i| has_bracket_h(i)));
+    for root in root_candidates {
         if visited[root] {
             continue;
         }
@@ -147,6 +192,7 @@ fn forest_layout(query: &QueryMolecule) -> Result<Layout, McsSmartsError> {
             if !visited[neighbor] {
                 visited[neighbor] = true;
                 tree_edge[bond_idx] = true;
+                parent[neighbor] = Some(current);
                 children[current].push((bond_idx, neighbor));
                 stack.push((neighbor, 0));
             } else {
@@ -162,10 +208,46 @@ fn forest_layout(query: &QueryMolecule) -> Result<Layout, McsSmartsError> {
     }
 
     Ok(Layout {
+        parent,
         children,
         ring_marks,
         roots,
     })
+}
+
+fn chirality_swapped(
+    query: &QueryMolecule,
+    layout: &Layout,
+    atom: usize,
+) -> Result<bool, McsSmartsError> {
+    let stored = &query.adj[atom];
+    let bracket_h = query_has_positive_h_count(&query.atoms[atom].query);
+    if stored.len() < 3 {
+        return Ok(false);
+    }
+    if stored.len() > 4 || (bracket_h && (stored.len() != 3 || layout.parent[atom].is_none())) {
+        return Err(McsSmartsError::UnsupportedChirality);
+    }
+    let stored_order: Vec<_> = stored.iter().map(|&(_, n)| n as u32).collect();
+    let written_order: Vec<_> = layout.parent[atom]
+        .into_iter()
+        .chain(layout.ring_marks[atom].iter().map(|&(bond, _, _)| {
+            let bond = &query.bonds[bond];
+            if bond.atom1 == atom {
+                bond.atom2
+            } else {
+                bond.atom1
+            }
+        }))
+        .chain(layout.children[atom].iter().map(|&(_, n)| n))
+        .map(|n| n as u32)
+        .collect();
+    let even =
+        permutation_parity(&stored_order, &written_order).ok_or(McsSmartsError::InvalidGraph)?;
+    let stored_has_predecessor = stored.first().is_some_and(|&(_, n)| n < atom);
+    // A bracket H is first at a root and second after the preceding atom.
+    let hydrogen_swapped = bracket_h && stored_has_predecessor != layout.parent[atom].is_some();
+    Ok(!even ^ hydrogen_swapped)
 }
 
 fn render_layout(query: &QueryMolecule, layout: &Layout) -> Result<String, McsSmartsError> {
@@ -194,7 +276,9 @@ fn render_layout(query: &QueryMolecule, layout: &Layout) -> Result<String, McsSm
                         return Err(McsSmartsError::UnsupportedAtomQuery);
                     }
                     out.push('[');
-                    atom_expression(&atom.query, &mut out)?;
+                    atom_expression(&atom.query, &mut out, &|| {
+                        chirality_swapped(query, layout, atom_idx)
+                    })?;
                     out.push(']');
                     for &(bond_idx, ring, opening) in &layout.ring_marks[atom_idx] {
                         if opening {
@@ -225,7 +309,135 @@ fn render_layout(query: &QueryMolecule, layout: &Layout) -> Result<String, McsSm
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{McsConfig, find_matches, find_mcs_with_config, parse_smarts};
+    use crate::{MatchConfig, McsConfig, find_matches, find_mcs_with_config, parse_smarts};
+
+    #[test]
+    fn complete_tetrahedral_query_round_trips_a_stereocenter_on_a_ring() {
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let match_config = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        let parse = |smiles| chematic_smiles::parse(smiles).unwrap();
+        let left = parse("[C@H]1(N)CCOC1");
+        let right = parse("N[C@H]1CCOC1");
+        let inverted = parse("N[C@@H]1CCOC1");
+        let mcs = find_mcs_with_config(&[&left, &right], &config);
+        assert_eq!(mcs.atom_count(), left.atom_count());
+        let smarts = mcs_query_to_smarts(&mcs).unwrap();
+        let roundtrip = parse_smarts(&smarts).unwrap();
+        for query in [&mcs, &roundtrip] {
+            assert!(
+                crate::has_match_with_config(query, &left, &match_config),
+                "{smarts}"
+            );
+            assert!(
+                crate::has_match_with_config(query, &right, &match_config),
+                "{smarts}"
+            );
+            assert!(
+                !crate::has_match_with_config(query, &inverted, &match_config),
+                "{smarts}"
+            );
+        }
+    }
+
+    #[test]
+    fn partial_tetrahedral_queries_distinguish_orientation_when_three_bonds_remain() {
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let matching = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        let parse = |smiles| chematic_smiles::parse(smiles).unwrap();
+        let iodine = parse("F[C@](Cl)(Br)I");
+        let implicit_h = parse("F[C@H](Cl)Br");
+        let inverted = parse("F[C@@H](Cl)Br");
+        let achiral = parse("FC(Cl)Br");
+        let mcs = find_mcs_with_config(&[&iodine, &implicit_h], &config);
+        assert_eq!((mcs.atom_count(), mcs.bonds.len()), (4, 3));
+        let projected = parse_smarts(&mcs_query_to_smarts(&mcs).unwrap()).unwrap();
+        for query in [&mcs, &projected] {
+            for (mol, hit) in [
+                (&iodine, true),
+                (&implicit_h, true),
+                (&inverted, false),
+                (&achiral, false),
+            ] {
+                assert_eq!(crate::has_match_with_config(query, mol, &matching), hit);
+            }
+        }
+        let smaller = find_mcs_with_config(&[&iodine, &inverted], &config);
+        assert_eq!((smaller.atom_count(), smaller.bonds.len()), (3, 2));
+        let projected = parse_smarts(&mcs_query_to_smarts(&smaller).unwrap()).unwrap();
+        for mol in [&iodine, &inverted] {
+            assert!(crate::has_match_with_config(&projected, mol, &matching));
+        }
+        assert!(!crate::has_match_with_config(
+            &projected, &achiral, &matching
+        ));
+    }
+
+    #[test]
+    fn stereo_conflict_can_omit_a_ring_edge_and_keep_all_atoms() {
+        let parse = |smiles| chematic_smiles::parse(smiles).unwrap();
+        let left = parse("N[C@H]1CCOC1");
+        let right = parse("N[C@@H]1CCOC1");
+        let config = McsConfig {
+            match_chiral_tag: true,
+            ..McsConfig::default()
+        };
+        let matching = MatchConfig {
+            use_chirality: true,
+            ..MatchConfig::default()
+        };
+        for objective in [
+            crate::McsObjective::AtomCount,
+            crate::McsObjective::BondCount,
+        ] {
+            let outcome =
+                crate::find_mcs_with_objective_checked(&[&left, &right], &config, objective);
+            assert!(matches!(outcome, crate::McsOutcome::Exhaustive(_)));
+            let query = outcome.into_query();
+            assert_eq!((query.atom_count(), query.bonds.len()), (6, 5));
+            let projected = parse_smarts(&mcs_query_to_smarts(&query).unwrap()).unwrap();
+            assert!(crate::has_match_with_config(&projected, &left, &matching));
+            assert!(crate::has_match_with_config(&projected, &right, &matching));
+
+            let complete_rings = McsConfig {
+                complete_rings_only: true,
+                ..config.clone()
+            };
+            let result = crate::find_mcs_with_objective_checked(
+                &[&left, &right],
+                &complete_rings,
+                objective,
+            )
+            .into_query();
+            assert_eq!((result.atom_count(), result.bonds.len()), (5, 5));
+        }
+    }
+
+    #[test]
+    fn dummy_atom_in_mcs_serializes_with_its_effective_atomic_number() {
+        let dummy = chematic_smiles::parse("[*]O").unwrap();
+        let carbon = chematic_smiles::parse("CO").unwrap();
+        let config = McsConfig::default();
+        let common = find_mcs_with_config(&[&dummy, &carbon], &config);
+        assert_eq!(common.atom_count(), 1);
+        let common = find_mcs_with_config(&[&dummy, &dummy], &config);
+        let smarts = mcs_query_to_smarts(&common).unwrap();
+        assert!(smarts.contains("[#0]"), "{smarts}");
+        let round_trip = parse_smarts(&smarts).unwrap();
+        assert_eq!(find_matches(&round_trip, &dummy).len(), 1);
+        assert!(find_matches(&round_trip, &carbon).is_empty());
+    }
 
     #[test]
     fn round_trip_relaxed_atom_and_bond_alternatives() {

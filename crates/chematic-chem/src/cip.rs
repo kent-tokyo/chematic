@@ -144,15 +144,7 @@ pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx,
                 assign_ez(mol, bidx).map(|(_, code)| (bidx, code))
             })
             .collect(),
-        CipMode::Accurate => {
-            let ranker = LazyEzRanker::new(mol, chematic_cip::CipBudget::default_budget());
-            (0..mol.bond_count())
-                .filter_map(|j| {
-                    let bidx = BondIdx(j as u32);
-                    assign_ez_accurate(mol, bidx, &ranker).map(|(_, code)| (bidx, code))
-                })
-                .collect()
-        }
+        CipMode::Accurate => absolute_bond_labels(assign_accurate_double_bond_cip(mol)),
     }
 }
 
@@ -248,14 +240,10 @@ pub fn cip_label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bo
     chematic_cip::label_depends_on_kekule_spelling(mol, atom)
 }
 
-/// Whether [`CipMode::Accurate`]'s label of tetrahedral centre `atom` is
-/// RDKit's reading of the SMILES spelling it was parsed from rather than a
-/// property of the molecule: a ring centre with three single-bonded ligands
-/// and a lone pair (bridgehead amine, cyclic phosphine or sulfonium), whose
-/// `@`/`@@` RDKit inverts when one ring-closure digit is written on it
-/// (`chematic_cip::label_follows_rdkit_smiles_reading`).
-pub fn cip_label_depends_on_smiles_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
-    chematic_cip::label_follows_rdkit_smiles_reading(mol, atom)
+/// Compatibility query for the former ring-closure spelling diagnostic.
+/// Returns false. Accurate CIP uses the molecule's recorded ligand order.
+pub fn cip_label_depends_on_smiles_spelling(_mol: &Molecule, _atom: AtomIdx) -> bool {
+    false
 }
 
 /// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what
@@ -283,110 +271,101 @@ pub fn assign_cip_with_mode(
             unresolved: Vec::new(),
         }),
         CipMode::Accurate => {
-            let budget = chematic_cip::CipBudget::default_budget();
-            let accurate = chematic_cip::assign_cip_accurate_experimental(mol, budget)
-                .map_err(CipModeError::Accurate)?;
-
-            let unresolved_idx: HashSet<AtomIdx> = accurate
-                .skipped
-                .iter()
-                .filter(|(_, r)| {
-                    matches!(
-                        r,
-                        chematic_cip::SkipReason::Tied
-                            | chematic_cip::SkipReason::BudgetExceeded
-                            | chematic_cip::SkipReason::OracleUnstable
-                            | chematic_cip::SkipReason::LonePairCenter
-                    )
-                })
-                .map(|(idx, _)| *idx)
-                .collect();
-            let accurate_idx: HashSet<AtomIdx> =
-                accurate.assignments.iter().map(|(idx, _)| *idx).collect();
-
-            let legacy_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
-                .filter_map(|j| assign_ez(mol, BondIdx(j as u32)))
-                .collect();
-            // An accurate answer or explicit abstention supersedes the legacy
-            // tetrahedral result. Do not rank those same ligands twice. Keep
-            // every legacy fallback and its original tetrahedral/EZ/allene order.
-            let mut legacy_assignments: Vec<_> = (0..mol.atom_count())
-                .map(|i| AtomIdx(i as u32))
-                .filter(|idx| {
-                    mol.atom(*idx).chirality.is_tetrahedral()
-                        && !accurate_idx.contains(idx)
-                        && !unresolved_idx.contains(idx)
-                })
-                .filter_map(|idx| assign_tetrahedral(mol, idx).map(|code| (idx, code)))
-                .collect();
-            legacy_assignments.extend(legacy_ez.iter().copied());
-            legacy_assignments.extend((0..mol.atom_count()).filter_map(|i| {
-                let idx = AtomIdx(i as u32);
-                is_allene_central(mol, idx)
-                    .then(|| assign_allene(mol, idx))
-                    .flatten()
-            }));
-            let ranker = LazyEzRanker::new(mol, budget);
-            let accurate_ez: Vec<(AtomIdx, CipCode)> = (0..mol.bond_count())
-                .filter_map(|j| assign_ez_accurate(mol, BondIdx(j as u32), &ranker))
-                .collect();
-            let mut legacy_ez_left = legacy_ez.len();
-            let mut assignments: Vec<(AtomIdx, CipCode)> = Vec::new();
-            for (idx, code) in legacy_assignments {
-                // assign_cip emits tetrahedral, then double-bond E/Z (in bond
-                // order), then allene entries; the E/Z block is exactly
-                // `legacy_ez`.
-                let is_ez_block = legacy_ez_left > 0
-                    && matches!(code, CipCode::E | CipCode::Z)
-                    && legacy_ez[legacy_ez.len() - legacy_ez_left] == (idx, code);
-                if is_ez_block {
-                    legacy_ez_left -= 1;
-                    if legacy_ez_left == 0 {
-                        assignments.extend(accurate_ez.iter().copied().filter(|(i, _)| {
-                            !accurate_idx.contains(i) && !unresolved_idx.contains(i)
-                        }));
-                    }
-                    continue;
-                }
-                if !accurate_idx.contains(&idx) && !unresolved_idx.contains(&idx) {
-                    assignments.push((idx, code));
-                }
-            }
-            if legacy_ez.is_empty() {
-                // No legacy E/Z block to replace; append any accurate labels.
-                assignments.extend(
-                    accurate_ez
-                        .iter()
-                        .copied()
-                        .filter(|(i, _)| !accurate_idx.contains(i) && !unresolved_idx.contains(i)),
-                );
-            }
-            assignments.extend(accurate.assignments);
-
-            let unresolved = accurate
-                .skipped
-                .into_iter()
-                .filter_map(|(idx, reason)| match reason {
-                    chematic_cip::SkipReason::Tied => Some((idx, CipUnresolvedReason::Tied)),
-                    chematic_cip::SkipReason::BudgetExceeded => {
-                        Some((idx, CipUnresolvedReason::BudgetExceeded))
-                    }
-                    chematic_cip::SkipReason::OracleUnstable => {
-                        Some((idx, CipUnresolvedReason::OracleUnstable))
-                    }
-                    chematic_cip::SkipReason::LonePairCenter => {
-                        Some((idx, CipUnresolvedReason::LonePairCenter))
-                    }
-                    chematic_cip::SkipReason::NotFourSubstituents => None,
-                })
-                .collect();
-
-            Ok(CipModeAssignment {
-                assignments,
-                unresolved,
-            })
+            assign_accurate_cip_with_double_bond_labels(mol).map(|(labels, _)| labels)
         }
     }
+}
+
+/// Accurate CIP assignments together with E/Z labels keyed by bond index.
+/// The bond labels are retained from the same stereochemistry calculation.
+pub fn assign_accurate_cip_with_bond_labels(
+    mol: &Molecule,
+) -> Result<(CipModeAssignment, Vec<(BondIdx, CipCode)>), CipModeError> {
+    let (atoms, bonds) = assign_accurate_cip_with_double_bond_labels(mol)?;
+    Ok((atoms, absolute_bond_labels(bonds)))
+}
+
+/// Accurate atom-keyed assignments and the full set of ordinary double-bond
+/// descriptors from the same calculation, including `seqCis` and `seqTrans`.
+pub fn assign_accurate_cip_with_double_bond_labels(
+    mol: &Molecule,
+) -> Result<(CipModeAssignment, Vec<(BondIdx, DoubleBondCip)>), CipModeError> {
+    if !has_cip_annotations(mol) {
+        return Ok((CipModeAssignment::default(), Vec::new()));
+    }
+    let budget = chematic_cip::CipBudget::default_budget();
+    let accurate = chematic_cip::assign_cip_accurate_experimental(mol, budget)
+        .map_err(CipModeError::Accurate)?;
+    let unresolved: Vec<_> = accurate
+        .skipped
+        .into_iter()
+        .filter_map(|(idx, reason)| Some((idx, cip_unresolved_reason(reason)?)))
+        .collect();
+    let handled: HashSet<AtomIdx> = accurate
+        .assignments
+        .iter()
+        .map(|&(idx, _)| idx)
+        .chain(unresolved.iter().map(|&(idx, _)| idx))
+        .collect();
+
+    let mut assignments: Vec<_> = mol
+        .atoms()
+        .filter(|&(idx, atom)| atom.chirality.is_tetrahedral() && !handled.contains(&idx))
+        .filter_map(|(idx, _)| assign_tetrahedral(mol, idx).map(|code| (idx, code)))
+        .collect();
+    let allenes: Vec<_> = mol
+        .atoms()
+        .filter(|&(idx, _)| is_allene_central(mol, idx))
+        .filter_map(|(idx, _)| assign_allene(mol, idx))
+        .filter(|(assigned, _)| !handled.contains(assigned))
+        .collect();
+    let bond_labels = assign_accurate_double_bond_cip(mol);
+    let ez_atoms = bond_labels
+        .iter()
+        .filter_map(|&(bond, code)| Some((mol.bond(bond).atom1, code.absolute()?)))
+        .filter(|(idx, _)| !handled.contains(idx));
+
+    // Preserve the existing public ordering. Accurate E/Z replaces the
+    // original E/Z block, or follows the allene labels when there was no block.
+    let allenes_first = !allenes.is_empty()
+        && !bond_labels.is_empty()
+        && !mol.bonds().any(|(bond, _)| assign_ez(mol, bond).is_some());
+    if allenes_first {
+        assignments.extend(allenes);
+        assignments.extend(ez_atoms);
+    } else {
+        assignments.extend(ez_atoms);
+        assignments.extend(allenes);
+    }
+    assignments.extend(accurate.assignments);
+
+    Ok((
+        CipModeAssignment {
+            assignments,
+            unresolved,
+        },
+        bond_labels,
+    ))
+}
+
+fn cip_unresolved_reason(reason: chematic_cip::SkipReason) -> Option<CipUnresolvedReason> {
+    use chematic_cip::SkipReason;
+    match reason {
+        SkipReason::Tied => Some(CipUnresolvedReason::Tied),
+        SkipReason::BudgetExceeded => Some(CipUnresolvedReason::BudgetExceeded),
+        SkipReason::OracleUnstable => Some(CipUnresolvedReason::OracleUnstable),
+        SkipReason::LonePairCenter => Some(CipUnresolvedReason::LonePairCenter),
+        SkipReason::NotFourSubstituents => None,
+    }
+}
+
+/// All supported CIP assignments require a tetrahedral tag or bond direction.
+fn has_cip_annotations(mol: &Molecule) -> bool {
+    mol.has_bond_directions()
+        || mol.atoms().any(|(_, atom)| atom.chirality.is_tetrahedral())
+        || mol
+            .bonds()
+            .any(|(_, bond)| matches!(bond.order, BondOrder::Up | BondOrder::Down))
 }
 
 /// A single "sphere layer" in a CIP branch expansion: a sorted list of
@@ -1359,8 +1338,8 @@ fn highest_stereo_sub(
 
 /// E/Z for the double bond at `bond_idx`, ranking each end's substituents with
 /// the accurate engine's comparator ([`chematic_cip::SubstituentRanker`]:
-/// hierarchical digraph, Rules 1a/2, MANCUDE duplicates for aromatic rings)
-/// instead of the legacy sphere comparison. Same geometry reading and keying
+/// hierarchical digraph, constitutional priority, MANCUDE duplicates and
+/// Rule 3 for configured alkene ties) instead of the legacy sphere comparison. Same geometry reading and keying
 /// as [`assign_ez`]. `None` when the bond is not a specified stereo double
 /// bond or an end's two substituents tie (or exceed the comparison budget) —
 /// never a guess.
@@ -1369,71 +1348,15 @@ fn assign_ez_accurate(
     bond_idx: BondIdx,
     ranker: &LazyEzRanker<'_>,
 ) -> Option<(AtomIdx, CipCode)> {
-    let bond = mol.bond(bond_idx);
-    // A ring of fewer than eight atoms holds its double bond cis: no E/Z
-    // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double
-        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
-        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
-        || double_bond_in_small_ring(mol, bond_idx)
-    {
-        return None;
-    }
-    let a1 = bond.atom1;
-    let a2 = bond.atom2;
-    let subs = |end: AtomIdx, other: AtomIdx| -> Vec<AtomIdx> {
-        mol.neighbors(end)
-            .filter(|&(nb, bidx)| nb != other && mol.bond(bidx).order != BondOrder::Double)
-            .map(|(nb, _)| nb)
-            .collect()
-    };
-    let subs_a1 = subs(a1, a2);
-    let subs_a2 = subs(a2, a1);
-    if subs_a1.is_empty() || subs_a2.is_empty() {
-        return None;
-    }
-    let (_, up_a1) = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker)?;
-    let (_, up_a2) = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker)?;
-    let code = if up_a1 == up_a2 {
-        CipCode::Z
-    } else {
-        CipCode::E
-    };
-    Some((a1, code))
+    let code = assign_configured_double_bond(mol, bond_idx, ranker)?.absolute()?;
+    Some((mol.bond(bond_idx).atom1, code))
 }
 
-/// [`highest_stereo_sub`] with the accurate comparator (at most two
-/// substituents on a double-bond end).
-fn highest_stereo_sub_accurate(
-    mol: &Molecule,
-    alkene_end: AtomIdx,
-    subs: &[AtomIdx],
-    ranker: &LazyEzRanker<'_>,
-) -> Option<(AtomIdx, bool)> {
-    // No marker on either substituent: nothing to read (see
-    // `highest_stereo_sub`).
-    if subs
-        .iter()
-        .all(|&sub| substituent_is_up(mol, alkene_end, sub).is_none())
-    {
-        return None;
-    }
-    let (top, other) = match subs {
-        [only] => (*only, None),
-        [a, b] => match ranker.get().compare(mol, alkene_end, *a, *b).ok()?? {
-            std::cmp::Ordering::Greater => (*a, Some(*b)),
-            std::cmp::Ordering::Less => (*b, Some(*a)),
-            std::cmp::Ordering::Equal => return None,
-        },
-        _ => return None,
-    };
-    if let Some(up) = substituent_is_up(mol, alkene_end, top) {
-        return Some((top, up));
-    }
-    let other_up = substituent_is_up(mol, alkene_end, other?)?;
-    Some((top, !other_up))
-}
-
+mod double_bond_cip;
+pub use double_bond_cip::{DoubleBondCip, assign_accurate_double_bond_cip};
+use double_bond_cip::{absolute_bond_labels, assign_configured_double_bond};
+mod cumulene_ez;
+pub use cumulene_ez::{CumuleneEzAssignment, assign_cumulene_ez};
 mod ez_completeness;
 pub use ez_completeness::{EzCompleteness, ez_completeness};
 

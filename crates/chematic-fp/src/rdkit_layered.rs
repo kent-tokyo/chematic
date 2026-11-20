@@ -64,14 +64,13 @@ use chematic_perception::aromaticity::{
 };
 use chematic_perception::find_sssr;
 use rustc_hash::FxHashMap;
-use std::collections::BTreeMap;
+use smallvec::SmallVec;
 
 mod config;
 mod features;
 pub use config::{RdkitLayeredConfig, RdkitLayeredError, RdkitLayeredResult, rdkit_layered_config};
 
 const FP_SIZE: u32 = 2048;
-const MIN_PATH: usize = 1;
 const MAX_PATH: usize = 7;
 const NUM_LAYERS: usize = 6;
 
@@ -92,6 +91,7 @@ fn layer2_bond_type_code(order: BondOrder) -> u32 {
         BondOrder::Double => 2,
         BondOrder::Triple => 3,
         BondOrder::Quadruple => 4,
+        BondOrder::Dative => 17,
         _ => 1,
     }
 }
@@ -152,78 +152,73 @@ fn build_bond_adjacency(mol: &Molecule) -> FxHashMap<u32, Vec<u32>> {
     nbrs
 }
 
-fn find_all_subgraphs(
-    mol: &Molecule,
-    min_len: usize,
-    max_len: usize,
-) -> BTreeMap<usize, Vec<Vec<u32>>> {
+fn for_each_subgraph(mol: &Molecule, max_len: usize, mut visit: impl FnMut(&[u32])) {
     let nbrs = build_bond_adjacency(mol);
-    let n_bonds = mol.bond_count();
-    let mut forbidden = vec![false; n_bonds];
-    let mut res: BTreeMap<usize, Vec<Vec<u32>>> =
-        (min_len..=max_len).map(|l| (l, Vec::new())).collect();
-
+    let mut forbidden = vec![false; mol.bond_count()];
+    let mut marked = Vec::new();
+    let mut path = Vec::with_capacity(max_len);
     let mut roots: Vec<u32> = nbrs.keys().copied().collect();
     roots.sort_unstable();
     for root in roots {
-        if forbidden[root as usize] {
-            continue;
-        }
+        // Earlier roots stay excluded. Each recursive branch restores the
+        // exclusions it made so that the next root starts with only these.
         forbidden[root as usize] = true;
-        let cands = nbrs.get(&root).cloned().unwrap_or_default();
-        let spath = vec![root];
-        recurse_walk_range(
+        let candidates = nbrs[&root].iter().copied().collect();
+        path.push(root);
+        visit_subgraphs(
             &nbrs,
-            spath,
-            cands,
-            min_len,
+            &mut path,
+            candidates,
+            &mut forbidden,
+            &mut marked,
             max_len,
-            forbidden.clone(),
-            &mut res,
+            &mut visit,
         );
+        path.pop();
     }
-    res
 }
 
-fn recurse_walk_range(
+fn visit_subgraphs(
     nbrs: &FxHashMap<u32, Vec<u32>>,
-    spath: Vec<u32>,
-    mut cands: Vec<u32>,
-    min_len: usize,
+    path: &mut Vec<u32>,
+    mut candidates: SmallVec<[u32; 16]>,
+    forbidden: &mut [bool],
+    marked: &mut Vec<u32>,
     max_len: usize,
-    mut forbidden: Vec<bool>,
-    res: &mut BTreeMap<usize, Vec<Vec<u32>>>,
+    visit: &mut impl FnMut(&[u32]),
 ) {
-    let nsize = spath.len();
-    if nsize >= min_len && nsize <= max_len {
-        res.get_mut(&nsize).unwrap().push(spath.clone());
-    }
-    if nsize >= max_len {
+    visit(path);
+    if path.len() == max_len {
         return;
     }
-    while let Some(next) = cands.pop() {
-        if !forbidden[next as usize] {
-            forbidden[next as usize] = true;
-            let mut tstack = cands.clone();
-            if let Some(next_nbrs) = nbrs.get(&next) {
-                for &b in next_nbrs {
-                    if !forbidden[b as usize] {
-                        tstack.push(b);
-                    }
-                }
-            }
-            let mut tpath = spath.clone();
-            tpath.push(next);
-            recurse_walk_range(
-                nbrs,
-                tpath,
-                tstack,
-                min_len,
-                max_len,
-                forbidden.clone(),
-                res,
-            );
+    let restore_from = marked.len();
+    while let Some(next) = candidates.pop() {
+        if forbidden[next as usize] {
+            continue;
         }
+        forbidden[next as usize] = true;
+        marked.push(next);
+        let mut next_candidates = candidates.clone();
+        next_candidates.extend(
+            nbrs[&next]
+                .iter()
+                .copied()
+                .filter(|&b| !forbidden[b as usize]),
+        );
+        path.push(next);
+        visit_subgraphs(
+            nbrs,
+            path,
+            next_candidates,
+            forbidden,
+            marked,
+            max_len,
+            visit,
+        );
+        path.pop();
+    }
+    for bond in marked.drain(restore_from..) {
+        forbidden[bond as usize] = false;
     }
 }
 
@@ -297,15 +292,12 @@ fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
         return fp;
     }
 
-    let prepared = features::Prepared::new(mol, trust_view);
-    let paths = find_all_subgraphs(mol, MIN_PATH, MAX_PATH);
-    for plist in paths.values() {
-        for path in plist {
-            for seed in prepared.hashes(path).seeds.into_iter().flatten() {
-                fp.set((seed % FP_SIZE) as usize);
-            }
+    let mut prepared = features::Prepared::new(mol, trust_view);
+    for_each_subgraph(mol, MAX_PATH, |path| {
+        for seed in prepared.hashes(path).seeds.into_iter().flatten() {
+            fp.set((seed % FP_SIZE) as usize);
         }
-    }
+    });
 
     fp
 }

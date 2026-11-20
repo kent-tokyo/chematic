@@ -94,25 +94,42 @@ fn inline_layer_storage_keeps_frozen_seeds_and_atom_membership() {
         ])
     {
         let mol = chematic_smiles::parse_template(text).unwrap();
-        let prepared = Prepared::new(&mol, false);
-        for plist in find_all_subgraphs(&mol, 1, 9).values() {
-            for path in plist {
-                let candidate = prepared.hashes(path);
-                let expected = prepared.frozen_hashes(path);
-                assert_eq!(candidate.seeds, expected.0, "{text} {path:?}");
-                assert_eq!(candidate.atoms.as_slice(), expected.1, "{text} {path:?}");
-                paths += 1;
-            }
-        }
+        let mut prepared = Prepared::new(&mol, false);
+        for_each_subgraph(&mol, 9, |path| {
+            let candidate = prepared.hashes(path);
+            let expected = prepared.frozen_hashes(path);
+            assert_eq!(candidate.seeds, expected.0, "{text} {path:?}");
+            assert_eq!(candidate.atoms.as_slice(), expected.1, "{text} {path:?}");
+            paths += 1;
+        });
     }
     assert!(paths > 10000);
     // Configurable paths are not limited to the default seven bonds. Check
     // both inline buffers spilling without imposing a new size limit.
     let mol = chematic_smiles::parse_template("CCCCCCCCCCCCCCCCCCC").unwrap();
-    let prepared = Prepared::new(&mol, false);
+    let mut prepared = Prepared::new(&mol, false);
     let path: Vec<_> = (0..mol.bond_count() as u32).collect();
     let candidate = prepared.hashes(&path);
     let expected = prepared.frozen_hashes(&path);
     assert_eq!(candidate.seeds, expected.0);
     assert_eq!(candidate.atoms.as_slice(), expected.1);
+}
+
+#[test]
+fn self_bond_preserves_distinct_neighbor_counts() {
+    use chematic_core::{Atom, Element, MoleculeBuilder};
+
+    let mut builder = MoleculeBuilder::new();
+    let carbon = builder.add_atom(Atom::new(Element::C));
+    let oxygen = builder.add_atom(Atom::new(Element::O));
+    builder.add_bond(carbon, carbon, BondOrder::Single).unwrap();
+    builder.add_bond(carbon, oxygen, BondOrder::Single).unwrap();
+    let mol = builder.build();
+    let mut prepared = Prepared::new(&mol, false);
+    for path in [[0, 1].as_slice(), [1].as_slice(), [0].as_slice()] {
+        let candidate = prepared.hashes(path);
+        let expected = prepared.frozen_hashes(path);
+        assert_eq!(candidate.seeds, expected.0);
+        assert_eq!(candidate.atoms.as_slice(), expected.1);
+    }
 }

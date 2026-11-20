@@ -1,7 +1,6 @@
 # Open-work ledger
 
-Updated 2026-10-23 for **v1.2.1**. Completed
-work belongs in the
+Updated 2026-11-21 for **v1.2.2**. Completed work belongs in the
 [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
 dated evidence belongs in the
 [benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).

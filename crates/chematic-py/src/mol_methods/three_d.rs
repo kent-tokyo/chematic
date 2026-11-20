@@ -1,5 +1,38 @@
 use super::*;
 
+fn append_extended_cip_entries<'py>(
+    py: Python<'py>,
+    mol: &chematic_core::Molecule,
+    relative_bonds: Vec<(chematic_core::BondIdx, chematic_chem::DoubleBondCip)>,
+    entries: &mut Vec<Bound<'py, PyDict>>,
+) -> PyResult<()> {
+    for (idx, code) in relative_bonds {
+        let entry = PyDict::new(py);
+        let bond = mol.bond(idx);
+        entry.set_item("atom_idx", bond.atom1.0)?;
+        entry.set_item("bond_idx", idx.0)?;
+        entry.set_item("bond_atoms", (bond.atom1.0, bond.atom2.0))?;
+        entry.set_item("descriptor", code.as_str())?;
+        entries.push(entry);
+    }
+    for axis in chematic_chem::assign_cumulene_ez(mol) {
+        let entry = PyDict::new(py);
+        let atoms: Vec<_> = axis.atoms.iter().map(|atom| atom.0).collect();
+        entry.set_item("atom_idx", atoms[0])?;
+        entry.set_item("cumulene_atoms", atoms)?;
+        entry.set_item(
+            "descriptor",
+            if axis.descriptor == chematic_core::CipCode::E {
+                "E"
+            } else {
+                "Z"
+            },
+        )?;
+        entries.push(entry);
+    }
+    Ok(())
+}
+
 fn checked_transform_coords(
     mol: &chematic_core::Molecule,
     coords: &[[f64; 3]],
@@ -170,11 +203,12 @@ impl Mol {
 
     /// CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
     ///
-    /// ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"``, or ``"s"``.
-    /// An ``"E"``/``"Z"`` entry's ``atom_idx`` is the double bond's first atom;
-    /// such entries also carry ``"bond_idx"`` and ``"bond_atoms"`` (the
+    /// Double-bond descriptors are ``"E"``, ``"Z"``, ``"seqCis"`` or ``"seqTrans"``.
+    /// A double-bond entry uses its first atom as ``atom_idx`` and carries ``"bond_idx"`` and ``"bond_atoms"`` (the
     /// double bond's index and its two atoms).
-    /// Only assigned stereocenters / double bonds are returned.
+    /// Configured odd cumulenes in ``"accurate"`` mode carry ``"cumulene_atoms"``
+    /// (the full chain in order, starting at ``atom_idx``).
+    /// Only assigned stereogenic units are returned.
     ///
     /// ``mode`` selects the CIP engine:
     ///
@@ -189,20 +223,38 @@ impl Mol {
     ///   silently-guessed label. A phosphorus on an unsaturated ring
     ///   (cyclophosphazene) gets RDKit's CIPLabeler label, which flips between
     ///   the ring's Kekulé spellings in both libraries; its entry carries
-    ///   ``"kekule_dependent": True``. A ring centre with three single bonds
-    ///   and a lone pair (bridgehead amine, cyclic phosphine or sulfonium)
-    ///   gets RDKit's label for the parsed SMILES spelling (RDKit inverts its
-    ///   ``@``/``@@`` when one ring-closure digit is on the centre); its entry
-    ///   carries ``"spelling_dependent": True``.
+    ///   ``"kekule_dependent": True``. Saturated ring lone-pair centres use
+    ///   the recorded ligand order. Use :meth:`rdkit_parsed` before calling
+    ///   this method to apply RDKit's SMILES reader conventions.
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
-        let assignments = match mode {
-            "legacy" => chematic_chem::assign_cip(&self.inner).assignments,
+        let (assignments, mut ez_bonds, relative_bonds) = match mode {
+            "legacy" => {
+                let assignments = chematic_chem::assign_cip(&self.inner).assignments;
+                let ez_bonds = if assignments
+                    .iter()
+                    .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
+                {
+                    chematic_chem::assign_ez_bonds(&self.inner)
+                } else {
+                    Vec::new()
+                };
+                (assignments, ez_bonds, Vec::new())
+            }
             "accurate" => {
-                chematic_chem::assign_cip_with_mode(&self.inner, chematic_chem::CipMode::Accurate)
-                    .map_err(|e| PyValueError::new_err(e.to_string()))?
-                    .assignments
+                let (labels, bonds) =
+                    chematic_chem::assign_accurate_cip_with_double_bond_labels(&self.inner)
+                        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+                let absolute = bonds
+                    .iter()
+                    .filter_map(|&(bond, code)| code.absolute().map(|code| (bond, code)))
+                    .collect();
+                let relative = bonds
+                    .into_iter()
+                    .filter(|(_, code)| code.absolute().is_none())
+                    .collect::<Vec<_>>();
+                (labels.assignments, absolute, relative)
             }
             other => {
                 return Err(PyValueError::new_err(format!(
@@ -210,24 +262,7 @@ impl Mol {
                 )));
             }
         };
-        // E/Z entries are keyed by the double bond's first atom; attach the
-        // bond itself so callers need not guess which bond is meant (#634).
-        let mut ez_bonds = if assignments
-            .iter()
-            .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
-        {
-            chematic_chem::assign_ez_bonds_with_mode(
-                &self.inner,
-                if mode == "accurate" {
-                    chematic_chem::CipMode::Accurate
-                } else {
-                    chematic_chem::CipMode::LegacyFast
-                },
-            )
-        } else {
-            Vec::new()
-        };
-        assignments
+        let mut entries = assignments
             .iter()
             .map(|(idx, code)| {
                 let d = PyDict::new(py);
@@ -260,18 +295,13 @@ impl Mol {
                 {
                     d.set_item("kekule_dependent", true)?;
                 }
-                if mode == "accurate"
-                    && matches!(
-                        code,
-                        CipCode::R | CipCode::S | CipCode::LowerR | CipCode::LowerS
-                    )
-                    && chematic_chem::cip_label_depends_on_smiles_spelling(&self.inner, *idx)
-                {
-                    d.set_item("spelling_dependent", true)?;
-                }
                 Ok(d)
             })
-            .collect()
+            .collect::<PyResult<Vec<_>>>()?;
+        if mode == "accurate" {
+            append_extended_cip_entries(py, &self.inner, relative_bonds, &mut entries)?;
+        }
+        Ok(entries)
     }
 
     /// Atoms :meth:`cip_stereo`\ (``mode="accurate"``) could not resolve a tetrahedral

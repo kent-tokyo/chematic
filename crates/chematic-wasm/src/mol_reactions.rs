@@ -123,9 +123,19 @@ struct McsConfigJson {
     match_isotope: bool,
     #[serde(default = "default_true")]
     maximize_bonds: bool,
+    #[serde(default)]
+    bond_count_first: bool,
 }
 
 impl McsConfigJson {
+    fn objective(&self) -> chematic_smarts::McsObjective {
+        if self.bond_count_first {
+            chematic_smarts::McsObjective::BondCount
+        } else {
+            chematic_smarts::McsObjective::AtomCount
+        }
+    }
+
     fn into_mcs_config(self) -> chematic_smarts::McsConfig {
         let mut config = chematic_smarts::McsConfig {
             match_bonds: self.match_bonds,

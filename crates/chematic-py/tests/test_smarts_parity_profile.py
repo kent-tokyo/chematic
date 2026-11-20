@@ -49,3 +49,29 @@ def test_rdkit_2026_09_1_profile_counts_relevant_cycles():
 def test_unknown_profile_raises():
     with pytest.raises(ValueError, match="unknown profile"):
         chematic.from_smiles("CCO").find_matches_rdkit_parity("[R1]", profile="2027.03.1")
+
+
+@pytest.mark.parametrize("profile", ["2026.03.6", "2026.09.1"])
+def test_batch_hit_indices_follow_scalar_queries(profile):
+    molecules = [
+        chematic.from_smiles(smiles)
+        for smiles in ["CCO", "C1CCCCC1", "c1ccc2ccccc2c1", "C12C3C4C1C5C2C3C45",
+                       "[H]C1CCCCC1", "C1CN->[Cu]1", "c1ccc2ccccc2c1"]
+    ]
+    batch = chematic.MoleculeBatch(molecules)
+    for smarts in ["[R2]", "[R1]", "[R3]", "[R0]", "[#6;R2]", "[$([R2])]", "[#8]"]:
+        query = chematic.compile_smarts(smarts)
+        expected = [
+            i for i, mol in enumerate(molecules)
+            if mol.find_matches_rdkit_parity(smarts, profile=profile)["matches"]
+        ]
+        assert query.match_indices_rdkit_parity_batch(batch, profile=profile) == (expected, [])
+        assert query.match_indices_rdkit_parity_batch(batch, profile=profile) == (expected, [])
+
+
+def test_batch_empty_and_unknown_profile():
+    query = chematic.compile_smarts("[R2]")
+    batch = chematic.MoleculeBatch.from_smiles([])
+    assert query.match_indices_rdkit_parity_batch(batch, profile="2026.09.1") == ([], [])
+    with pytest.raises(ValueError, match="unknown profile"):
+        query.match_indices_rdkit_parity_batch(batch, profile="unknown")

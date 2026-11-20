@@ -173,30 +173,6 @@ const ACROSS_OH: [[u8; 6]; 31] = [
     [1, 0, 4, 5, 2, 3],
 ];
 
-const AXIAL_TB: [[u8; 2]; 21] = [
-    [5, 5],
-    [0, 4],
-    [0, 4],
-    [0, 3],
-    [0, 3],
-    [0, 2],
-    [0, 2],
-    [0, 1],
-    [0, 1],
-    [1, 4],
-    [1, 4],
-    [1, 3],
-    [1, 3],
-    [1, 2],
-    [1, 2],
-    [2, 4],
-    [2, 3],
-    [3, 4],
-    [3, 4],
-    [2, 3],
-    [2, 4],
-];
-
 const INVERT_TB: [u8; 21] = [
     0, 2, 1, 4, 3, 6, 5, 8, 7, 11, 12, 9, 10, 14, 13, 20, 19, 18, 17, 16, 15,
 ];
@@ -262,12 +238,16 @@ pub fn across(class: NonTetrahedralClass, perm: u32, pos: usize) -> Option<usize
     (v < class.max_nbors()).then_some(v)
 }
 
-/// The two axial ligand positions of a trigonal bipyramid
-/// (`trigonalbipyramidal_axial`), `None` outside `TB1`..`TB20`.
+/// The two axial ligand positions of a trigonal bipyramid, in SMILES
+/// neighbor order. Returns `None` outside `TB1`..=`TB20`.
 pub fn tb_axial(perm: u32) -> Option<[usize; 2]> {
-    (1..=20)
-        .contains(&perm)
-        .then(|| AXIAL_TB[perm as usize].map(usize::from))
+    ACROSS_TB
+        .get(perm as usize)?
+        .iter()
+        .map(|&opposite| usize::from(opposite))
+        .enumerate()
+        .find(|&(_, opposite)| opposite < NonTetrahedralClass::TrigonalBipyramidal.max_nbors())
+        .map(|(position, opposite)| [position, opposite])
 }
 
 /// `Chirality::getChiralPermutation`'s permutation walk: `perm` refers to
@@ -310,6 +290,27 @@ mod tests {
         assert_eq!(swap(NonTetrahedralClass::Octahedral, 1, 4, 5), 3);
         assert_eq!(swap(NonTetrahedralClass::Octahedral, 1, 3, 5), 7);
         assert_eq!(swap(NonTetrahedralClass::Octahedral, 1, 0, 5), 2);
+    }
+
+    #[test]
+    fn trigonal_bipyramidal_axes_follow_opensmiles_and_permute_with_ligands() {
+        let class = NonTetrahedralClass::TrigonalBipyramidal;
+        assert_eq!(tb_axial(10), Some([1, 3]));
+        assert_eq!(tb_axial(11), Some([1, 4]));
+        assert_eq!(tb_axial(0), None);
+        assert_eq!(tb_axial(21), None);
+        for tag in 1..=class.max_permutation() {
+            let [first, second] = tb_axial(tag).unwrap();
+            for x in 0..class.max_nbors() {
+                for y in x + 1..class.max_nbors() {
+                    let mut new_position = [0, 1, 2, 3, 4];
+                    new_position.swap(x, y);
+                    let mut expected = [new_position[first], new_position[second]];
+                    expected.sort_unstable();
+                    assert_eq!(tb_axial(swap(class, tag, x, y)), Some(expected));
+                }
+            }
+        }
     }
 
     #[test]

@@ -2,9 +2,7 @@
 
 chematic is not a drop-in RDKit replacement. Choose a declared operation
 profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release is **v1.2.1**;
-its exact PyPI wheels passed the hosted three-platform runtime smoke and
-11-job chemistry workflow. The latest durable checked-in cross-platform packet
+before changing a production workflow. The current release line is **v1.2.2**. Its exact artifact results are determined by the tag workflow. Retained v1.2.0 wheels passed the hosted three-platform runtime smoke and 11-job chemistry workflow. The latest durable checked-in cross-platform packet
 is **v1.1.3**, while the broadest published-package RDKit performance packet
 remains **v1.0.42**. These records answer different questions.
 

@@ -1,4 +1,16 @@
-use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount};
+use std::collections::HashMap;
+
+use chematic_core::{
+    AtomIdx, BondIdx, BondOrder, Chirality, Molecule, STEREO_H_SENTINEL, implicit_hcount,
+};
+
+/// The position of an opening ring digit before its bond can be created.
+pub(crate) struct RingOpening {
+    pub bond: BondIdx,
+    pub atom: AtomIdx,
+    pub before_bond: u32,
+    pub slot: u32,
+}
 
 /// One side of an allene/cumulene axis.
 #[derive(Debug, Clone, Copy)]
@@ -70,7 +82,12 @@ pub(crate) fn allene_arms(
             return None;
         }
         for (neighbor, bond) in mol.neighbors(current) {
-            if neighbor != previous && mol.bond(bond).order != BondOrder::Single {
+            if neighbor != previous
+                && !matches!(
+                    mol.bond(bond).order,
+                    BondOrder::Single | BondOrder::Up | BondOrder::Down
+                )
+            {
                 return None;
             }
         }
@@ -84,10 +101,13 @@ pub(crate) fn allene_arms(
 }
 
 /// Normalize parsed central allene tags into their four virtual terminal
-/// ligands. Component starts are recovered from the completed graph: SMILES
-/// parsing appends each dot-separated component, so its lowest atom index is
-/// the atom that had no preceding neighbour in parse order.
-pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule, tagged_atoms: &[AtomIdx]) {
+/// ligands, in the order their terminals encountered them in the SMILES.
+pub(crate) fn normalize_allene_stereo(
+    molecule: &mut Molecule,
+    tagged_atoms: &[AtomIdx],
+    fragment_starts: &[AtomIdx],
+    ring_openings: &[RingOpening],
+) {
     // Ordinary tetrahedral stereocentres are common; actual allene/cumulene
     // centres are not. Select the only possible central geometry before doing
     // the component walk needed to reconstruct terminal parse order. This
@@ -108,7 +128,10 @@ pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule, tagged_atoms: &[A
     if candidates.is_empty() {
         return;
     }
-    let fragment_starts = fragment_start_flags(molecule);
+    let opening_by_bond: HashMap<_, _> = ring_openings
+        .iter()
+        .map(|opening| (opening.bond, opening))
+        .collect();
 
     for center in candidates {
         let stored = molecule.atom(center).chirality;
@@ -127,8 +150,17 @@ pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule, tagged_atoms: &[A
         let mut virtual_order = Vec::with_capacity(6);
         for arm in arms {
             let mut incident: Vec<_> = molecule.neighbors(arm.terminal).collect();
-            incident.sort_by_key(|(_, bond)| bond.0);
-            let parent = (!fragment_starts[arm.terminal.0 as usize])
+            incident.sort_by_key(|(_, bond)| {
+                // On the opening side the digit occupies a slot even if the
+                // actual bond is only added after its other end is parsed.
+                match opening_by_bond.get(bond) {
+                    Some(opening) if opening.atom == arm.terminal => {
+                        (opening.before_bond, false, opening.slot)
+                    }
+                    _ => (bond.0, true, 0),
+                }
+            });
+            let parent = (fragment_starts.binary_search(&arm.terminal).is_err())
                 .then(|| incident.first().map(|(atom, _)| *atom))
                 .flatten();
             let mut local = Vec::with_capacity(3);
@@ -159,29 +191,6 @@ pub(crate) fn normalize_allene_stereo(molecule: &mut Molecule, tagged_atoms: &[A
             molecule.set_chirality(center, Chirality::None);
         }
     }
-}
-
-fn fragment_start_flags(molecule: &Molecule) -> Vec<bool> {
-    let mut visited = vec![false; molecule.atom_count()];
-    let mut starts = vec![false; molecule.atom_count()];
-    for raw in 0..molecule.atom_count() {
-        if visited[raw] {
-            continue;
-        }
-        starts[raw] = true;
-        visited[raw] = true;
-        let mut stack = vec![AtomIdx(raw as u32)];
-        while let Some(atom) = stack.pop() {
-            for (neighbor, _) in molecule.neighbors(atom) {
-                let slot = neighbor.0 as usize;
-                if !visited[slot] {
-                    visited[slot] = true;
-                    stack.push(neighbor);
-                }
-            }
-        }
-    }
-    starts
 }
 
 /// Whether two encoded allene terminal orders differ by one terminal-ligand

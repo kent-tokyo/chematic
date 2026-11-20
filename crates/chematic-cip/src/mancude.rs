@@ -96,6 +96,7 @@
 //! bounds it and *errors* rather than silently truncating when exceeded (same discipline
 //! as [`crate::budget::CipBudget`]).
 
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
@@ -142,11 +143,17 @@ impl MancudeContext {
     /// one is a no-op today (`Rational(6/1)` compares equal to `Integral(6)`).
     pub fn compute(kekule_mol: &Molecule) -> Self {
         let ring_bonds = ring_bond_set(kekule_mol);
+        let n = kekule_mol.atom_count();
+        if ring_bonds.is_empty() {
+            return Self {
+                fractional_atomic_numbers: vec![None; n],
+                component_ids: vec![None; n],
+            };
+        }
         let mut types = seed_types(kekule_mol, &ring_bonds);
         relax_types(kekule_mol, &mut types, &ring_bonds);
 
         let parts = visit_parts(kekule_mol, &types, &ring_bonds);
-        let n = kekule_mol.atom_count();
         let mut fractional_atomic_numbers = vec![None; n];
         let mut component_ids = vec![None; n];
         let mut charged_parts = vec![false; parts.iter().copied().max().unwrap_or(0) as usize + 1];
@@ -254,8 +261,22 @@ impl MancudeContext {
 pub fn prepare_kekule_form(
     mol: &Molecule,
 ) -> Result<(Molecule, MancudeContext), chematic_core::kekulization::KekuleError> {
+    let (kekule_mol, context) = prepare_kekule_view(mol)?;
+    Ok((kekule_mol.into_owned(), context))
+}
+
+pub(crate) type PreparedKekule<'m> = (Cow<'m, Molecule>, MancudeContext);
+
+/// Retain the original graph when Kekulization would leave every bond unchanged.
+pub(crate) fn prepare_kekule_view(
+    mol: &Molecule,
+) -> Result<PreparedKekule<'_>, chematic_core::kekulization::KekuleError> {
     let kekule = chematic_core::kekulization::kekulize(mol)?;
-    let kekule_mol = chematic_core::kekulization::apply_kekule(mol, &kekule);
+    let kekule_mol = if kekule.is_empty() {
+        Cow::Borrowed(mol)
+    } else {
+        Cow::Owned(chematic_core::kekulization::apply_kekule(mol, &kekule))
+    };
     let ctx = MancudeContext::compute(&kekule_mol);
     Ok((kekule_mol, ctx))
 }

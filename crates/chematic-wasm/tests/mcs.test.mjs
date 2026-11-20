@@ -25,9 +25,73 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   assert.match(result.smarts, /,/);
   assert.equal(result.wasTimedOut, false);
   assert.equal(result.wasResourceLimited, false);
-  assert.throws(() => mcs_smarts_json_with_config(
-    JSON.stringify(["[13CH4]", "C"]), JSON.stringify({ matchIsotope: true })
+  const constrained = JSON.parse(mcs_smarts_json_with_config(
+    JSON.stringify(["[13CH3][NH3+]", "[NH3+][13CH3]"]),
+    JSON.stringify({ matchIsotope: true, matchCharge: true })
   ));
+  assert.match(constrained.smarts, /;13\*/);
+  assert.match(constrained.smarts, /;\+1/);
+  assert.equal(constrained.wasTimedOut, false);
+  assert.equal(constrained.wasResourceLimited, false);
+}
+
+{
+  const options = JSON.stringify({ matchChiralTag: true, bondCountFirst: true });
+  const inputs = ["[C@H]1(N)CCOC1", "N[C@H]1CCOC1"];
+  const result = JSON.parse(mcs_smarts_json_with_config(JSON.stringify(inputs), options));
+  assert.equal(result.wasTimedOut, false);
+  assert.equal(result.wasResourceLimited, false);
+  assert.match(result.smarts, /@/);
+  for (const [smiles, expected] of [...inputs.map(s => [s, true]), ["N[C@@H]1CCOC1", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      const matches = JSON.parse(wasm.smarts_match_atoms_with_chirality(result.smarts, mol, true));
+      assert.equal(matches.length > 0, expected, result.smarts);
+    } finally {
+      mol.free();
+    }
+  }
+  const partialInputs = ["F[C@](Cl)(Br)I", "F[C@H](Cl)Br"];
+  const partial = JSON.parse(mcs_smarts_json_with_config(JSON.stringify(partialInputs), options));
+  assert.equal(partial.wasTimedOut, false);
+  assert.equal(partial.wasResourceLimited, false);
+  assert.equal(partial.smarts.match(/#/g).length, 4);
+  for (const [smiles, expected] of [...partialInputs.map(s => [s, true]), ["F[C@@H](Cl)Br", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      const matches = JSON.parse(wasm.smarts_match_atoms_with_chirality(partial.smarts, mol, true));
+      assert.equal(matches.length > 0, expected, partial.smarts);
+    } finally {
+      mol.free();
+    }
+  }
+  const isotopic = "[13CH3][C@H](C)Cl";
+  const isotopeOptions = JSON.stringify({matchChiralTag: true, matchIsotope: true});
+  const isotopeQuery = JSON.parse(mcs_smarts_json_with_config(JSON.stringify([isotopic, isotopic]), isotopeOptions)).smarts;
+  const matching = JSON.stringify({useChirality: true, useIsotopes: true});
+  for (const [smiles, expected] of [[isotopic, true], ["[13CH3][C@@H](C)Cl", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      assert.equal(JSON.parse(wasm.smarts_match_atoms_with_config(isotopeQuery, mol, matching)).length > 0, expected);
+    } finally {
+      mol.free();
+    }
+  }
+  assert.throws(() => mcs_smarts_json_with_config(
+    JSON.stringify(["[Pt@SP1](F)(Cl)(Br)I", "[Pt@SP1](F)(Cl)(Br)I"]), options
+  ), /representable absolute tetrahedral stereo/);
+}
+
+{
+  const inputs = JSON.stringify(["CCCCC.C12C3C1C23", "CCCCC.C12C3C1C23"]);
+  const atomFirst = JSON.parse(mcs_smarts_json_with_config(inputs, "{}"));
+  const bondFirst = JSON.parse(mcs_smarts_json_with_config(
+    inputs, JSON.stringify({ bondCountFirst: true })
+  ));
+  assert.equal(atomFirst.smarts.match(/#6/g).length, 5);
+  assert.equal(bondFirst.smarts.match(/#6/g).length, 4);
+  assert.equal(bondFirst.wasTimedOut, false);
+  assert.equal(bondFirst.wasResourceLimited, false);
 }
 
 // Default config (`{}`) matches the bare mcs_smiles_json's own default.
@@ -46,6 +110,15 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   // every atom silently fell through to carbon. Aspirin/paracetamol's shared
   // hydroxyphenyl MCS must keep its oxygen atom.
   assert.match(full.smiles, /[Oo]/, `MCS lost its oxygen atom: ${full.smiles}`);
+}
+
+// Both result formats retain an input dummy atom.
+{
+  const input = JSON.stringify(["[*]O", "[*]O"]);
+  const query = JSON.parse(mcs_smarts_json_with_config(input, "{}"));
+  const projected = JSON.parse(mcs_smiles_json_with_config(input, "{}"));
+  assert.match(query.smarts, /\[#0\]/);
+  assert.match(projected.smiles, /\*/);
 }
 
 // Resource limits are distinct from timeouts and cannot be mistaken for an

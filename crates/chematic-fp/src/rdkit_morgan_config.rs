@@ -371,18 +371,32 @@ pub fn rdkit_morgan_count_simulation(
     config: &RdkitMorganConfig,
 ) -> Result<BitVecN, RdkitMorganError> {
     const BOUNDS: [u32; 4] = [1, 2, 4, 8];
-    let result = rdkit_morgan_fingerprint(mol, config)?;
     let fp_size = config.fp_size.bits();
-    let effective = (fp_size / BOUNDS.len()) as u32;
-    let mut counts: FxHashMap<u32, u32> = FxHashMap::default();
-    for (&raw, &count) in &result.sparse_counts {
-        *counts.entry(raw % effective).or_insert(0) += count;
-    }
+    let mut counts = vec![0u8; fp_size / BOUNDS.len()];
+    with_rdkit_morgan_input(
+        mol,
+        config,
+        |molecule, ring_atoms, bond_invariants, chirality| {
+            let len = counts.len();
+            expand_one_pass_with_chirality_into(
+                molecule,
+                ring_atoms,
+                bond_invariants,
+                config.radius.as_u32(),
+                true,
+                chirality,
+                |_, _, id| {
+                    let count = &mut counts[id as usize % len];
+                    *count = count.saturating_add(1);
+                },
+            );
+        },
+    )?;
     let mut fp = BitVecN::new(fp_size);
-    for (&bucket, &count) in &counts {
+    for (bucket, count) in counts.into_iter().enumerate() {
         for (i, &bound) in BOUNDS.iter().enumerate() {
-            if count >= bound {
-                fp.set(bucket as usize * BOUNDS.len() + i);
+            if u32::from(count) >= bound {
+                fp.set(bucket * BOUNDS.len() + i);
             }
         }
     }

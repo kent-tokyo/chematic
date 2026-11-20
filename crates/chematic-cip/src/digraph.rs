@@ -37,7 +37,10 @@ use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use chematic_core::ez_markers::{EzFact, read_ez_facts};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
+use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -46,11 +49,15 @@ use crate::mancude::MancudeContext;
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::AtomicNumberKey;
 
+pub(crate) type ChildIds = SmallVec<[NodeId; 8]>;
+
 /// A lazily-expanding hierarchical digraph rooted at one atom (typically a candidate
 /// stereocenter). See the module docs for the two structural rules that make this a
 /// real replacement for shell-multiset pooling.
 pub struct CipDigraph<'m> {
     mol: &'m Molecule,
+    has_isotopes: std::sync::OnceLock<bool>,
+    alkene_geometry: std::sync::OnceLock<FxHashMap<BondIdx, EzFact>>,
     /// `None` for [`Self::new`]. The accurate-CIP path supplies a context through
     /// [`Self::new_with_mancude`]. Attaching a `MancudeContext` computed for a *different*
     /// molecule than `mol` would silently misattribute fractional values -- callers are
@@ -70,7 +77,7 @@ pub struct CipDigraph<'m> {
     nodes: Vec<CipNode>,
     edges: Vec<CipEdge>,
     /// Parallel to `nodes`: `None` until a node's children have been computed once.
-    children_cache: Vec<Option<Vec<NodeId>>>,
+    children_cache: Vec<Option<ChildIds>>,
     root: NodeId,
     budget: CipBudget,
     node_count: usize,
@@ -107,6 +114,13 @@ impl<'m> CipDigraph<'m> {
     /// [`Self::new_with_mancude`] to additionally apply MANCUDE fractional atomic numbers.
     pub fn new(mol: &'m Molecule, root_atom: AtomIdx, budget: CipBudget) -> Result<Self, CipError> {
         Self::new_impl(mol, root_atom, budget, None, None)
+    }
+
+    /// The digraph borrows an immutable molecule, so this scan is needed once.
+    pub(crate) fn has_isotopes(&self) -> bool {
+        *self
+            .has_isotopes
+            .get_or_init(|| self.mol.atoms().any(|(_, atom)| atom.isotope.is_some()))
     }
 
     /// Stable identity for the attached [`MancudeContext`], if any -- the raw pointer
@@ -183,6 +197,8 @@ impl<'m> CipDigraph<'m> {
     ) -> Result<Self, CipError> {
         let mut g = Self {
             mol,
+            has_isotopes: std::sync::OnceLock::new(),
+            alkene_geometry: std::sync::OnceLock::new(),
             mancude,
             artificial_ancestor,
             nodes: Vec::new(),
@@ -206,6 +222,23 @@ impl<'m> CipDigraph<'m> {
         )?;
         g.root = root;
         Ok(g)
+    }
+
+    /// Configured alkene geometry in the input, read once per digraph on demand.
+    pub(crate) fn alkene_geometry(&self) -> &FxHashMap<BondIdx, EzFact> {
+        self.alkene_geometry.get_or_init(|| {
+            if !self.mol.has_bond_directions()
+                && !self
+                    .mol
+                    .bonds()
+                    .any(|(_, bond)| matches!(bond.order, BondOrder::Up | BondOrder::Down))
+            {
+                return FxHashMap::default();
+            }
+            read_ez_facts(self.mol)
+                .map(|(facts, _)| facts.into_iter().map(|fact| (fact.double, fact)).collect())
+                .unwrap_or_default()
+        })
     }
 
     pub fn root(&self) -> NodeId {
@@ -239,17 +272,21 @@ impl<'m> CipDigraph<'m> {
     /// nodes are always leaves: calling this on one returns `Ok(&[])` without touching
     /// the budget, since no expansion work happens.
     pub fn expand_children(&mut self, node_id: NodeId) -> Result<Vec<NodeId>, CipError> {
+        self.expand_child_ids(node_id).map(ChildIds::into_vec)
+    }
+
+    pub(crate) fn expand_child_ids(&mut self, node_id: NodeId) -> Result<ChildIds, CipError> {
         if let Some(cached) = &self.children_cache[node_id.0 as usize] {
             return Ok(cached.clone());
         }
         let Some(context) = self.expansion_context(node_id) else {
             // Duplicate/implicit-H nodes are leaves by design (see module docs) --
             // they represent a terminated branch, not a real atom to expand further.
-            self.children_cache[node_id.0 as usize] = Some(Vec::new());
-            return Ok(Vec::new());
+            self.children_cache[node_id.0 as usize] = Some(ChildIds::new());
+            return Ok(ChildIds::new());
         };
         self.consume_expansion_budget()?;
-        let mut children = Vec::new();
+        let mut children = ChildIds::new();
         self.append_arrival_duplicates(node_id, &context, &mut children)?;
         self.append_neighbor_children(node_id, &context, &mut children)?;
         self.append_implicit_hydrogens(node_id, &context, &mut children)?;
@@ -300,7 +337,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         // Arrival-side duplication: a multiple bond duplicates its partner into BOTH
         // atoms' own substituent lists, not just the one doing the iterating below
@@ -344,7 +381,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         for (nb, bond_idx) in self.mol.neighbors(context.atom_idx) {
             if Some(nb) == context.parent_atom {
@@ -408,7 +445,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         let h_count = implicit_hcount(self.mol, context.atom_idx);
         for _ in 0..h_count {
@@ -543,7 +580,7 @@ impl<'m> CipDigraph<'m> {
     /// drive expansion, so tests that need to exercise the whole digraph (determinism,
     /// the residual-corpus smoke test) call this explicitly.
     pub fn expand_all(&mut self, node: NodeId) -> Result<(), CipError> {
-        let children = self.expand_children(node)?;
+        let children = self.expand_child_ids(node)?;
         for child in children {
             self.expand_all(child)?;
         }
@@ -558,7 +595,7 @@ impl<'m> CipDigraph<'m> {
     /// input. Used by the atom-renumbering and SMILES-representation invariance tests;
     /// forces full expansion of `node`'s subtree as a side effect.
     pub fn branch_signature(&mut self, node: NodeId) -> Result<u64, CipError> {
-        let children = self.expand_children(node)?;
+        let children = self.expand_child_ids(node)?;
         let mut child_sigs = Vec::with_capacity(children.len());
         for child in children {
             child_sigs.push(self.branch_signature(child)?);

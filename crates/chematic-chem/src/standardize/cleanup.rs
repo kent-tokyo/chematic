@@ -1,6 +1,7 @@
 //! RDKit Cleanup-compatible standardization transformations.
 
 mod acid_base;
+mod haptic_iron;
 
 use std::collections::{HashSet, VecDeque};
 
@@ -13,7 +14,7 @@ use super::{clone_molecule, is_metal, normalize_groups};
 use crate::hydrogen::remove_hydrogens;
 
 pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
-    acid_base::reionize_for_cleanup(mol)
+    acid_base::reionize_with_catalog(mol)
 }
 
 /// Apply the supported RDKit `MolStandardize.Cleanup` stages without changing
@@ -21,8 +22,9 @@ pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
 ///
 /// The input is stripped of removable explicit hydrogens, metal--ligand bonds
 /// are disconnected with valence-aware charge adjustment, and functional
-/// groups are normalized. The ordered acid/base catalog then moves protons
-/// according to the pinned RDKit Cleanup profile.
+/// groups are normalized. The ordered catalog proposes proton transfers.
+/// Cleanup rejects a transfer when the product's newly protonated site
+/// matches an acid in an equally strong or stronger catalog class.
 pub fn cleanup(mol: &Molecule) -> Molecule {
     let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens(mol));
     let disconnected = disconnect_metals_for_cleanup(&without_h);
@@ -160,47 +162,63 @@ fn normalize_for_cleanup(mol: &Molecule) -> Molecule {
         {
             continue;
         }
-        let cations: Vec<_> = component
-            .iter()
-            .copied()
-            .filter(|&idx| {
-                let atom = mol.atom(idx);
-                atom.element.atomic_number() == 7 && atom.charge == 1 && mol.degree(idx) == 3
-            })
-            .collect();
-        let oxides: Vec<_> = component
-            .iter()
-            .flat_map(|&carbon| {
-                mol.neighbors(carbon).filter_map(move |(oxygen, bond)| {
-                    let atom = mol.atom(oxygen);
-                    (mol.atom(carbon).element.atomic_number() == 6
-                        && atom.element.atomic_number() == 8
-                        && atom.charge == -1
-                        && mol.degree(oxygen) == 1
-                        && mol.bond(bond).order == BondOrder::Single)
-                        .then_some((carbon, oxygen, bond))
-                })
-            })
-            .collect();
-        if let ([cation], [(carbon, oxygen, bond)]) = (cations.as_slice(), oxides.as_slice()) {
-            for &idx in &component {
-                normalized.set_atom_aromatic(idx, true);
-            }
-            for (idx, edge) in mol.bonds() {
-                if component.contains(&edge.atom1)
-                    && component.contains(&edge.atom2)
-                    && aromatic_bond(idx)
-                {
-                    normalized.set_bond_order(idx, BondOrder::Aromatic);
-                }
-            }
-            normalized.set_charge(*cation, 0);
-            normalized.set_charge(*oxygen, 0);
-            normalized.set_bond_order(*bond, BondOrder::Double);
-            debug_assert_eq!(mol.atom(*carbon).element.atomic_number(), 6);
-        }
+        neutralize_fused_oxide(&mut normalized, mol, &component, aromatic_bond);
     }
     normalized
+}
+
+fn neutralize_fused_oxide(
+    normalized: &mut Molecule,
+    mol: &Molecule,
+    component: &[AtomIdx],
+    aromatic_bond: impl Fn(BondIdx) -> bool,
+) {
+    let cations: Vec<_> = component
+        .iter()
+        .copied()
+        .filter(|&idx| {
+            let atom = mol.atom(idx);
+            atom.element.atomic_number() == 7 && atom.charge == 1 && mol.degree(idx) == 3
+        })
+        .collect();
+    let oxides: Vec<_> = component
+        .iter()
+        .flat_map(|&carbon| {
+            mol.neighbors(carbon).filter_map(move |(oxygen, bond)| {
+                let atom = mol.atom(oxygen);
+                (mol.atom(carbon).element.atomic_number() == 6
+                    && atom.element.atomic_number() == 8
+                    && atom.charge == -1
+                    && mol.degree(oxygen) == 1
+                    && mol.bond(bond).order == BondOrder::Single)
+                    .then_some((oxygen, bond))
+            })
+        })
+        .collect();
+    if let ([cation], [(oxygen, bond)]) = (cations.as_slice(), oxides.as_slice()) {
+        let mut candidate = normalized.clone();
+        for &idx in component {
+            candidate.set_atom_aromatic(idx, true);
+        }
+        for (idx, edge) in mol.bonds() {
+            if component.contains(&edge.atom1)
+                && component.contains(&edge.atom2)
+                && aromatic_bond(idx)
+            {
+                candidate.set_bond_order(idx, BondOrder::Aromatic);
+            }
+        }
+        candidate.set_charge(*cation, 0);
+        candidate.set_charge(*oxygen, 0);
+        candidate.set_bond_order(*bond, BondOrder::Double);
+        // Removing the second charge can leave a carbon without a
+        // permissible double bond (two adjacent neutral trivalent
+        // nitrogens, for example). Retain the original valence form
+        // unless the proposed one admits a Kekulé assignment.
+        if chematic_core::kekulize(&candidate).is_ok() {
+            *normalized = candidate;
+        }
+    }
 }
 
 /// RDKit Cleanup charges a bare Li/Na/K atom to +1 and a bare Mg/Ca atom
@@ -288,6 +306,7 @@ fn disconnect_metal_ligand_bonds(
     atoms: &mut [chematic_core::Atom],
 ) -> HashSet<BondIdx> {
     let mut removed = HashSet::new();
+    let haptic_iron = haptic_iron::specified_haptic_iron_centers(mol);
     let aromaticity = mol
         .bonds()
         .any(|(_, bond)| {
@@ -309,6 +328,20 @@ fn disconnect_metal_ligand_bonds(
             (bond.atom2.0 as usize, bond.atom1.0 as usize)
         };
         let ligand_atom = &atoms[ligand];
+        if haptic_iron.contains(&metal) {
+            removed.insert(bond_idx);
+            // This encoding has already assigned Fe(II) and two Cp anions.
+            // The single graph edges describe haptic contacts. Removing them
+            // leaves the charge on each component and restores the hydrogen
+            // on an unsubstituted carbanion if its bracket omitted it.
+            if ligand_atom.charge == -1
+                && ligand_atom.hydrogen_count == Some(0)
+                && mol.degree(AtomIdx(ligand as u32)) == 3
+            {
+                atoms[ligand].hydrogen_count = Some(1);
+            }
+            continue;
+        }
         let metal_z = atoms[metal].element.atomic_number();
         let ligand_z = ligand_atom.element.atomic_number();
         let (aromatic_carbon, zinc_fused_aromatic_edge) = metal_aromatic_exclusions(
@@ -550,21 +583,15 @@ fn assign_valence_aware_metal_charge(
         if ligand_charge == -1 && valence_after == total_degree_after + 1 {
             ligand_charge = 0;
         }
-        let metal_gain = if atoms[metal].element.atomic_number() == 30
-            && ligand_atom.element.atomic_number() == 6
-            && radical_before > 0
-            && ligand_charge == 0
-        {
-            // Breaking a Zn--carbon bond to a carbon already carrying a
-            // radical increases the carbon's radical count, not Zn charge.
-            0
-        } else if ligand_charge == -1
+        let metal_gain = if ligand_charge == -1
             && ligand_atom.element.atomic_number() == 6
             && valence_after == total_degree_after + 2
         {
             0
         } else {
-            (-ligand_charge + lone_electrons).max(0)
+            // An electron retained by an existing ligand radical is not
+            // transferred from the metal during disconnection.
+            (-ligand_charge - lone_electrons).max(0)
         };
         atoms[ligand].charge = i8::try_from(ligand_charge).unwrap_or(original.charge);
         if ligand_atom.element.atomic_number() == 7
@@ -646,45 +673,75 @@ mod tests {
     use chematic_smiles::parse;
 
     #[test]
-    fn cleanup_matches_rdkit_in_place_normalization_on_fused_oxido_imidazolium() {
-        for (input, expected) in [
-            (
-                "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
-                "Cc1cn2c(=O)c3c(nc2n1)n(C[200O]CCO)cn3C",
-            ),
-            (
-                "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
-                "[CH]c1cn2c(=O)c3c(nc2n1)n(COCC[O-])cn3C",
-            ),
-            (
-                "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
-                "Cc1cn2c(=O)c3c(nc2n1)n(COCCO)cn3C",
-            ),
+    fn cleanup_keeps_fused_oxido_imidazolium_when_neutralization_cannot_kekulize() {
+        for input in [
+            "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
+            "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
+            "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
         ] {
             let mol = parse(input).unwrap();
+            let cleaned = cleanup(&mol);
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            for (element, charge) in [(7, 1), (8, -1)] {
+                assert!(
+                    cleaned
+                        .atoms()
+                        .any(|(_, atom)| atom.element.atomic_number() == element
+                            && atom.charge == charge),
+                    "{input} -> {serialized}"
+                );
+            }
             assert_eq!(
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleanup(&mol)).as_deref(),
-                Ok(expected),
+                crate::calc_mol_formula_with_isotopes(&mol),
+                crate::calc_mol_formula_with_isotopes(&cleaned),
                 "{input}"
             );
-            assert_eq!(
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&super::normalize_groups(&mol))
-                    .unwrap(),
-                chematic_smiles::rdkit_cleanup_canonical_smiles(&mol).unwrap(),
-                "copy-returning Normalize must retain the RDKit distinction: {input}"
+            assert!(
+                chematic_smiles::rdkit_canonical_smiles(&parse(&serialized).unwrap()).is_ok(),
+                "{input} -> {serialized}"
             );
         }
     }
 
     #[test]
-    fn cleanup_unbrackets_pentavalent_phosphorus_after_metal_disconnection() {
-        let input = "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1";
-        let expected = "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]";
-        let cleaned = cleanup(&parse(input).unwrap());
-        assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
-        );
+    fn cleanup_compatibility_smiles_reparses_dicationic_azoles() {
+        for input in [
+            "C1=N[N+2]=NN1",
+            "CC1=NN=[N+2]N1",
+            "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            let read_back = parse(&serialized).unwrap();
+            assert!(
+                chematic_smiles::rdkit_canonical_smiles(&read_back).is_ok(),
+                "{input} -> {serialized}"
+            );
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&read_back),
+                chematic_smiles::canonical_smiles(&cleaned),
+                "{input} -> {serialized}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_compatibility_smiles_preserves_explicit_zero_hydrogens() {
+        for input in [
+            "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+            "[C](=O)(O)[Zn]",
+            "[C](=O)[O:27].[Fe]",
+            "CC=[C]C.[Zn]",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            let reparsed = parse(&serialized).unwrap();
+            assert_eq!(
+                crate::calc_mol_formula_with_isotopes(&reparsed),
+                crate::calc_mol_formula_with_isotopes(&cleaned),
+                "{input} -> {serialized}"
+            );
+        }
     }
 
     #[test]
@@ -720,6 +777,30 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_keeps_metal_neutral_when_a_carbon_radical_retains_the_electron() {
+        for (input, expected) in [
+            ("[Fe][C]=O", "[C]=O.[Fe]"),
+            ("[Mn][C]=O", "[C]=O.[Mn]"),
+            ("[Cu][C](C)O", "C[C]O.[Cu]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                cleaned
+                    .atoms()
+                    .map(|(_, atom)| i32::from(atom.charge))
+                    .sum::<i32>(),
+                0,
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
     fn cleanup_remaps_three_ligand_square_planar_stereo_after_disconnection() {
         for (input, expected) in [
             ("F[Pt@SP1](Cl)Br", "[Br-].[Cl-].[F-].[Pt@SP2+3]"),
@@ -748,14 +829,15 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_reionizes_nonaromatic_imide_carbanion_after_zinc_cut() {
+    fn cleanup_keeps_the_stronger_conjugate_base_after_zinc_cut() {
         let input = "CC1=C(CCOC2=CC=C(C[C]3([Zn])OC(=O)NC3=O)C=C2)N=C(C2=C[C+]=CO2)O1";
-        let expected = "Cc1oc(C2=C[C+]=CO2)nc1[CH-]COc1ccc(CC2OC(=O)NC2=O)cc1.[Zn+]";
+        // The carbonyl-adjacent carbanion is the conjugate base of the
+        // stronger acid. The broad carbanion pattern alone reverses this.
+        let expected = "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]";
         let cleaned = cleanup(&parse(input).unwrap());
-        assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
-        );
+        let smiles = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        assert_eq!(smiles(&cleaned).as_deref(), Ok(expected));
+        assert_eq!(smiles(&cleanup(&cleaned)).as_deref(), Ok(expected));
     }
 
     #[test]
@@ -782,14 +864,54 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_reionizes_cyclopentadienyl_anions_after_iron_cut() {
-        let input = "C1=CC=CC1[Fe]C1C=CC=C1";
-        let expected = "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]";
-        let cleaned = cleanup(&parse(input).unwrap());
+    fn cleanup_retains_one_cyclopentadienide_on_each_side_of_the_iron_cut() {
+        // PubChem CID 7611 describes Fe(II) and two cyclopentadienide ions.
+        let expected = "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]";
+        let smiles = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        for input in [
+            "C1=CC=CC1[Fe]C1C=CC=C1",
+            "C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(smiles(&cleaned).as_deref(), Ok(expected), "{input}");
+            assert_eq!(
+                smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(crate::calc_mol_formula(&cleaned), "C10H10Fe");
+        }
+    }
+
+    #[test]
+    fn cleanup_checks_acid_strength_at_each_competing_proton_acceptor() {
+        use chematic_smiles::canonical_smiles;
+
+        let input = parse("[CH2-]C(=O)C(F)(F)F.CCc1ccccc1.[CH3-]").unwrap();
+        let expected = parse("[CH2-]C(=O)C(F)(F)F.C[CH-]c1ccccc1.C").unwrap();
+        let cleaned = cleanup(&input);
+        assert_eq!(canonical_smiles(&cleaned), canonical_smiles(&expected));
         assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
+            canonical_smiles(&cleanup(&cleaned)),
+            canonical_smiles(&cleaned)
         );
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&input)
+        );
+    }
+
+    #[test]
+    fn cleanup_preserves_the_ionic_components_of_charge_explicit_haptic_iron() {
+        let input = "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10";
+        let cleaned = cleanup(&parse(input).unwrap());
+        // PubChem CID 102082 has the same ions. Keep the input's explicit
+        // charge location on the substituted ring for the native writer.
+        let expected = "CN(C)C[c-]1cccc1.[Fe+2].c1cc[cH-]c1";
+        let canonical = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        assert_eq!(canonical(&cleaned).as_deref(), Ok(expected));
+        assert_eq!(canonical(&cleanup(&cleaned)).as_deref(), Ok(expected));
+        assert_eq!(crate::calc_mol_formula(&cleaned), "C13H17FeN");
     }
 
     #[test]
@@ -870,6 +992,25 @@ mod tests {
                 Ok(expected),
                 "{input}"
             );
+        }
+    }
+
+    #[test]
+    fn cleanup_reionizes_aromatic_and_kekule_annulenyl_anion_inputs_identically() {
+        for (aromatic, kekule) in [
+            ("[cH-]1cccccc1", "[CH-]1C=CC=CC=C1"),
+            ("[cH-]1cccccccccc1", "[CH-]1C=CC=CC=CC=CC=C1"),
+            ("[cH-]1cccccccccccccc1", "[CH-]1C=CC=CC=CC=CC=CC=CC=C1"),
+        ] {
+            let aromatic = cleanup(&parse(aromatic).unwrap());
+            let kekule = cleanup(&parse(kekule).unwrap());
+            let expected = chematic_smiles::canonical_smiles(&kekule);
+            assert_eq!(chematic_smiles::canonical_smiles(&aromatic), expected);
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&cleanup(&aromatic)),
+                expected
+            );
+            assert!(chematic_core::kekulize(&aromatic).is_ok());
         }
     }
 

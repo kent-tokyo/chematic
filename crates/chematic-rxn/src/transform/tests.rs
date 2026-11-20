@@ -2801,16 +2801,21 @@ fn traced_apply_match_reports_atom_sources() {
                     for src in t.atom_sources.iter().flatten() {
                         assert!(seen.insert(*src), "{smirks}: duplicate source {src:?}");
                     }
-                    // Product template atom i is product atom i: a mapped
-                    // one traces to where the match put that map number,
-                    // an unmapped one is new.
-                    for i in 0..template.atom_count() {
+                    // Template atoms precede any carried substituents. A
+                    // mapped one traces to its match; an unmapped one is new.
+                    assert!(t.atom_sources.len() >= template.atom_count());
+                    for (i, source) in t
+                        .atom_sources
+                        .iter()
+                        .take(template.atom_count())
+                        .enumerate()
+                    {
                         let expected = template
                             .atom(AtomIdx(i as u32))
                             .atom_map
                             .and_then(|am| global.get(&am))
                             .map(|&(reactant, atom)| ReactantAtom { reactant, atom });
-                        assert_eq!(t.atom_sources[i], expected, "{smirks}: template atom {i}");
+                        assert_eq!(source, &expected, "{smirks}: template atom {i}");
                     }
                 }
             }

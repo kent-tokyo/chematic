@@ -197,8 +197,18 @@ fn run_rdkit_parity<S: MatchSink>(
         return Ok(false);
     }
 
+    with_parity_target(mol, config.use_rdkit_parity_aromaticity, |target| {
+        run_on_parity_target(query, target, config, sink)
+    })
+}
+
+fn with_parity_target<R>(
+    mol: &Molecule,
+    use_rdkit_aromaticity: bool,
+    run: impl FnOnce(&Molecule) -> Result<R, RdkitParityError>,
+) -> Result<R, RdkitParityError> {
     let view;
-    let mol_ref: &Molecule = if config.use_rdkit_parity_aromaticity {
+    let mol_ref: &Molecule = if use_rdkit_aromaticity {
         view = chematic_perception::apply_aromaticity_rdkit_parity_shared(mol);
         view.as_ref()
             .as_ref()
@@ -214,6 +224,15 @@ fn run_rdkit_parity<S: MatchSink>(
     let organometallic_view = rdkit_parity_iron_carbanion_view(mol_ref);
     let mol_ref = organometallic_view.as_ref().unwrap_or(mol_ref);
 
+    run(mol_ref)
+}
+
+fn run_on_parity_target<S: MatchSink>(
+    query: &QueryMolecule,
+    mol_ref: &Molecule,
+    config: &RdkitParityConfig,
+    sink: &mut S,
+) -> Result<bool, RdkitParityError> {
     let cache = mol_ref.derived(
         chematic_core::DerivedSlot::RdkitParityMatch,
         TargetCache::default,
@@ -227,15 +246,17 @@ fn run_rdkit_parity<S: MatchSink>(
     // How many of its bonds the SSSR ring sharing the most bonds with other
     // SSSR rings shares, when every bounded ring search below provably stays
     // under the candidate cap; `None` otherwise.
-    let shared = cache
-        .max_shared_bonds
-        .get_or_init(|| max_shared_bonds(mol_ref, rings));
-    let shortcut_bounded = rings_shortcut_bounded(mol_ref, rings, budget.max_candidates);
+    let shared = || {
+        *cache
+            .max_shared_bonds
+            .get_or_init(|| max_shared_bonds(mol_ref, rings))
+    };
+    let shortcut_bounded = || rings_shortcut_bounded(mol_ref, rings, budget.max_candidates);
     let mut symmetrized_local = None;
     let symmetrized_rings: Option<&RingSet> = if uses_ring_size {
         let cap = budget.max_candidates;
         match keyed(&cache.symmetrized, cap, &mut symmetrized_local, || {
-            if *shared == 0 && shortcut_bounded {
+            if shared() == 0 && shortcut_bounded() {
                 // Bond-disjoint SSSR rings: they are the graph's only simple
                 // cycles, so the symmetrized set adds nothing to them.
                 return Ok(None);
@@ -267,7 +288,7 @@ fn run_rdkit_parity<S: MatchSink>(
     let mut parity_local = None;
     let parity_model = if needs_parity_model {
         match keyed(&cache.parity_model, *budget, &mut parity_local, || {
-            if *shared <= 1 && shortcut_bounded {
+            if shared() <= 1 && shortcut_bounded() {
                 // No SSSR ring shares two or more bonds, so no candidate can
                 // replace one (see `max_shared_bonds`): the model is the SSSR.
                 return Ok(sssr_ring_model(mol_ref, rings));
@@ -282,62 +303,18 @@ fn run_rdkit_parity<S: MatchSink>(
     };
     let size_model = if uses_ring_size { parity_model } else { None };
     let mut owned_ring_model = None;
-    let ring_model =
-        if uses_ring_count && config.ring_count_model == RdkitRingCountModel::RelevantCycles {
-            let cap = config.ring_model_budget.max_candidates;
-            let mut local = None;
-            let counts = keyed(&cache.relevant_counts, cap, &mut local, || {
-                chematic_perception::relevant_cycle_counts(mol_ref, cap).ok()
-            })
-            .as_ref()
-            .ok_or(RdkitParityError::RingModelBudgetExceeded {
-                candidates_examined: cap.saturating_add(1),
-                cap,
-            })?;
-            Some(&*owned_ring_model.insert(RdkitParityRingModel::from_counts(counts)))
-        } else if uses_ring_count {
-            let model = if config.use_shared_symmetrized_sssr {
-                &*owned_ring_model.insert(build_shared_symmetrized_ring_model(
-                    mol_ref,
-                    rings,
-                    &config.ring_model_budget,
-                )?)
-            } else {
-                parity_model.expect("built when the ring count needs it")
-            };
-            let aromatic_cations = mol_ref
-                .atoms()
-                .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
-                .count();
-            if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
-                // Here RDKit's symmetrized SSSR depends on the atom order. Count
-                // over the exact port of RDKit's order-dependent ring list for
-                // the molecule in its given atom order; refuse only where that
-                // port itself declines (RDKit's approximate ring finder).
-                let exact = cache.exact_counts.get_or_init(|| {
-                    chematic_perception::rdkit_sssr_ring_order(mol_ref).map(|exact| {
-                        let mut counts = vec![0usize; mol_ref.atom_count()];
-                        for ring in &exact {
-                            for a in ring {
-                                counts[a.0 as usize] += 1;
-                            }
-                        }
-                        counts
-                    })
-                });
-                let Some(counts) = exact else {
-                    return Err(RdkitParityError::RingModelAmbiguous {
-                        aromatic_cations,
-                        extra_rings: model.extra_ring_count(),
-                    });
-                };
-                Some(&*owned_ring_model.insert(RdkitParityRingModel::from_counts(counts)))
-            } else {
-                Some(model)
-            }
-        } else {
-            None
-        };
+    let ring_model = if uses_ring_count {
+        Some(resolve_ring_count_model(
+            mol_ref,
+            rings,
+            config,
+            &cache,
+            parity_model,
+            &mut owned_ring_model,
+        )?)
+    } else {
+        None
+    };
 
     let ctx = EvalCtx {
         mol: mol_ref,
@@ -354,6 +331,109 @@ fn run_rdkit_parity<S: MatchSink>(
     let mut state = MatchState::new(query.atoms.len());
     match_recursive(query, &ctx, &mut state, sink, config.base.max_matches);
     Ok(ctx.budget_exhausted.get())
+}
+
+fn resolve_ring_count_model<'a>(
+    target: &Molecule,
+    rings: &RingSet,
+    config: &RdkitParityConfig,
+    cache: &TargetCache,
+    parity_model: Option<&'a RdkitParityRingModel>,
+    owned: &'a mut Option<RdkitParityRingModel>,
+) -> Result<&'a RdkitParityRingModel, RdkitParityError> {
+    if config.ring_count_model == RdkitRingCountModel::RelevantCycles {
+        let cap = config.ring_model_budget.max_candidates;
+        let mut local = None;
+        let counts = cached_relevant_counts(target, cache, cap, &mut local)?;
+        return Ok(owned.insert(RdkitParityRingModel::from_counts(counts)));
+    }
+    let shared_model = if config.use_shared_symmetrized_sssr {
+        Some(build_shared_symmetrized_ring_model(
+            target,
+            rings,
+            &config.ring_model_budget,
+        )?)
+    } else {
+        None
+    };
+    let model = shared_model
+        .as_ref()
+        .or(parity_model)
+        .expect("built when the ring count needs it");
+    let aromatic_cations = target
+        .atoms()
+        .filter(|(_, atom)| atom.aromatic && atom.charge > 0)
+        .count();
+    if aromatic_cations >= 2 && model.extra_ring_count() > 0 {
+        // In this case the older RDKit ring basis depends on atom order.
+        let exact = cache.exact_counts.get_or_init(|| {
+            chematic_perception::rdkit_sssr_ring_order(target).map(|exact| {
+                let mut counts = vec![0usize; target.atom_count()];
+                for ring in &exact {
+                    for a in ring {
+                        counts[a.0 as usize] += 1;
+                    }
+                }
+                counts
+            })
+        });
+        let Some(counts) = exact else {
+            return Err(RdkitParityError::RingModelAmbiguous {
+                aromatic_cations,
+                extra_rings: model.extra_ring_count(),
+            });
+        };
+        return Ok(owned.insert(RdkitParityRingModel::from_counts(counts)));
+    }
+    if let Some(model) = shared_model {
+        Ok(owned.insert(model))
+    } else {
+        Ok(parity_model.expect("built when the ring count needs it"))
+    }
+}
+
+/// Presence of each RDKit 2026.09 relevant ring count on the matching
+/// target, packed as four words indexed by the u8 SMARTS ring count.
+/// The caller supplies RDKit's hydrogen-suppressed graph when required.
+pub fn rdkit_relevant_ring_count_presence(
+    mol: &Molecule,
+    config: &RdkitParityConfig,
+) -> Result<[u64; 4], RdkitParityError> {
+    with_parity_target(mol, config.use_rdkit_parity_aromaticity, |target| {
+        let cache = target.derived(
+            chematic_core::DerivedSlot::RdkitParityMatch,
+            TargetCache::default,
+        );
+        let mut local = None;
+        let counts = cached_relevant_counts(
+            target,
+            &cache,
+            config.ring_model_budget.max_candidates,
+            &mut local,
+        )?;
+        let mut present = [0; 4];
+        for &count in counts {
+            let count = count.min(u8::MAX as usize);
+            present[count / 64] |= 1 << (count % 64);
+        }
+        Ok(present)
+    })
+}
+
+fn cached_relevant_counts<'a>(
+    mol: &Molecule,
+    cache: &'a TargetCache,
+    cap: usize,
+    local: &'a mut Option<Option<Vec<usize>>>,
+) -> Result<&'a [usize], RdkitParityError> {
+    keyed(&cache.relevant_counts, cap, local, || {
+        chematic_perception::relevant_cycle_counts(mol, cap).ok()
+    })
+    .as_deref()
+    .ok_or(RdkitParityError::RingModelBudgetExceeded {
+        candidates_examined: cap.saturating_add(1),
+        cap,
+    })
 }
 
 /// The largest number of bonds any SSSR ring shares with other SSSR rings.
@@ -467,14 +547,27 @@ pub fn has_match_rdkit_parity_bounded(
 ) -> Result<MatchOutcome, RdkitParityError> {
     let mut one_match_cfg = config.clone();
     one_match_cfg.base.max_matches = Some(1);
-    let (results, budget_exhausted) = find_matches_rdkit_parity(query, mol, &one_match_cfg)?;
-    Ok(if !results.is_empty() {
+    let mut found = FirstMatch(false);
+    let budget_exhausted = run_rdkit_parity(query, mol, &one_match_cfg, &mut found)?;
+    Ok(if found.0 {
         MatchOutcome::Found
     } else if budget_exhausted {
         MatchOutcome::BudgetExhausted
     } else {
         MatchOutcome::NotFound
     })
+}
+
+struct FirstMatch(bool);
+
+impl MatchSink for FirstMatch {
+    fn count(&self) -> usize {
+        usize::from(self.0)
+    }
+
+    fn push(&mut self, _map: &[u32]) {
+        self.0 = true;
+    }
 }
 
 /// Scan a query (including nested recursive `$(...)` sub-queries) for any

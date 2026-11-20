@@ -10,13 +10,10 @@ support and refusal boundaries, see [compatibility scope](compatibility-scope.md
 
 ## Current measured boundary
 
-The **v1.2.1 release** retains the named RDKit-compatible surfaces,
+The **v1.2.2 release line** retains the named RDKit-compatible surfaces,
 adds stronger fail-closed canonical-SMILES, reaction, R-group and
 standardization handling, fixes bounded MCS and conversion edge cases, and
-preserves dated evidence under its original version. The latest completed
-hosted public-wheel chemistry evidence is v1.2.0 until the v1.2.1 tag workflow
-finishes. New v1.2.1 performance results remain source-only until exact public
-artifacts are timed. In the recorded v1.0.41 source comparison, chematic matches RDKit at
+preserves dated evidence under its original version. v1.2.2 package claims require exact published artifacts; source timing remains source timing. In the recorded v1.0.41 source comparison, chematic matches RDKit at
 least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
 RDKit.js 10k; the separate stress corpus retains one weaker native canonical
 SMILES round-trip result. This is source-build evidence, not a universal or
@@ -26,8 +23,16 @@ published-package chemistry and speed comparison packet is pinned to
 covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
 and Windows x86-64. The v1.2.0 hosted published-wheel chemistry run completed
 all 11 jobs, but its durable per-row packet is not checked in yet.
-These are output-validation results, not evidence for npm/WASM or v1.2.1
+These are output-validation results, not evidence for npm/WASM or v1.2.2
 package performance.
+
+The v1.2.2 source Cleanup comparison with RDKit 2026.09.1 matches 4,022/4,069
+comparable stress rows and 9,996/10,000 broad rows. Against the 2026-10-24
+source record, 47 and 2 previously exact rows now differ; the
+[stress](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json)
+and [broad](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-10k-2026-11-21.json)
+records classify each difference. The same source Reionize gate matches all
+4,072 stress rows. These are fixed-corpus string comparisons.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

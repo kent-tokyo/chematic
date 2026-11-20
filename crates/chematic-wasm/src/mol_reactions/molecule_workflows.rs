@@ -81,6 +81,14 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+/// Apply Cleanup and return a new molecule with all fragments retained.
+#[wasm_bindgen]
+pub fn cleanup_mol(mol: &MolHandle) -> MolHandle {
+    MolHandle {
+        inner: std::rc::Rc::new(chematic_chem::cleanup(&mol.inner)),
+    }
+}
+
 fn parent_transform_json(
     mol: &MolHandle,
     transform: fn(
@@ -368,10 +376,16 @@ fn qmol_to_molecule(qmol: &chematic_smarts::QueryMolecule) -> chematic_core::Mol
 
     let mut builder = MoleculeBuilder::new();
     for (idx, qa) in qmol.atoms.iter().enumerate() {
-        let elem = extract_atomic_num(&qa.query)
-            .and_then(Element::from_atomic_number)
-            .unwrap_or(Element::C);
-        let mut atom = Atom::new(elem);
+        let number = extract_atomic_num(&qa.query);
+        let mut atom = if number == Some(0) {
+            Atom::wildcard()
+        } else {
+            Atom::new(
+                number
+                    .and_then(Element::from_atomic_number)
+                    .unwrap_or(Element::C),
+            )
+        };
         atom.aromatic = aromatic_atoms[idx];
         builder.add_atom(atom);
     }
@@ -481,13 +495,16 @@ pub fn mcs_smiles_json_with_config(
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
+    let objective = config.objective();
     let config = config.into_mcs_config();
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = if rdkit_heavy {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(
+            &mol_refs, &config, objective,
+        )
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_objective_checked(&mol_refs, &config, objective)
     };
     let was_timed_out = outcome.was_timed_out();
     let was_resource_limited = outcome.was_resource_limited();
@@ -509,8 +526,10 @@ pub fn mcs_smiles_json_with_config(
 /// MCS SMARTS with status, preserving atom and bond query alternatives.
 ///
 /// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
-/// Configuration requiring charge, isotope, or chirality predicates is rejected
-/// because those constraints are not yet encoded in the returned SMARTS.
+/// Set `bondCountFirst` to maximize bonds first, then atoms.
+/// Charge and isotope predicates are preserved. `matchChiralTag` retains
+/// absolute tetrahedral orientation with at least three common bonds and
+/// chirality presence on smaller frames. Other stereo raises a serialization error.
 #[wasm_bindgen]
 pub fn mcs_smarts_json_with_config(
     smiles_json: &str,
@@ -521,18 +540,15 @@ pub fn mcs_smarts_json_with_config(
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
+    let objective = config.objective();
     let config = config.into_mcs_config();
-    if config.match_chiral_tag || config.match_charge || config.match_isotope {
-        return Err(JsValue::from_str(
-            "MCS SMARTS does not encode matchChiralTag, matchCharge, or matchIsotope constraints",
-        ));
-    }
-
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = if rdkit_heavy {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(
+            &mol_refs, &config, objective,
+        )
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_objective_checked(&mol_refs, &config, objective)
     };
     let was_timed_out = outcome.was_timed_out();
     let was_resource_limited = outcome.was_resource_limited();

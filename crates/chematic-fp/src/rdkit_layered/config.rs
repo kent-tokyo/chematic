@@ -1,4 +1,4 @@
-//! Checked configurable Layered fingerprints, pinned to RDKit 2026.09.1.
+//! Checked configurable Layered fingerprints, verified against RDKit 2026.09.2.
 //! RDKit-derived behavior is covered by THIRD_PARTY_NOTICES.md (BSD-3-Clause).
 use super::*;
 mod enumeration;
@@ -63,7 +63,7 @@ pub struct RdkitLayeredResult {
 }
 
 /// No caller counters are mutated, and resource exhaustion returns no partial result.
-/// Requires a simple indexed molecule; complex query bonds are rejected.
+/// Requires a simple indexed molecule. Query and zero-order bonds are rejected.
 pub fn rdkit_layered_config(
     mol: &Molecule,
     config: &RdkitLayeredConfig,
@@ -80,7 +80,7 @@ fn compute(
     mol: &Molecule,
     c: &RdkitLayeredConfig,
 ) -> Result<RdkitLayeredResult, RdkitLayeredError> {
-    let prepared = features::Prepared::new(mol, true);
+    let mut prepared = features::Prepared::new(mol, true);
     let mut result = RdkitLayeredResult {
         fp_size: c.fp_size,
         bits: vec![0; c.fp_size.div_ceil(8)],

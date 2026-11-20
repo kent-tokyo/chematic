@@ -162,27 +162,22 @@ impl PyPreparedFingerprintIndex {
     #[pyo3(signature = (smiles, fp = "ecfp4"))]
     fn from_smiles(smiles: Vec<String>, fp: &str) -> PyResult<Self> {
         let fp_type = parse_fp_type(fp)?;
-        let mut molecules = Vec::new();
+        let mut inner = chematic_fp::PreparedFingerprintIndex::new(&[], fp_type);
         let mut original_indices = Vec::new();
         let mut valid_smiles = Vec::new();
         let mut failed_indices = Vec::new();
         for (index, smi) in smiles.into_iter().enumerate() {
-            if let Ok(mol) = chematic_smiles::parse(&smi) {
-                if fp_type == chematic_fp::FpType::RdkitEcfp4
-                    && chematic_fp::rdkit_morgan_ecfp4_experimental(&mol).is_err()
-                {
-                    failed_indices.push(index);
-                } else {
-                    molecules.push(mol);
-                    original_indices.push(index);
-                    valid_smiles.push(smi);
-                }
-            } else {
+            let Ok(mol) = chematic_smiles::parse(&smi) else {
                 failed_indices.push(index);
+                continue;
+            };
+            if inner.try_push(&mol).is_err() {
+                failed_indices.push(index);
+                continue;
             }
+            original_indices.push(index);
+            valid_smiles.push(smi);
         }
-        let inner = chematic_fp::PreparedFingerprintIndex::try_new(&molecules, fp_type)
-            .map_err(|error| PyValueError::new_err(error.to_string()))?;
         Ok(Self {
             inner,
             original_indices,

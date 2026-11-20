@@ -68,6 +68,36 @@ def test_compiled_smarts_query_is_reusable(ethanol):
     assert "[#8]" in repr(query)
 
 
+@pytest.mark.parametrize(
+    "pattern",
+    ["[#6]", "[#7]", "[C,N]", "[#6;!R]", "[!#6]", "[$([#6]-[#8])]",
+     "[#0]", "[#0;+0]", "F/C=C/F", "[#1]-[#8]"],
+)
+def test_prepared_smarts_screen_preserves_exact_matches(pattern):
+    molecules = [
+        chematic.from_smiles(smiles)
+        for smiles in (
+            "C", "CC", "CO", "N", "[Cl-]", "c1ccccc1", "[*]O", "[13CH4]",
+            "F/C=C/F", "F/C=C\\F", "[H]OC",
+        )
+    ]
+    batch = chematic.MoleculeBatch(molecules)
+    query = chematic.compile_smarts(pattern)
+    expected = [query.matches(mol, use_chirality=True) for mol in molecules]
+    assert query.matches_batch(batch, use_chirality=True) == expected
+    assert query.matches_batch(batch, use_chirality=True) == expected
+
+
+def test_dummy_element_query_is_preserved_in_all_matching_modes():
+    mol = chematic.from_smiles("[*]O")
+    batch = chematic.MoleculeBatch([mol, chematic.from_smiles("CO")])
+    for pattern, hits in (("[#0]", [[0]]), ("[#0;+0]", [[0]]), ("[#0]-[#8]", [[0, 1]])):
+        query = chematic.compile_smarts(pattern)
+        assert query.matches_batch(batch) == [True, False]
+        assert query.matches(mol)
+        assert query.find_matches(mol) == hits
+
+
 def test_compiled_smarts_rejects_invalid_query():
     with pytest.raises(ValueError):
         chematic.compile_smarts("[C;")

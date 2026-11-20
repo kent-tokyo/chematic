@@ -135,6 +135,14 @@ class SmartsQuery:
     def matches_many(self, molecules: Iterable[Mol], use_chirality: bool = False) -> list[bool]: ...
 
     def matches_batch(self, batch: MoleculeBatch, use_chirality: bool = False) -> list[bool]: ...
+    def match_indices_rdkit_parity_batch(
+        self,
+        batch: MoleculeBatch,
+        profile: str = "2026.03.6",
+        use_chirality: bool = False,
+    ) -> tuple[list[int], list[tuple[int, str]]]:
+        """Sorted hit indices and (index, reason) refusals."""
+        ...
 
     def find_matches(self, mol: Mol, use_chirality: bool = False) -> list[list[int]]: ...
 
@@ -153,6 +161,14 @@ class MoleculeBatch:
     def __len__(self) -> int: ...
 
     def hbd_counts(self) -> list[int]: ...
+    def rdkit_ecfp_config(
+        self,
+        radius: int = 2,
+        nbits: int = 2048,
+        include_chirality: bool = False,
+        count_simulation: bool = False,
+    ) -> list[bytes]: ...
+
 
 class MolecularForceField:
     """A prepared MMFF94 or UFF force field with mutable coordinates.
@@ -588,9 +604,35 @@ class Mol:
     ) -> dict[int, int]:
         """``GetMorganGenerator(radius).GetSparseCountFingerprint(m)`` elements."""
         ...
+    def rdkit_atom_pair_config_detail(
+        self,
+        *,
+        nbits: int = 2048,
+        min_distance: int = 1,
+        max_distance: int = 30,
+        include_chirality: bool = False,
+        count_simulation: bool = True,
+        count_bounds: Sequence[int] | None = None,
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
+        """Return packed bits, folded counts and unhashed counts for 2D Atom Pair."""
+        ...
+
     def rdkit_atom_pair_sparse_counts(self) -> dict[int, int]:
         """``GetAtomPairGenerator().GetSparseCountFingerprint(m)`` elements."""
         ...
+    def rdkit_torsion_config_detail(
+        self,
+        *,
+        atom_count: int = 4,
+        nbits: int = 2048,
+        only_shortest_paths: bool = False,
+        include_chirality: bool = False,
+        count_simulation: bool = True,
+        count_bounds: Sequence[int] | None = None,
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
+        """Return packed bits, folded counts and unhashed Topological Torsion counts."""
+        ...
+
     def rdkit_torsion_sparse_counts(self) -> dict[int, int]:
         """``GetTopologicalTorsionGenerator().GetSparseCountFingerprint(m)`` elements."""
         ...
@@ -1394,6 +1436,26 @@ class Mol:
         """RDKit-compatible pattern fingerprint as a numpy bit vector."""
         ...
 
+    def rdkit_rdk_config_detail(
+        self,
+        *,
+        min_path: int = 1,
+        max_path: int = 7,
+        nbits: int = 2048,
+        bits_per_feature: int = 2,
+        use_hs: bool = True,
+        branched_paths: bool = True,
+        use_bond_order: bool = True,
+        from_atoms: Optional[Sequence[int]] = None,
+        ignore_atoms: Optional[Sequence[int]] = None,
+        atom_invariants: Optional[Sequence[int]] = None,
+        count_simulation: bool = False,
+        count_bounds: Optional[Sequence[int]] = None,
+        max_visits: int = 1000000,
+        max_paths: int = 100000,
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
+        """Packed RDK bits, folded counts, and sparse counts."""
+        ...
     def rdkit_rdk_fp_numpy(
         self, ignore_atoms: Optional[Sequence[int]] = None
     ) -> ndarray:
@@ -1567,8 +1629,9 @@ class Mol:
     def cleanup(self) -> Mol:
         """Apply the supported RDKit Cleanup stages and return a new molecule.
 
-        Acid/base-priority reionization and some metal coordination patterns
-        remain outside this profile.
+        Proton transfers use the ordered acid/base catalog and check the
+        resulting acid before moving a proton. Metal disconnection covers
+        the supported ligand and coordination patterns.
         """
         ...
 
@@ -2323,14 +2386,14 @@ class Mol:
     def cip_stereo(self, mode: str = "legacy") -> list[dict]:
         """CIP stereochemistry assignments — list of ``{"atom_idx": int, "descriptor": str}`` dicts.
 
-        ``descriptor`` is ``"R"``, ``"S"``, ``"E"``, ``"Z"``, ``"r"`` or ``"s"``;
-        E/Z entries also carry ``"bond_idx"`` and ``"bond_atoms"``.
+        Double-bond descriptors are ``"E"``, ``"Z"``, ``"seqCis"`` or ``"seqTrans"``.
+        Entries for individual bonds carry ``"bond_idx"`` and ``"bond_atoms"``.
+        Odd cumulenes in accurate mode carry the full path as ``"cumulene_atoms"``.
         ``mode="accurate"`` uses the hierarchical-digraph engine; its labels
         that flip with the ring's Kekulé spelling carry ``"kekule_dependent":
-        True`` and those that follow RDKit's reading of the parsed SMILES
-        spelling (saturated ring lone-pair centres such as bridgehead amines)
-        carry ``"spelling_dependent": True``. Unresolved atoms are listed by
-        :meth:`cip_stereo_unresolved`.
+        True``. Saturated ring lone-pair centres use the recorded ligand order.
+        Call :meth:`rdkit_parsed` first to apply RDKit's reader conventions.
+        Unresolved atoms are listed by :meth:`cip_stereo_unresolved`.
         """
         ...
 
@@ -4911,13 +4974,21 @@ def find_mcs_smarts_checked(
     bond_compare: McsBondComparison = "order_or_aromatic",
     maximize_bonds: bool = True,
     max_search_nodes: Optional[int] = None,
+    *,
+    match_charge: bool = False,
+    match_isotope: bool = False,
+    bond_count_first: bool = False,
+    match_chiral_tag: bool = False,
 ) -> tuple[Optional[str], bool]:
     """Return the MCS SMARTS query and whether the deadline stopped the search.
 
     Unlike :func:`find_mcs_checked`, this retains all observed atom and bond
     alternatives under relaxed comparison. A resource limit raises
-    ``ChematicInputError``. Charge, isotope, and chirality matching are not
-    exposed here because the returned query does not encode those constraints.
+    ``ChematicInputError``. Charge and isotope constraints are preserved when
+    requested. Set ``bond_count_first=True`` to maximize bonds first, then atoms.
+    Set ``match_chiral_tag=True`` to retain absolute tetrahedral orientation
+    with at least three common bonds and chirality presence on smaller frames.
+    Non-tetrahedral and relative stereo raise ``ValueError``.
     """
     ...
 

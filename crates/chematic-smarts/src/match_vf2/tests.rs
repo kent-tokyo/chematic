@@ -66,6 +66,49 @@ fn single_atomic_number_existence_query_is_exact() {
 }
 
 #[test]
+fn dummy_atomic_number_survives_both_existence_and_embedding_screens() {
+    let mol = parse("[*]O").unwrap();
+    let config = MatchConfig::default();
+    for (smarts, count) in [
+        ("[#0]", 1),
+        ("[#0;+0]", 1),
+        ("[#0]-[#8]", 1),
+        ("[#6]", 0),
+        ("[#6]-[#8]", 0),
+    ] {
+        let query = parse_smarts(smarts).unwrap();
+        assert_eq!(
+            has_match_with_config(&query, &mol, &config),
+            count != 0,
+            "{smarts}"
+        );
+        assert_eq!(
+            find_matches_with_config(&query, &mol, &config).len(),
+            count,
+            "{smarts}"
+        );
+    }
+}
+
+#[test]
+fn distinct_embedding_threshold_does_not_count_atom_order_variants() {
+    let mol = parse("C1CC1").unwrap();
+    let query = parse_smarts("CC").unwrap();
+    assert!(has_at_least_distinct_embeddings(&query, &mol, 3));
+    assert!(!has_at_least_distinct_embeddings(&query, &mol, 4));
+}
+
+#[test]
+fn distinct_atomic_number_embeddings_count_dummy_atoms_as_zero() {
+    let mol = parse("[*]OC[*]").unwrap();
+    let dummy = parse_smarts("[#0]").unwrap();
+    let carbon = parse_smarts("[#6]").unwrap();
+    assert!(has_at_least_distinct_embeddings(&dummy, &mol, 2));
+    assert!(!has_at_least_distinct_embeddings(&dummy, &mol, 3));
+    assert!(!has_at_least_distinct_embeddings(&carbon, &mol, 2));
+}
+
+#[test]
 fn query_cycle_flags() {
     let q = parse_smarts("*1~*~*~1-C").unwrap();
     assert_eq!(query_cyclic_atoms(&q), vec![true, true, true, false]);
@@ -217,39 +260,35 @@ fn test_chirality_ignored_by_default() {
 }
 
 #[test]
-fn test_chirality_enforced_when_enabled() {
-    // L-alanine has [C@@H] — query [C@@H] should match, [C@H] should not.
-    let mol = parse("N[C@@H](C)C(=O)O").unwrap();
-
-    let q_ccw = parse_smarts("[C@@H]").unwrap(); // CCW (@@) = kind 2
-    let q_cw = parse_smarts("[C@H]").unwrap(); // CW  (@)  = kind 1
-
+fn test_chirality_enforced_for_a_complete_ligand_order() {
+    let l_alanine = parse("N[C@@H](C)C(=O)O").unwrap();
+    let d_alanine = parse("N[C@H](C)C(=O)O").unwrap();
+    let query = parse_smarts("N[C@@H](C)C(=O)O").unwrap();
     let config = MatchConfig {
         use_chirality: true,
         ..MatchConfig::default()
     };
 
-    let m_ccw = find_matches_with_config(&q_ccw, &mol, &config);
-    let m_cw = find_matches_with_config(&q_cw, &mol, &config);
-
-    // [C@@H] must match L-alanine's chiral center.
-    assert!(!m_ccw.is_empty(), "[C@@H] should match L-alanine (@@)");
-    // [C@H] must NOT match L-alanine.
-    assert!(m_cw.is_empty(), "[C@H] should not match L-alanine (@@)");
+    assert!(has_match_with_config(&query, &l_alanine, &config));
+    assert!(!has_match_with_config(&query, &d_alanine, &config));
 }
 
 #[test]
-fn test_chirality_d_alanine_positive_match() {
-    // D-alanine [C@H] should positively match [C@H] query when use_chirality=true.
-    // This complements test_chirality_enforced_when_enabled which only tested negative on L-ala.
-    let mol = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (@, kind 1)
-    let q_cw = parse_smarts("[C@H]").unwrap(); // CW (@), kind 1
+fn test_isolated_chirality_only_requires_a_specified_stereocenter() {
+    let l_alanine = parse("N[C@@H](C)C(=O)O").unwrap();
+    let d_alanine = parse("N[C@H](C)C(=O)O").unwrap();
+    let unspecified = parse("NC(C)C(=O)O").unwrap();
     let config = MatchConfig {
         use_chirality: true,
         ..MatchConfig::default()
     };
-    let m = find_matches_with_config(&q_cw, &mol, &config);
-    assert!(!m.is_empty(), "[C@H] should positively match D-alanine (@)");
+
+    for smarts in ["[C@@H]", "[C@H]"] {
+        let query = parse_smarts(smarts).unwrap();
+        assert!(has_match_with_config(&query, &l_alanine, &config));
+        assert!(has_match_with_config(&query, &d_alanine, &config));
+        assert!(!has_match_with_config(&query, &unspecified, &config));
+    }
 }
 
 // S2: visit budget tests
