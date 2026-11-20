@@ -13,12 +13,7 @@ pub(super) fn write_cleanup_smiles(
             .then(|| model.clone());
     let initial_atom_count = model.atoms.len();
     let isolated_tags = isolated_nontetrahedral_tags(mol, &model);
-    let sanitized = if has_added_hydrogens(mol) {
-        sanitize::sanitize_keeping_hs(&mut model)
-    } else {
-        sanitize::remove_hs_and_sanitize(&mut model)
-    };
-    if let Err(error) = sanitized {
+    if let Err(error) = sanitize::sanitize_cleanup_output(&mut model, has_added_hydrogens(mol)) {
         return write_unsanitized_fallback(before_sanitize, in_place_oxide, params, error);
     }
     if lithium_nitrogen_ring

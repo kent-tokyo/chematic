@@ -688,6 +688,28 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_compatibility_smiles_reparses_dicationic_azoles() {
+        for input in [
+            "C1=N[N+2]=NN1",
+            "CC1=NN=[N+2]N1",
+            "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            let read_back = parse(&serialized).unwrap();
+            assert!(
+                chematic_smiles::rdkit_canonical_smiles(&read_back).is_ok(),
+                "{input} -> {serialized}"
+            );
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&read_back),
+                chematic_smiles::canonical_smiles(&cleaned),
+                "{input} -> {serialized}"
+            );
+        }
+    }
+
+    #[test]
     fn cleanup_compatibility_smiles_preserves_explicit_zero_hydrogens() {
         for input in [
             "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
