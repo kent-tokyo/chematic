@@ -19,7 +19,7 @@ permissions:
 jobs:
   rdkitjs-gate:
     if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'performance')
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
