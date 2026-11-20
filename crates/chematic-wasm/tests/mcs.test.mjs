@@ -65,6 +65,18 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
       mol.free();
     }
   }
+  const isotopic = "[13CH3][C@H](C)Cl";
+  const isotopeOptions = JSON.stringify({matchChiralTag: true, matchIsotope: true});
+  const isotopeQuery = JSON.parse(mcs_smarts_json_with_config(JSON.stringify([isotopic, isotopic]), isotopeOptions)).smarts;
+  const matching = JSON.stringify({useChirality: true, useIsotopes: true});
+  for (const [smiles, expected] of [[isotopic, true], ["[13CH3][C@@H](C)Cl", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      assert.equal(JSON.parse(wasm.smarts_match_atoms_with_config(isotopeQuery, mol, matching)).length > 0, expected);
+    } finally {
+      mol.free();
+    }
+  }
   assert.throws(() => mcs_smarts_json_with_config(
     JSON.stringify(["[Pt@SP1](F)(Cl)(Br)I", "[Pt@SP1](F)(Cl)(Br)I"]), options
   ), /representable absolute tetrahedral stereo/);

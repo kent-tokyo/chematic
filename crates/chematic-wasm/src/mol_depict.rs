@@ -62,32 +62,7 @@ pub fn depict_svg_grid(smiles_block: &str, cols: usize) -> String {
 /// Returns `"[]"` if no match. Returns a JS error on invalid SMARTS.
 #[wasm_bindgen]
 pub fn smarts_match_atoms(smarts: &str, mol: &MolHandle) -> Result<String, JsValue> {
-    let query =
-        chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
-    const WASM_MAX_SMARTS_VISITS: u64 = 1_000_000;
-    let config = chematic_smarts::MatchConfig {
-        max_matches: Some(WASM_MAX_SMARTS_MATCHES),
-        use_chirality: false,
-        use_isotopes: false,
-        uniquify: true,
-        max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
-    };
-    let matches = chematic_smarts::find_matches_perceived(&query, &mol.inner, &config);
-    let parts: Vec<String> = matches
-        .into_iter()
-        .map(|m| {
-            let mut idxs: Vec<u32> = m.values().map(|a| a.0).collect();
-            idxs.sort_unstable();
-            format!(
-                "[{}]",
-                idxs.iter()
-                    .map(|i| i.to_string())
-                    .collect::<Vec<_>>()
-                    .join(",")
-            )
-        })
-        .collect();
-    Ok(format!("[{}]", parts.join(",")))
+    smarts_match_atoms_using(smarts, mol, false, false)
 }
 
 /// Like `smarts_match_atoms` but with explicit chirality matching control.
@@ -101,13 +76,46 @@ pub fn smarts_match_atoms_with_chirality(
     mol: &MolHandle,
     use_chirality: bool,
 ) -> Result<String, JsValue> {
+    smarts_match_atoms_using(smarts, mol, use_chirality, false)
+}
+
+#[derive(Default, serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct SmartsMatchOptions {
+    use_chirality: bool,
+    use_isotopes: bool,
+}
+
+/// Match SMARTS with optional `useChirality` and `useIsotopes` JSON flags.
+/// Returns sorted atom indices for each hit. The existing WASM match and visit
+/// limits apply. Pass `{}` to use the default settings.
+#[wasm_bindgen]
+pub fn smarts_match_atoms_with_config(
+    smarts: &str,
+    mol: &MolHandle,
+    config_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("SMARTS", smarts)?;
+    enforce_wasm_input_len("SMARTS config", config_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let config: SmartsMatchOptions =
+        serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    smarts_match_atoms_using(smarts, mol, config.use_chirality, config.use_isotopes)
+}
+
+fn smarts_match_atoms_using(
+    smarts: &str,
+    mol: &MolHandle,
+    use_chirality: bool,
+    use_isotopes: bool,
+) -> Result<String, JsValue> {
     let query =
         chematic_smarts::parse_smarts(smarts).map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
     const WASM_MAX_SMARTS_VISITS: u64 = 1_000_000;
     let config = chematic_smarts::MatchConfig {
         max_matches: Some(WASM_MAX_SMARTS_MATCHES),
         use_chirality,
-        use_isotopes: false,
+        use_isotopes,
         uniquify: true,
         max_visit_budget: Some(WASM_MAX_SMARTS_VISITS),
     };

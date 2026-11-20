@@ -2274,30 +2274,23 @@ fn ecfp6_bitvec_with_chirality_l_vs_d_alanine_different() {
 fn smarts_match_atoms_with_chirality_chiral_atom_matches_only_with_flag() {
     let l_ala = parse("C[C@H](N)C(=O)O");
     let d_ala = parse("C[C@@H](N)C(=O)O");
-    // Match [C@H] (counterclockwise) — should only match L-alanine when use_chirality=true
-    let l_matches_with = smarts_match_atoms_with_chirality("[C@H]", &l_ala, true).unwrap();
-    let l_matches_without = smarts_match_atoms_with_chirality("[C@H]", &l_ala, false).unwrap();
-    let d_matches_with = smarts_match_atoms_with_chirality("[C@H]", &d_ala, true).unwrap();
-    let d_matches_without = smarts_match_atoms_with_chirality("[C@H]", &d_ala, false).unwrap();
+    let query = "C[C@H](N)C(=O)O";
 
-    // With use_chirality=true: L-ala matches, D-ala doesn't
-    assert!(
-        !l_matches_with.contains("[]"),
-        "L-ala should match [C@H] with use_chirality=true"
+    assert_ne!(
+        smarts_match_atoms_with_chirality(query, &l_ala, true).unwrap(),
+        "[]"
     );
-    assert!(
-        d_matches_with.contains("[]"),
-        "D-ala should NOT match [C@H] with use_chirality=true"
+    assert_eq!(
+        smarts_match_atoms_with_chirality(query, &d_ala, true).unwrap(),
+        "[]"
     );
-
-    // With use_chirality=false: both match (chirality ignored)
-    assert!(
-        !l_matches_without.contains("[]"),
-        "L-ala should match [C@H] with use_chirality=false"
+    assert_ne!(
+        smarts_match_atoms_with_chirality(query, &l_ala, false).unwrap(),
+        "[]"
     );
-    assert!(
-        !d_matches_without.contains("[]"),
-        "D-ala should match [C@H] with use_chirality=false (chirality ignored)"
+    assert_ne!(
+        smarts_match_atoms_with_chirality(query, &d_ala, false).unwrap(),
+        "[]"
     );
 }
 
