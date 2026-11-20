@@ -18,8 +18,8 @@ fn isolated_water_label_h2o() {
     let layout = crate::layout::compute_layout(&m);
     let svg = render_svg(&m, &layout);
     assert!(
-        svg.contains("H2O"),
-        "water 'O' should show H2O label, got: {}",
+        svg.contains("H₂O"),
+        "water 'O' should show H₂O label, got: {}",
         svg
     );
 }
@@ -30,8 +30,8 @@ fn isolated_methane_label_ch4() {
     let layout = crate::layout::compute_layout(&m);
     let svg = render_svg(&m, &layout);
     assert!(
-        svg.contains("CH4"),
-        "methane 'C' should show CH4 label, got: {}",
+        svg.contains("CH₄"),
+        "methane 'C' should show CH₄ label, got: {}",
         svg
     );
     assert!(svg.contains("<text"), "single C must have a text label now");
@@ -42,7 +42,7 @@ fn isolated_ammonia_label_h3n() {
     let m = mol("N");
     let layout = crate::layout::compute_layout(&m);
     let svg = render_svg(&m, &layout);
-    assert!(svg.contains("H3N"), "ammonia 'N' should show H3N label");
+    assert!(svg.contains("H₃N"), "ammonia 'N' should show H₃N label");
 }
 
 #[test]
