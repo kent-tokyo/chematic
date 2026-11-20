@@ -292,7 +292,7 @@ fn rdkit_layered_fp_input(mol: &Molecule, trust_view: bool) -> BitVec2048 {
         return fp;
     }
 
-    let prepared = features::Prepared::new(mol, trust_view);
+    let mut prepared = features::Prepared::new(mol, trust_view);
     for_each_subgraph(mol, MAX_PATH, |path| {
         for seed in prepared.hashes(path).seeds.into_iter().flatten() {
             fp.set((seed % FP_SIZE) as usize);

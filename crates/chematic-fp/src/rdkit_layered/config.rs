@@ -80,7 +80,7 @@ fn compute(
     mol: &Molecule,
     c: &RdkitLayeredConfig,
 ) -> Result<RdkitLayeredResult, RdkitLayeredError> {
-    let prepared = features::Prepared::new(mol, true);
+    let mut prepared = features::Prepared::new(mol, true);
     let mut result = RdkitLayeredResult {
         fp_size: c.fp_size,
         bits: vec![0; c.fp_size.div_ceil(8)],
