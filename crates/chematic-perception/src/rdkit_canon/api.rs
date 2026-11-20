@@ -130,8 +130,8 @@ pub(crate) fn rank_with_rings(
 ) -> Vec<u32> {
     let inp = build_input(mol, rings, ez);
     let mut ranker = Ranker::new(&inp);
-    for i in 0..inp.anum.len() {
-        ranker.atoms[i].total_hs = u32::from(implicit_hcount(mol, AtomIdx(i as u32)));
+    for (i, atom) in ranker.atoms.iter_mut().enumerate() {
+        atom.total_hs = u32::from(implicit_hcount(mol, AtomIdx(i as u32)));
     }
     ranker.rank()
 }

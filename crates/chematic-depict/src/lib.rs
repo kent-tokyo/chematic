@@ -112,6 +112,28 @@ pub fn depict_data_with_coords(mol: &Molecule, coords: &[(f64, f64)]) -> DepictD
     depict_data_from_layout(mol, &layout)
 }
 
+/// Literal Up/Down also encodes wedges imported from drawing formats.
+/// Adjacent paired alkene directions are rendered as ordinary single bonds.
+fn drawing_bond_order(mol: &Molecule, idx: BondIdx) -> BondOrder {
+    let bond = mol.bond(idx);
+    if !matches!(bond.order, BondOrder::Up | BondOrder::Down) {
+        return bond.order;
+    }
+    for end in [bond.atom1, bond.atom2] {
+        for (far, double) in mol.neighbors(end) {
+            if mol.bond(double).order == BondOrder::Double
+                && !(mol.atom(end).aromatic && mol.atom(far).aromatic)
+                && mol.neighbors(far).any(|(_, b)| {
+                    b != double && chematic_core::ez_markers::raw_direction(mol, b).is_some()
+                })
+            {
+                return BondOrder::Single;
+            }
+        }
+    }
+    bond.order
+}
+
 /// Internal helper: build `DepictData` from a pre-computed `Layout`.
 fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
     let atoms: Vec<DepictAtom> = mol
@@ -142,7 +164,7 @@ fn depict_data_from_layout(mol: &Molecule, layout: &Layout) -> DepictData {
     let bonds: Vec<DepictBond> = mol
         .bonds()
         .map(|(bidx, bond)| {
-            let kind = match bond.order {
+            let kind = match drawing_bond_order(mol, bidx) {
                 BondOrder::Single => DepictBondKind::Single,
                 BondOrder::Double => DepictBondKind::Double,
                 BondOrder::Triple => DepictBondKind::Triple,
@@ -467,7 +489,7 @@ mod tests {
     }
 
     // -------------------------------------------------------------------
-    // 12. depict_svg — single carbon (C): shows molecular formula "CH4".
+    // 12. depict_svg — single carbon (C): shows molecular formula "CH₄".
     // -------------------------------------------------------------------
     #[test]
     fn test_depict_svg_single_carbon_shows_ch4() {
@@ -476,17 +498,17 @@ mod tests {
         assert!(svg.starts_with("<svg"), "Single C SVG must start with <svg");
         assert!(svg.ends_with("</svg>"), "Single C SVG must end with </svg>");
         // Isolated carbon shows molecular formula label.
-        assert!(svg.contains("CH4"), "Single C SVG must show CH4 label");
+        assert!(svg.contains("CH₄"), "Single C SVG must show CH₄ label");
     }
 
     // -------------------------------------------------------------------
-    // 13. depict_svg — single oxygen (O): shows "H2O" label.
+    // 13. depict_svg — single oxygen (O): shows "H₂O" label.
     // -------------------------------------------------------------------
     #[test]
     fn test_depict_svg_single_oxygen_shows_h2o() {
         let m = mol("O");
         let svg = depict_svg(&m);
-        assert!(svg.contains("H2O"), "Single O SVG must show H2O label");
+        assert!(svg.contains("H₂O"), "Single O SVG must show H₂O label");
     }
 
     #[test]
