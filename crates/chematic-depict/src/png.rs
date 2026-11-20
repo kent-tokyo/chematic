@@ -132,7 +132,7 @@ fn draw_bonds(pixmap: &mut Pixmap, mol: &Molecule, layout: &Layout, offset_x: f6
 
     let mut paint = Paint::default();
     paint.set_color(Color::BLACK);
-    for (_, bond) in mol.bonds() {
+    for (idx, bond) in mol.bonds() {
         let p1 = layout.get(bond.atom1);
         let p2 = layout.get(bond.atom2);
         let x1 = ((p1.x + offset_x) * PIXELS_PER_UNIT) as f32;
@@ -140,7 +140,8 @@ fn draw_bonds(pixmap: &mut Pixmap, mol: &Molecule, layout: &Layout, offset_x: f6
         let x2 = ((p2.x + offset_x) * PIXELS_PER_UNIT) as f32;
         let y2 = ((p2.y + offset_y) * PIXELS_PER_UNIT) as f32;
 
-        let stroke_width = match bond.order {
+        let order = crate::drawing_bond_order(mol, idx);
+        let stroke_width = match order {
             BondOrder::Up => BOND_WIDTH * 2.5,
             BondOrder::Down => BOND_WIDTH * 0.8,
             _ => BOND_WIDTH,
@@ -162,7 +163,7 @@ fn draw_bonds(pixmap: &mut Pixmap, mol: &Molecule, layout: &Layout, offset_x: f6
                 None,
             );
         }
-        if bond.order == BondOrder::Down {
+        if order == BondOrder::Down {
             draw_dash_overlay(pixmap, &paint, &stroke, [x1, y1], [x2, y2]);
         }
     }
