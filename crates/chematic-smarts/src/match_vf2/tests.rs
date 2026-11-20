@@ -91,6 +91,14 @@ fn dummy_atomic_number_survives_both_existence_and_embedding_screens() {
 }
 
 #[test]
+fn distinct_embedding_threshold_does_not_count_atom_order_variants() {
+    let mol = parse("C1CC1").unwrap();
+    let query = parse_smarts("CC").unwrap();
+    assert!(has_at_least_distinct_embeddings(&query, &mol, 3));
+    assert!(!has_at_least_distinct_embeddings(&query, &mol, 4));
+}
+
+#[test]
 fn query_cycle_flags() {
     let q = parse_smarts("*1~*~*~1-C").unwrap();
     assert_eq!(query_cyclic_atoms(&q), vec![true, true, true, false]);
