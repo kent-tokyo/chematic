@@ -519,8 +519,9 @@ pub fn mcs_smiles_json_with_config(
 ///
 /// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
 /// Set `bondCountFirst` to maximize bonds first, then atoms.
-/// Charge and isotope predicates are preserved. Chirality predicates are
-/// rejected until the serializer can retain their matching semantics.
+/// Charge and isotope predicates are preserved. `matchChiralTag` retains
+/// complete absolute tetrahedral frames. Other frames raise a serialization
+/// error.
 #[wasm_bindgen]
 pub fn mcs_smarts_json_with_config(
     smiles_json: &str,
@@ -533,12 +534,6 @@ pub fn mcs_smarts_json_with_config(
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
     let objective = config.objective();
     let config = config.into_mcs_config();
-    if config.match_chiral_tag {
-        return Err(JsValue::from_str(
-            "MCS SMARTS does not encode matchChiralTag constraints",
-        ));
-    }
-
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = if rdkit_heavy {
         chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(

@@ -311,7 +311,7 @@ pub(crate) fn mapped_chirality_primitive_with_map(
     (query_chirality == target_chirality) == even
 }
 
-fn query_has_positive_h_count(query: &AtomQuery) -> bool {
+pub(crate) fn query_has_positive_h_count(query: &AtomQuery) -> bool {
     match query {
         AtomQuery::Primitive(AtomPrimitive::HCount(count)) => *count > 0,
         AtomQuery::And(a, b) => query_has_positive_h_count(a) || query_has_positive_h_count(b),

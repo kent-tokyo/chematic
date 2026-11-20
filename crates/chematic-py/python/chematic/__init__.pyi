@@ -4923,6 +4923,7 @@ def find_mcs_smarts_checked(
     match_charge: bool = False,
     match_isotope: bool = False,
     bond_count_first: bool = False,
+    match_chiral_tag: bool = False,
 ) -> tuple[Optional[str], bool]:
     """Return the MCS SMARTS query and whether the deadline stopped the search.
 
@@ -4930,7 +4931,8 @@ def find_mcs_smarts_checked(
     alternatives under relaxed comparison. A resource limit raises
     ``ChematicInputError``. Charge and isotope constraints are preserved when
     requested. Set ``bond_count_first=True`` to maximize bonds first, then atoms.
-    Chirality constraints are not supported by this serializer.
+    Set ``match_chiral_tag=True`` to retain complete absolute tetrahedral
+    frames. Partial, non-tetrahedral and enhanced frames raise ``ValueError``.
     """
     ...
 

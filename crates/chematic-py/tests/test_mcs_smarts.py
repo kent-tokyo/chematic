@@ -76,3 +76,25 @@ def test_mcs_round_trips_dummy_atoms_in_element_comparator():
     assert query.matches(projected)
     mixed, timed_out = ch.find_mcs_smarts_checked([dummy, carbon])
     assert not timed_out and ch.compile_smarts(mixed).atom_count == 1
+
+
+@pytest.mark.parametrize("left,right,inverted", [
+    ("[C@H](C)(O)Cl", "C[C@@H](O)Cl", "C[C@H](O)Cl"),
+    ("[C@H]1(N)CCOC1", "N[C@H]1CCOC1", "N[C@@H]1CCOC1"),
+    ("F[C@](Cl)(Br)I", "I[C@@](Cl)(Br)F", "F[C@@](Cl)(Br)I"),
+])
+def test_mcs_smarts_round_trips_a_complete_tetrahedral_frame(left, right, inverted):
+    molecules = [ch.from_smiles(s) for s in (left, right)]
+    smarts, timed_out = ch.find_mcs_smarts_checked(
+        molecules, match_chiral_tag=True, bond_count_first=True
+    )
+    query = ch.compile_smarts(smarts)
+    assert not timed_out and "@" in smarts
+    assert all(query.matches(mol, use_chirality=True) for mol in molecules)
+    assert not query.matches(ch.from_smiles(inverted), use_chirality=True)
+
+
+def test_mcs_smarts_reports_an_incomplete_tetrahedral_frame():
+    molecules = [ch.from_smiles(s) for s in ("C[C@H](O)Cl", "C[C@H](I)Cl")]
+    with pytest.raises(ValueError, match="complete absolute tetrahedral frames"):
+        ch.find_mcs_smarts_checked(molecules, match_chiral_tag=True)

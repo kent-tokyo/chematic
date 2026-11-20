@@ -22,7 +22,7 @@ use frontier::{extend_frontier_atom, mapped_rows_share_common_bond};
 
 #[path = "mcs_stereo.rs"]
 mod stereo;
-use stereo::mapped_chirality_compatible;
+use stereo::{constrain_query_chirality, mapped_chirality_compatible};
 
 #[cfg(test)]
 #[path = "mcs_comparator_tests.rs"]
@@ -906,6 +906,9 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
         }
     }
 
+    if config.match_chiral_tag {
+        constrain_query_chirality(&mut qmol, mols, |q, m| mapping.query_to_mol[q][m]);
+    }
     qmol
 }
 
@@ -958,6 +961,9 @@ fn molecule_to_query(mol: &Molecule, config: &McsConfig) -> QueryMolecule {
         qmol.add_bond(bond.atom1.0 as usize, bond.atom2.0 as usize, bq);
     }
 
+    if config.match_chiral_tag {
+        constrain_query_chirality(&mut qmol, &[mol], |q, _| AtomIdx(q as u32));
+    }
     qmol
 }
 

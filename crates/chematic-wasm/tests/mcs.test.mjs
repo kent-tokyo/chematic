@@ -33,10 +33,27 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   assert.match(constrained.smarts, /;\+1/);
   assert.equal(constrained.wasTimedOut, false);
   assert.equal(constrained.wasResourceLimited, false);
+}
+
+{
+  const options = JSON.stringify({ matchChiralTag: true, bondCountFirst: true });
+  const inputs = ["[C@H]1(N)CCOC1", "N[C@H]1CCOC1"];
+  const result = JSON.parse(mcs_smarts_json_with_config(JSON.stringify(inputs), options));
+  assert.equal(result.wasTimedOut, false);
+  assert.equal(result.wasResourceLimited, false);
+  assert.match(result.smarts, /@/);
+  for (const [smiles, expected] of [...inputs.map(s => [s, true]), ["N[C@@H]1CCOC1", false]]) {
+    const mol = wasm.parse_smiles(smiles);
+    try {
+      const matches = JSON.parse(wasm.smarts_match_atoms_with_chirality(result.smarts, mol, true));
+      assert.equal(matches.length > 0, expected, result.smarts);
+    } finally {
+      mol.free();
+    }
+  }
   assert.throws(() => mcs_smarts_json_with_config(
-    JSON.stringify(["C[C@H](O)Cl", "C[C@H](O)Cl"]),
-    JSON.stringify({ matchChiralTag: true })
-  ), /matchChiralTag/);
+    JSON.stringify(["C[C@H](O)Cl", "C[C@H](I)Cl"]), options
+  ), /complete absolute tetrahedral frames/);
 }
 
 {

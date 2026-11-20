@@ -1257,7 +1257,8 @@ fn find_mcs_checked(
 ///
 /// Optional charge and isotope predicates are preserved for re-search.
 /// Set `bond_count_first` for the bond-first objective used by RDKit FMCS.
-/// Chirality matching is not yet representable by this serializer.
+/// `match_chiral_tag` retains complete absolute tetrahedral frames.
+/// Partial, non-tetrahedral and enhanced frames raise a serialization error.
 #[pyfunction]
 #[pyo3(signature = (
     mols,
@@ -1274,6 +1275,7 @@ fn find_mcs_checked(
     match_charge=false,
     match_isotope=false,
     bond_count_first=false,
+    match_chiral_tag=false,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn find_mcs_smarts_checked(
@@ -1290,6 +1292,7 @@ fn find_mcs_smarts_checked(
     match_charge: bool,
     match_isotope: bool,
     bond_count_first: bool,
+    match_chiral_tag: bool,
 ) -> PyResult<(Option<String>, bool)> {
     let mut config = build_mcs_config(
         match_bonds,
@@ -1299,7 +1302,7 @@ fn find_mcs_smarts_checked(
         complete_rings_only,
         atom_compare,
         bond_compare,
-        false,
+        match_chiral_tag,
         match_charge,
         match_isotope,
         maximize_bonds,
