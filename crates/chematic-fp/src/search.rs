@@ -119,20 +119,30 @@ impl PreparedFingerprintIndex {
 
     /// Build an index with explicit failure reporting for fallible profiles.
     pub fn try_new(db: &[Molecule], fp_type: FpType) -> Result<Self, PreparedFingerprintError> {
-        let fingerprints: Vec<_> = db
-            .iter()
-            .enumerate()
-            .map(|(index, mol)| {
-                compute_fp(mol, fp_type)
-                    .map_err(|source| PreparedFingerprintError::Database { index, source })
-            })
-            .collect::<Result<_, _>>()?;
-        let popcounts = fingerprints.iter().map(BitVec2048::popcount).collect();
-        Ok(Self {
+        let mut index = Self {
             fp_type,
-            fingerprints,
-            popcounts,
-        })
+            fingerprints: Vec::with_capacity(db.len()),
+            popcounts: Vec::with_capacity(db.len()),
+        };
+        for mol in db {
+            index.try_push(mol)?;
+        }
+        Ok(index)
+    }
+
+    /// Append a molecule's fingerprint without retaining the molecule.
+    ///
+    /// On failure the index is unchanged. The error reports the next index
+    /// position, so callers may skip a rejected molecule and continue.
+    pub fn try_push(&mut self, mol: &Molecule) -> Result<(), PreparedFingerprintError> {
+        let fingerprint =
+            compute_fp(mol, self.fp_type).map_err(|source| PreparedFingerprintError::Database {
+                index: self.len(),
+                source,
+            })?;
+        self.popcounts.push(fingerprint.popcount());
+        self.fingerprints.push(fingerprint);
+        Ok(())
     }
 
     /// Fingerprint family used by this index.
