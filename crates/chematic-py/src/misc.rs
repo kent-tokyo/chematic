@@ -4,7 +4,7 @@ use crate::Mol;
 use crate::formats::flat_to_coords3d;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 /// Parse `smarts`, memoizing successful parses process-wide.
 ///
@@ -44,12 +44,15 @@ pub(crate) struct PySmartsQuery {
     source: String,
     query: Arc<chematic_smarts::QueryMolecule>,
     folded: bool,
+    required_elements: u128,
+    atomic_number_only: bool,
 }
 
 /// Molecules retained in Rust for repeated batch operations.
 #[pyclass(name = "MoleculeBatch", frozen)]
 pub(crate) struct PyMoleculeBatch {
     molecules: Vec<Arc<chematic_core::Molecule>>,
+    element_masks: OnceLock<Vec<u128>>,
 }
 
 #[pymethods]
@@ -61,6 +64,7 @@ impl PyMoleculeBatch {
                 .into_iter()
                 .map(|mol| Arc::clone(&mol.inner))
                 .collect(),
+            element_masks: OnceLock::new(),
         }
     }
 
@@ -75,7 +79,10 @@ impl PyMoleculeBatch {
                     .map_err(|e| crate::errors::malformed("smiles", e.to_string()))
             })
             .collect::<PyResult<Vec<_>>>()?;
-        Ok(Self { molecules })
+        Ok(Self {
+            molecules,
+            element_masks: OnceLock::new(),
+        })
     }
 
     fn __len__(&self) -> usize {
@@ -119,17 +126,43 @@ impl PyMoleculeBatch {
     }
 }
 
+fn element_presence(mol: &chematic_core::Molecule) -> u128 {
+    mol.atoms()
+        .filter_map(|(_, atom)| {
+            let number = atom.element.atomic_number();
+            (!atom.wildcard && (1..128).contains(&number)).then_some(number)
+        })
+        .fold(0, |mask, number| mask | (1u128 << number))
+}
+
+impl PySmartsQuery {
+    fn from_query(source: String, query: chematic_smarts::QueryMolecule, folded: bool) -> Self {
+        use chematic_smarts::{AtomPrimitive, AtomQuery, match_vf2::required_element_mask};
+        let required_elements = required_element_mask(&query);
+        let atomic_number_only = required_elements != 0
+            && query.atoms.len() == 1
+            && query.bonds.is_empty()
+            && matches!(
+                query.atoms[0].query,
+                AtomQuery::Primitive(AtomPrimitive::AtomicNum(_))
+            );
+        Self {
+            source,
+            query: Arc::new(query),
+            folded,
+            required_elements,
+            atomic_number_only,
+        }
+    }
+}
+
 #[pymethods]
 impl PySmartsQuery {
     #[new]
     fn new(smarts: &str) -> PyResult<Self> {
         let query = chematic_smarts::parse_smarts(smarts)
             .map_err(|e| crate::errors::malformed("smarts", e.to_string()))?;
-        Ok(Self {
-            source: smarts.to_owned(),
-            query: Arc::new(query),
-            folded: false,
-        })
+        Ok(Self::from_query(smarts.to_owned(), query, false))
     }
 
     #[getter]
@@ -150,11 +183,7 @@ impl PySmartsQuery {
     fn merge_hydrogens(&self) -> PyResult<Self> {
         let query = chematic_smarts::merge_query_hydrogens(&self.query)
             .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(Self {
-            source: self.source.clone(),
-            query: Arc::new(query),
-            folded: true,
-        })
+        Ok(Self::from_query(self.source.clone(), query, true))
     }
 
     /// Return whether this query has at least one match in ``mol``.
@@ -186,18 +215,42 @@ impl PySmartsQuery {
 
     /// Match a Rust-retained molecule batch without re-extracting Python objects.
     #[pyo3(signature = (batch, use_chirality=false))]
-    fn matches_batch(&self, batch: &PyMoleculeBatch, use_chirality: bool) -> Vec<bool> {
+    fn matches_batch(
+        &self,
+        py: Python<'_>,
+        batch: &PyMoleculeBatch,
+        use_chirality: bool,
+    ) -> Vec<bool> {
         let config = chematic_smarts::MatchConfig {
             use_chirality,
             max_matches: Some(1),
             uniquify: false,
             ..chematic_smarts::MatchConfig::default()
         };
-        batch
-            .molecules
-            .iter()
-            .map(|mol| chematic_smarts::has_match_perceived(&self.query, mol, &config))
-            .collect()
+        py.detach(|| {
+            let required = self.required_elements;
+            let masks = (required != 0).then(|| {
+                batch.element_masks.get_or_init(|| {
+                    batch
+                        .molecules
+                        .iter()
+                        .map(|mol| element_presence(mol))
+                        .collect()
+                })
+            });
+            batch
+                .molecules
+                .iter()
+                .enumerate()
+                .map(|(i, mol)| {
+                    if !masks.is_none_or(|masks| masks[i] & required == required) {
+                        return false;
+                    }
+                    self.atomic_number_only
+                        || chematic_smarts::has_match_perceived(&self.query, mol, &config)
+                })
+                .collect()
+        })
     }
 
     /// Return sorted target-atom indices for every unique match.

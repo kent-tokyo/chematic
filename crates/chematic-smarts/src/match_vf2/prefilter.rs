@@ -22,6 +22,16 @@ pub(super) fn implied_atomic_number(q: &AtomQuery) -> Option<u8> {
     }
 }
 
+/// Atom elements an embedding requires, packed by atomic number.
+pub fn required_element_mask(query: &QueryMolecule) -> u128 {
+    query.atoms.iter().fold(0, |mask, atom| {
+        let Some(z) = implied_atomic_number(&atom.query).filter(|&z| (1..128).contains(&z)) else {
+            return mask;
+        };
+        mask | (1u128 << z)
+    })
+}
+
 /// Necessary condition for any embedding: the target has at least as many
 /// atoms of each element as the query has atoms pinned to that element
 /// (embeddings are injective). `false` proves there is no match.
