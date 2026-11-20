@@ -21,6 +21,10 @@ impl BitVec2048 {
         Self { words: [0u64; 32] }
     }
 
+    pub(crate) const fn from_words(words: [u64; 32]) -> Self {
+        Self { words }
+    }
+
     /// Set bit `bit` to 1.
     ///
     /// # Panics

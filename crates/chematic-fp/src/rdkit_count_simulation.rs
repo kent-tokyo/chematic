@@ -1,6 +1,6 @@
 //! Shared folding for RDKit Atom Pair and Topological Torsion counts.
 
-use crate::bitvec::BitVecN;
+use crate::bitvec::{BitVec2048, BitVecN};
 
 pub(crate) const COUNT_BOUNDS: [u32; 4] = [1, 2, 4, 8];
 pub(crate) const MAX_CONFIGURED_BITS: usize = 1_048_576;
@@ -20,6 +20,19 @@ pub(crate) fn folded_elements(counts: Vec<u32>) -> Vec<(u32, u32)> {
         .filter(|&(_, count)| count > 0)
         .map(|(bucket, count)| (bucket as u32, count))
         .collect()
+}
+
+/// Pack the fixed-width default thresholds [1, 2, 4, 8].
+pub(crate) fn default_count_bits(counts: &[u32]) -> BitVec2048 {
+    debug_assert_eq!(counts.len(), 512);
+    const BITS_BY_COUNT: [u64; 9] = [0, 1, 3, 3, 7, 7, 7, 7, 15];
+    let mut words = [0u64; 32];
+    for (word, buckets) in words.iter_mut().zip(counts.chunks_exact(16)) {
+        for (position, &count) in buckets.iter().enumerate() {
+            *word |= BITS_BY_COUNT[count.min(8) as usize] << (4 * position);
+        }
+    }
+    BitVec2048::from_words(words)
 }
 
 pub(crate) struct ConfiguredCounts<'a> {

@@ -49,7 +49,8 @@ use rustc_hash::FxHashMap;
 
 use crate::bitvec::{BitVec2048, BitVecN};
 use crate::rdkit_count_simulation::{
-    COUNT_BOUNDS, ConfiguredCounts, MAX_CONFIGURED_BITS, folded_elements, valid_count_bounds,
+    COUNT_BOUNDS, ConfiguredCounts, MAX_CONFIGURED_BITS, default_count_bits, folded_elements,
+    valid_count_bounds,
 };
 use crate::rdkit_morgan_hash::hash_vec;
 use crate::rdkit_torsion::{CODE_SIZE, atom_code, chirality_bits, legacy_atom_stereo};
@@ -202,15 +203,7 @@ fn rdkit_atom_pair_bucket_counts(mol: &Molecule, n_buckets: u32) -> Vec<u32> {
 fn rdkit_atom_pair_fp_prepared(mol: &Molecule) -> BitVec2048 {
     const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
     let counts = rdkit_atom_pair_bucket_counts(mol, BLOCK_LENGTH);
-    let mut fp = BitVec2048::new();
-    for (bucket, &count) in counts.iter().enumerate() {
-        for (i, &bound) in COUNT_BOUNDS.iter().enumerate() {
-            if count >= bound {
-                fp.set(bucket * N_BITS_PER_ENTRY + i);
-            }
-        }
-    }
-    fp
+    default_count_bits(&counts)
 }
 
 /// Options for the two-dimensional RDKit Atom Pair generator.

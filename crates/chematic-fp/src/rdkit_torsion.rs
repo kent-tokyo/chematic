@@ -18,7 +18,7 @@ use rustc_hash::FxHashMap;
 use std::fmt;
 
 use crate::bitvec::BitVec2048;
-use crate::rdkit_count_simulation::{COUNT_BOUNDS, folded_elements};
+use crate::rdkit_count_simulation::{default_count_bits, folded_elements};
 use crate::rdkit_morgan_hash::hash_vec;
 
 // ---------------------------------------------------------------------------
@@ -681,15 +681,7 @@ fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
     const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
     let counts = torsion_bucket_counts(mol, &endpoint_codes, BLOCK_LENGTH);
 
-    let mut fp = BitVec2048::new();
-    for (bucket, &count) in counts.iter().enumerate() {
-        for (i, &bound) in COUNT_BOUNDS.iter().enumerate() {
-            if count >= bound {
-                fp.set(bucket * N_BITS_PER_ENTRY + i);
-            }
-        }
-    }
-    fp
+    default_count_bits(&counts)
 }
 
 #[cfg(test)]
