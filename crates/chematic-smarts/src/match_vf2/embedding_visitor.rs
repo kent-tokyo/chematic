@@ -32,6 +32,17 @@ pub fn has_at_least_distinct_embeddings(
     if count == 0 {
         return true;
     }
+    if let [atom] = query.atoms.as_slice()
+        && query.bonds.is_empty()
+        && let AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)) = &atom.query
+    {
+        // Each matching atom supplies a different one-atom set.
+        return mol
+            .atoms()
+            .filter(|(_, atom)| effective_atomic_number(atom) == *number)
+            .nth(count - 1)
+            .is_some();
+    }
     let config = MatchConfig::default();
     if count == 1 {
         return has_match_with_config(query, mol, &config);

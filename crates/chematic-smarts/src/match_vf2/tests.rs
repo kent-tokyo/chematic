@@ -99,6 +99,16 @@ fn distinct_embedding_threshold_does_not_count_atom_order_variants() {
 }
 
 #[test]
+fn distinct_atomic_number_embeddings_count_dummy_atoms_as_zero() {
+    let mol = parse("[*]OC[*]").unwrap();
+    let dummy = parse_smarts("[#0]").unwrap();
+    let carbon = parse_smarts("[#6]").unwrap();
+    assert!(has_at_least_distinct_embeddings(&dummy, &mol, 2));
+    assert!(!has_at_least_distinct_embeddings(&dummy, &mol, 3));
+    assert!(!has_at_least_distinct_embeddings(&carbon, &mol, 2));
+}
+
+#[test]
 fn query_cycle_flags() {
     let q = parse_smarts("*1~*~*~1-C").unwrap();
     assert_eq!(query_cyclic_atoms(&q), vec![true, true, true, false]);
