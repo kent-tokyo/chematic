@@ -119,7 +119,7 @@ fn write_eps_bonds(
         };
         render_bond_eps(
             out,
-            bond.order,
+            crate::drawing_bond_order(mol, bond_index),
             viewport.point(start),
             viewport.point(end),
             color,
