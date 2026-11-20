@@ -1368,8 +1368,8 @@ fn assign_ez_accurate(
     if subs_a1.is_empty() || subs_a2.is_empty() {
         return None;
     }
-    let (_, up_a1) = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker)?;
-    let (_, up_a2) = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker)?;
+    let up_a1 = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker)?;
+    let up_a2 = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker)?;
     let code = if up_a1 == up_a2 {
         CipCode::Z
     } else {
@@ -1385,7 +1385,7 @@ fn highest_stereo_sub_accurate(
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
     ranker: &LazyEzRanker<'_>,
-) -> Option<(AtomIdx, bool)> {
+) -> Option<bool> {
     // No marker on either substituent: nothing to read (see
     // `highest_stereo_sub`).
     if subs
@@ -1395,7 +1395,22 @@ fn highest_stereo_sub_accurate(
         return None;
     }
     let (top, other) = match subs {
-        [only] => (*only, None),
+        [only] => {
+            let up = substituent_is_up(mol, alkene_end, *only)?;
+            if mol.atom(*only).element != Element::H || implicit_hcount(mol, alkene_end) == 0 {
+                return Some(up);
+            }
+            // The natural-abundance implicit H can outrank explicit protium.
+            return match ranker
+                .get()
+                .compare_to_implicit_hydrogen(mol, alkene_end, *only)
+                .ok()??
+            {
+                std::cmp::Ordering::Greater => Some(up),
+                std::cmp::Ordering::Less => Some(!up),
+                std::cmp::Ordering::Equal => None,
+            };
+        }
         [a, b] => match ranker.get().compare(mol, alkene_end, *a, *b).ok()?? {
             std::cmp::Ordering::Greater => (*a, Some(*b)),
             std::cmp::Ordering::Less => (*b, Some(*a)),
@@ -1404,10 +1419,10 @@ fn highest_stereo_sub_accurate(
         _ => return None,
     };
     if let Some(up) = substituent_is_up(mol, alkene_end, top) {
-        return Some((top, up));
+        return Some(up);
     }
     let other_up = substituent_is_up(mol, alkene_end, other?)?;
-    Some((top, !other_up))
+    Some(!other_up)
 }
 
 mod ez_completeness;

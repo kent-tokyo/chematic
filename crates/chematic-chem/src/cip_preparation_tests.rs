@@ -59,7 +59,16 @@ fn eager_highest_sub(
         return None;
     }
     let (top, other) = match subs {
-        [only] => (*only, None),
+        [only] => {
+            if mol.atom(*only).element == Element::H && implicit_hcount(mol, alkene_end) != 0 {
+                let order = ranker
+                    .compare_to_implicit_hydrogen(mol, alkene_end, *only)
+                    .ok()??;
+                let up = substituent_is_up(mol, alkene_end, *only)?;
+                return Some((*only, up ^ (order == std::cmp::Ordering::Less)));
+            }
+            (*only, None)
+        }
         [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
             std::cmp::Ordering::Greater => (*a, Some(*b)),
             std::cmp::Ordering::Less => (*b, Some(*a)),
@@ -108,11 +117,12 @@ fn lazy_ez_matches_eager_on_raw_and_kekule_corpora() {
     assert_eq!(count, 14_072);
 }
 #[test]
-fn ranker_initializes_only_when_two_explicit_substituents_need_comparison() {
+fn ranker_initializes_only_when_two_substituents_need_comparison() {
     for (smiles, initialized) in [
         ("c1ccccc1", false),
         ("F/C=C/F", false),
         ("F/C(Cl)=C(/Br)I", true),
+        ("[2H]/C=C/[1H]", true),
     ] {
         let m = chematic_smiles::parse(smiles).unwrap();
         let ranker = LazyEzRanker::new(&m, chematic_cip::CipBudget::default_budget());

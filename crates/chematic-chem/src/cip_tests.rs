@@ -144,6 +144,49 @@ fn accurate_ez_uses_distal_alkenes_to_rank_tied_ligands() {
 }
 
 #[test]
+fn accurate_ez_ranks_implicit_hydrogen_against_explicit_isotopes() {
+    for (left, left_flip) in [
+        ("H", None),
+        ("1H", Some(true)),
+        ("2H", Some(false)),
+        ("3H", Some(false)),
+    ] {
+        for (right, right_flip) in [
+            ("H", None),
+            ("1H", Some(true)),
+            ("2H", Some(false)),
+            ("3H", Some(false)),
+        ] {
+            for direction in ['/', '\\'] {
+                let smiles = format!("[{left}]/C=C{direction}[{right}]");
+                let molecule = chematic_smiles::parse(&smiles).unwrap();
+                let expected = left_flip.zip(right_flip).map(|(l, r)| {
+                    if l ^ r ^ (direction == '\\') {
+                        CipCode::Z
+                    } else {
+                        CipCode::E
+                    }
+                });
+                let variants = std::iter::once(smiles.clone())
+                    .chain((1..=8).map(|seed| chematic_smiles::random_smiles(&molecule, seed)));
+                for variant in variants {
+                    let mol = chematic_smiles::parse(&variant).unwrap();
+                    let labels: Vec<_> = assign_ez_bonds_with_mode(&mol, CipMode::Accurate)
+                        .into_iter()
+                        .map(|(_, code)| code)
+                        .collect();
+                    assert_eq!(
+                        labels,
+                        expected.into_iter().collect::<Vec<_>>(),
+                        "{smiles} -> {variant}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
 fn squaraine_diimine_canonical_smiles_keeps_both_ez() {
     // Two exocyclic imines on a Kekulé four-membered ring, coupled
     // through the ring bond between them (#734: RDKit-written MOL blocks
