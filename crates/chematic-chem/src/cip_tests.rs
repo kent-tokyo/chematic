@@ -1392,7 +1392,8 @@ fn test_ez_completeness_aggregates_mixed_specified_and_unspecified() {
 #[test]
 fn assigns_hanson_double_bonds_ranked_by_auxiliary_stereo() {
     use DoubleBondCip::{E, SeqCis, SeqTrans, Z};
-    let cases: &[(&str, &[(u32, u32, DoubleBondCip)])] = &[
+    type DoubleBondCase<'a> = (&'a str, &'a [(u32, u32, DoubleBondCip)]);
+    let cases: &[DoubleBondCase<'_>] = &[
         (r"CC[C@@H]1CC/C(/CC1)=C\2/CC[C@H](CC2)CC", &[(5, 8, E)]), // VS214
         (r"C/C=C(/[C@H](Cl)C)\[C@H](C)Cl", &[(1, 2, SeqTrans)]),   // VS229
         (
