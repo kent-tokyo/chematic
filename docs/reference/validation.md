@@ -8,7 +8,7 @@ comparator, corpus, options, platform, and failure policy.
 ## Evidence boundary
 
 - v1.2.2 artifact results belong to its tag workflow. The v1.2.1 evaluation reported four-platform chemistry gates and 7,076 Python tests. The retained v1.2.0 workflow links below are older artifact evidence. Source-only timing does not become package timing.
-- A local v1.2.2 candidate wheel on macOS arm64/CPython 3.13 passed the selected RDKit 2026.03.6 gate manifest. One native-parsed bridgehead amine differs in the exposed 10,000-row CIP lane. BioTransformer and A6 remain retained expectations pending the published-artifact workflow.
+- A local v1.2.2 candidate wheel on macOS arm64/CPython 3.13 passed the selected RDKit 2026.03.6 gate manifest. One native-parsed bridgehead amine differs in the exposed 10,000-row CIP lane. BioTransformer candidate counts also passed; A6 remains a retained expectation pending the published-artifact workflow.
 - The latest durable checked-in cross-platform row packet is v1.1.3. Hosted
   workflow success does not create missing row-level evidence.
 - The latest indexed public-package speed result is the one-host v1.1.8 Labute

@@ -2,7 +2,7 @@
   "schema": "published-wheel-chemistry-gates-expected/v1",
   "chematic_version": "1.2.2",
   "rdkit": "2026.03.6",
-  "source": "Local pre-publication macOS arm64 CPython 3.13 candidate wheel SHA-256 fe868d8327e02eae261b580e988947ef07554db7a122731317f70868c8d0defd compared with RDKit 2026.03.6 for reaction, SMARTS, exposed 10k, ChEMBL 5k and descriptor stress gates. One native-parsed bridgehead amine differs in the exposed-10k CIP lane; the RDKit-parsed model returns S. BioTransformer corpus counts and A6 coordinates are retained from v1.2.1 pending exact published-wheel platform gates. A hosted count difference fails publication validation.",
+  "source": "Local pre-publication macOS arm64 CPython 3.13 candidate wheel SHA-256 fe868d8327e02eae261b580e988947ef07554db7a122731317f70868c8d0defd compared with RDKit 2026.03.6 for reaction, SMARTS, exposed 10k, ChEMBL 5k, descriptor stress and BioTransformer corpus gates. One native-parsed bridgehead amine differs in the exposed-10k CIP lane; the RDKit-parsed model returns S. A6 coordinates are retained from v1.2.1 pending exact published-wheel platform gates. A hosted count difference fails publication validation.",
   "gates": {
     "reaction_83": {
       "graph_origin_map_match": 80,
