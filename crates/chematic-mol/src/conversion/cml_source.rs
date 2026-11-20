@@ -79,6 +79,7 @@ fn validate(text: &str, limits: &ConversionLimits) -> Result<(), ConversionError
         text,
         roxmltree::ParsingOptions {
             allow_dtd: false,
+            entity_resolver: None,
             nodes_limit: MAX_XML_NODES,
         },
     )

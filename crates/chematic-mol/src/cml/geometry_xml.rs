@@ -105,6 +105,7 @@ pub(super) fn records(input: &str, limits: &CmlParseLimits) -> Result<Records, C
         input,
         roxmltree::ParsingOptions {
             allow_dtd: false,
+            entity_resolver: None,
             nodes_limit: nodes_limit as u32,
         },
     )
