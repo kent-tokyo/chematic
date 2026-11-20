@@ -996,6 +996,25 @@ mod tests {
     }
 
     #[test]
+    fn cleanup_reionizes_aromatic_and_kekule_annulenyl_anion_inputs_identically() {
+        for (aromatic, kekule) in [
+            ("[cH-]1cccccc1", "[CH-]1C=CC=CC=C1"),
+            ("[cH-]1cccccccccc1", "[CH-]1C=CC=CC=CC=CC=C1"),
+            ("[cH-]1cccccccccccccc1", "[CH-]1C=CC=CC=CC=CC=CC=CC=C1"),
+        ] {
+            let aromatic = cleanup(&parse(aromatic).unwrap());
+            let kekule = cleanup(&parse(kekule).unwrap());
+            let expected = chematic_smiles::canonical_smiles(&kekule);
+            assert_eq!(chematic_smiles::canonical_smiles(&aromatic), expected);
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&cleanup(&aromatic)),
+                expected
+            );
+            assert!(chematic_core::kekulize(&aromatic).is_ok());
+        }
+    }
+
+    #[test]
     fn cleanup_reionizes_only_when_an_existing_anion_can_supply_a_proton() {
         for (input, expected) in [
             ("[CH2-]CC(=O)O", "CCC(=O)[O-]"),

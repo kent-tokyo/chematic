@@ -1,5 +1,6 @@
 //! Ordered acid/base proton transfer used by the RDKit Cleanup profile.
 
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::OnceLock;
 
@@ -196,8 +197,57 @@ impl Transfer {
         (self.acid.min(self.base), self.acid.max(self.base))
     }
 
-    fn supported_product(self, mol: &Molecule) -> Option<Molecule> {
-        let product = transfer_proton(mol, self.acid, self.base);
+    // Use the perceived bond orders on any input aromatic component that
+    // contains a transfer site classified as nonaromatic. Otherwise a
+    // proton move can produce aromatic `[cH2]` with stale aromatic bonds.
+    fn transfer_source<'a>(
+        self,
+        mol: &'a Molecule,
+        target: &Molecule,
+    ) -> Option<Cow<'a, Molecule>> {
+        let mut pending: Vec<_> = [self.acid, self.base]
+            .into_iter()
+            .filter(|&a| mol.atom(a).aromatic && !target.atom(a).aromatic)
+            .collect();
+        if pending.is_empty() {
+            return Some(Cow::Borrowed(mol));
+        }
+
+        let mut adapted = mol.clone();
+        let mut visited = HashSet::new();
+        while let Some(atom) = pending.pop() {
+            if !visited.insert(atom) {
+                continue;
+            }
+            if mol.atom(atom).charge != target.atom(atom).charge {
+                return None;
+            }
+            adapted.set_atom_aromatic(atom, target.atom(atom).aromatic);
+            for (neighbor, bond) in mol.neighbors(atom) {
+                if mol.bond(bond).order != BondOrder::Aromatic {
+                    continue;
+                }
+                let order = target.bond(bond).order;
+                if !matches!(
+                    order,
+                    BondOrder::Single | BondOrder::Double | BondOrder::Aromatic
+                ) {
+                    return None;
+                }
+                adapted.set_bond_order(bond, order);
+                pending.push(neighbor);
+            }
+        }
+
+        visited
+            .into_iter()
+            .all(|atom| implicit_hcount(mol, atom) == implicit_hcount(&adapted, atom))
+            .then_some(Cow::Owned(adapted))
+    }
+
+    fn supported_product(self, mol: &Molecule, target: &Molecule) -> Option<Molecule> {
+        let source = self.transfer_source(mol, target)?;
+        let product = transfer_proton(&source, self.acid, self.base);
         // Only transfer a proton. A valence change must not add or remove
         // other hydrogens at either site.
         if implicit_hcount(mol, self.acid).checked_sub(1)
@@ -251,38 +301,36 @@ fn verified_transfer(
     mol: &Molecule,
     moved: &HashSet<(AtomIdx, AtomIdx)>,
 ) -> Option<(Transfer, Molecule)> {
-    let mut positions = vec![0; mol.atom_count()];
-    for (position, atom) in chematic_smiles::canonical_atom_order(mol)
-        .into_iter()
-        .enumerate()
-    {
-        positions[atom] = position;
-    }
-    let (acids, bases) = with_perceived_target(mol, |target| {
-        (
-            ranked_sites(target, &positions, true),
-            ranked_sites(target, &positions, false),
-        )
-    });
-    for (acid_rank, acid) in acids {
-        for &(base_rank, base) in &bases {
-            if base_rank <= acid_rank {
-                break;
-            }
-            let transfer = Transfer {
-                acid_rank,
-                acid,
-                base,
-            };
-            if acid == base || moved.contains(&transfer.sites()) {
-                continue;
-            }
-            if let Some(product) = transfer.supported_product(mol) {
-                return Some((transfer, product));
+    with_perceived_target(mol, |target| {
+        let mut positions = vec![0; mol.atom_count()];
+        for (position, atom) in chematic_smiles::canonical_atom_order(target)
+            .into_iter()
+            .enumerate()
+        {
+            positions[atom] = position;
+        }
+        let acids = ranked_sites(target, &positions, true);
+        let bases = ranked_sites(target, &positions, false);
+        for (acid_rank, acid) in acids {
+            for &(base_rank, base) in &bases {
+                if base_rank <= acid_rank {
+                    break;
+                }
+                let transfer = Transfer {
+                    acid_rank,
+                    acid,
+                    base,
+                };
+                if acid == base || moved.contains(&transfer.sites()) {
+                    continue;
+                }
+                if let Some(product) = transfer.supported_product(mol, target) {
+                    return Some((transfer, product));
+                }
             }
         }
-    }
-    None
+        None
+    })
 }
 
 pub(super) fn reionize_for_cleanup(mol: &Molecule) -> Molecule {
