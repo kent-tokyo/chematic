@@ -438,10 +438,11 @@ fn bond_first_reaches_dense_component_after_finding_larger_chain() {
 }
 
 #[test]
-fn bond_first_explores_other_seeds_when_frontier_order_restricts_growth() {
+fn bond_first_can_grow_through_a_later_common_edge() {
     use crate::{McsObjective, find_mcs_with_objective_checked};
 
     for (left, right, expected) in [
+        ("C1NOS1", "CSON", (4, 3)),
         (
             "c1cc(-c2ccnc(NC3CCCC3)n2)ccn1",
             "O=C(O)C1Nc2cc(Cl)cc(Cl)c2S(=O)(=O)N1CCCCc1ccccc1",

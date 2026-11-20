@@ -18,6 +18,9 @@ pub(super) fn extend_frontier_atom(
     let mapped_parents: Vec<(usize, BondOrder)> = mol0
         .neighbors(n0)
         .filter_map(|(neighbor, bond_idx)| {
+            if !state.source_bond_allowed(bond_idx) {
+                return None;
+            }
             mapping
                 .query_idx_of(0, neighbor)
                 .map(|query_idx| (query_idx, mol0.bond(bond_idx).order))
@@ -62,7 +65,9 @@ fn explore_candidate_tuples(
         atoms.truncate(1);
         atoms.extend_from_slice(&tuple);
 
-        let extra_bonds = count_common_new_bonds(state.mols, mapping, n0, &tuple, state.config);
+        let Some(extra_bonds) = count_common_new_bonds(state, mapping, n0, &tuple) else {
+            continue;
+        };
         debug_assert!(extra_bonds > 0);
 
         mapping.extend(&atoms, extra_bonds);
@@ -124,31 +129,38 @@ fn build_candidates(
 
 /// Count edges from a proposed new atom that are common to every molecule.
 fn count_common_new_bonds(
-    mols: &[&Molecule],
+    state: &McsState<'_>,
     mapping: &PartialMapping,
     n0: AtomIdx,
     tuple: &[AtomIdx],
-    config: &McsConfig,
-) -> usize {
-    mols[0]
-        .neighbors(n0)
-        .filter(|&(neighbor, bond_idx)| {
-            let Some(q) = mapping.query_idx_of(0, neighbor) else {
-                return false;
-            };
-            let row = &mapping.query_to_mol[q];
-            let bond0 = mols[0].bond(bond_idx);
-            tuple.iter().enumerate().all(|(offset, &candidate)| {
-                let mi = offset + 1;
-                mols[mi]
-                    .bond_between(candidate, row[mi])
-                    .is_some_and(|(_, bond)| {
-                        !config.match_bonds
-                            || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
-                    })
-            })
-        })
-        .count()
+) -> Option<usize> {
+    let mols = state.mols;
+    let config = state.config;
+    let mut count = 0;
+    for (neighbor, bond_idx) in mols[0].neighbors(n0) {
+        let Some(q) = mapping.query_idx_of(0, neighbor) else {
+            continue;
+        };
+        let row = &mapping.query_to_mol[q];
+        let bond0 = mols[0].bond(bond_idx);
+        let common = tuple.iter().enumerate().all(|(offset, &candidate)| {
+            let mi = offset + 1;
+            mols[mi]
+                .bond_between(candidate, row[mi])
+                .is_some_and(|(_, bond)| {
+                    !config.match_bonds
+                        || bonds_compatible(bond0.order, bond.order, &config.bond_compare)
+                })
+        });
+        if common {
+            // An earlier include branch already covered this mapping.
+            if !state.source_bond_allowed(bond_idx) {
+                return None;
+            }
+            count += 1;
+        }
+    }
+    Some(count)
 }
 
 pub(super) fn mapped_rows_share_common_bond(

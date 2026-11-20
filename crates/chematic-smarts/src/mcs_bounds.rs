@@ -1,10 +1,9 @@
 //! Conservative remaining-atom bounds under the selected atom comparator.
-use chematic_core::BondOrder;
+use chematic_core::{BondEntry, BondIdx, BondOrder};
 use rustc_hash::FxHashMap;
 
 use super::{
-    AtomCompare, AtomIdx, BondCompare, McsConfig, McsObjective, Molecule, normalize_bond,
-    rdkit_heavy_atom_class,
+    AtomCompare, AtomIdx, BondCompare, McsConfig, Molecule, normalize_bond, rdkit_heavy_atom_class,
 };
 use crate::match_vf2::effective_atomic_number;
 
@@ -25,56 +24,106 @@ pub(super) fn atom_class(
     }
 }
 
-pub(super) fn objective_limits(
-    mols: &[&Molecule],
-    config: &McsConfig,
-    rdkit_heavy: bool,
-    objective: McsObjective,
-    atoms: &AtomUpperBound,
-) -> (usize, usize) {
-    match objective {
-        McsObjective::AtomCount => (
-            mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0),
-            mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0),
-        ),
-        McsObjective::BondCount => {
-            let mut common = bond_classes(mols[0], config, rdkit_heavy);
-            for mol in &mols[1..] {
-                let classes = bond_classes(mol, config, rdkit_heavy);
-                common.retain(|class, count| {
-                    *count = (*count).min(classes.get(class).copied().unwrap_or(0));
-                    *count != 0
-                });
-            }
-            let bonds: usize = common.values().sum();
-            // A connected graph with at least one vertex has at least V - 1 edges.
-            (atoms.total().min(bonds + 1), bonds)
-        }
-    }
+type BondClass = (u8, u8, BondOrder);
+
+/// Upper bond bound from compatible classes across inputs. The include/exclude
+/// search removes source bonds, so only that input's class counts need updating.
+pub(super) struct BondUpperBound {
+    source_classes: Vec<Option<usize>>,
+    excluded: Vec<bool>,
+    source_counts: Vec<usize>,
+    target_minima: Vec<usize>,
+    total: usize,
 }
 
 /// Every shared bond uses the same unordered pair of atom classes and,
 /// when required, the same normalized bond order in each input.
-fn bond_classes(
+fn bond_class(
     mol: &Molecule,
+    bond: &BondEntry,
     config: &McsConfig,
     rdkit_heavy: bool,
-) -> FxHashMap<(u8, u8, BondOrder), usize> {
-    let mut counts = FxHashMap::default();
+) -> Option<BondClass> {
+    let class = |idx| atom_class(mol.atom(idx), &config.atom_compare, rdkit_heavy);
+    let (a, b) = (class(bond.atom1)?, class(bond.atom2)?);
     let compare_order = config.match_bonds && config.bond_compare == BondCompare::OrderOrAromatic;
-    for (_, bond) in mol.bonds() {
-        let class = |idx| atom_class(mol.atom(idx), &config.atom_compare, rdkit_heavy);
-        let (Some(a), Some(b)) = (class(bond.atom1), class(bond.atom2)) else {
-            continue;
-        };
-        let order = if compare_order {
-            normalize_bond(bond.order)
-        } else {
-            BondOrder::QueryAny
-        };
-        *counts.entry((a.min(b), a.max(b), order)).or_insert(0) += 1;
+    let order = if compare_order {
+        normalize_bond(bond.order)
+    } else {
+        BondOrder::QueryAny
+    };
+    Some((a.min(b), a.max(b), order))
+}
+
+impl BondUpperBound {
+    pub(super) fn new(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> Self {
+        let source = mols[0];
+        let mut classes = FxHashMap::default();
+        let mut source_counts = Vec::new();
+        let source_classes: Vec<_> = source
+            .bonds()
+            .map(|(_, bond)| {
+                let class = bond_class(source, bond, config, rdkit_heavy)?;
+                let index = *classes.entry(class).or_insert_with(|| {
+                    source_counts.push(0);
+                    source_counts.len() - 1
+                });
+                source_counts[index] += 1;
+                Some(index)
+            })
+            .collect();
+        let mut target_minima = vec![usize::MAX; source_counts.len()];
+        for &mol in &mols[1..] {
+            let mut counts = vec![0; source_counts.len()];
+            for (_, bond) in mol.bonds() {
+                if let Some(class) = bond_class(mol, bond, config, rdkit_heavy)
+                    && let Some(&index) = classes.get(&class)
+                {
+                    counts[index] += 1;
+                }
+            }
+            for (minimum, count) in target_minima.iter_mut().zip(counts) {
+                *minimum = (*minimum).min(count);
+            }
+        }
+        let total = source_counts
+            .iter()
+            .zip(&target_minima)
+            .map(|(&source, &target)| source.min(target))
+            .sum();
+        let excluded = source_classes
+            .iter()
+            .map(|class| class.is_none_or(|index| target_minima[index] == 0))
+            .collect();
+        Self {
+            source_classes,
+            excluded,
+            source_counts,
+            target_minima,
+            total,
+        }
     }
-    counts
+
+    pub(super) fn total(&self) -> usize {
+        self.total
+    }
+
+    pub(super) fn is_allowed(&self, bond: BondIdx) -> bool {
+        !self.excluded[bond.0 as usize]
+    }
+
+    pub(super) fn set_excluded(&mut self, bond: BondIdx, excluded: bool) {
+        let idx = bond.0 as usize;
+        debug_assert_ne!(self.excluded[idx], excluded);
+        self.excluded[idx] = excluded;
+        let index = self.source_classes[idx].expect("only compatible bonds can be toggled");
+        update_bound(
+            &mut self.total,
+            &mut self.source_counts[index],
+            self.target_minima[index],
+            excluded,
+        );
+    }
 }
 
 /// Upper atom bound from per-class minima across all inputs. All atoms in a
@@ -141,15 +190,22 @@ impl AtomUpperBound {
         let Some(class) = self.source_classes[idx] else {
             return;
         };
-        let count = &mut self.source_counts[class as usize];
-        let minimum = self.target_minima[class as usize];
-        if excluded {
-            self.total -= usize::from(*count <= minimum);
-            *count -= 1;
-        } else {
-            self.total += usize::from(*count < minimum);
-            *count += 1;
-        }
+        update_bound(
+            &mut self.total,
+            &mut self.source_counts[class as usize],
+            self.target_minima[class as usize],
+            excluded,
+        );
+    }
+}
+
+fn update_bound(total: &mut usize, count: &mut usize, minimum: usize, excluded: bool) {
+    if excluded {
+        *total -= usize::from(*count <= minimum);
+        *count -= 1;
+    } else {
+        *total += usize::from(*count < minimum);
+        *count += 1;
     }
 }
 

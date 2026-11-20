@@ -6,7 +6,7 @@
 //! search that grows the common subgraph one atom at a time, pruning subtrees whose upper
 //! bound on reachable size is no better than the current best.
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule};
 use chematic_perception::{RingSet, find_sssr};
 
 use crate::clock::Instant;
@@ -14,7 +14,7 @@ use crate::query::{AtomPrimitive, AtomQuery, BondPrimitive, BondQuery, QueryMole
 
 #[path = "mcs_bounds.rs"]
 mod bounds;
-use bounds::AtomUpperBound;
+use bounds::{AtomUpperBound, BondUpperBound};
 
 #[path = "mcs_frontier.rs"]
 mod frontier;
@@ -265,37 +265,8 @@ fn find_mcs_impl(
         };
     }
 
-    let deadline = config
-        .timeout_ms
-        .map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
-
-    let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only {
-        mols.iter().map(|m| find_sssr(m)).collect()
-    } else {
-        Vec::new()
-    };
-
     let n0 = mols[0].atom_count();
-    let atom_bound = AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy);
-    let (absolute_atom_upper_bound, absolute_bond_upper_bound) =
-        bounds::objective_limits(mols, config, rdkit_heavy, objective, &atom_bound);
-
-    let mut state = McsState {
-        mols,
-        config,
-        rdkit_heavy,
-        objective,
-        best: PartialMapping::empty(mols.len()),
-        deadline,
-        timed_out: false,
-        resource_limited: false,
-        search_nodes: 0,
-        absolute_atom_upper_bound,
-        absolute_bond_upper_bound,
-        proven_optimal: false,
-        ring_sets,
-        atom_bound,
-    };
+    let mut state = McsState::new(mols, config, rdkit_heavy, objective);
 
     'outer: for a0 in 0..n0 {
         if state.timed_out || state.resource_limited || state.proven_optimal {
@@ -306,6 +277,12 @@ fn find_mcs_impl(
         {
             state.timed_out = true;
             break;
+        }
+
+        // The edge-based partition used by bond-first search can reach every
+        // connected mapping from its smallest-index vertex.
+        if objective == McsObjective::BondCount && a0 > 0 {
+            state.exclude_prior_seed(AtomIdx((a0 - 1) as u32));
         }
 
         // Gather compatible atoms from each other molecule for this seed atom.
@@ -329,7 +306,7 @@ fn find_mcs_impl(
                 break 'outer;
             }
 
-            if !state.atom_bound_can_improve(state.atom_bound.total()) {
+            if !state.bounds_can_improve() {
                 continue;
             }
 
@@ -466,9 +443,74 @@ struct McsState<'a> {
     proven_optimal: bool,
     ring_sets: Vec<RingSet>,
     atom_bound: AtomUpperBound,
+    bond_bound: Option<BondUpperBound>,
 }
 
-impl McsState<'_> {
+impl<'a> McsState<'a> {
+    fn new(
+        mols: &'a [&'a Molecule],
+        config: &'a McsConfig,
+        rdkit_heavy: bool,
+        objective: McsObjective,
+    ) -> Self {
+        let deadline = config
+            .timeout_ms
+            .map(|ms| Instant::now() + std::time::Duration::from_millis(ms));
+
+        let ring_sets: Vec<RingSet> = if config.ring_matches_ring_only || config.complete_rings_only
+        {
+            mols.iter().map(|m| find_sssr(m)).collect()
+        } else {
+            Vec::new()
+        };
+
+        let atom_bound = AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy);
+        let bond_bound = (objective == McsObjective::BondCount)
+            .then(|| BondUpperBound::new(mols, config, rdkit_heavy));
+        let (absolute_atom_upper_bound, absolute_bond_upper_bound) = match &bond_bound {
+            Some(bonds) => (atom_bound.total().min(bonds.total() + 1), bonds.total()),
+            None => (
+                mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0),
+                mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0),
+            ),
+        };
+
+        Self {
+            mols,
+            config,
+            rdkit_heavy,
+            objective,
+            best: PartialMapping::empty(mols.len()),
+            deadline,
+            timed_out: false,
+            resource_limited: false,
+            search_nodes: 0,
+            absolute_atom_upper_bound,
+            absolute_bond_upper_bound,
+            proven_optimal: false,
+            ring_sets,
+            atom_bound,
+            bond_bound,
+        }
+    }
+
+    fn source_bond_allowed(&self, bond: BondIdx) -> bool {
+        self.bond_bound
+            .as_ref()
+            .is_none_or(|bound| bound.is_allowed(bond))
+    }
+
+    fn exclude_prior_seed(&mut self, atom: AtomIdx) {
+        self.atom_bound.set_excluded(atom, true);
+        if let Some(bonds) = &mut self.bond_bound {
+            for (_, bond) in self.mols[0].neighbors(atom) {
+                if bonds.is_allowed(bond) {
+                    bonds.set_excluded(bond, true);
+                }
+            }
+        }
+    }
+
     fn score(&self, mapping: &PartialMapping) -> (usize, usize) {
         match self.objective {
             McsObjective::AtomCount => (
@@ -483,18 +525,17 @@ impl McsState<'_> {
         }
     }
 
-    /// A smaller branch can still beat the best bond count. Apply the
-    /// atom bound only when atoms are primary or more bonds are impossible.
-    fn atom_bound_can_improve(&self, atom_upper_bound: usize) -> bool {
-        if atom_upper_bound < self.config.min_atoms {
-            return false;
+    fn bounds_can_improve(&self) -> bool {
+        let mut atoms = self.atom_bound.total();
+        if let Some(bond_bound) = &self.bond_bound {
+            let bonds = bond_bound.total();
+            // A connected result has at most one more vertex than edges.
+            atoms = atoms.min(bonds + 1);
+            if bonds != self.best.bond_count {
+                return atoms >= self.config.min_atoms && bonds > self.best.bond_count;
+            }
         }
-        if self.objective == McsObjective::BondCount
-            && self.best.bond_count < self.absolute_bond_upper_bound
-        {
-            return true;
-        }
-        atom_upper_bound >= self.best.size
+        atoms >= self.config.min_atoms && atoms >= self.best.size
     }
 }
 
@@ -554,68 +595,92 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
 }
 
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
+    let mut excluded_atoms = Vec::new();
+    let mut excluded_bonds = Vec::new();
+    while prepare_growth_node(state, mapping) {
+        let Some(frontier) = next_frontier_atom(state, mapping) else {
+            break;
+        };
+        extend_frontier_atom(state, mapping, frontier);
+        if state.timed_out || state.resource_limited || state.proven_optimal {
+            break;
+        }
+        match state.objective {
+            McsObjective::AtomCount => {
+                state.atom_bound.set_excluded(frontier, true);
+                excluded_atoms.push(frontier);
+            }
+            McsObjective::BondCount => {
+                exclude_frontier_bonds(state, mapping, frontier, &mut excluded_bonds);
+            }
+        }
+    }
+    for atom in excluded_atoms.into_iter().rev() {
+        state.atom_bound.set_excluded(atom, false);
+    }
+    if let Some(bonds) = &mut state.bond_bound {
+        for bond in excluded_bonds {
+            bonds.set_excluded(bond, false);
+        }
+    }
+}
+
+fn prepare_growth_node(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool {
     if state.proven_optimal {
-        return;
+        return false;
     }
     if let Some(limit) = state.config.max_search_nodes {
         if state.search_nodes >= limit {
             state.resource_limited = true;
-            return;
+            return false;
         }
         state.search_nodes += 1;
     }
     if !consider_mapping(state, mapping) {
-        return;
+        return false;
     }
-
-    // Check timeout.
-    if let Some(d) = state.deadline
-        && Instant::now() >= d
+    if let Some(deadline) = state.deadline
+        && Instant::now() >= deadline
     {
         state.timed_out = true;
-        return;
+        return false;
     }
-    if state.timed_out || state.resource_limited {
-        return;
-    }
-    if state.proven_optimal {
-        return;
-    }
+    !state.timed_out
+        && !state.resource_limited
+        && !state.proven_optimal
+        && state.bounds_can_improve()
+}
 
-    if !state.atom_bound_can_improve(state.atom_bound.total()) {
-        return;
-    }
-
-    // Find frontier candidates: unmapped, non-excluded neighbors of already-mapped
-    // atoms in mol[0]. For each such neighbor `n0`, decide (in a moment) whether to
-    // include it in the mapping or exclude it from this branch entirely.
-    let mol0 = state.mols[0];
-
-    let next = mapping.query_to_mol.iter().find_map(|row| {
-        mol0.neighbors(row[0])
+fn next_frontier_atom(state: &McsState<'_>, mapping: &PartialMapping) -> Option<AtomIdx> {
+    let source = state.mols[0];
+    mapping.query_to_mol.iter().find_map(|row| {
+        source
+            .neighbors(row[0])
+            .find(|&(atom, bond)| {
+                !mapping.is_mapped(0, atom)
+                    && !state.atom_bound.is_excluded(atom)
+                    && state.source_bond_allowed(bond)
+            })
             .map(|(atom, _)| atom)
-            .find(|&atom| !mapping.is_mapped(0, atom) && !state.atom_bound.is_excluded(atom))
-    });
-    let Some(n0) = next else {
-        return;
-    };
+    })
+}
 
-    // Only the first frontier atom is branched on per call (the "connected growth"
-    // property), but BOTH outcomes for it are explored -- include it now, or exclude
-    // it and let a later frontier atom be tried in its place. Without the exclude
-    // branch, a `n0` that happens to be incompatible with every other molecule kills
-    // the whole subtree even when skipping it (and mapping a different frontier atom
-    // instead) would reach a strictly larger common substructure -- see
-    // scratch_repro_frontier0_only_incompleteness.
-    extend_frontier_atom(state, mapping, n0);
-
-    // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
-    // gets a turn. Reset on the way back out -- exclusion only applies within this
-    // subtree, not to sibling branches elsewhere in the search.
-    if !state.timed_out && !state.resource_limited && !state.proven_optimal {
-        state.atom_bound.set_excluded(n0, true);
-        grow(state, mapping);
-        state.atom_bound.set_excluded(n0, false);
+fn exclude_frontier_bonds(
+    state: &mut McsState<'_>,
+    mapping: &PartialMapping,
+    frontier: AtomIdx,
+    excluded: &mut Vec<BondIdx>,
+) {
+    // The include branch covered every assignment in which any current
+    // edge from the mapping to this vertex is common. Exclude those edges.
+    // Later vertices can still connect the frontier by other edges.
+    if let Some(bonds) = &mut state.bond_bound {
+        for (neighbor, bond) in state.mols[0].neighbors(frontier) {
+            if mapping.is_mapped(0, neighbor) && bonds.is_allowed(bond) {
+                bonds.set_excluded(bond, true);
+                excluded.push(bond);
+            }
+        }
     }
 }
 
