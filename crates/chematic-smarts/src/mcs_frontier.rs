@@ -80,13 +80,14 @@ fn build_candidates(
 
     for mi in 1..mols.len() {
         let parent_i = mapping.query_to_mol[parent_q][mi];
-        let candidates = mols[mi]
-            .atoms()
-            .filter(|(ai, atom_i)| {
-                !mapping.is_mapped(mi, *ai)
+        let mol = mols[mi];
+        let mut candidates: Vec<_> = mol
+            .neighbors(parent_i)
+            .filter(|&(ai, bond_idx)| {
+                !mapping.is_mapped(mi, ai)
                     && atoms_compatible(
                         atom0,
-                        atom_i,
+                        mol.atom(ai),
                         &config.atom_compare,
                         state.rdkit_heavy,
                         config.match_chiral_tag,
@@ -94,20 +95,18 @@ fn build_candidates(
                         config.match_isotope,
                     )
                     && (!config.ring_matches_ring_only
-                        || n0_in_ring == ring_sets[mi].contains_atom(*ai))
-                    && mols[mi]
-                        .bond_between(*ai, parent_i)
-                        .is_some_and(|(_, bond)| {
-                            !config.match_bonds
-                                || bonds_compatible(
-                                    parent_bond_order,
-                                    bond.order,
-                                    &config.bond_compare,
-                                )
-                        })
+                        || n0_in_ring == ring_sets[mi].contains_atom(ai))
+                    && (!config.match_bonds
+                        || bonds_compatible(
+                            parent_bond_order,
+                            mol.bond(bond_idx).order,
+                            &config.bond_compare,
+                        ))
             })
             .map(|(atom_idx, _)| atom_idx)
             .collect();
+        // Preserve the previous atom-index traversal order for ties and limits.
+        candidates.sort_unstable_by_key(|idx| idx.0);
         result.push(candidates);
     }
 
