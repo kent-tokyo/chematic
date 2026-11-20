@@ -189,11 +189,9 @@ impl Mol {
     ///   silently-guessed label. A phosphorus on an unsaturated ring
     ///   (cyclophosphazene) gets RDKit's CIPLabeler label, which flips between
     ///   the ring's Kekulé spellings in both libraries; its entry carries
-    ///   ``"kekule_dependent": True``. A ring centre with three single bonds
-    ///   and a lone pair (bridgehead amine, cyclic phosphine or sulfonium)
-    ///   gets RDKit's label for the parsed SMILES spelling (RDKit inverts its
-    ///   ``@``/``@@`` when one ring-closure digit is on the centre); its entry
-    ///   carries ``"spelling_dependent": True``.
+    ///   ``"kekule_dependent": True``. Saturated ring lone-pair centres use
+    ///   the recorded ligand order. Use :meth:`rdkit_parsed` before calling
+    ///   this method to apply RDKit's SMILES reader conventions.
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
@@ -254,15 +252,6 @@ impl Mol {
                     && chematic_chem::cip_label_depends_on_kekule_spelling(&self.inner, *idx)
                 {
                     d.set_item("kekule_dependent", true)?;
-                }
-                if mode == "accurate"
-                    && matches!(
-                        code,
-                        CipCode::R | CipCode::S | CipCode::LowerR | CipCode::LowerS
-                    )
-                    && chematic_chem::cip_label_depends_on_smiles_spelling(&self.inner, *idx)
-                {
-                    d.set_item("spelling_dependent", true)?;
                 }
                 Ok(d)
             })

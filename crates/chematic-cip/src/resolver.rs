@@ -113,13 +113,10 @@ pub(crate) fn resolve_chirality(
     };
     let chirality = mol.atom(atom_idx).chirality;
     let result = if stereo_order.len() == 3 {
-        // A saturated ring centre with a lone pair (bridgehead amine,
-        // cyclic phosphine): its auxiliary sign with the lone pair as the
-        // lowest ligand, read from the spelling as RDKit reads it (as for
-        // its own label, `crate::assign::lone_pair_is_r`).
-        if crate::assign::label_follows_rdkit_smiles_reading(mol, atom_idx) {
-            let invert = mol.smiles_ring_closure_count(atom_idx) == 1;
-            crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality, invert)
+        // A saturated ring centre has a lowest-priority phantom ligand.
+        // Use the same parity for auxiliary and top-level descriptors.
+        if crate::assign::is_saturated_ring_lone_pair_centre(mol, atom_idx) {
+            crate::assign::lone_pair_is_r(&final_groups, &position_nodes, chirality)
                 .ok()
                 .flatten()
         } else {

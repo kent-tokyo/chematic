@@ -248,14 +248,10 @@ pub fn cip_label_depends_on_kekule_spelling(mol: &Molecule, atom: AtomIdx) -> bo
     chematic_cip::label_depends_on_kekule_spelling(mol, atom)
 }
 
-/// Whether [`CipMode::Accurate`]'s label of tetrahedral centre `atom` is
-/// RDKit's reading of the SMILES spelling it was parsed from rather than a
-/// property of the molecule: a ring centre with three single-bonded ligands
-/// and a lone pair (bridgehead amine, cyclic phosphine or sulfonium), whose
-/// `@`/`@@` RDKit inverts when one ring-closure digit is written on it
-/// (`chematic_cip::label_follows_rdkit_smiles_reading`).
-pub fn cip_label_depends_on_smiles_spelling(mol: &Molecule, atom: AtomIdx) -> bool {
-    chematic_cip::label_follows_rdkit_smiles_reading(mol, atom)
+/// Compatibility query for the former ring-closure spelling diagnostic.
+/// Returns false. Accurate CIP uses the molecule's recorded ligand order.
+pub fn cip_label_depends_on_smiles_spelling(_mol: &Molecule, _atom: AtomIdx) -> bool {
+    false
 }
 
 /// Run CIP assignment on `mol` using the requested engine. See [`CipMode`] for what

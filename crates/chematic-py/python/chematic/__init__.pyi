@@ -2390,10 +2390,9 @@ class Mol:
         E/Z entries also carry ``"bond_idx"`` and ``"bond_atoms"``.
         ``mode="accurate"`` uses the hierarchical-digraph engine; its labels
         that flip with the ring's Kekulé spelling carry ``"kekule_dependent":
-        True`` and those that follow RDKit's reading of the parsed SMILES
-        spelling (saturated ring lone-pair centres such as bridgehead amines)
-        carry ``"spelling_dependent": True``. Unresolved atoms are listed by
-        :meth:`cip_stereo_unresolved`.
+        True``. Saturated ring lone-pair centres use the recorded ligand order.
+        Call :meth:`rdkit_parsed` first to apply RDKit's reader conventions.
+        Unresolved atoms are listed by :meth:`cip_stereo_unresolved`.
         """
         ...
 

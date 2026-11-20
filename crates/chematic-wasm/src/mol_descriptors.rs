@@ -459,23 +459,17 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
 /// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
 /// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
-/// A ring centre with three single bonds and a lone pair (bridgehead amine)
-/// gets RDKit's label for the parsed SMILES spelling and carries
-/// `"spellingDependent": true`.
+/// Saturated ring lone-pair centres use the molecule's recorded ligand order.
 /// Returns `"null"` on an internal engine error (budget-independent computations
 /// should not normally hit this).
 #[wasm_bindgen]
 pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
     match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
-        Ok(result) => cip_code_pairs_to_json_marked(
-            &result.assignments,
-            |idx| {
-                // A cyclophosphazene P's label flips with the ring's Kekulé
-                // spelling (as RDKit's does).
-                chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
-            },
-            |idx| chematic_chem::cip_label_depends_on_smiles_spelling(&mol.inner, idx),
-        ),
+        Ok(result) => cip_code_pairs_to_json_marked(&result.assignments, |idx| {
+            // A cyclophosphazene P's label flips with the ring's Kekulé
+            // spelling (as RDKit's does).
+            chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
+        }),
         Err(_) => "null".to_string(),
     }
 }
@@ -509,16 +503,14 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
 }
 
 fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
-    cip_code_pairs_to_json_marked(pairs, |_| false, |_| false)
+    cip_code_pairs_to_json_marked(pairs, |_| false)
 }
 
 /// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
-/// `kekule_dependent` selects and `"spellingDependent": true` on the R/S/r/s
-/// atoms `spelling_dependent` selects.
+/// `kekule_dependent` selects.
 fn cip_code_pairs_to_json_marked(
     pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
     kekule_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
-    spelling_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
 ) -> String {
     let parts: Vec<String> = pairs
         .iter()
@@ -534,11 +526,6 @@ fn cip_code_pairs_to_json_marked(
             let mut mark = String::new();
             if kekule_dependent(*idx) {
                 mark.push_str(",\"kekuleDependent\":true");
-            }
-            if !matches!(code, chematic_core::CipCode::E | chematic_core::CipCode::Z)
-                && spelling_dependent(*idx)
-            {
-                mark.push_str(",\"spellingDependent\":true");
             }
             format!(
                 "{{\"atomIdx\":{},\"cipCode\":\"{}\"{mark}}}",
@@ -607,6 +594,30 @@ pub fn labute_asa_per_atom_json(mol: &MolHandle) -> String {
 #[cfg(test)]
 mod cip_json_tests {
     use super::*;
+
+    #[test]
+    fn accurate_cip_json_uses_the_selected_readers_ligand_order() {
+        let raw = MolHandle {
+            inner: std::rc::Rc::new(chematic_smiles::parse("C[N@]1C[C@H]1C").unwrap()),
+        };
+        let rdkit = raw.rdkit_parsed().unwrap();
+        let nitrogen_code = |mol: &MolHandle| {
+            let values: Vec<serde_json::Value> =
+                serde_json::from_str(&cip_assignments_accurate_json(mol)).unwrap();
+            values
+                .into_iter()
+                .find(|entry| entry["atomIdx"] == 1)
+                .unwrap()
+        };
+        assert_eq!(
+            nitrogen_code(&raw),
+            serde_json::json!({"atomIdx": 1, "cipCode": "S"})
+        );
+        assert_eq!(
+            nitrogen_code(&rdkit),
+            serde_json::json!({"atomIdx": 1, "cipCode": "R"})
+        );
+    }
 
     #[test]
     fn accurate_cip_json_marks_kekule_dependent_phosphorus() {

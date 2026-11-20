@@ -423,7 +423,7 @@ fn assign_one_with_rule5(
 ) -> Result<Option<CipCode>, SkipReason> {
     // Unsupported unsaturated phosphazene auxiliaries can depend on Kekulé spelling.
     let lone_pair_centre = stereo_order.len() == 3;
-    if mol.atom(idx).element == Element::P && !label_follows_rdkit_smiles_reading(mol, idx) {
+    if mol.atom(idx).element == Element::P && !is_saturated_ring_lone_pair_centre(mol, idx) {
         return Err(SkipReason::Tied);
     }
 
@@ -483,9 +483,7 @@ fn assign_one_with_rule5(
     let pseudoasymmetric = pseudo_count == 1;
 
     let is_r = if lone_pair_centre {
-        let invert =
-            label_follows_rdkit_smiles_reading(mol, idx) && mol.smiles_ring_closure_count(idx) == 1;
-        lone_pair_is_r(&resolved_groups, &position_nodes, chirality, invert)?
+        lone_pair_is_r(&resolved_groups, &position_nodes, chirality)?
     } else {
         resolve_is_r_from_groups(&resolved_groups, &position_nodes, chirality)
     };
@@ -543,16 +541,10 @@ fn assign_one(
     Ok(Some(if is_r { CipCode::R } else { CipCode::S }))
 }
 
-/// A three-ligand centre outside rings (sulfoxide, sulfinamide, phosphine):
-/// the lone pair is a phantom ligand of lowest priority, as in RDKit's
-/// `CIPLabeler`. A ring centre with a double bond (a cyclic sulfoxide or
-/// sulfoximine) is labelled too: RDKit reads its spellings as chematic does
-/// (180/180 random spellings of five ring sulfoxides and a selenoxide agree).
-/// A ring centre with three single bonds (a bridgehead amine, a cyclic
-/// phosphine or sulfonium) gets RDKit's label for the parsed spelling (see
-/// [`label_follows_rdkit_smiles_reading`]). `None` (reported as
-/// `LonePairCenter`) for an aromatic ring centre, or when a ligand is
-/// hydrogen or the centre has implicit H.
+/// A three-ligand centre uses the recorded ligand order and a lowest-priority
+/// phantom ligand. Saturated ring centres and ring centres with a double bond
+/// are supported. An aromatic ring centre or a centre with an H ligand
+/// returns `None` (reported as `LonePairCenter`).
 fn assign_lone_pair_centre(
     mol: &Molecule,
     idx: AtomIdx,
@@ -570,7 +562,7 @@ fn assign_lone_pair_centre(
     {
         return Ok(None);
     }
-    let saturated_ring_centre = label_follows_rdkit_smiles_reading(mol, idx);
+    let saturated_ring_centre = is_saturated_ring_lone_pair_centre(mol, idx);
     if atom_in_ring(mol, idx)
         && !saturated_ring_centre
         && !mol
@@ -598,21 +590,18 @@ fn assign_lone_pair_centre(
             return Err(SkipReason::Tied);
         }
     }
-    let invert = saturated_ring_centre && mol.smiles_ring_closure_count(idx) == 1;
-    Ok(lone_pair_is_r(&groups, &position_nodes, chirality, invert)?
+    Ok(lone_pair_is_r(&groups, &position_nodes, chirality)?
         .map(|r| if r { CipCode::R } else { CipCode::S }))
 }
 
 /// Whether a three-ligand centre with a lone pair is R, given its ligands'
 /// priority groups (highest first, each physical ligand in its own group).
-/// `invert` applies RDKit's SMILES reading (`chiralAtomNeedsTagInversion`:
-/// a saturated three-connected centre without H carrying exactly one
-/// ring-closure digit has its tag inverted).
+/// Reader-specific parity adjustments are already encoded in the graph's
+/// chirality and ligand order.
 pub(crate) fn lone_pair_is_r(
     groups: &[Vec<NodeId>],
     position_nodes: &[NodeId],
     chirality: Chirality,
-    invert: bool,
 ) -> Result<Option<bool>, SkipReason> {
     // Highest group first: rank the three ligands 4, 3, 2; the lone pair is 1.
     let group_of = |node: NodeId| groups.iter().position(|g| g.contains(&node));
@@ -631,18 +620,13 @@ pub(crate) fn lone_pair_is_r(
     // sulfinamides and phosphines over random atom orders: the phantom takes
     // the second slot whether or not the centre has a preceding atom.
     let ranks = [ranks3[0], 1, ranks3[1], ranks3[2]];
-    Ok(is_r_from_ranks(&ranks, chirality).map(|r| r != invert))
+    Ok(is_r_from_ranks(&ranks, chirality))
 }
 
-/// Whether tetrahedral centre `atom` is a ring centre with three explicit
-/// single-bonded ligands and a lone pair (a bridgehead amine, a cyclic
-/// phosphine or sulfonium). chematic reads its `@`/`@@` as OpenSMILES does;
-/// RDKit's SMILES parser inverts it when exactly one ring-closure digit is
-/// written on the centre, so the same molecule reads as different
-/// stereoisomers from different spellings in RDKit. The accurate engine
-/// reports RDKit's label for the spelling that was parsed; it is a property
-/// of that spelling, not of the molecule.
-pub fn label_follows_rdkit_smiles_reading(mol: &Molecule, atom: AtomIdx) -> bool {
+/// Whether a tagged ring centre has three single-bonded ligands and a
+/// lone pair. RDKit's SMILES reader applies a special parity convention
+/// to some spellings of these centres.
+pub fn is_saturated_ring_lone_pair_centre(mol: &Molecule, atom: AtomIdx) -> bool {
     use chematic_core::BondOrder;
     mol.atom(atom).chirality.is_tetrahedral()
         && mol.degree(atom) == 3

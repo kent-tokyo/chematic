@@ -28,8 +28,7 @@ fn lazy_sphere_generator_matches_eager_reference() {
 use super::*;
 
 /// Accurate-mode tetrahedral labels, abstentions and bond-keyed E/Z do
-/// not depend on input atom order (random SMILES now keep stereo), apart
-/// from labels marked spelling-dependent.
+/// follow the same configuration after serializing in a different atom order.
 #[test]
 fn accurate_labels_and_abstentions_survive_atom_reordering() {
     use std::collections::BTreeMap;
@@ -40,14 +39,7 @@ fn accurate_labels_and_abstentions_survive_atom_reordering() {
         let mut out = BTreeMap::new();
         for (a, c) in &r.assignments {
             if !matches!(c, CipCode::E | CipCode::Z) {
-                // A saturated ring lone-pair centre gets RDKit's label for
-                // the spelling parsed, which a reordered spelling may flip.
-                let label = if cip_label_depends_on_smiles_spelling(m, *a) {
-                    "spelling_dependent".to_string()
-                } else {
-                    format!("{c:?}")
-                };
-                out.insert(pos[&a.0], label);
+                out.insert(pos[&a.0], format!("{c:?}"));
             }
         }
         for (a, why) in &r.unresolved {
@@ -1094,15 +1086,15 @@ fn cip_mode_accurate_labels_cyclophosphazene_phosphorus_like_rdkit() {
 #[test]
 fn cip_mode_accurate_reports_lone_pair_centres() {
     // Issue #634, rebaseline row 2960: a stereo-tagged bridgehead amine has
-    // three explicit ligands and a lone pair. It gets RDKit's label for this
-    // spelling (RDKit inverts `@@` here: one ring-closure digit on the
-    // centre), marked spelling-dependent; the carbon centres keep theirs.
+    // three explicit ligands and a lone pair. The RDKit reader applies a
+    // parity adjustment to the centre on this spelling.
     let mol = chematic_smiles::parse("Cn1cc(C2=NC[C@@]3(C[N@@]4CC[C@@H]3C4)O2)c2ccccc21")
         .expect("valid SMILES");
     let result = assign_cip_with_mode(&mol, CipMode::Accurate).expect("no engine error");
-    assert_eq!(result.get(AtomIdx(9)), Some(CipCode::S));
-    assert!(cip_label_depends_on_smiles_spelling(&mol, AtomIdx(9)));
-    assert!(!cip_label_depends_on_smiles_spelling(&mol, AtomIdx(7)));
+    assert_eq!(result.get(AtomIdx(9)), Some(CipCode::R));
+    let rdkit_model = chematic_smiles::rdkit_parsed_molecule(&mol).unwrap();
+    let rdkit_result = assign_cip_with_mode(&rdkit_model, CipMode::Accurate).unwrap();
+    assert_eq!(rdkit_result.get(AtomIdx(9)), Some(CipCode::S));
     assert!(result.unresolved.is_empty());
     assert_eq!(result.get(AtomIdx(7)), Some(CipCode::R));
     assert_eq!(result.get(AtomIdx(12)), Some(CipCode::R));
