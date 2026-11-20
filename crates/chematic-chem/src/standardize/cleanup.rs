@@ -1,6 +1,7 @@
 //! RDKit Cleanup-compatible standardization transformations.
 
 mod acid_base;
+mod haptic_iron;
 
 use std::collections::{HashSet, VecDeque};
 
@@ -288,6 +289,7 @@ fn disconnect_metal_ligand_bonds(
     atoms: &mut [chematic_core::Atom],
 ) -> HashSet<BondIdx> {
     let mut removed = HashSet::new();
+    let haptic_iron = haptic_iron::specified_haptic_iron_centers(mol);
     let aromaticity = mol
         .bonds()
         .any(|(_, bond)| {
@@ -309,6 +311,20 @@ fn disconnect_metal_ligand_bonds(
             (bond.atom2.0 as usize, bond.atom1.0 as usize)
         };
         let ligand_atom = &atoms[ligand];
+        if haptic_iron.contains(&metal) {
+            removed.insert(bond_idx);
+            // This encoding has already assigned Fe(II) and two Cp anions.
+            // The single graph edges describe haptic contacts. Removing them
+            // leaves the charge on each component and restores the hydrogen
+            // on an unsubstituted carbanion if its bracket omitted it.
+            if ligand_atom.charge == -1
+                && ligand_atom.hydrogen_count == Some(0)
+                && mol.degree(AtomIdx(ligand as u32)) == 3
+            {
+                atoms[ligand].hydrogen_count = Some(1);
+            }
+            continue;
+        }
         let metal_z = atoms[metal].element.atomic_number();
         let ligand_z = ligand_atom.element.atomic_number();
         let (aromatic_carbon, zinc_fused_aromatic_edge) = metal_aromatic_exclusions(
@@ -808,6 +824,19 @@ mod tests {
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
             Ok(expected)
         );
+    }
+
+    #[test]
+    fn cleanup_preserves_the_ionic_components_of_charge_explicit_haptic_iron() {
+        let input = "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10";
+        let cleaned = cleanup(&parse(input).unwrap());
+        // PubChem CID 102082 has the same ions. Keep the input's explicit
+        // charge location on the substituted ring for the native writer.
+        let expected = "CN(C)C[c-]1cccc1.[Fe+2].c1cc[cH-]c1";
+        let canonical = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        assert_eq!(canonical(&cleaned).as_deref(), Ok(expected));
+        assert_eq!(canonical(&cleanup(&cleaned)).as_deref(), Ok(expected));
+        assert_eq!(crate::calc_mol_formula(&cleaned), "C13H17FeN");
     }
 
     #[test]
