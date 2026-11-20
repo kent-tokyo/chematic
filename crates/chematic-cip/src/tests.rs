@@ -479,16 +479,33 @@ fn test_ethynyl_vs_carboxymethyl_decided_at_shallow_sphere() {
 
 #[test]
 fn test_rule_2_deuterium_beats_hydrogen() {
-    // D > H (isotope Some(2) > None). Verified against RDKit: S.
+    // D is heavier than natural H. Verified against RDKit: S.
     let (_, code) = assign_one("[C@H]([2H])(C)O");
     assert_eq!(code, CipCode::S);
 }
 
 #[test]
 fn test_rule_2_carbon_13_beats_carbon_12() {
-    // 13C > 12C (isotope Some(13) > None). Verified against RDKit: R.
+    // Carbon-13 is heavier than natural carbon. Verified against RDKit: R.
     let (_, code) = assign_one("[C@]([13CH3])(C)(F)Cl");
     assert_eq!(code, CipCode::R);
+}
+
+#[test]
+fn test_rule_2_relative_to_natural_isotopic_composition() {
+    // IUPAC P-92.3 gives the iodine-125 example and the order 81Br > Br > 79Br.
+    use CipCode::{R, S};
+    for (smiles, expected) in [
+        ("O[C@@H](C[125I])CI", S),
+        ("O[C@H](C[125I])CI", R),
+        ("O[C@@H](C[131I])CI", R),
+        ("O[C@@H](C[79Br])CBr", S),
+        ("O[C@@H](C[81Br])CBr", R),
+        // Oxygen farther down the branch takes precedence under Rule 1a.
+        ("O[C@@H]([13CH3])CO", S),
+    ] {
+        assert_eq!(assign_one(smiles).1, expected, "{smiles}");
+    }
 }
 
 #[test]

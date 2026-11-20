@@ -47,7 +47,6 @@ pub mod parent;
 pub mod pka;
 pub mod qed;
 mod rdkit_graph;
-mod rdkit_isotope_mass_table;
 pub mod recap;
 pub mod resonance;
 pub mod rgroup;

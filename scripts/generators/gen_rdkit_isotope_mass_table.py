@@ -9,7 +9,7 @@ fallback to the Rust lookup for labels RDKit does not recognize.
 
 Usage:
     python scripts/generators/gen_rdkit_isotope_mass_table.py > \
-        crates/chematic-chem/src/rdkit_isotope_mass_table.rs
+        crates/chematic-core/src/rdkit_isotope_mass_table.rs
 """
 
 from rdkit import Chem, rdBase
@@ -33,7 +33,7 @@ def main() -> None:
             if mass > 0.0:
                 rows.append((atomic_number, mass_number, mass))
 
-    print("//! RDKit explicit-isotope mass table for `rdkit_molecular_weight`.")
+    print("//! RDKit explicit-isotope mass table for descriptors and CIP.")
     print("//!")
     print("//! Generated from RDKit's `PeriodicTable.GetMassForIsotope` for every")
     print("//! recognized isotope. Unknown syntactically valid labels deliberately")

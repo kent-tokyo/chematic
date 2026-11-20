@@ -86,14 +86,12 @@
 //! `refine_tied_groups(_, rule_2)` -> ...), so a comparison Rule 1a already decided never
 //! pays for a later rule's pass.
 //!
-//! # Rule 2, scoped
+//! # Rule 2
 //!
-//! Rule 2 compares `Atom.isotope: Option<u16>` (the literal isotope label -- what
-//! distinguishes `13C` from `12C`), never `Element::atomic_mass()` (a fixed per-element
-//! default that cannot). The old engine's `atom_key`/`cmp_key` conflates isotope
-//! (Rule 2) with atomic mass (Rule 4, a tiebreaker) in one tuple; this module keeps
-//! them separate and implements only Rule 2, since Rule 4 is out of scope this
-//! milestone.
+//! Only a tie under Rule 1a for the complete comparison can reach Rule 2.
+//! An explicitly labeled isotope uses its nuclide mass and an atom with
+//! unspecified isotopic composition uses the average atomic weight. Duplicate
+//! nodes have zero mass. See the IUPAC Blue Book, P-92.3.
 //!
 //! # Why `rank_children` never calls `sort_by`
 //!
@@ -112,7 +110,8 @@ use smallvec::SmallVec;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
-use chematic_core::Molecule;
+use chematic_core::atomic_weight::{rdkit_average_atomic_weight, rdkit_isotope_mass};
+use chematic_core::{Element, Molecule};
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -375,66 +374,55 @@ impl<'t> CompareContext<'t> {
     }
 }
 
-/// `(atomic_number, isotope)` for a node's *effective* atom, Rule 1a's comparison key.
-/// The atomic-number half is simply `node.atomic_number` -- already computed once at
-/// digraph-construction time (see `crate::digraph`'s `atomic_number_for`), plain integer
-/// for every node except a MANCUDE-affected `MultipleBondDuplicate`, which carries a
-/// `Rational` (see `crate::mancude`'s module docs for why the owner's, not the
-/// represented atom's, fraction is correct here).
-///
-/// The isotope half needs its own atom lookup and, for a MANCUDE-affected duplicate,
-/// its own owner-vs-represented decision: `duplicated_atom` is a *specific* Kekulé-form-
-/// dependent partner (exactly the value `atomic_number` deliberately stops depending on
-/// for this same node), so reading isotope from it *would* reintroduce Kekulé-form
-/// dependence into Rule 2 while Rule 1a stays invariant -- by the same argument that
-/// motivates the atomic-number owner decision. Whenever `atomic_number` is `Rational`,
-/// isotope is read from `source_atom` (the owner) instead. **Unverified against RDKit,
-/// corpus-inert**, not "correct by the same reasoning" -- unlike the atomic-number
-/// decision (checked against a concrete RDKit-reimplemented value), this branch has never
-/// been exercised: 0 isotope-labeled atoms exist anywhere in the frozen 155-row corpus,
-/// and the one isotope label in the full ~5,000-molecule verification corpus
-/// (`[3H]` on a plain aliphatic ring, unrelated to any MANCUDE system) never reaches this
-/// code path. Structurally consistent with the atomic-number decision, not empirically
-/// confirmed by it. An ordinary (non-MANCUDE) duplicate keeps today's existing behavior
-/// unchanged: `duplicated_atom`'s real isotope.
-fn node_key(mol: &Molecule, node: &CipNode) -> (AtomicNumberKey, Option<u16>) {
-    let isotope_atom = match node.kind {
-        CipNodeKind::Atom { atom_idx } => Some(atom_idx),
-        CipNodeKind::MultipleBondDuplicate {
-            source_atom,
-            duplicated_atom,
-            ..
-        } => Some(match node.atomic_number {
-            AtomicNumberKey::Rational(_) => source_atom,
-            AtomicNumberKey::Integral(_) => duplicated_atom,
-        }),
-        CipNodeKind::RingDuplicate { closure_atom, .. } => Some(closure_atom),
-        CipNodeKind::ImplicitHydrogen => None,
-    };
-    let isotope = isotope_atom.and_then(|idx| mol.atom(idx).isotope);
-    (node.atomic_number, isotope)
+#[derive(Clone, Copy, Debug)]
+enum NodeMass {
+    Natural(Element),
+    Isotope(Element, u16),
+    Duplicate,
 }
 
-/// Rule 1a (atomic number, via `cmp_atomic_number_key` -- promotes a plain integer to a
-/// `RationalAtomicNumber` when compared against a MANCUDE fraction) then Rule 2 (isotope:
-/// `Some` beats `None`, higher isotope number beats lower).
-fn cmp_key(a: &(AtomicNumberKey, Option<u16>), b: &(AtomicNumberKey, Option<u16>)) -> Ordering {
-    match cmp_atomic_number_key(a.0, b.0) {
-        Ordering::Equal => {}
-        other => return other,
+impl NodeMass {
+    fn daltons(self) -> f64 {
+        match self {
+            Self::Natural(element) => rdkit_average_atomic_weight(element),
+            Self::Isotope(element, isotope) => rdkit_isotope_mass(element, isotope),
+            Self::Duplicate => 0.0,
+        }
     }
-    match (a.1, b.1) {
-        (Some(x), Some(y)) => x.cmp(&y),
-        (Some(_), None) => Ordering::Greater,
-        (None, Some(_)) => Ordering::Less,
-        (None, None) => Ordering::Equal,
-    }
+}
+
+type NodeKey = (AtomicNumberKey, NodeMass);
+
+fn node_key(mol: &Molecule, node: &CipNode) -> NodeKey {
+    let mass = match node.kind {
+        CipNodeKind::Atom { atom_idx } => {
+            let atom = mol.atom(atom_idx);
+            match atom.isotope.filter(|&isotope| isotope != 0) {
+                Some(isotope) => NodeMass::Isotope(atom.element, isotope),
+                None => NodeMass::Natural(atom.element),
+            }
+        }
+        CipNodeKind::ImplicitHydrogen => NodeMass::Natural(Element::H),
+        CipNodeKind::MultipleBondDuplicate { .. } | CipNodeKind::RingDuplicate { .. } => {
+            NodeMass::Duplicate
+        }
+    };
+    (node.atomic_number, mass)
+}
+
+fn cmp_key(a: &NodeKey, b: &NodeKey) -> Ordering {
+    cmp_atomic_number_key(a.0, b.0).then_with(|| match (a.1, b.1) {
+        (NodeMass::Isotope(..), _) | (_, NodeMass::Isotope(..)) => {
+            a.1.daltons().total_cmp(&b.1.daltons())
+        }
+        _ => Ordering::Equal,
+    })
 }
 
 /// `key`, with a `Rational` atomic-number half collapsed to its integer part -- used only
 /// to detect whether a fraction *decided* a comparison (see
 /// `CompareContext::fractional_decisions`), never for a real ranking decision.
-fn collapse_to_integer(key: (AtomicNumberKey, Option<u16>)) -> (AtomicNumberKey, Option<u16>) {
+fn collapse_to_integer(key: NodeKey) -> NodeKey {
     let atomic_number = match key.0 {
         AtomicNumberKey::Integral(n) => AtomicNumberKey::Integral(n),
         AtomicNumberKey::Rational(r) => {
@@ -449,11 +437,7 @@ fn collapse_to_integer(key: (AtomicNumberKey, Option<u16>)) -> (AtomicNumberKey,
 /// site (not inside `cmp_key` itself, which stays pure and independently unit-tested, and
 /// not inside `compare_by_level`, which stays fully generic over `K` with no
 /// MANCUDE-specific knowledge).
-fn cmp_key_instrumented(
-    a: &(AtomicNumberKey, Option<u16>),
-    b: &(AtomicNumberKey, Option<u16>),
-    ctx: &mut CompareContext,
-) -> Ordering {
+fn cmp_key_instrumented(a: &NodeKey, b: &NodeKey, ctx: &mut CompareContext) -> Ordering {
     let ordering = cmp_key(a, b);
     let fractional_involved =
         matches!(a.0, AtomicNumberKey::Rational(_)) || matches!(b.0, AtomicNumberKey::Rational(_));
@@ -496,14 +480,18 @@ enum LevelSlot {
 }
 
 /// [`rule1a2_slot_key`] without the isotope (Rule 1a alone).
-fn rule1a_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
-    (rule1a2_slot_key(graph, slot).0, None)
+fn rule1a_slot_key(graph: &CipDigraph, slot: LevelSlot) -> NodeKey {
+    let atomic_number = match slot {
+        LevelSlot::Node(node) => graph.node(node).atomic_number,
+        LevelSlot::Phantom => AtomicNumberKey::Integral(0),
+    };
+    (atomic_number, NodeMass::Duplicate)
 }
 
-fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> (AtomicNumberKey, Option<u16>) {
+fn rule1a2_slot_key(graph: &CipDigraph, slot: LevelSlot) -> NodeKey {
     match slot {
         LevelSlot::Node(n) => node_key(graph.molecule(), graph.node(n)),
-        LevelSlot::Phantom => (AtomicNumberKey::Integral(0), None),
+        LevelSlot::Phantom => (AtomicNumberKey::Integral(0), NodeMass::Duplicate),
     }
 }
 
@@ -662,7 +650,7 @@ pub fn compare_ligands(
         ctx.pass = None;
         return result;
     }
-    let rule_mode = ctx.pass.unwrap_or(RuleMode::Rule1a2);
+    let rule_mode = ctx.pass.unwrap_or(RuleMode::Rule1a);
     let left_kind = graph.node(left).kind;
     let right_kind = graph.node(right).kind;
     let depth = graph.node(left).depth;
