@@ -307,15 +307,6 @@ fn find_mcs_impl(
             break;
         }
 
-        // Each connected mapping can grow from its lowest-index source atom.
-        // In bond-first mode, exclude earlier seeds to avoid exploring that
-        // mapping again. Its earlier seed also wins the existing tie break.
-        if objective == McsObjective::BondCount && a0 > 0 {
-            state
-                .atom_bound
-                .set_excluded(AtomIdx((a0 - 1) as u32), true);
-        }
-
         // Gather compatible atoms from each other molecule for this seed atom.
         let seed_candidates = collect_seed_candidates(
             mols,

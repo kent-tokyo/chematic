@@ -436,3 +436,32 @@ fn bond_first_reaches_dense_component_after_finding_larger_chain() {
         assert_eq!((query.atom_count(), query.bonds.len()), (5, 4));
     }
 }
+
+#[test]
+fn bond_first_explores_other_seeds_when_frontier_order_restricts_growth() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    for (left, right, expected) in [
+        (
+            "c1cc(-c2ccnc(NC3CCCC3)n2)ccn1",
+            "O=C(O)C1Nc2cc(Cl)cc(Cl)c2S(=O)(=O)N1CCCCc1ccccc1",
+            (7, 6),
+        ),
+        (
+            "NS(=O)(=O)c1ccc(C2=C(c3ccc(C(F)(F)F)cc3)CCC2)cc1",
+            "O=C(Nc1ccc(Cl)cc1)N1CCCCC1C12CC3CC(CC(C3)C1)C2",
+            (7, 6),
+        ),
+    ] {
+        let left = parse(left).unwrap();
+        let right = parse(right).unwrap();
+        let result = find_mcs_with_objective_checked(
+            &[&left, &right],
+            &McsConfig::default(),
+            McsObjective::BondCount,
+        );
+        assert!(matches!(result, McsOutcome::Exhaustive(_)));
+        let q = result.into_query();
+        assert_eq!((q.atom_count(), q.bonds.len()), expected);
+    }
+}
