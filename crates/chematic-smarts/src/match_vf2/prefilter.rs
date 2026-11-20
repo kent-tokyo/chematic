@@ -32,6 +32,15 @@ pub fn required_element_mask(query: &QueryMolecule) -> u128 {
     })
 }
 
+/// Positive atomic numbers present in a molecule, in the format used by
+/// [`required_element_mask`].
+pub fn element_presence(mol: &Molecule) -> u128 {
+    mol.atoms()
+        .map(|(_, atom)| effective_atomic_number(atom))
+        .filter(|number| (1..128).contains(number))
+        .fold(0, |mask, number| mask | (1u128 << number))
+}
+
 /// Necessary condition for any embedding: the target has at least as many
 /// atoms of each element as the query has atoms pinned to that element
 /// (embeddings are injective). `false` proves there is no match.

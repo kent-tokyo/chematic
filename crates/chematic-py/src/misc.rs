@@ -126,15 +126,6 @@ impl PyMoleculeBatch {
     }
 }
 
-fn element_presence(mol: &chematic_core::Molecule) -> u128 {
-    mol.atoms()
-        .filter_map(|(_, atom)| {
-            let number = atom.element.atomic_number();
-            (!atom.wildcard && (1..128).contains(&number)).then_some(number)
-        })
-        .fold(0, |mask, number| mask | (1u128 << number))
-}
-
 impl PySmartsQuery {
     fn from_query(source: String, query: chematic_smarts::QueryMolecule, folded: bool) -> Self {
         use chematic_smarts::{AtomPrimitive, AtomQuery, match_vf2::required_element_mask};
@@ -234,7 +225,7 @@ impl PySmartsQuery {
                     batch
                         .molecules
                         .iter()
-                        .map(|mol| element_presence(mol))
+                        .map(|mol| chematic_smarts::match_vf2::element_presence(mol))
                         .collect()
                 })
             });

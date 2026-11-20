@@ -385,8 +385,8 @@ pub use embedding_visitor::{for_each_embedding, has_at_least_distinct_embeddings
 
 mod prefilter;
 pub(crate) use prefilter::passes_size_and_element_screen;
-pub use prefilter::required_element_mask;
 use prefilter::{element_counts_allow_match, implied_atomic_number};
+pub use prefilter::{element_presence, required_element_mask};
 
 /// Whether `query` has at least one embedding in `mol`.
 ///

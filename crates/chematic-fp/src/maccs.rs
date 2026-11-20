@@ -14,7 +14,11 @@
 //! the bit is set when `matches.len() > min_count`.
 
 use chematic_core::Molecule;
-use chematic_smarts::{MatchConfig, match_vf2::has_at_least_distinct_embeddings, parse_smarts};
+use chematic_smarts::{
+    MatchConfig, QueryMolecule,
+    match_vf2::{element_presence, has_at_least_distinct_embeddings, required_element_mask},
+    parse_smarts,
+};
 
 const FIRST_EMBEDDING: MatchConfig = MatchConfig {
     max_matches: Some(1),
@@ -232,8 +236,8 @@ fn count_aromatic_rings(mol: &Molecule) -> usize {
 
 /// MACCS SMARTS parsed once per process (`None` for placeholders and
 /// patterns that fail to parse), index-aligned with `MACCS_SMARTS`.
-fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
-    static QUERIES: std::sync::OnceLock<Vec<Option<chematic_smarts::QueryMolecule>>> =
+fn maccs_queries() -> &'static [Option<(QueryMolecule, u128)>] {
+    static QUERIES: std::sync::OnceLock<Vec<Option<(QueryMolecule, u128)>>> =
         std::sync::OnceLock::new();
     QUERIES.get_or_init(|| {
         MACCS_SMARTS
@@ -242,7 +246,10 @@ fn maccs_queries() -> &'static [Option<chematic_smarts::QueryMolecule>] {
                 if pattern == "?" || pattern.is_empty() {
                     None
                 } else {
-                    parse_smarts(pattern).ok()
+                    parse_smarts(pattern).ok().map(|query| {
+                        let required = required_element_mask(&query);
+                        (query, required)
+                    })
                 }
             })
             .collect()
@@ -266,10 +273,16 @@ pub fn maccs(mol: &Molecule) -> BitVec2048 {
 
 fn maccs_on(mol: &Molecule) -> BitVec2048 {
     let mut fp = BitVec2048::new();
+    let elements = element_presence(mol);
 
     for (i, (query, &(_, min_count))) in maccs_queries().iter().zip(MACCS_SMARTS).enumerate() {
         // Placeholder ("?"/empty) and unparsable patterns leave the bit unset.
-        let Some(query) = query else { continue };
+        let Some((query, required)) = query else {
+            continue;
+        };
+        if elements & *required != *required {
+            continue;
+        }
         // Uniquified matches are non-empty exactly when any embedding
         // exists, so "count > 0" only needs the first embedding.
         let hit = if min_count == 0 {
