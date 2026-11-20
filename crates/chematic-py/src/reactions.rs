@@ -1250,6 +1250,7 @@ fn find_mcs_checked(
 /// alternatives. The status distinguishes a partial timeout result.
 ///
 /// Optional charge and isotope predicates are preserved for re-search.
+/// Set `bond_count_first` for the bond-first objective used by RDKit FMCS.
 /// Chirality matching is not yet representable by this serializer.
 #[pyfunction]
 #[pyo3(signature = (
@@ -1266,6 +1267,7 @@ fn find_mcs_checked(
     *,
     match_charge=false,
     match_isotope=false,
+    bond_count_first=false,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn find_mcs_smarts_checked(
@@ -1281,6 +1283,7 @@ fn find_mcs_smarts_checked(
     max_search_nodes: Option<usize>,
     match_charge: bool,
     match_isotope: bool,
+    bond_count_first: bool,
 ) -> PyResult<(Option<String>, bool)> {
     let mut config = build_mcs_config(
         match_bonds,
@@ -1299,10 +1302,15 @@ fn find_mcs_smarts_checked(
         config.max_search_nodes = Some(limit);
     }
     let refs: Vec<&chematic_core::Molecule> = mols.iter().map(|m| m.inner.as_ref()).collect();
-    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&refs, &config)
+    let objective = if bond_count_first {
+        chematic_smarts::McsObjective::BondCount
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&refs, &config)
+        chematic_smarts::McsObjective::AtomCount
+    };
+    let outcome = if atom_compare == "rdkit_any_heavy_atom" {
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(&refs, &config, objective)
+    } else {
+        chematic_smarts::find_mcs_with_objective_checked(&refs, &config, objective)
     };
     let timed_out = outcome.was_timed_out();
     if outcome.was_resource_limited() {

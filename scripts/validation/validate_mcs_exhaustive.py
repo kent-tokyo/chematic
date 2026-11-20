@@ -81,9 +81,10 @@ def embeds(labels, edges, target):
     return visit(0)
 
 
-def exhaustive_score(graphs):
+def exhaustive_score(graphs, objective):
     source, *targets = sorted(graphs, key=lambda g: len(g[1]))
     atoms, edges = source
+    priority = lambda pair: pair[::-1] if objective == "bonds" else pair
     best = (0, 0)
     for idx, label in enumerate(atoms):
         if all(embeds({idx: label}, {}, target) for target in targets):
@@ -93,7 +94,7 @@ def exhaustive_score(graphs):
         for subset in combinations(edges, size):
             vertices = induced_vertices(subset)
             score = (len(vertices), size)
-            if score <= best:
+            if not vertices or priority(score) <= priority(best):
                 continue
             query = {i: atoms[i] for i in vertices}
             if all(embeds(query, {e: edges[e] for e in subset}, target) for target in targets):
@@ -112,12 +113,15 @@ def returned_score(smarts, molecules):
     )
 
 
-def run_case(inputs, charge, isotope):
+def run_case(inputs, charge, isotope, objective):
     oracle_mols = [Chem.MolFromSmiles(s) for s in inputs]
-    expected = exhaustive_score([graph(mol, charge, isotope) for mol in oracle_mols])
+    expected = exhaustive_score(
+        [graph(mol, charge, isotope) for mol in oracle_mols], objective
+    )
     candidate_mols = [chematic.from_smiles(s) for s in inputs]
     smarts, timed_out = chematic.find_mcs_smarts_checked(
-        candidate_mols, timeout_ms=2000, match_charge=charge, match_isotope=isotope
+        candidate_mols, timeout_ms=2000, match_charge=charge, match_isotope=isotope,
+        bond_count_first=objective == "bonds",
     )
     actual, rematched = returned_score(smarts, oracle_mols)
     p = rdFMCS.MCSParameters()
@@ -128,6 +132,7 @@ def run_case(inputs, charge, isotope):
     rdkit = rdFMCS.FindMCS(oracle_mols, p)
     return {
         "inputs": inputs, "match_charge": charge, "match_isotope": isotope,
+        "objective": objective,
         "expected_atoms_bonds": expected, "candidate_atoms_bonds": actual,
         "candidate_smarts": smarts, "rematched": rematched, "timed_out": timed_out,
         "passed": tuple(actual or []) == expected and rematched and not timed_out,
@@ -139,15 +144,18 @@ def run_case(inputs, charge, isotope):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--objective", choices=("atoms", "bonds", "both"), default="both")
     args = parser.parse_args()
     inputs = list(combinations(FIXTURES, 2)) + list(MULTI)
-    rows = [run_case(mols, charge, isotope)
+    objectives = ("atoms", "bonds") if args.objective == "both" else (args.objective,)
+    rows = [run_case(mols, charge, isotope, objective)
             for items in inputs for mols in (items, items[::-1])
-            for charge, isotope in product((False, True), repeat=2)]
+            for charge, isotope in product((False, True), repeat=2)
+            for objective in objectives]
     totals = Counter("pass" if row["passed"] else "fail" for row in rows)
     args.output.write_text(json.dumps({
         "cohort": "exposed small graphs with enumerable connected edge subsets",
-        "objective": "max atoms, then max bonds",
+        "objectives": objectives,
         "rdkit_version": rdBase.rdkitVersion,
         "chematic_import": chematic.__file__,
         "totals": totals, "rows": rows,

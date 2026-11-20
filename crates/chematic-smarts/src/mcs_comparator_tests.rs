@@ -410,3 +410,29 @@ fn mcs_comparator_query_excludes_unobserved_alternatives() {
     assert_eq!(query.bonds.len(), 1);
     assert!(find_matches(&query, &triple).is_empty());
 }
+
+#[test]
+fn bond_first_reaches_dense_component_after_finding_larger_chain() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    let first = chematic_smiles::parse("CCCCC.C12C3C1C23").unwrap();
+    let second = chematic_smiles::parse("C12C3C1C23.CCCCC").unwrap();
+    for mols in [[&first, &second], [&second, &first]] {
+        for (objective, expected) in [
+            (McsObjective::AtomCount, (5, 4)),
+            (McsObjective::BondCount, (4, 6)),
+        ] {
+            let result = find_mcs_with_objective_checked(&mols, &McsConfig::default(), objective);
+            assert!(!result.was_timed_out() && !result.was_resource_limited());
+            let query = result.into_query();
+            assert_eq!((query.atom_count(), query.bonds.len()), expected);
+        }
+        let config = McsConfig {
+            min_atoms: 5,
+            ..McsConfig::default()
+        };
+        let query =
+            find_mcs_with_objective_checked(&mols, &config, McsObjective::BondCount).into_query();
+        assert_eq!((query.atom_count(), query.bonds.len()), (5, 4));
+    }
+}

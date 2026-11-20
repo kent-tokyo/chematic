@@ -481,13 +481,16 @@ pub fn mcs_smiles_json_with_config(
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
+    let objective = config.objective();
     let config = config.into_mcs_config();
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = if rdkit_heavy {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(
+            &mol_refs, &config, objective,
+        )
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_objective_checked(&mol_refs, &config, objective)
     };
     let was_timed_out = outcome.was_timed_out();
     let was_resource_limited = outcome.was_resource_limited();
@@ -509,6 +512,7 @@ pub fn mcs_smiles_json_with_config(
 /// MCS SMARTS with status, preserving atom and bond query alternatives.
 ///
 /// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
+/// Set `bondCountFirst` to maximize bonds first, then atoms.
 /// Charge and isotope predicates are preserved. Chirality predicates are
 /// rejected until the serializer can retain their matching semantics.
 #[wasm_bindgen]
@@ -521,6 +525,7 @@ pub fn mcs_smarts_json_with_config(
     let config: McsConfigJson =
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
+    let objective = config.objective();
     let config = config.into_mcs_config();
     if config.match_chiral_tag {
         return Err(JsValue::from_str(
@@ -530,9 +535,11 @@ pub fn mcs_smarts_json_with_config(
 
     let mol_refs: Vec<&chematic_core::Molecule> = mols.iter().collect();
     let outcome = if rdkit_heavy {
-        chematic_smarts::find_mcs_with_rdkit_any_heavy_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_rdkit_any_heavy_objective_checked(
+            &mol_refs, &config, objective,
+        )
     } else {
-        chematic_smarts::find_mcs_with_config_checked(&mol_refs, &config)
+        chematic_smarts::find_mcs_with_objective_checked(&mol_refs, &config, objective)
     };
     let was_timed_out = outcome.was_timed_out();
     let was_resource_limited = outcome.was_resource_limited();

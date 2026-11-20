@@ -51,3 +51,15 @@ def test_mcs_smarts_applies_charge_to_every_element_alternative():
     assert not timed_out and all(query.matches(mol) for mol in molecules)
     assert not query.matches(ch.from_smiles("N"))
     assert not query.matches(ch.from_smiles("P"))
+
+
+
+def test_mcs_bond_first_can_choose_the_smaller_dense_component():
+    molecule = ch.from_smiles("CCCCC.C12C3C1C23")
+    for bond_count_first, atoms in ((False, 5), (True, 4)):
+        smarts, timed_out = ch.find_mcs_smarts_checked(
+            [molecule, molecule], bond_count_first=bond_count_first
+        )
+        query = ch.compile_smarts(smarts)
+        assert not timed_out and query.atom_count == atoms
+        assert query.matches(molecule)

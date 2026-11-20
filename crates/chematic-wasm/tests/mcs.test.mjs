@@ -39,6 +39,18 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   ), /matchChiralTag/);
 }
 
+{
+  const inputs = JSON.stringify(["CCCCC.C12C3C1C23", "CCCCC.C12C3C1C23"]);
+  const atomFirst = JSON.parse(mcs_smarts_json_with_config(inputs, "{}"));
+  const bondFirst = JSON.parse(mcs_smarts_json_with_config(
+    inputs, JSON.stringify({ bondCountFirst: true })
+  ));
+  assert.equal(atomFirst.smarts.match(/#6/g).length, 5);
+  assert.equal(bondFirst.smarts.match(/#6/g).length, 4);
+  assert.equal(bondFirst.wasTimedOut, false);
+  assert.equal(bondFirst.wasResourceLimited, false);
+}
+
 // Default config (`{}`) matches the bare mcs_smiles_json's own default.
 // (mcs_smiles_json returns a plain SMILES string, or the literal string
 // "null" -- not JSON -- so it's compared directly, not JSON.parse'd.)

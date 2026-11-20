@@ -66,9 +66,8 @@ pub struct McsConfig {
     /// If `true`, bond orders must match between molecules. If `false`, any bond order is
     /// accepted (atom-only MCS).
     pub match_bonds: bool,
-    /// Minimum number of atoms required for the result to be returned.  If the best
-    /// common substructure has fewer atoms than `min_atoms`, an empty `QueryMolecule` is
-    /// returned instead.
+    /// Minimum number of atoms for a candidate when comparing two or more molecules.
+    /// If none reaches `min_atoms`, return an empty `QueryMolecule`.
     pub min_atoms: usize,
     /// Optional time limit in milliseconds.  The search is aborted when the deadline is
     /// reached and the best result found so far is returned.
@@ -100,7 +99,8 @@ pub struct McsConfig {
     /// Mirrors `match_chiral_tag`.
     pub match_isotope: bool,
     /// If `true`, when multiple MCS of the same atom count exist, prefer the one with more bonds.
-    /// Defaults to `true` (matching RDKit's default behavior).
+    /// Defaults to `true` for the atom-first objective. Select
+    /// [`McsObjective::BondCount`] to make bonds the primary objective.
     pub maximize_bonds: bool,
 }
 
@@ -123,6 +123,15 @@ impl Default for McsConfig {
             maximize_bonds: true,
         }
     }
+}
+
+/// What the MCS search maximizes before resolving ties.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum McsObjective {
+    /// Maximize atoms, using `McsConfig::maximize_bonds` for tied atom counts.
+    AtomCount,
+    /// Maximize bonds first, then prefer more atoms.
+    BondCount,
 }
 
 // ---------------------------------------------------------------------------
@@ -203,7 +212,7 @@ impl McsOutcome {
 /// Like [`find_mcs_with_config`], but reports whether `config.timeout_ms`
 /// was reached before the search finished exhaustively -- see [`McsOutcome`].
 pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
-    find_mcs_impl(mols, config, false)
+    find_mcs_with_objective_checked(mols, config, McsObjective::AtomCount)
 }
 
 /// Find an MCS using RDKit's `CompareAnyHeavyAtom` atom policy while retaining
@@ -212,10 +221,33 @@ pub fn find_mcs_with_config_checked(mols: &[&Molecule], config: &McsConfig) -> M
 /// The policy overrides `config.atom_compare`; [`find_mcs_with_config_checked`]
 /// retains the original heavy-only behavior.
 pub fn find_mcs_with_rdkit_any_heavy_checked(mols: &[&Molecule], config: &McsConfig) -> McsOutcome {
-    find_mcs_impl(mols, config, true)
+    find_mcs_with_rdkit_any_heavy_objective_checked(mols, config, McsObjective::AtomCount)
 }
 
-fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> McsOutcome {
+/// Maximum common substructure with an explicit primary objective.
+pub fn find_mcs_with_objective_checked(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    objective: McsObjective,
+) -> McsOutcome {
+    find_mcs_impl(mols, config, false, objective)
+}
+
+/// Explicit objective under the RDKit any-heavy-atom matching policy.
+pub fn find_mcs_with_rdkit_any_heavy_objective_checked(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    objective: McsObjective,
+) -> McsOutcome {
+    find_mcs_impl(mols, config, true, objective)
+}
+
+fn find_mcs_impl(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    rdkit_heavy: bool,
+    objective: McsObjective,
+) -> McsOutcome {
     if mols.iter().any(|mol| {
         mol.atom_count() > config.max_atoms_per_molecule
             || mol.bond_count() > config.max_bonds_per_molecule
@@ -251,6 +283,7 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         mols,
         config,
         rdkit_heavy,
+        objective,
         best: PartialMapping::empty(mols.len()),
         deadline,
         timed_out: false,
@@ -303,7 +336,7 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
                 &config.atom_compare,
                 rdkit_heavy,
             );
-            if ub < state.best.size {
+            if !state.atom_bound_can_improve(ub) {
                 continue;
             }
 
@@ -316,17 +349,11 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         }
     }
 
-    // Apply min_atoms filter.
-    if state.best.size < config.min_atoms {
-        return if state.resource_limited {
-            McsOutcome::ResourceLimited(QueryMolecule::new())
-        } else if state.timed_out {
-            McsOutcome::TimedOut(QueryMolecule::new())
-        } else {
-            McsOutcome::Exhaustive(QueryMolecule::new())
-        };
-    }
-    let result = build_query(mols, &state.best, config);
+    let result = if state.best.size < config.min_atoms {
+        QueryMolecule::new()
+    } else {
+        build_query(mols, &state.best, config)
+    };
     if state.resource_limited {
         McsOutcome::ResourceLimited(result)
     } else if state.timed_out {
@@ -435,6 +462,7 @@ struct McsState<'a> {
     mols: &'a [&'a Molecule],
     config: &'a McsConfig,
     rdkit_heavy: bool,
+    objective: McsObjective,
     best: PartialMapping,
     deadline: Option<Instant>,
     timed_out: bool,
@@ -454,6 +482,36 @@ struct McsState<'a> {
     /// `grow`). Reset to all-`false` before growing from each new seed --
     /// exclusion is a per-branch decision, not global across seeds.
     excluded: Vec<bool>,
+}
+
+impl McsState<'_> {
+    fn score(&self, mapping: &PartialMapping) -> (usize, usize) {
+        match self.objective {
+            McsObjective::AtomCount => (
+                mapping.size,
+                if self.config.maximize_bonds {
+                    mapping.bond_count
+                } else {
+                    0
+                },
+            ),
+            McsObjective::BondCount => (mapping.bond_count, mapping.size),
+        }
+    }
+
+    /// A smaller branch can still beat the best bond count. Apply the
+    /// atom bound only when atoms are primary or more bonds are impossible.
+    fn atom_bound_can_improve(&self, atom_upper_bound: usize) -> bool {
+        if atom_upper_bound < self.config.min_atoms {
+            return false;
+        }
+        if self.objective == McsObjective::BondCount
+            && self.best.bond_count < self.absolute_bond_upper_bound
+        {
+            return true;
+        }
+        atom_upper_bound >= self.best.size
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -489,16 +547,13 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
     if state.config.match_chiral_tag && !mapped_chirality_compatible(state.mols, mapping) {
         return false;
     }
-    // Update best if this mapping is larger, or same size but more bonds (if enabled),
-    // or a same-size-and-bond-count tie broken by a canonical key (not "first found in
-    // DFS order", which depends on mols[0]'s atom insertion order -- the same bug shape
-    // as scaffold.rs Rule 8 / is_fused_ring found elsewhere in this project).
-    let is_better = mapping.size > state.best.size
-        || (mapping.size == state.best.size
-            && ((state.config.maximize_bonds && mapping.bond_count > state.best.bond_count)
-                || ((!state.config.maximize_bonds
-                    || mapping.bond_count == state.best.bond_count)
-                    && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best))));
+    if mapping.size < state.config.min_atoms {
+        return true;
+    }
+    let score = state.score(mapping);
+    let current_best = state.score(&state.best);
+    let is_better = score > current_best
+        || (score == current_best && mcs_tiebreak_key(mapping) < mcs_tiebreak_key(&state.best));
     // Pruning only the unconstrained winner after the search can discard a
     // smaller, valid candidate found earlier (for example a common chain next
     // to two incompatible rings). Keep the best *valid* mapping instead.
@@ -508,7 +563,7 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
     {
         state.best = mapping.clone();
         state.proven_optimal = state.best.size == state.absolute_atom_upper_bound
-            && (!state.config.maximize_bonds
+            && ((state.objective == McsObjective::AtomCount && !state.config.maximize_bonds)
                 || state.best.bond_count == state.absolute_bond_upper_bound);
     }
     true
@@ -551,7 +606,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // Atom-only bounds cannot prove that a tied-size branch has no better
     // bond count. In particular, a chain found before a triangle must not
     // prevent the latter from becoming the best MCS.
-    if mapping.size + additional_ub < state.best.size {
+    if !state.atom_bound_can_improve(mapping.size + additional_ub) {
         return;
     }
 
