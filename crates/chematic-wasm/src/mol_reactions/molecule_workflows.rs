@@ -81,6 +81,14 @@ pub fn canonical_tautomer(mol: &MolHandle) -> MolHandle {
     }
 }
 
+/// Apply Cleanup and return a new molecule with all fragments retained.
+#[wasm_bindgen]
+pub fn cleanup_mol(mol: &MolHandle) -> MolHandle {
+    MolHandle {
+        inner: std::rc::Rc::new(chematic_chem::cleanup(&mol.inner)),
+    }
+}
+
 fn parent_transform_json(
     mol: &MolHandle,
     transform: fn(

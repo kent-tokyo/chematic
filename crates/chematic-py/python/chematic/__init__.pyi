@@ -1575,8 +1575,9 @@ class Mol:
     def cleanup(self) -> Mol:
         """Apply the supported RDKit Cleanup stages and return a new molecule.
 
-        Acid/base-priority reionization and some metal coordination patterns
-        remain outside this profile.
+        Proton transfers use the ordered acid/base catalog and check the
+        resulting acid before moving a proton. Metal disconnection covers
+        the supported ligand and coordination patterns.
         """
         ...
 

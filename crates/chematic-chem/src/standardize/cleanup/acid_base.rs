@@ -5,7 +5,9 @@ use std::sync::OnceLock;
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, MoleculeBuilder, implicit_hcount};
 use chematic_smarts::with_perceived_target;
-use chematic_smarts::{MatchConfig, QueryMolecule, find_matches_with_config, parse_smarts};
+use chematic_smarts::{
+    MatchConfig, QueryMolecule, find_matches_with_config, for_each_embedding, parse_smarts,
+};
 
 // RDKit 2026.09.1 defaultAcidBasePairs, strongest to weakest. The final
 // query atom is the atom whose proton and formal charge change.
@@ -121,73 +123,198 @@ fn iron_bis_cyclopentadienyl(mol: &Molecule) -> bool {
             >= 2
 }
 
+#[derive(Clone, Copy)]
+struct Transfer {
+    acid_rank: usize,
+    acid: AtomIdx,
+    base: AtomIdx,
+}
+
+fn next_transfer(current: &Molecule) -> Option<Transfer> {
+    if !current.atoms().any(|(_, atom)| atom.charge < 0) {
+        return None;
+    }
+    let (mut strongest, mut weakest) = with_perceived_target(current, |target| {
+        (strongest_acid(target), weakest_base(target))
+    });
+    if iron_bis_cyclopentadienyl(current)
+        && strongest.is_none()
+        && let (Some(raw_acid), Some(raw_base)) = (strongest_acid(current), weakest_base(current))
+        && raw_acid.0 < raw_base.0
+    {
+        // A metal cut can leave a Kekule cyclopentadienyl anion whose
+        // RDKit atom flags stay nonaromatic. Reperceiving aromaticity
+        // hides the sp2 C--H donor and changes the base ranking.
+        strongest = Some(raw_acid);
+        weakest = Some(raw_base);
+    }
+    if iron_bis_cyclopentadienyl(current)
+        && strongest.is_some_and(|(rank, _)| rank == 20)
+        && let Some(raw_base) = weakest_base(current)
+        && weakest.is_none_or(|(rank, _)| rank < raw_base.0)
+    {
+        weakest = Some(raw_base);
+    }
+    if weakest.is_none()
+        && let Some((raw_rank, raw_base)) = weakest_base(current)
+        && nonaromatic_imide_carbanion(current, raw_base)
+    {
+        if strongest.is_none() {
+            strongest = strongest_acid(current);
+        }
+        weakest = Some((raw_rank, raw_base));
+    }
+    let (acid_rank, acid) = strongest?;
+    let (base_rank, base) = weakest?;
+    (acid_rank < base_rank && acid != base).then_some(Transfer {
+        acid_rank,
+        acid,
+        base,
+    })
+}
+
+fn transfer_proton(current: &Molecule, acid: AtomIdx, base: AtomIdx) -> Molecule {
+    let mut builder = MoleculeBuilder::from_molecule(current);
+    let acid_atom = current.atom(acid);
+    let base_atom = current.atom(base);
+    builder.set_atom_charge(acid, acid_atom.charge.saturating_sub(1));
+    if acid_atom.hydrogen_count.is_some_and(|h| h > 0) {
+        builder.set_atom_hydrogen_count(acid, acid_atom.hydrogen_count.map(|h| h - 1));
+    }
+    builder.set_atom_charge(base, base_atom.charge.saturating_add(1));
+    if base_atom.hydrogen_count.is_some() || implicit_hcount(current, base) == 0 {
+        builder.set_atom_hydrogen_count(
+            base,
+            Some(base_atom.hydrogen_count.unwrap_or(0).saturating_add(1)),
+        );
+    }
+    builder.build()
+}
+
+impl Transfer {
+    fn sites(self) -> (AtomIdx, AtomIdx) {
+        (self.acid.min(self.base), self.acid.max(self.base))
+    }
+
+    fn supported_product(self, mol: &Molecule) -> Option<Molecule> {
+        let product = transfer_proton(mol, self.acid, self.base);
+        // Only transfer a proton. A valence change must not add or remove
+        // other hydrogens at either site.
+        if implicit_hcount(mol, self.acid).checked_sub(1)
+            != Some(implicit_hcount(&product, self.acid))
+            || implicit_hcount(mol, self.base).checked_add(1)
+                != Some(implicit_hcount(&product, self.base))
+        {
+            return None;
+        }
+        let product_is_not_weaker = with_perceived_target(&product, |target| {
+            queries()[..=self.acid_rank]
+                .iter()
+                .flatten()
+                .any(|(acid, _)| {
+                    let mut found = false;
+                    for_each_embedding(acid, target, &MatchConfig::default(), |embedding| {
+                        found |= embedding.last().copied() == Some(self.base.0);
+                    });
+                    found
+                })
+        });
+        (!product_is_not_weaker).then_some(product)
+    }
+}
+
+fn ranked_sites(mol: &Molecule, positions: &[usize], acids: bool) -> Vec<(usize, AtomIdx)> {
+    let mut seen = HashSet::new();
+    let mut sites = Vec::new();
+    let count = queries().len();
+    for offset in 0..count {
+        let rank = if acids { offset } else { count - 1 - offset };
+        let Some((acid, base)) = &queries()[rank] else {
+            continue;
+        };
+        let query = if acids { acid } else { base };
+        let mut group = Vec::new();
+        for_each_embedding(query, mol, &MatchConfig::default(), |embedding| {
+            if let Some(&atom) = embedding.last()
+                && seen.insert(atom)
+            {
+                group.push(AtomIdx(atom));
+            }
+        });
+        group.sort_unstable_by_key(|idx| positions[idx.0 as usize]);
+        sites.extend(group.into_iter().map(|site| (rank, site)));
+    }
+    sites
+}
+
+fn verified_transfer(
+    mol: &Molecule,
+    moved: &HashSet<(AtomIdx, AtomIdx)>,
+) -> Option<(Transfer, Molecule)> {
+    let mut positions = vec![0; mol.atom_count()];
+    for (position, atom) in chematic_smiles::canonical_atom_order(mol)
+        .into_iter()
+        .enumerate()
+    {
+        positions[atom] = position;
+    }
+    let (acids, bases) = with_perceived_target(mol, |target| {
+        (
+            ranked_sites(target, &positions, true),
+            ranked_sites(target, &positions, false),
+        )
+    });
+    for (acid_rank, acid) in acids {
+        for &(base_rank, base) in &bases {
+            if base_rank <= acid_rank {
+                break;
+            }
+            let transfer = Transfer {
+                acid_rank,
+                acid,
+                base,
+            };
+            if acid == base || moved.contains(&transfer.sites()) {
+                continue;
+            }
+            if let Some(product) = transfer.supported_product(mol) {
+                return Some((transfer, product));
+            }
+        }
+    }
+    None
+}
+
 pub(super) fn reionize_for_cleanup(mol: &Molecule) -> Molecule {
+    reionize(mol, true)
+}
+
+pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
+    reionize(mol, false)
+}
+
+fn reionize(mol: &Molecule, verify_acidity: bool) -> Molecule {
     let mut current = mol.clone();
     let mut moved = HashSet::new();
     for _ in 0..current.atom_count() {
-        let (mut strongest, mut weakest) = with_perceived_target(&current, |target| {
-            (strongest_acid(target), weakest_base(target))
-        });
-        if iron_bis_cyclopentadienyl(&current)
-            && strongest.is_none()
-            && let (Some(raw_acid), Some(raw_base)) =
-                (strongest_acid(&current), weakest_base(&current))
-            && raw_acid.0 < raw_base.0
-        {
-            // A metal cut can leave a Kekule cyclopentadienyl anion whose
-            // RDKit atom flags stay nonaromatic. Reperceiving aromaticity
-            // hides the sp2 C--H donor and changes the base ranking.
-            strongest = Some(raw_acid);
-            weakest = Some(raw_base);
-        }
-        if iron_bis_cyclopentadienyl(&current)
-            && strongest.is_some_and(|(rank, _)| rank == 20)
-            && let Some(raw_base) = weakest_base(&current)
-            && weakest.is_none_or(|(rank, _)| rank < raw_base.0)
-        {
-            weakest = Some(raw_base);
-        }
-        if weakest.is_none()
-            && let Some((raw_rank, raw_base)) = weakest_base(&current)
-            && nonaromatic_imide_carbanion(&current, raw_base)
-        {
-            if strongest.is_none() {
-                strongest = strongest_acid(&current);
-            }
-            weakest = Some((raw_rank, raw_base));
-        }
-        let Some((acid_rank, acid)) = strongest else {
+        let Some(transfer) = next_transfer(&current) else {
             break;
         };
-        let Some((base_rank, base)) = weakest else {
-            break;
-        };
-        if acid_rank >= base_rank || acid == base {
-            break;
-        }
-        let pair = if acid < base {
-            (acid, base)
+        let next = if verify_acidity {
+            verified_transfer(&current, &moved)
+        } else if moved.contains(&transfer.sites()) {
+            None
         } else {
-            (base, acid)
+            Some((
+                transfer,
+                transfer_proton(&current, transfer.acid, transfer.base),
+            ))
         };
-        if !moved.insert(pair) {
+        let Some((accepted, product)) = next else {
             break;
-        }
-        let mut builder = MoleculeBuilder::from_molecule(&current);
-        let acid_atom = current.atom(acid);
-        let base_atom = current.atom(base);
-        builder.set_atom_charge(acid, acid_atom.charge.saturating_sub(1));
-        if acid_atom.hydrogen_count.is_some_and(|h| h > 0) {
-            builder.set_atom_hydrogen_count(acid, acid_atom.hydrogen_count.map(|h| h - 1));
-        }
-        builder.set_atom_charge(base, base_atom.charge.saturating_add(1));
-        if base_atom.hydrogen_count.is_some() || implicit_hcount(&current, base) == 0 {
-            builder.set_atom_hydrogen_count(
-                base,
-                Some(base_atom.hydrogen_count.unwrap_or(0).saturating_add(1)),
-            );
-        }
-        current = builder.build();
+        };
+        moved.insert(accepted.sites());
+        current = product;
     }
     current
 }

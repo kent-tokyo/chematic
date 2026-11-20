@@ -14,7 +14,7 @@ use super::{clone_molecule, is_metal, normalize_groups};
 use crate::hydrogen::remove_hydrogens;
 
 pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
-    acid_base::reionize_for_cleanup(mol)
+    acid_base::reionize_with_catalog(mol)
 }
 
 /// Apply the supported RDKit `MolStandardize.Cleanup` stages without changing
@@ -22,8 +22,9 @@ pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
 ///
 /// The input is stripped of removable explicit hydrogens, metal--ligand bonds
 /// are disconnected with valence-aware charge adjustment, and functional
-/// groups are normalized. The ordered acid/base catalog then moves protons
-/// according to the pinned RDKit Cleanup profile.
+/// groups are normalized. The ordered catalog proposes proton transfers.
+/// Cleanup rejects a transfer when the product's newly protonated site
+/// matches an acid in an equally strong or stronger catalog class.
 pub fn cleanup(mol: &Molecule) -> Molecule {
     let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens(mol));
     let disconnected = disconnect_metals_for_cleanup(&without_h);
@@ -782,14 +783,15 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_reionizes_nonaromatic_imide_carbanion_after_zinc_cut() {
+    fn cleanup_keeps_the_stronger_conjugate_base_after_zinc_cut() {
         let input = "CC1=C(CCOC2=CC=C(C[C]3([Zn])OC(=O)NC3=O)C=C2)N=C(C2=C[C+]=CO2)O1";
-        let expected = "Cc1oc(C2=C[C+]=CO2)nc1[CH-]COc1ccc(CC2OC(=O)NC2=O)cc1.[Zn+]";
+        // The carbonyl-adjacent carbanion is the conjugate base of the
+        // stronger acid. The broad carbanion pattern alone reverses this.
+        let expected = "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]";
         let cleaned = cleanup(&parse(input).unwrap());
-        assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
-        );
+        let smiles = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        assert_eq!(smiles(&cleaned).as_deref(), Ok(expected));
+        assert_eq!(smiles(&cleanup(&cleaned)).as_deref(), Ok(expected));
     }
 
     #[test]
@@ -816,13 +818,40 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_reionizes_cyclopentadienyl_anions_after_iron_cut() {
-        let input = "C1=CC=CC1[Fe]C1C=CC=C1";
-        let expected = "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]";
-        let cleaned = cleanup(&parse(input).unwrap());
+    fn cleanup_retains_one_cyclopentadienide_on_each_side_of_the_iron_cut() {
+        // PubChem CID 7611 describes Fe(II) and two cyclopentadienide ions.
+        let expected = "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]";
+        let smiles = chematic_smiles::rdkit_cleanup_canonical_smiles;
+        for input in [
+            "C1=CC=CC1[Fe]C1C=CC=C1",
+            "C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(smiles(&cleaned).as_deref(), Ok(expected), "{input}");
+            assert_eq!(
+                smiles(&cleanup(&cleaned)).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(crate::calc_mol_formula(&cleaned), "C10H10Fe");
+        }
+    }
+
+    #[test]
+    fn cleanup_checks_acid_strength_at_each_competing_proton_acceptor() {
+        use chematic_smiles::canonical_smiles;
+
+        let input = parse("[CH2-]C(=O)C(F)(F)F.CCc1ccccc1.[CH3-]").unwrap();
+        let expected = parse("[CH2-]C(=O)C(F)(F)F.C[CH-]c1ccccc1.C").unwrap();
+        let cleaned = cleanup(&input);
+        assert_eq!(canonical_smiles(&cleaned), canonical_smiles(&expected));
         assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
+            canonical_smiles(&cleanup(&cleaned)),
+            canonical_smiles(&cleaned)
+        );
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&input)
         );
     }
 
