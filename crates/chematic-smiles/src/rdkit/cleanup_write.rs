@@ -33,9 +33,6 @@ pub(super) fn write_cleanup_smiles(
     {
         restore_aromatic_state(&mut model, raw);
     }
-    if model.atoms.len() == initial_atom_count {
-        clear_cleanup_radicals(mol, &mut model);
-    }
     stereo::legacy_stereo_perception_unflagged(&mut model);
     if model.atoms.len() == initial_atom_count {
         for (idx, tag, permutation) in isolated_tags {
@@ -174,39 +171,5 @@ fn restore_aromatic_state(model: &mut mol::Mol, raw: &mol::Mol) {
     for (current, original) in model.bonds.iter_mut().zip(&raw.bonds) {
         current.bt = original.bt;
         current.aromatic = original.aromatic;
-    }
-}
-
-fn clear_cleanup_radicals(source: &Molecule, model: &mut mol::Mol) {
-    let has_metal = source
-        .atoms()
-        .any(|(_, atom)| periodic::is_metal(u32::from(atom.element.atomic_number())));
-    let aromaticity = has_metal.then(|| chematic_perception::assign_aromaticity(source));
-    for (idx, atom) in source.atoms() {
-        let carbon_after_cut = has_metal
-            && atom.element.atomic_number() == 6
-            && !atom.aromatic
-            && !aromaticity
-                .as_ref()
-                .is_some_and(|view| view.is_atom_aromatic(idx))
-            && atom.charge == 0
-            && atom.hydrogen_count == Some(0)
-            && source.degree(idx) == 2
-            && source
-                .neighbors(idx)
-                .map(|(_, bond)| source.bond(bond).order.order_int())
-                .sum::<u8>()
-                == 3;
-        let phosphorus_after_cut = atom.element.atomic_number() == 15
-            && atom.charge == 0
-            && atom.hydrogen_count == Some(0)
-            && source.degree(idx) == 3
-            && source.neighbors(idx).any(|(neighbor, bond)| {
-                source.atom(neighbor).element.atomic_number() == 8
-                    && source.bond(bond).order == chematic_core::BondOrder::Double
-            });
-        if (carbon_after_cut || phosphorus_after_cut) && model.atoms[idx.0 as usize].radicals == 1 {
-            model.atoms[idx.0 as usize].radicals = 0;
-        }
     }
 }

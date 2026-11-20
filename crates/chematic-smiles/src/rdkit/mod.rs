@@ -137,6 +137,8 @@ pub fn rdkit_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError
 /// would discard it. The ordinary [`rdkit_canonical_smiles`] models that new
 /// parse; this function preserves the tag of an isolated Cleanup product.
 /// Cleanup remaps a three-ligand square-planar permutation before writing.
+/// Atoms that require brackets to preserve their hydrogen count can differ
+/// in spelling from RDKit's in-memory Cleanup writer.
 pub fn rdkit_cleanup_canonical_smiles(mol: &Molecule) -> Result<String, RdkitSmilesError> {
     rdkit_cleanup_smiles(mol, &RdkitSmilesParams::default())
 }

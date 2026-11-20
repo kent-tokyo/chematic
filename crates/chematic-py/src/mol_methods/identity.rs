@@ -35,6 +35,8 @@ impl Mol {
     ///
     /// A Cleanup result retains RDKit's in-memory non-tetrahedral tag on a
     /// fully disconnected metal. Re-parsing its SMILES would lose that tag.
+    /// The Cleanup writer may retain brackets that RDKit omits when they are
+    /// needed to preserve the atom's hydrogen count on re-parsing.
     #[getter]
     fn rdkit_smiles(&self) -> PyResult<String> {
         let write = if self.props.rdkit_cleanup_output {

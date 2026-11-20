@@ -688,14 +688,22 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_unbrackets_pentavalent_phosphorus_after_metal_disconnection() {
-        let input = "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1";
-        let expected = "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]";
-        let cleaned = cleanup(&parse(input).unwrap());
-        assert_eq!(
-            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok(expected)
-        );
+    fn cleanup_compatibility_smiles_preserves_explicit_zero_hydrogens() {
+        for input in [
+            "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+            "[C](=O)(O)[Zn]",
+            "[C](=O)[O:27].[Fe]",
+            "CC=[C]C.[Zn]",
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            let serialized = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+            let reparsed = parse(&serialized).unwrap();
+            assert_eq!(
+                crate::calc_mol_formula_with_isotopes(&reparsed),
+                crate::calc_mol_formula_with_isotopes(&cleaned),
+                "{input} -> {serialized}"
+            );
+        }
     }
 
     #[test]
