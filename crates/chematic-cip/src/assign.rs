@@ -371,6 +371,7 @@ fn apply_rule5_pass(
 
         match assign_one_with_rule5(mol, idx, atom.chirality, &stereo_order, budget, kekule) {
             Ok(Some(code)) => assignments.push((idx, code)),
+            Err(SkipReason::BudgetExceeded) => skipped.push((idx, SkipReason::BudgetExceeded)),
             _ => skipped.push((idx, reason)),
         }
     }
@@ -442,6 +443,16 @@ fn assign_one_with_rule5(
 
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+
+    if !lone_pair_centre
+        && crate::rule6::has_reference_partition(&groups)
+        && crate::rule6::eligible(mol, idx)
+    {
+        return crate::rule6::assign(&mut graph, &groups, &position_nodes, chirality, &mut ctx)
+            .map_err(map_compare_err)?
+            .map(Some)
+            .ok_or(SkipReason::Tied);
+    }
 
     let mut resolved_groups = Vec::with_capacity(groups.len());
     let mut cache = HashMap::new();

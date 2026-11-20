@@ -43,6 +43,7 @@ pub mod node;
 pub mod rational;
 mod resolver;
 mod rule4b;
+mod rule6;
 pub mod substituent_rank;
 pub mod trace;
 
