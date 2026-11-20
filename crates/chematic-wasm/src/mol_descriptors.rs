@@ -459,20 +459,47 @@ pub fn cip_assignments_json(mol: &MolHandle) -> String {
 /// [`cip_unresolved_json`] -- never a silently-guessed label. A phosphorus on an
 /// unsaturated ring (cyclophosphazene) gets RDKit's CIPLabeler label, which flips
 /// with the ring's Kekulé spelling; its object carries `"kekuleDependent": true`.
+/// `seqCis` and `seqTrans` entries carry `bondIdx` and `bondAtoms`.
 /// Configured odd cumulenes carry the full path as `cumuleneAtoms`, from `atomIdx`.
 /// Saturated ring lone-pair centres use the molecule's recorded ligand order.
 /// Returns `"null"` on an internal engine error (budget-independent computations
 /// should not normally hit this).
 #[wasm_bindgen]
 pub fn cip_assignments_accurate_json(mol: &MolHandle) -> String {
-    match chematic_chem::assign_cip_with_mode(&mol.inner, chematic_chem::CipMode::Accurate) {
-        Ok(result) => cip_code_pairs_to_json_marked(
-            &result.assignments,
-            &chematic_chem::assign_cumulene_ez(&mol.inner),
-            |idx| chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx),
-        ),
-        Err(_) => "null".to_string(),
-    }
+    let Ok((result, bonds)) =
+        chematic_chem::assign_accurate_cip_with_double_bond_labels(&mol.inner)
+    else {
+        return "null".to_string();
+    };
+    let mut parts = cip_code_parts(&result.assignments, |idx| {
+        chematic_chem::cip_label_depends_on_kekule_spelling(&mol.inner, idx)
+    });
+    parts.extend(
+        bonds
+            .into_iter()
+            .filter(|(_, code)| code.absolute().is_none())
+            .map(|(idx, code)| {
+                let bond = mol.inner.bond(idx);
+                serde_json::json!({"atomIdx": bond.atom1.0, "bondIdx": idx.0,
+                "bondAtoms": [bond.atom1.0, bond.atom2.0], "cipCode": code.as_str()})
+                .to_string()
+            }),
+    );
+    parts.extend(
+        chematic_chem::assign_cumulene_ez(&mol.inner)
+            .into_iter()
+            .map(|axis| {
+                let atoms: Vec<_> = axis.atoms.iter().map(|atom| atom.0).collect();
+                let code = if axis.descriptor == chematic_core::CipCode::E {
+                    "E"
+                } else {
+                    "Z"
+                };
+                serde_json::json!({"atomIdx": atoms[0], "cumuleneAtoms": atoms, "cipCode": code})
+                    .to_string()
+            }),
+    );
+    format!("[{}]", parts.join(","))
 }
 
 /// Atoms the accurate CIP engine could not resolve a tetrahedral R/S for, as a JSON
@@ -504,17 +531,16 @@ pub fn cip_unresolved_json(mol: &MolHandle) -> String {
 }
 
 fn cip_code_pairs_to_json(pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)]) -> String {
-    cip_code_pairs_to_json_marked(pairs, &[], |_| false)
+    format!("[{}]", cip_code_parts(pairs, |_| false).join(","))
 }
 
 /// [`cip_code_pairs_to_json`] with `"kekuleDependent": true` on the atoms
 /// `kekule_dependent` selects.
-fn cip_code_pairs_to_json_marked(
+fn cip_code_parts(
     pairs: &[(chematic_core::AtomIdx, chematic_core::CipCode)],
-    cumulenes: &[chematic_chem::CumuleneEzAssignment],
     kekule_dependent: impl Fn(chematic_core::AtomIdx) -> bool,
-) -> String {
-    let mut parts: Vec<String> = pairs
+) -> Vec<String> {
+    pairs
         .iter()
         .map(|(idx, code)| {
             let code_str = match code {
@@ -534,18 +560,7 @@ fn cip_code_pairs_to_json_marked(
                 idx.0, code_str
             )
         })
-        .collect();
-    parts.extend(cumulenes.iter().map(|axis| {
-        let atoms: Vec<_> = axis.atoms.iter().map(|atom| atom.0).collect();
-        let code = if axis.descriptor == chematic_core::CipCode::E {
-            "E"
-        } else {
-            "Z"
-        };
-        serde_json::json!({"atomIdx": atoms[0], "cumuleneAtoms": atoms, "cipCode": code})
-            .to_string()
-    }));
-    format!("[{}]", parts.join(","))
+        .collect()
 }
 
 /// Parse a ChemDraw XML (CDXML) string into a `MolHandle`.

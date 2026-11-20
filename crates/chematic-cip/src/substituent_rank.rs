@@ -8,6 +8,7 @@
 //! context once for all ends.
 
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use chematic_core::{AtomIdx, Molecule};
 
@@ -16,6 +17,7 @@ use crate::compare::{BranchComparison, CipCompareError, CompareContext, compare_
 use crate::digraph::CipDigraph;
 use crate::mancude::{MancudeContext, prepare_kekule_form};
 use crate::node::CipNodeKind;
+use crate::rule4b::{StereoRuleLimit, compare_tied_ligands};
 
 /// Ranks substituents of one centre against each other with the accurate
 /// engine's comparator. Build once per molecule.
@@ -51,6 +53,27 @@ impl SubstituentRanker {
             center,
             CipNodeKind::Atom { atom_idx: a },
             CipNodeKind::Atom { atom_idx: b },
+            false,
+        )
+        .map(|result| result.map(|(order, _)| order))
+    }
+
+    /// Compare ligands for a configured double-bond end, including auxiliary
+    /// stereo descriptors when earlier sequence rules leave the pair tied.
+    /// The boolean records whether the deciding comparison is pseudoasymmetric.
+    pub fn compare_configured(
+        &self,
+        mol: &Molecule,
+        center: AtomIdx,
+        a: AtomIdx,
+        b: AtomIdx,
+    ) -> Result<Option<(Ordering, bool)>, CipCompareError> {
+        self.compare_nodes(
+            mol,
+            center,
+            CipNodeKind::Atom { atom_idx: a },
+            CipNodeKind::Atom { atom_idx: b },
+            true,
         )
     }
 
@@ -67,7 +90,9 @@ impl SubstituentRanker {
             center,
             CipNodeKind::Atom { atom_idx: atom },
             CipNodeKind::ImplicitHydrogen,
+            false,
         )
+        .map(|result| result.map(|(order, _)| order))
     }
 
     fn compare_nodes(
@@ -76,7 +101,8 @@ impl SubstituentRanker {
         center: AtomIdx,
         a: CipNodeKind,
         b: CipNodeKind,
-    ) -> Result<Option<Ordering>, CipCompareError> {
+        configured: bool,
+    ) -> Result<Option<(Ordering, bool)>, CipCompareError> {
         let mut graph = match &self.kekule {
             Some((kekule_mol, ctx)) => {
                 CipDigraph::new_with_mancude(kekule_mol, center, self.budget, ctx)
@@ -98,14 +124,30 @@ impl SubstituentRanker {
             return Ok(None);
         };
         let mut ctx = CompareContext::new();
-        match compare_ligands(&mut graph, node_a, node_b, &mut ctx)? {
-            BranchComparison::Higher => Ok(Some(Ordering::Greater)),
-            BranchComparison::Lower => Ok(Some(Ordering::Less)),
+        let mut auxiliary = false;
+        let order = match compare_ligands(&mut graph, node_a, node_b, &mut ctx)? {
+            BranchComparison::Higher => Ordering::Greater,
+            BranchComparison::Lower => Ordering::Less,
             BranchComparison::Equal => {
-                let order = crate::rule3::compare(&mut graph, node_a, node_b, &mut ctx)?;
-                Ok((order != Ordering::Equal).then_some(order))
+                auxiliary =
+                    configured && mol.atoms().any(|(_, atom)| atom.chirality.is_tetrahedral());
+                crate::rule3::compare(&mut graph, node_a, node_b, &mut ctx, auxiliary)?
             }
-            BranchComparison::Unresolved => Ok(None),
+            BranchComparison::Unresolved => return Ok(None),
+        };
+        if order != Ordering::Equal {
+            return Ok(Some((order, false)));
         }
+        if auxiliary {
+            return compare_tied_ligands(
+                &mut graph,
+                mol,
+                node_a,
+                node_b,
+                &mut HashMap::new(),
+                StereoRuleLimit::Rule5,
+            );
+        }
+        Ok(None)
     }
 }

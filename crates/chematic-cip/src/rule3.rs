@@ -1,6 +1,7 @@
 //! Sequence Rule 3 for alkene geometry in the rooted CIP digraph.
 
 use std::cmp::Ordering;
+use std::collections::HashMap;
 
 use chematic_core::ez_markers::EzFactEnd;
 use chematic_core::{AtomIdx, BondOrder};
@@ -12,6 +13,7 @@ use crate::compare::{BranchComparison, CipCompareError, CompareContext, compare_
 use crate::digraph::CipDigraph;
 use crate::ligand_profile::{Profile, collect_branches, sphere_profiles};
 use crate::node::{CipNodeKind, NodeId};
+use crate::rule4b::{StereoRuleLimit, compare_tied_ligands};
 
 fn ligand_atom(graph: &CipDigraph, node: NodeId) -> Option<AtomIdx> {
     match graph.node(node).kind {
@@ -27,7 +29,8 @@ fn preferred_ligand(
     paired_end: AtomIdx,
     context: &mut CompareContext,
     keys: &FxHashMap<NodeId, u8>,
-) -> Result<Option<NodeId>, CipCompareError> {
+    include_auxiliary: bool,
+) -> Result<Option<(NodeId, bool)>, CipCompareError> {
     let children = graph
         .expand_child_ids(node)
         .map_err(CipCompareError::Digraph)?;
@@ -43,30 +46,50 @@ fn preferred_ligand(
         .parent
         .filter(|&parent| ligand_atom(graph, parent) != Some(paired_end));
     Ok(match (back, forward.as_slice()) {
-        (None, [only]) => Some(*only),
-        (Some(only), []) => Some(only),
-        (None, [a, b]) => match compare_ligands(graph, *a, *b, context)? {
-            BranchComparison::Higher => Some(*a),
-            BranchComparison::Lower => Some(*b),
-            _ => match compare_known_descriptors(graph, *a, *b, context, keys)? {
-                Ordering::Greater => Some(*a),
-                Ordering::Less => Some(*b),
-                Ordering::Equal => None,
-            },
-        },
+        (None, [only]) => Some((*only, false)),
+        (Some(only), []) => Some((only, false)),
+        (None, [a, b]) => prefer_forward_ligand(graph, [*a, *b], context, keys, include_auxiliary)?,
         (Some(ancestor), [child]) => {
             let back = BackItem::Ascending {
                 ancestor,
                 came_from: node,
             };
             match compare_rule1a_only(graph, back, *child, context)? {
-                Ordering::Greater => Some(ancestor),
-                Ordering::Less => Some(*child),
+                Ordering::Greater => Some((ancestor, false)),
+                Ordering::Less => Some((*child, false)),
                 Ordering::Equal => None,
             }
         }
         _ => None,
     })
+}
+
+fn prefer_forward_ligand(
+    graph: &mut CipDigraph,
+    [a, b]: [NodeId; 2],
+    context: &mut CompareContext,
+    keys: &FxHashMap<NodeId, u8>,
+    include_auxiliary: bool,
+) -> Result<Option<(NodeId, bool)>, CipCompareError> {
+    let order = match compare_ligands(graph, a, b, context)? {
+        BranchComparison::Higher => Ordering::Greater,
+        BranchComparison::Lower => Ordering::Less,
+        BranchComparison::Equal => compare_known_descriptors(graph, a, b, context, keys)?,
+        BranchComparison::Unresolved => return Ok(None),
+    };
+    let ranked = if order == Ordering::Equal && include_auxiliary {
+        compare_tied_ligands(
+            graph,
+            graph.molecule(),
+            a,
+            b,
+            &mut HashMap::new(),
+            StereoRuleLimit::Rule5,
+        )?
+    } else {
+        (order != Ordering::Equal).then_some((order, false))
+    };
+    Ok(ranked.map(|(order, pseudo)| (if order == Ordering::Greater { a } else { b }, pseudo)))
 }
 
 fn compare_known_descriptors(
@@ -95,6 +118,7 @@ fn sequence_key(
     children: &[Vec<NodeId>],
     context: &mut CompareContext,
     keys: &FxHashMap<NodeId, u8>,
+    include_auxiliary: bool,
 ) -> Result<Option<u8>, CipCompareError> {
     let CipNodeKind::Atom { atom_idx } = graph.node(node).kind else {
         return Ok(Some(0));
@@ -118,12 +142,19 @@ fn sequence_key(
         {
             continue;
         }
-        let Some(top_near) = preferred_ligand(graph, node, partner, context, keys)? else {
+        let Some((top_near, pseudo_near)) =
+            preferred_ligand(graph, node, partner, context, keys, include_auxiliary)?
+        else {
             continue;
         };
-        let Some(top_far) = preferred_ligand(graph, child, atom_idx, context, keys)? else {
+        let Some((top_far, pseudo_far)) =
+            preferred_ligand(graph, child, atom_idx, context, keys, include_auxiliary)?
+        else {
             continue;
         };
+        if pseudo_near != pseudo_far {
+            continue;
+        }
         let Some(mut fact) = graph.alkene_geometry().get(&bond_idx).copied() else {
             // A potentially stereogenic bond with unspecified geometry cannot
             // be ranked below a configured bond as if it were nonstereogenic.
@@ -146,13 +177,15 @@ fn profiles(
     graph: &mut CipDigraph,
     ligands: &[NodeId],
     context: &mut CompareContext,
+    include_auxiliary: bool,
 ) -> Result<Option<FxHashMap<NodeId, Profile>>, CipCompareError> {
     let branches = collect_branches(graph, ligands.iter().copied(), context)?;
     let mut keys = FxHashMap::default();
     // An end's forward ligands can themselves be E or Z. Resolve those
     // descendants before deciding which one defines this double bond's side.
     for (node, children) in branches.iter().rev() {
-        let Some(key) = sequence_key(graph, *node, children, context, &keys)? else {
+        let Some(key) = sequence_key(graph, *node, children, context, &keys, include_auxiliary)?
+        else {
             return Ok(None);
         };
         if key != 0 {
@@ -168,11 +201,12 @@ pub(crate) fn compare(
     left: NodeId,
     right: NodeId,
     context: &mut CompareContext,
+    include_auxiliary: bool,
 ) -> Result<Ordering, CipCompareError> {
     if graph.alkene_geometry().is_empty() {
         return Ok(Ordering::Equal);
     }
-    Ok(profiles(graph, &[left, right], context)?
+    Ok(profiles(graph, &[left, right], context, include_auxiliary)?
         .map_or(Ordering::Equal, |ranks| ranks[&left].cmp(&ranks[&right])))
 }
 
@@ -187,7 +221,7 @@ pub(crate) fn refine(
     let mut ranked = Vec::with_capacity(groups.len());
     for mut group in groups {
         if group.len() > 1
-            && let Some(profiles) = profiles(graph, &group, context)?
+            && let Some(profiles) = profiles(graph, &group, context, false)?
         {
             group.sort_by(|a, b| profiles[b].cmp(&profiles[a]));
             ranked.extend(

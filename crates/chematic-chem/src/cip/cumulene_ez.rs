@@ -3,7 +3,8 @@
 use chematic_core::cumulene::{PlanarCumulene, planar_cumulenes};
 use smallvec::SmallVec;
 
-use super::{AtomIdx, BondOrder, CipCode, LazyEzRanker, Molecule, highest_stereo_sub_accurate};
+use super::double_bond_cip::highest_stereo_sub_accurate;
+use super::{AtomIdx, BondOrder, CipCode, LazyEzRanker, Molecule};
 
 /// E/Z assignment on a chain of at least three consecutive double bonds.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -34,9 +35,10 @@ fn assign_axis(
             .filter(|&(_, bond)| mol.bond(bond).order != BondOrder::Double)
             .map(|(atom, _)| atom)
             .collect();
-        highest_stereo_sub_accurate(mol, end.atom, &substituents, ranker, |atom| {
+        highest_stereo_sub_accurate(mol, end.atom, &substituents, ranker, false, |atom| {
             Some(end.up ^ (atom != reference))
         })
+        .map(|(up, _)| up)
     };
     let descriptor = if side(axis.ends[0])? == side(axis.ends[1])? {
         CipCode::Z

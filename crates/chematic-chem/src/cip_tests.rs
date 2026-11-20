@@ -1388,3 +1388,77 @@ fn test_ez_completeness_aggregates_mixed_specified_and_unspecified() {
     assert_eq!(ec.unspecified, 1, "{ec:?}");
     assert_eq!(ec.total, 2, "{ec:?}");
 }
+
+#[test]
+fn assigns_hanson_double_bonds_ranked_by_auxiliary_stereo() {
+    use DoubleBondCip::{E, SeqCis, SeqTrans, Z};
+    let cases: &[(&str, &[(u32, u32, DoubleBondCip)])] = &[
+        (r"CC[C@@H]1CC/C(/CC1)=C\2/CC[C@H](CC2)CC", &[(5, 8, E)]), // VS214
+        (r"C/C=C(/[C@H](Cl)C)\[C@H](C)Cl", &[(1, 2, SeqTrans)]),   // VS229
+        (
+            r"C(=C(/[C@H](C)Cl)\[C@H](Cl)C)(\[C@H](C)Br)/[C@H](Br)C",
+            &[(0, 1, E)],
+        ), // VS245
+        (r"C/C=C/1\CC[C@H](C)CC1", &[(1, 2, SeqCis)]),             // VS246
+        (r"O/N=C/1\CC[C@@H](CC1)C", &[(1, 2, SeqCis)]),            // VS247
+        (r"CCC[C@H]1C/C(/C1)=C/Br", &[(5, 7, SeqCis)]),            // VS248
+        (
+            r"C[C@H]([C@H]([C@H](\C(=C/1\[C@H](Br)/C(=C(\[C@@H]([C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)/[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@@H](C)Cl)/[C@@H]1Br)\[C@@H](Cl)[C@@H]([C@H](C)Cl)[C@H](C)Cl)Cl)[C@H](C)Cl)Cl",
+            &[(4, 5, Z), (8, 9, Z)],
+        ), // VS272
+        (
+            r"C\C=C/1\C[C@]2(C\C(\C2)=C\C)C1",
+            &[(1, 2, SeqCis), (6, 8, SeqCis)],
+        ), // VS299
+    ];
+    for &(text, expected) in cases {
+        let mol = chematic_smiles::parse(text).unwrap();
+        let actual: Vec<_> = assign_accurate_double_bond_cip(&mol)
+            .into_iter()
+            .map(|(idx, code)| {
+                let bond = mol.bond(idx);
+                (
+                    bond.atom1.0.min(bond.atom2.0),
+                    bond.atom1.0.max(bond.atom2.0),
+                    code,
+                )
+            })
+            .collect();
+        assert_eq!(actual, expected, "{text}");
+        let mut want: Vec<_> = expected.iter().map(|&(_, _, code)| code.as_str()).collect();
+        want.sort_unstable();
+        for spelling in std::iter::once(chematic_smiles::canonical_smiles(&mol))
+            .chain((1..=16).map(|seed| chematic_smiles::random_smiles(&mol, seed)))
+        {
+            let reparsed = chematic_smiles::parse(&spelling).unwrap();
+            let mut labels: Vec<_> = assign_accurate_double_bond_cip(&reparsed)
+                .into_iter()
+                .map(|(_, code)| code.as_str())
+                .collect();
+            labels.sort_unstable();
+            assert_eq!(labels, want, "{text} -> {spelling}");
+        }
+    }
+}
+
+#[test]
+fn relative_double_bond_label_changes_under_reflection_of_one_pseudoasymmetric_end() {
+    for (text, want) in [
+        (
+            r"C/C=C(/[C@H](Cl)C)\[C@H](C)Cl",
+            Some(DoubleBondCip::SeqTrans),
+        ),
+        (
+            r"C/C=C(/[C@@H](Cl)C)\[C@@H](C)Cl",
+            Some(DoubleBondCip::SeqCis),
+        ),
+        (r"C/C=C(/[C@H](Cl)C)\[C@@H](C)Cl", None),
+    ] {
+        let mol = chematic_smiles::parse(text).unwrap();
+        let labels: Vec<_> = assign_accurate_double_bond_cip(&mol)
+            .into_iter()
+            .map(|(_, code)| code)
+            .collect();
+        assert_eq!(labels, want.into_iter().collect::<Vec<_>>(), "{text}");
+    }
+}

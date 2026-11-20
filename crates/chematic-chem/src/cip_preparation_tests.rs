@@ -32,8 +32,11 @@ fn eager_assign_ez(
     if subs_a1.is_empty() || subs_a2.is_empty() {
         return None;
     }
-    let (_, up_a1) = eager_highest_sub(mol, a1, &subs_a1, ranker)?;
-    let (_, up_a2) = eager_highest_sub(mol, a2, &subs_a2, ranker)?;
+    let (up_a1, pseudo_a1) = eager_highest_sub(mol, a1, &subs_a1, ranker)?;
+    let (up_a2, pseudo_a2) = eager_highest_sub(mol, a2, &subs_a2, ranker)?;
+    if pseudo_a1 != pseudo_a2 {
+        return None;
+    }
     let code = if up_a1 == up_a2 {
         CipCode::Z
     } else {
@@ -49,7 +52,7 @@ fn eager_highest_sub(
     alkene_end: AtomIdx,
     subs: &[AtomIdx],
     ranker: &chematic_cip::SubstituentRanker,
-) -> Option<(AtomIdx, bool)> {
+) -> Option<(bool, bool)> {
     // No marker on either substituent: nothing to read (see
     // `highest_stereo_sub`).
     if subs
@@ -58,29 +61,32 @@ fn eager_highest_sub(
     {
         return None;
     }
-    let (top, other) = match subs {
+    let (top, other, pseudo) = match subs {
         [only] => {
             if mol.atom(*only).element == Element::H && implicit_hcount(mol, alkene_end) != 0 {
                 let order = ranker
                     .compare_to_implicit_hydrogen(mol, alkene_end, *only)
                     .ok()??;
                 let up = substituent_is_up(mol, alkene_end, *only)?;
-                return Some((*only, up ^ (order == std::cmp::Ordering::Less)));
+                return Some((up ^ (order == std::cmp::Ordering::Less), false));
             }
-            (*only, None)
+            (*only, None, false)
         }
-        [a, b] => match ranker.compare(mol, alkene_end, *a, *b).ok()?? {
-            std::cmp::Ordering::Greater => (*a, Some(*b)),
-            std::cmp::Ordering::Less => (*b, Some(*a)),
-            std::cmp::Ordering::Equal => return None,
-        },
+        [a, b] => {
+            let (order, pseudo) = ranker.compare_configured(mol, alkene_end, *a, *b).ok()??;
+            match order {
+                std::cmp::Ordering::Greater => (*a, Some(*b), pseudo),
+                std::cmp::Ordering::Less => (*b, Some(*a), pseudo),
+                std::cmp::Ordering::Equal => return None,
+            }
+        }
         _ => return None,
     };
     if let Some(up) = substituent_is_up(mol, alkene_end, top) {
-        return Some((top, up));
+        return Some((up, pseudo));
     }
     let other_up = substituent_is_up(mol, alkene_end, other?)?;
-    Some((top, !other_up))
+    Some((!other_up, pseudo))
 }
 
 #[test]

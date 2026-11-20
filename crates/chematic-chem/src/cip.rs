@@ -144,15 +144,7 @@ pub fn assign_ez_bonds_with_mode(mol: &Molecule, mode: CipMode) -> Vec<(BondIdx,
                 assign_ez(mol, bidx).map(|(_, code)| (bidx, code))
             })
             .collect(),
-        CipMode::Accurate => {
-            let ranker = LazyEzRanker::new(mol, chematic_cip::CipBudget::default_budget());
-            (0..mol.bond_count())
-                .filter_map(|j| {
-                    let bidx = BondIdx(j as u32);
-                    assign_ez_accurate(mol, bidx, &ranker).map(|(_, code)| (bidx, code))
-                })
-                .collect()
-        }
+        CipMode::Accurate => absolute_bond_labels(assign_accurate_double_bond_cip(mol)),
     }
 }
 
@@ -278,7 +270,9 @@ pub fn assign_cip_with_mode(
             assignments: assign_cip(mol).assignments,
             unresolved: Vec::new(),
         }),
-        CipMode::Accurate => assign_accurate_cip_with_bond_labels(mol).map(|(labels, _)| labels),
+        CipMode::Accurate => {
+            assign_accurate_cip_with_double_bond_labels(mol).map(|(labels, _)| labels)
+        }
     }
 }
 
@@ -287,6 +281,15 @@ pub fn assign_cip_with_mode(
 pub fn assign_accurate_cip_with_bond_labels(
     mol: &Molecule,
 ) -> Result<(CipModeAssignment, Vec<(BondIdx, CipCode)>), CipModeError> {
+    let (atoms, bonds) = assign_accurate_cip_with_double_bond_labels(mol)?;
+    Ok((atoms, absolute_bond_labels(bonds)))
+}
+
+/// Accurate atom-keyed assignments and the full set of ordinary double-bond
+/// descriptors from the same calculation, including `seqCis` and `seqTrans`.
+pub fn assign_accurate_cip_with_double_bond_labels(
+    mol: &Molecule,
+) -> Result<(CipModeAssignment, Vec<(BondIdx, DoubleBondCip)>), CipModeError> {
     if !has_cip_annotations(mol) {
         return Ok((CipModeAssignment::default(), Vec::new()));
     }
@@ -316,10 +319,10 @@ pub fn assign_accurate_cip_with_bond_labels(
         .filter_map(|(idx, _)| assign_allene(mol, idx))
         .filter(|(assigned, _)| !handled.contains(assigned))
         .collect();
-    let bond_labels = assign_ez_bonds_with_mode(mol, CipMode::Accurate);
+    let bond_labels = assign_accurate_double_bond_cip(mol);
     let ez_atoms = bond_labels
         .iter()
-        .map(|&(bond, code)| (mol.bond(bond).atom1, code))
+        .filter_map(|&(bond, code)| Some((mol.bond(bond).atom1, code.absolute()?)))
         .filter(|(idx, _)| !handled.contains(idx));
 
     // Preserve the existing public ordering. Accurate E/Z replaces the
@@ -1345,88 +1348,13 @@ fn assign_ez_accurate(
     bond_idx: BondIdx,
     ranker: &LazyEzRanker<'_>,
 ) -> Option<(AtomIdx, CipCode)> {
-    let bond = mol.bond(bond_idx);
-    // A ring of fewer than eight atoms holds its double bond cis: no E/Z
-    // (RDKit drops such stereo too).
-    if bond.order != BondOrder::Double
-        || !end_has_marked_substituent(mol, bond.atom1, bond.atom2)
-        || !end_has_marked_substituent(mol, bond.atom2, bond.atom1)
-        || double_bond_in_small_ring(mol, bond_idx)
-    {
-        return None;
-    }
-    let a1 = bond.atom1;
-    let a2 = bond.atom2;
-    let subs = |end: AtomIdx, other: AtomIdx| -> Vec<AtomIdx> {
-        mol.neighbors(end)
-            .filter(|&(nb, bidx)| nb != other && mol.bond(bidx).order != BondOrder::Double)
-            .map(|(nb, _)| nb)
-            .collect()
-    };
-    let subs_a1 = subs(a1, a2);
-    let subs_a2 = subs(a2, a1);
-    if subs_a1.is_empty() || subs_a2.is_empty() {
-        return None;
-    }
-    let up_a1 = highest_stereo_sub_accurate(mol, a1, &subs_a1, ranker, |sub| {
-        substituent_is_up(mol, a1, sub)
-    })?;
-    let up_a2 = highest_stereo_sub_accurate(mol, a2, &subs_a2, ranker, |sub| {
-        substituent_is_up(mol, a2, sub)
-    })?;
-    let code = if up_a1 == up_a2 {
-        CipCode::Z
-    } else {
-        CipCode::E
-    };
-    Some((a1, code))
+    let code = assign_configured_double_bond(mol, bond_idx, ranker)?.absolute()?;
+    Some((mol.bond(bond_idx).atom1, code))
 }
 
-/// [`highest_stereo_sub`] with the accurate comparator (at most two
-/// substituents on a double-bond end).
-fn highest_stereo_sub_accurate(
-    mol: &Molecule,
-    alkene_end: AtomIdx,
-    subs: &[AtomIdx],
-    ranker: &LazyEzRanker<'_>,
-    side: impl Fn(AtomIdx) -> Option<bool>,
-) -> Option<bool> {
-    // No marker on either substituent: nothing to read (see
-    // `highest_stereo_sub`).
-    if subs.iter().all(|&sub| side(sub).is_none()) {
-        return None;
-    }
-    let (top, other) = match subs {
-        [only] => {
-            let up = side(*only)?;
-            if mol.atom(*only).element != Element::H || implicit_hcount(mol, alkene_end) == 0 {
-                return Some(up);
-            }
-            // The natural-abundance implicit H can outrank explicit protium.
-            return match ranker
-                .get()
-                .compare_to_implicit_hydrogen(mol, alkene_end, *only)
-                .ok()??
-            {
-                std::cmp::Ordering::Greater => Some(up),
-                std::cmp::Ordering::Less => Some(!up),
-                std::cmp::Ordering::Equal => None,
-            };
-        }
-        [a, b] => match ranker.get().compare(mol, alkene_end, *a, *b).ok()?? {
-            std::cmp::Ordering::Greater => (*a, Some(*b)),
-            std::cmp::Ordering::Less => (*b, Some(*a)),
-            std::cmp::Ordering::Equal => return None,
-        },
-        _ => return None,
-    };
-    if let Some(up) = side(top) {
-        return Some(up);
-    }
-    let other_up = side(other?)?;
-    Some(!other_up)
-}
-
+mod double_bond_cip;
+pub use double_bond_cip::{DoubleBondCip, assign_accurate_double_bond_cip};
+use double_bond_cip::{absolute_bond_labels, assign_configured_double_bond};
 mod cumulene_ez;
 pub use cumulene_ez::{CumuleneEzAssignment, assign_cumulene_ez};
 mod ez_completeness;
