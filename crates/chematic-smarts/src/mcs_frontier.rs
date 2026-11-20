@@ -34,7 +34,7 @@ pub(super) fn extend_frontier_atom(
             &candidates_per_mol,
             seen_tuples.as_mut(),
         );
-        if state.timed_out || state.resource_limited {
+        if state.timed_out || state.resource_limited || state.proven_optimal {
             return;
         }
     }
@@ -50,7 +50,7 @@ fn explore_candidate_tuples(
     let mut atoms = Vec::with_capacity(state.mols.len());
     atoms.push(n0);
     for tuple in CartesianProduct::new(candidates_per_mol) {
-        if state.timed_out || state.resource_limited {
+        if state.timed_out || state.resource_limited || state.proven_optimal {
             return;
         }
         if let Some(seen) = &mut seen_tuples

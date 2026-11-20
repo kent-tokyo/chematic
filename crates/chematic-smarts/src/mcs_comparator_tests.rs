@@ -465,3 +465,20 @@ fn bond_first_explores_other_seeds_when_frontier_order_restricts_growth() {
         assert_eq!((q.atom_count(), q.bonds.len()), expected);
     }
 }
+
+#[test]
+fn bond_first_reports_completion_when_class_bounds_are_met_at_the_node_limit() {
+    use crate::{McsObjective, find_mcs_with_objective_checked};
+
+    let left = parse("CCO").unwrap();
+    let right = parse("CCN").unwrap();
+    let config = McsConfig {
+        max_search_nodes: Some(2),
+        ..McsConfig::default()
+    };
+    let result =
+        find_mcs_with_objective_checked(&[&left, &right], &config, McsObjective::BondCount);
+    assert!(matches!(result, McsOutcome::Exhaustive(_)));
+    let query = result.into_query();
+    assert_eq!((query.atom_count(), query.bonds.len()), (2, 1));
+}

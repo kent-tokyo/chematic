@@ -1,5 +1,11 @@
 //! Conservative remaining-atom bounds under the selected atom comparator.
-use super::{AtomCompare, AtomIdx, Molecule, rdkit_heavy_atom_class};
+use chematic_core::BondOrder;
+use rustc_hash::FxHashMap;
+
+use super::{
+    AtomCompare, AtomIdx, BondCompare, McsConfig, McsObjective, Molecule, normalize_bond,
+    rdkit_heavy_atom_class,
+};
 use crate::match_vf2::effective_atomic_number;
 
 const CLASS_COUNT: usize = u8::MAX as usize + 1;
@@ -17,6 +23,58 @@ pub(super) fn atom_class(
         AtomCompare::Any => Some(0),
         AtomCompare::AnyHeavyAtom => (effective_atomic_number(atom) > 1).then_some(0),
     }
+}
+
+pub(super) fn objective_limits(
+    mols: &[&Molecule],
+    config: &McsConfig,
+    rdkit_heavy: bool,
+    objective: McsObjective,
+    atoms: &AtomUpperBound,
+) -> (usize, usize) {
+    match objective {
+        McsObjective::AtomCount => (
+            mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0),
+            mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0),
+        ),
+        McsObjective::BondCount => {
+            let mut common = bond_classes(mols[0], config, rdkit_heavy);
+            for mol in &mols[1..] {
+                let classes = bond_classes(mol, config, rdkit_heavy);
+                common.retain(|class, count| {
+                    *count = (*count).min(classes.get(class).copied().unwrap_or(0));
+                    *count != 0
+                });
+            }
+            let bonds: usize = common.values().sum();
+            // A connected graph with at least one vertex has at least V - 1 edges.
+            (atoms.total().min(bonds + 1), bonds)
+        }
+    }
+}
+
+/// Every shared bond uses the same unordered pair of atom classes and,
+/// when required, the same normalized bond order in each input.
+fn bond_classes(
+    mol: &Molecule,
+    config: &McsConfig,
+    rdkit_heavy: bool,
+) -> FxHashMap<(u8, u8, BondOrder), usize> {
+    let mut counts = FxHashMap::default();
+    let compare_order = config.match_bonds && config.bond_compare == BondCompare::OrderOrAromatic;
+    for (_, bond) in mol.bonds() {
+        let class = |idx| atom_class(mol.atom(idx), &config.atom_compare, rdkit_heavy);
+        let (Some(a), Some(b)) = (class(bond.atom1), class(bond.atom2)) else {
+            continue;
+        };
+        let order = if compare_order {
+            normalize_bond(bond.order)
+        } else {
+            BondOrder::QueryAny
+        };
+        *counts.entry((a.min(b), a.max(b), order)).or_insert(0) += 1;
+    }
+    counts
 }
 
 /// Upper atom bound from per-class minima across all inputs. All atoms in a

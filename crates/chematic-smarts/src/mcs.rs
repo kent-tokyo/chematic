@@ -276,8 +276,9 @@ fn find_mcs_impl(
     };
 
     let n0 = mols[0].atom_count();
-    let absolute_atom_upper_bound = mols.iter().map(|mol| mol.atom_count()).min().unwrap_or(0);
-    let absolute_bond_upper_bound = mols.iter().map(|mol| mol.bond_count()).min().unwrap_or(0);
+    let atom_bound = AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy);
+    let (absolute_atom_upper_bound, absolute_bond_upper_bound) =
+        bounds::objective_limits(mols, config, rdkit_heavy, objective, &atom_bound);
 
     let mut state = McsState {
         mols,
@@ -293,7 +294,7 @@ fn find_mcs_impl(
         absolute_bond_upper_bound,
         proven_optimal: false,
         ring_sets,
-        atom_bound: AtomUpperBound::new(mols, &config.atom_compare, rdkit_heavy),
+        atom_bound,
     };
 
     'outer: for a0 in 0..n0 {
@@ -456,8 +457,7 @@ struct McsState<'a> {
     timed_out: bool,
     resource_limited: bool,
     search_nodes: usize,
-    /// Absolute graph-theoretic upper bounds: a common subgraph cannot have
-    /// more atoms or bonds than the smallest input on the corresponding axis.
+    /// Upper bounds on the size of any mapping under the selected comparators.
     absolute_atom_upper_bound: usize,
     absolute_bond_upper_bound: usize,
     /// Set once a valid mapping reaches both absolute bounds. At that point
@@ -554,6 +554,9 @@ fn consider_mapping(state: &mut McsState<'_>, mapping: &PartialMapping) -> bool 
 }
 
 fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
+    if state.proven_optimal {
+        return;
+    }
     if let Some(limit) = state.config.max_search_nodes {
         if state.search_nodes >= limit {
             state.resource_limited = true;
@@ -609,7 +612,7 @@ fn grow(state: &mut McsState<'_>, mapping: &mut PartialMapping) {
     // Branch 2: exclude n0 from this branch and recurse so the next frontier atom
     // gets a turn. Reset on the way back out -- exclusion only applies within this
     // subtree, not to sibling branches elsewhere in the search.
-    if !state.timed_out && !state.resource_limited {
+    if !state.timed_out && !state.resource_limited && !state.proven_optimal {
         state.atom_bound.set_excluded(n0, true);
         grow(state, mapping);
         state.atom_bound.set_excluded(n0, false);
