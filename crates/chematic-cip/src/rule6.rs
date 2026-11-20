@@ -5,11 +5,12 @@
 //! interaction with earlier stereochemical rules require a rooted resolver.
 
 use chematic_core::{AtomIdx, BondOrder, Chirality, CipCode, Molecule};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::FxHashSet;
 
 use crate::assign::resolve_is_r_from_groups;
-use crate::compare::{CipCompareError, CompareContext, rank_children};
+use crate::compare::{CipCompareError, CompareContext};
 use crate::digraph::CipDigraph;
+use crate::ligand_profile::{collect_branches, sphere_profiles};
 use crate::node::{CipNodeKind, NodeId};
 
 pub(crate) fn eligible(mol: &Molecule, center: AtomIdx) -> bool {
@@ -61,26 +62,6 @@ pub(crate) fn has_reference_partition(groups: &[Vec<NodeId>]) -> bool {
     }
 }
 
-type Branch = Vec<(NodeId, Vec<Vec<NodeId>>)>;
-
-fn collect_branches(
-    graph: &mut CipDigraph,
-    starts: impl Iterator<Item = NodeId>,
-    context: &mut CompareContext,
-) -> Result<Branch, CipCompareError> {
-    let mut pending: Vec<_> = starts.collect();
-    let mut branches = Vec::new();
-    while let Some(node) = pending.pop() {
-        let children = graph
-            .expand_child_ids(node)
-            .map_err(CipCompareError::Digraph)?;
-        let ranks = rank_children(graph, &children, context)?;
-        pending.extend(ranks.iter().flatten().copied());
-        branches.push((node, ranks));
-    }
-    Ok(branches)
-}
-
 fn represented_atom(graph: &CipDigraph, node: NodeId) -> Option<AtomIdx> {
     match graph.node(node).kind {
         CipNodeKind::Atom { atom_idx } => Some(atom_idx),
@@ -90,41 +71,6 @@ fn represented_atom(graph: &CipDigraph, node: NodeId) -> Option<AtomIdx> {
         CipNodeKind::RingDuplicate { closure_atom, .. } => Some(closure_atom),
         CipNodeKind::ImplicitHydrogen => None,
     }
-}
-
-type Profile = Vec<Vec<u8>>;
-
-fn reference_profiles(
-    graph: &CipDigraph,
-    branches: &Branch,
-    reference: AtomIdx,
-) -> FxHashMap<NodeId, Profile> {
-    let mut profiles = FxHashMap::default();
-    // Resolve sibling order from the leaves, retaining each parent's order
-    // when the profiles are joined sphere by sphere.
-    for (node, groups) in branches.iter().rev() {
-        let mut profile = vec![vec![u8::from(
-            represented_atom(graph, *node) == Some(reference),
-        )]];
-        for group in groups {
-            let mut children: Vec<Profile> = group
-                .iter()
-                .map(|child| profiles.remove(child).expect("child precedes parent"))
-                .collect();
-            children.sort_by(|a, b| b.cmp(a));
-            for levels in children {
-                for (depth, keys) in levels.into_iter().enumerate() {
-                    if profile.len() <= depth + 1 {
-                        profile.push(keys);
-                    } else {
-                        profile[depth + 1].extend(keys);
-                    }
-                }
-            }
-        }
-        profiles.insert(*node, profile);
-    }
-    profiles
 }
 
 pub(crate) fn assign(
@@ -145,7 +91,9 @@ pub(crate) fn assign(
         .collect();
     let mut parity_balance = 0;
     for reference in refs {
-        let profiles = reference_profiles(graph, &branches, reference);
+        let profiles = sphere_profiles(&branches, |node| {
+            u8::from(represented_atom(graph, node) == Some(reference))
+        });
         let mut ranked = Vec::with_capacity(4);
         for group in groups {
             let mut group = group.clone();

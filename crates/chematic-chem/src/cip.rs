@@ -1335,8 +1335,8 @@ fn highest_stereo_sub(
 
 /// E/Z for the double bond at `bond_idx`, ranking each end's substituents with
 /// the accurate engine's comparator ([`chematic_cip::SubstituentRanker`]:
-/// hierarchical digraph, Rules 1a/2, MANCUDE duplicates for aromatic rings)
-/// instead of the legacy sphere comparison. Same geometry reading and keying
+/// hierarchical digraph, constitutional priority, MANCUDE duplicates and
+/// Rule 3 for configured alkene ties) instead of the legacy sphere comparison. Same geometry reading and keying
 /// as [`assign_ez`]. `None` when the bond is not a specified stereo double
 /// bond or an end's two substituents tie (or exceed the comparison budget) —
 /// never a guess.

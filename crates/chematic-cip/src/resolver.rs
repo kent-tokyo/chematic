@@ -51,7 +51,8 @@ pub(crate) fn resolve_chirality(
         .expand_children(node_id)
         .map_err(CipCompareError::Digraph)?;
     let mut ctx = CompareContext::new();
-    let mut groups = rank_children(graph, &forward_children, &mut ctx)?;
+    let groups = rank_children(graph, &forward_children, &mut ctx)?;
+    let mut groups = crate::rule3::refine(graph, groups, &mut ctx)?;
 
     // Refine the forward ligands before inserting the back-to-root ligand.
     let mut pseudo_count = 0;
@@ -158,8 +159,8 @@ pub(crate) fn assign_one_with_rule4b(
     };
 
     let mut ctx = CompareContext::new();
-    let mut groups =
-        rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+    let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
+    let mut groups = crate::rule3::refine(&mut graph, groups, &mut ctx).map_err(map_compare_err)?;
 
     let mut cache = HashMap::new();
     for gi in (0..groups.len()).rev() {

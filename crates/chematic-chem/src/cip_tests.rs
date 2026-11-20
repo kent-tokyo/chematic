@@ -125,6 +125,25 @@ fn accurate_ez_ranks_aryl_above_alkyl() {
     }
 }
 #[test]
+fn accurate_ez_uses_distal_alkenes_to_rank_tied_ligands() {
+    // Hanson VS191. The 4=5 bond takes its Z label from a cis distal
+    // alkene outranking a trans one. Both arms of atom 8 have the same
+    // configuration, so the 7=8 bond receives no descriptor.
+    let smiles = r"C/C=C\C/C(=C\[C@H](C=C(C/C=C\C)C/C=C\C)O)/C/C=C/C";
+    let mol = chematic_smiles::parse(smiles).unwrap();
+    let specified = mol.bond_between(AtomIdx(4), AtomIdx(5)).unwrap().0;
+    let nonstereogenic = mol.bond_between(AtomIdx(7), AtomIdx(8)).unwrap().0;
+    let labels = assign_ez_bonds_with_mode(&mol, CipMode::Accurate);
+    assert!(labels.contains(&(specified, CipCode::Z)));
+    assert!(labels.iter().all(|&(bond, _)| bond != nonstereogenic));
+    assert!(
+        !assign_ez_bonds_with_mode(&mol, CipMode::LegacyFast)
+            .iter()
+            .any(|&(bond, _)| bond == specified)
+    );
+}
+
+#[test]
 fn squaraine_diimine_canonical_smiles_keeps_both_ez() {
     // Two exocyclic imines on a Kekulé four-membered ring, coupled
     // through the ring bond between them (#734: RDKit-written MOL blocks

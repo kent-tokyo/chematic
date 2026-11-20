@@ -37,7 +37,9 @@ use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
-use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use chematic_core::ez_markers::{EzFact, read_ez_facts};
+use chematic_core::{AtomIdx, BondIdx, BondOrder, Molecule, implicit_hcount};
+use rustc_hash::FxHashMap;
 use smallvec::SmallVec;
 
 use crate::CipError;
@@ -55,6 +57,7 @@ pub(crate) type ChildIds = SmallVec<[NodeId; 8]>;
 pub struct CipDigraph<'m> {
     mol: &'m Molecule,
     has_isotopes: std::sync::OnceLock<bool>,
+    alkene_geometry: std::sync::OnceLock<FxHashMap<BondIdx, EzFact>>,
     /// `None` for [`Self::new`]. The accurate-CIP path supplies a context through
     /// [`Self::new_with_mancude`]. Attaching a `MancudeContext` computed for a *different*
     /// molecule than `mol` would silently misattribute fractional values -- callers are
@@ -195,6 +198,7 @@ impl<'m> CipDigraph<'m> {
         let mut g = Self {
             mol,
             has_isotopes: std::sync::OnceLock::new(),
+            alkene_geometry: std::sync::OnceLock::new(),
             mancude,
             artificial_ancestor,
             nodes: Vec::new(),
@@ -218,6 +222,23 @@ impl<'m> CipDigraph<'m> {
         )?;
         g.root = root;
         Ok(g)
+    }
+
+    /// Configured alkene geometry in the input, read once per digraph on demand.
+    pub(crate) fn alkene_geometry(&self) -> &FxHashMap<BondIdx, EzFact> {
+        self.alkene_geometry.get_or_init(|| {
+            if !self.mol.has_bond_directions()
+                && !self
+                    .mol
+                    .bonds()
+                    .any(|(_, bond)| matches!(bond.order, BondOrder::Up | BondOrder::Down))
+            {
+                return FxHashMap::default();
+            }
+            read_ez_facts(self.mol)
+                .map(|(facts, _)| facts.into_iter().map(|fact| (fact.double, fact)).collect())
+                .unwrap_or_default()
+        })
     }
 
     pub fn root(&self) -> NodeId {

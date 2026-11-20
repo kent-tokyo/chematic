@@ -2,7 +2,7 @@
 //!
 //! [`assign_cip_accurate_experimental`](crate::assign_cip_accurate_experimental)
 //! only labels tetrahedral centres. E/Z labels need the same hierarchical
-//! digraph ranking (Rules 1a/2 with MANCUDE duplicate atomic numbers) applied
+//! digraph ranking (Rules 1a/2 with MANCUDE and Rule 3 for configured alkene ties) applied
 //! to the two substituents of each double-bond end; [`SubstituentRanker`]
 //! exposes exactly that, computing the molecule's Kekulé form and MANCUDE
 //! context once for all ends.
@@ -70,6 +70,10 @@ impl SubstituentRanker {
         let group_of = |node| groups.iter().position(|g| g.contains(&node));
         match (group_of(node_a), group_of(node_b)) {
             (Some(ga), Some(gb)) if ga != gb => Ok(Some(gb.cmp(&ga))),
+            (Some(_), Some(_)) => {
+                let order = crate::rule3::compare(&mut graph, node_a, node_b, &mut ctx)?;
+                Ok((order != Ordering::Equal).then_some(order))
+            }
             _ => Ok(None),
         }
     }

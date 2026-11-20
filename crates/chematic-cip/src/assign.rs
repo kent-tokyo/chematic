@@ -205,10 +205,8 @@ fn assign_cip_without_wildcard_probe(
     }
     let kekule = prepare_kekule_view(mol).ok();
     let pass1 = assign_all(mol, budget, kekule.as_ref())?;
-    // Rule 4b (Milestone 4B-2) must run before Rule 5 -- CIP rule order. Rule 5's own
-    // `provisional` map (built inside `apply_rule5_pass` from whatever
-    // `AccurateCipAssignment` it's handed) sees Rule 4b's newly-resolved atoms for
-    // free; `apply_rule5_pass` needs no changes for this. See `crate::resolver`.
+    // Refine constitutional ties by Rules 3 and 4 before trying Rule 5.
+    // The Rule 5 pass starts from the same earlier rankings on unresolved centres.
     let pass2 = crate::resolver::apply_rule4b_pass(mol, budget, kekule.as_ref(), pass1);
     Ok(apply_rule5_pass(mol, budget, kekule.as_ref(), pass2))
 }
@@ -454,6 +452,7 @@ fn assign_one_with_rule5(
             .ok_or(SkipReason::Tied);
     }
 
+    let groups = crate::rule3::refine(&mut graph, groups, &mut ctx).map_err(map_compare_err)?;
     let mut resolved_groups = Vec::with_capacity(groups.len());
     let mut cache = HashMap::new();
     let mut pseudo_count = 0;
