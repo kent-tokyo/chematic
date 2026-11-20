@@ -17,10 +17,13 @@ ATTESTATION_SUFFIX = ".publish.attestation"
 
 
 def platform_for(tag: str) -> str:
-    if tag.startswith("manylinux_") and tag.endswith("_x86_64"):
-        return "linux-x86_64"
-    if tag.startswith("manylinux_") and tag.endswith("_aarch64"):
-        return "linux-aarch64"
+    linux_tags = tag.split(".")
+    for arch in ("x86_64", "aarch64"):
+        if all(
+            re.fullmatch(rf"manylinux(?:_[0-9]+_[0-9]+|2014)_{arch}", item)
+            for item in linux_tags
+        ):
+            return f"linux-{arch}"
     if tag.startswith("macosx_") and tag.endswith("_x86_64"):
         return "macos-x86_64"
     if tag.startswith("macosx_") and tag.endswith("_arm64"):
