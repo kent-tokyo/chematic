@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 use chematic_core::{CipCode, Molecule};
+use smallvec::SmallVec;
 
 use crate::compare::{CipCompareError, CompareContext, rank_children};
 use crate::digraph::CipDigraph;
@@ -181,6 +182,18 @@ pub(crate) fn compare_tied_ligands(
     auxiliaries: &mut HashMap<NodeId, Option<CipCode>>,
     limit: StereoRuleLimit,
 ) -> Result<Option<(Ordering, bool)>, CipCompareError> {
+    compare_tied_ligands_with_reference(graph, mol, left, right, auxiliaries, limit, CipCode::R)
+}
+
+fn compare_tied_ligands_with_reference(
+    graph: &mut CipDigraph,
+    mol: &Molecule,
+    left: NodeId,
+    right: NodeId,
+    auxiliaries: &mut HashMap<NodeId, Option<CipCode>>,
+    limit: StereoRuleLimit,
+    reference: CipCode,
+) -> Result<Option<(Ordering, bool)>, CipCompareError> {
     let left = describe_branch(graph, mol, left, auxiliaries)?;
     let right = describe_branch(graph, mol, right, auxiliaries)?;
     let compare = |order| {
@@ -207,11 +220,136 @@ pub(crate) fn compare_tied_ligands(
     }
 
     if limit == StereoRuleLimit::Rule5 {
-        let r = compare(DescriptorOrder::Absolute(CipCode::R));
-        if r != Ordering::Equal {
-            let s = compare(DescriptorOrder::Absolute(CipCode::S));
-            return Ok(Some((r, r != s)));
+        let order = compare(DescriptorOrder::Absolute(reference));
+        if order != Ordering::Equal {
+            let opposite = if reference == CipCode::R {
+                CipCode::S
+            } else {
+                CipCode::R
+            };
+            return Ok(Some((
+                order,
+                order != compare(DescriptorOrder::Absolute(opposite)),
+            )));
         }
     }
     Ok(None)
+}
+
+/// Apply the auxiliary rules within each existing tie without changing the
+/// order of ligand groups already established by earlier rules.
+pub(crate) fn refine_stereo_groups(
+    graph: &mut CipDigraph,
+    mol: &Molecule,
+    groups: Vec<Vec<NodeId>>,
+    positions: &[NodeId],
+    cache: &mut HashMap<NodeId, Option<CipCode>>,
+) -> Result<(Vec<Vec<NodeId>>, usize), CipCompareError> {
+    refine_stereo_groups_with_reference(graph, mol, groups, positions, cache, CipCode::R)
+}
+
+pub(crate) fn refine_stereo_groups_with_reference(
+    graph: &mut CipDigraph,
+    mol: &Molecule,
+    groups: Vec<Vec<NodeId>>,
+    positions: &[NodeId],
+    cache: &mut HashMap<NodeId, Option<CipCode>>,
+    reference: CipCode,
+) -> Result<(Vec<Vec<NodeId>>, usize), CipCompareError> {
+    let mut result = Vec::with_capacity(groups.len());
+    let mut reflection_flips = 0;
+    for group in groups {
+        let (ranked, flips) = rank_stereo_group(graph, mol, group, positions, cache, reference)?;
+        result.extend(ranked);
+        reflection_flips += flips;
+    }
+    Ok((result, reflection_flips))
+}
+
+/// Refine a constitutional tie over all physical ligands in the group.
+/// Nonphysical duplicate nodes stay in the last refined group.
+fn rank_stereo_group(
+    graph: &mut CipDigraph,
+    mol: &Molecule,
+    mut group: Vec<NodeId>,
+    positions: &[NodeId],
+    cache: &mut HashMap<NodeId, Option<CipCode>>,
+    reference: CipCode,
+) -> Result<(Vec<Vec<NodeId>>, usize), CipCompareError> {
+    let physical: SmallVec<[NodeId; 4]> = group
+        .iter()
+        .copied()
+        .filter(|n| positions.contains(n))
+        .collect();
+    if physical.len() < 2 {
+        return Ok((vec![group], 0));
+    }
+    if let [left, right] = physical.as_slice() {
+        let ranked = compare_tied_ligands_with_reference(
+            graph,
+            mol,
+            *left,
+            *right,
+            cache,
+            StereoRuleLimit::Rule5,
+            reference,
+        )?;
+        if let Some((order, pseudo)) = ranked {
+            let higher = if order == Ordering::Greater {
+                *left
+            } else {
+                *right
+            };
+            group.retain(|&node| node != higher);
+            return Ok((vec![vec![higher], group], usize::from(pseudo)));
+        }
+        return Ok((vec![group], 0));
+    }
+    let mut wins = vec![0; physical.len()];
+    let mut comparisons = Vec::new();
+    let mut reflection_flips = 0;
+    for (i, &left) in physical.iter().enumerate() {
+        for (j, &right) in physical.iter().enumerate().skip(i + 1) {
+            let (order, pseudo) = compare_tied_ligands_with_reference(
+                graph,
+                mol,
+                left,
+                right,
+                cache,
+                StereoRuleLimit::Rule5,
+                reference,
+            )?
+            .unwrap_or((Ordering::Equal, false));
+            match order {
+                Ordering::Greater => wins[i] += 1,
+                Ordering::Less => wins[j] += 1,
+                Ordering::Equal => {}
+            }
+            reflection_flips += usize::from(pseudo);
+            comparisons.push((i, j, order));
+        }
+    }
+    // Equal scores are a tie only if all pairwise decisions agree with them.
+    if comparisons
+        .iter()
+        .any(|&(i, j, order)| wins[i].cmp(&wins[j]) != order)
+    {
+        return Err(CipCompareError::InvalidDigraph(
+            "inconsistent auxiliary ligand ordering".to_owned(),
+        ));
+    }
+    if wins.iter().all(|&score| score == 0) {
+        return Ok((vec![group], 0));
+    }
+    let mut ranked: Vec<_> = physical.iter().copied().zip(wins).collect();
+    ranked.sort_by_key(|&(_, score)| std::cmp::Reverse(score));
+    let mut groups: Vec<Vec<_>> = ranked
+        .chunk_by(|&(_, a), &(_, b)| a == b)
+        .map(|class| class.iter().map(|&(node, _)| node).collect())
+        .collect();
+    groups
+        .last_mut()
+        .expect("a ranked group exists")
+        .extend(group.into_iter().filter(|node| !physical.contains(node)));
+    Ok((groups, reflection_flips))
 }

@@ -51,51 +51,6 @@ pub(crate) fn resolve_chirality(
         .expand_children(node_id)
         .map_err(CipCompareError::Digraph)?;
     let mut ctx = CompareContext::new();
-    let groups = rank_children(graph, &forward_children, &mut ctx)?;
-    let mut groups = crate::rule3::refine(graph, groups, &mut ctx)?;
-
-    // Refine the forward ligands before inserting the back-to-root ligand.
-    let mut pseudo_count = 0;
-    for gi in (0..groups.len()).rev() {
-        if let [a, b] = groups[gi].as_slice() {
-            let (a, b) = (*a, *b);
-            let result = compare_tied_ligands(graph, mol, a, b, cache, StereoRuleLimit::Rule5)?;
-            if let Some((ord, is_pseudo)) = result {
-                let (higher, lower) = if ord == Ordering::Greater {
-                    (a, b)
-                } else {
-                    (b, a)
-                };
-                groups[gi] = vec![lower];
-                groups.insert(gi, vec![higher]);
-                pseudo_count += usize::from(is_pseudo);
-            }
-        } else if groups[gi].len() > 2 {
-            cache.insert(node_id, None);
-            return Ok(None);
-        }
-    }
-
-    // Insert the back-to-root ligand at its Rule-1a-only rank among `groups`. Compare
-    // sphere-1-to-sphere-1: the back ligand's sphere 1 is `ancestor` itself; the
-    // forward ligand's sphere 1 is `rep` itself -- NOT `rep`'s children (that would be
-    // off by one sphere).
-    let mut insert_at = groups.len();
-    for (gi, group) in groups.iter().enumerate() {
-        let rep = group[0];
-        let back = crate::auxiliary::BackItem::Ascending {
-            ancestor: parent_id,
-            came_from: node_id,
-        };
-        let ord = crate::auxiliary::compare_rule1a_only(graph, back, rep, &mut ctx)?;
-        if ord == Ordering::Greater {
-            insert_at = gi;
-            break;
-        }
-    }
-    let mut final_groups = groups.clone();
-    final_groups.insert(insert_at, vec![parent_id]);
-
     let stereo_order = match mol.stereo_neighbor_order(atom_idx) {
         Some(o) => o,
         None => {
@@ -112,6 +67,31 @@ pub(crate) fn resolve_chirality(
             return Ok(None);
         }
     };
+    let groups = rank_children(graph, &forward_children, &mut ctx)?;
+    let groups = crate::rule3::refine(graph, groups, &mut ctx)?;
+    let (ranked_groups, pseudo_count) =
+        crate::rule4b::refine_stereo_groups(graph, mol, groups, &position_nodes, cache)?;
+
+    // Insert the back-to-root ligand at its Rule-1a-only rank among `groups`. Compare
+    // sphere-1-to-sphere-1: the back ligand's sphere 1 is `ancestor` itself; the
+    // forward ligand's sphere 1 is `rep` itself -- NOT `rep`'s children (that would be
+    // off by one sphere).
+    let mut insert_at = ranked_groups.len();
+    for (gi, group) in ranked_groups.iter().enumerate() {
+        let rep = group[0];
+        let back = crate::auxiliary::BackItem::Ascending {
+            ancestor: parent_id,
+            came_from: node_id,
+        };
+        let ord = crate::auxiliary::compare_rule1a_only(graph, back, rep, &mut ctx)?;
+        if ord == Ordering::Greater {
+            insert_at = gi;
+            break;
+        }
+    }
+    let mut final_groups = ranked_groups;
+    final_groups.insert(insert_at, vec![parent_id]);
+
     let chirality = mol.atom(atom_idx).chirality;
     let result = if stereo_order.len() == 3 {
         // A saturated ring centre has a lowest-priority phantom ligand.
@@ -126,12 +106,27 @@ pub(crate) fn resolve_chirality(
     } else {
         resolve_is_r_from_groups(&final_groups, &position_nodes, chirality)
     };
-    let result = result.map(|is_r| match (is_r, pseudo_count == 1) {
+    let mut result = result.map(|is_r| match (is_r, pseudo_count % 2 == 1) {
         (true, false) => CipCode::R,
         (false, false) => CipCode::S,
         (true, true) => CipCode::LowerR,
         (false, true) => CipCode::LowerS,
     });
+    if result.is_none()
+        && position_nodes.len() == 4
+        && crate::rule6::has_reference_partition(&final_groups)
+        && crate::rule6::eligible(mol, atom_idx)
+    {
+        result = crate::rule6::assign(
+            graph,
+            &final_groups,
+            &position_nodes,
+            chirality,
+            &mut ctx,
+            cache,
+            pseudo_count % 2 == 1,
+        )?;
+    }
     cache.insert(node_id, result);
     Ok(result)
 }

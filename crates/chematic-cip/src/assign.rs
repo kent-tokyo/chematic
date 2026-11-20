@@ -442,55 +442,38 @@ fn assign_one_with_rule5(
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
 
+    let groups = crate::rule3::refine(&mut graph, groups, &mut ctx).map_err(map_compare_err)?;
+    let mut cache = HashMap::new();
+    let (resolved_groups, pseudo_count) =
+        crate::rule4b::refine_stereo_groups(&mut graph, mol, groups, &position_nodes, &mut cache)
+            .map_err(map_compare_err)?;
     if !lone_pair_centre
-        && crate::rule6::has_reference_partition(&groups)
+        && crate::rule6::has_reference_partition(&resolved_groups)
         && crate::rule6::eligible(mol, idx)
     {
-        return crate::rule6::assign(&mut graph, &groups, &position_nodes, chirality, &mut ctx)
-            .map_err(map_compare_err)?
-            .map(Some)
-            .ok_or(SkipReason::Tied);
+        return crate::rule6::assign(
+            &mut graph,
+            &resolved_groups,
+            &position_nodes,
+            chirality,
+            &mut ctx,
+            &mut cache,
+            pseudo_count % 2 == 1,
+        )
+        .map_err(map_compare_err)?
+        .map(Some)
+        .ok_or(SkipReason::Tied);
     }
-
-    let groups = crate::rule3::refine(&mut graph, groups, &mut ctx).map_err(map_compare_err)?;
-    let mut resolved_groups = Vec::with_capacity(groups.len());
-    let mut cache = HashMap::new();
-    let mut pseudo_count = 0;
-    for mut group in groups {
-        let physical: Vec<_> = group
+    if resolved_groups.iter().any(|group| {
+        group
             .iter()
-            .copied()
-            .filter(|n| position_nodes.contains(n))
-            .collect();
-        match physical.as_slice() {
-            [] | [_] => resolved_groups.push(group),
-            &[left, right] => {
-                let ranked = crate::rule4b::compare_tied_ligands(
-                    &mut graph,
-                    mol,
-                    left,
-                    right,
-                    &mut cache,
-                    crate::rule4b::StereoRuleLimit::Rule5,
-                )
-                .map_err(map_compare_err)?;
-                let Some((order, pseudo)) = ranked else {
-                    return Err(SkipReason::Tied);
-                };
-                let higher = if order == std::cmp::Ordering::Greater {
-                    left
-                } else {
-                    right
-                };
-                group.retain(|&n| n != higher);
-                resolved_groups.push(vec![higher]);
-                resolved_groups.push(group);
-                pseudo_count += usize::from(pseudo);
-            }
-            _ => return Err(SkipReason::Tied),
-        }
+            .filter(|node| position_nodes.contains(node))
+            .count()
+            > 1
+    }) {
+        return Err(SkipReason::Tied);
     }
-    let pseudoasymmetric = pseudo_count == 1;
+    let pseudoasymmetric = pseudo_count % 2 == 1;
 
     let is_r = if lone_pair_centre {
         lone_pair_is_r(&resolved_groups, &position_nodes, chirality)?
