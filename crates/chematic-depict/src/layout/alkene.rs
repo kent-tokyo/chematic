@@ -1,6 +1,23 @@
 use super::*;
 use chematic_core::ez_markers::EzFact;
 
+pub(super) fn direction_facts(mol: &Molecule) -> Vec<EzFact> {
+    if mol.has_bond_directions()
+        || mol.bonds().any(|(_, bond)| {
+            matches!(
+                bond.order,
+                chematic_core::BondOrder::Up | chematic_core::BondOrder::Down
+            )
+        })
+    {
+        chematic_core::ez_markers::read_ez_facts(mol)
+            .map(|(facts, _)| facts)
+            .unwrap_or_default()
+    } else {
+        Vec::new()
+    }
+}
+
 pub(super) fn match_alkene_geometry(
     mol: &Molecule,
     facts: &[&EzFact],

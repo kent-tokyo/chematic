@@ -135,19 +135,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
 
     // One SSSR for the whole molecule (memoized on it), filtered per component.
     let ring_set = chematic_perception::find_sssr_shared(mol);
-    let facts = if mol.has_bond_directions()
-        || mol.bonds().any(|(_, bond)| {
-            matches!(
-                bond.order,
-                chematic_core::BondOrder::Up | chematic_core::BondOrder::Down
-            )
-        }) {
-        chematic_core::ez_markers::read_ez_facts(mol)
-            .map(|(facts, _)| facts)
-            .unwrap_or_default()
-    } else {
-        Vec::new()
-    };
+    let facts = alkene::direction_facts(mol);
     for component_atoms in &components {
         let component_set: HashSet<AtomIdx> = component_atoms.iter().copied().collect();
 
@@ -316,26 +304,12 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             &mut placed,
         );
 
-        // Offset this component to the right of the previous one.
-        let x_offset = fragment_max_x.map_or(0.0, |right| right + 2.0 * BOND_LEN);
-
-        // Find the min_x of this component so we can pack left.
-        let comp_min_x = component_atoms
-            .iter()
-            .filter_map(|&a| placed[a.0 as usize])
-            .map(|p| p.x)
-            .fold(f64::MAX, f64::min);
-
-        let shift = x_offset - comp_min_x;
-
-        for &a in component_atoms {
-            if let Some(p) = placed[a.0 as usize] {
-                let shifted = Point::new(p.x + shift, p.y);
-                all_coords[a.0 as usize] = Some(shifted);
-                fragment_max_x =
-                    Some(fragment_max_x.map_or(shifted.x, |right| right.max(shifted.x)));
-            }
-        }
+        pack_component(
+            component_atoms,
+            &placed,
+            &mut all_coords,
+            &mut fragment_max_x,
+        );
     }
 
     Layout {
@@ -343,6 +317,33 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             .into_iter()
             .map(|p| p.unwrap_or(Point::new(0.0, 0.0)))
             .collect(),
+    }
+}
+
+/// Offset this component to the right of the previous one.
+fn pack_component(
+    component_atoms: &[AtomIdx],
+    placed: &[Option<Point>],
+    all_coords: &mut [Option<Point>],
+    fragment_max_x: &mut Option<f64>,
+) {
+    let x_offset = fragment_max_x.map_or(0.0, |right| right + 2.0 * BOND_LEN);
+
+    // Find the min_x of this component so we can pack left.
+    let comp_min_x = component_atoms
+        .iter()
+        .filter_map(|&a| placed[a.0 as usize])
+        .map(|p| p.x)
+        .fold(f64::MAX, f64::min);
+
+    let shift = x_offset - comp_min_x;
+
+    for &a in component_atoms {
+        if let Some(p) = placed[a.0 as usize] {
+            let shifted = Point::new(p.x + shift, p.y);
+            all_coords[a.0 as usize] = Some(shifted);
+            *fragment_max_x = Some(fragment_max_x.map_or(shifted.x, |right| right.max(shifted.x)));
+        }
     }
 }
 
