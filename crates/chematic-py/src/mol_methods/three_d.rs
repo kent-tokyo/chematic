@@ -197,35 +197,30 @@ impl Mol {
     #[pyo3(signature = (mode = "legacy"))]
     fn cip_stereo<'py>(&self, py: Python<'py>, mode: &str) -> PyResult<Vec<Bound<'py, PyDict>>> {
         use chematic_core::CipCode;
-        let assignments = match mode {
-            "legacy" => chematic_chem::assign_cip(&self.inner).assignments,
+        let (assignments, mut ez_bonds) = match mode {
+            "legacy" => {
+                let assignments = chematic_chem::assign_cip(&self.inner).assignments;
+                let ez_bonds = if assignments
+                    .iter()
+                    .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
+                {
+                    chematic_chem::assign_ez_bonds(&self.inner)
+                } else {
+                    Vec::new()
+                };
+                (assignments, ez_bonds)
+            }
             "accurate" => {
-                chematic_chem::assign_cip_with_mode(&self.inner, chematic_chem::CipMode::Accurate)
-                    .map_err(|e| PyValueError::new_err(e.to_string()))?
-                    .assignments
+                let (labels, bonds) =
+                    chematic_chem::assign_accurate_cip_with_bond_labels(&self.inner)
+                        .map_err(|e| PyValueError::new_err(e.to_string()))?;
+                (labels.assignments, bonds)
             }
             other => {
                 return Err(PyValueError::new_err(format!(
                     "unknown CIP mode '{other}' -- expected 'legacy' or 'accurate'"
                 )));
             }
-        };
-        // E/Z entries are keyed by the double bond's first atom; attach the
-        // bond itself so callers need not guess which bond is meant (#634).
-        let mut ez_bonds = if assignments
-            .iter()
-            .any(|(_, code)| matches!(code, CipCode::E | CipCode::Z))
-        {
-            chematic_chem::assign_ez_bonds_with_mode(
-                &self.inner,
-                if mode == "accurate" {
-                    chematic_chem::CipMode::Accurate
-                } else {
-                    chematic_chem::CipMode::LegacyFast
-                },
-            )
-        } else {
-            Vec::new()
         };
         assignments
             .iter()
