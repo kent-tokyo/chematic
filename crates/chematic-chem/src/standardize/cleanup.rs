@@ -162,55 +162,63 @@ fn normalize_for_cleanup(mol: &Molecule) -> Molecule {
         {
             continue;
         }
-        let cations: Vec<_> = component
-            .iter()
-            .copied()
-            .filter(|&idx| {
-                let atom = mol.atom(idx);
-                atom.element.atomic_number() == 7 && atom.charge == 1 && mol.degree(idx) == 3
-            })
-            .collect();
-        let oxides: Vec<_> = component
-            .iter()
-            .flat_map(|&carbon| {
-                mol.neighbors(carbon).filter_map(move |(oxygen, bond)| {
-                    let atom = mol.atom(oxygen);
-                    (mol.atom(carbon).element.atomic_number() == 6
-                        && atom.element.atomic_number() == 8
-                        && atom.charge == -1
-                        && mol.degree(oxygen) == 1
-                        && mol.bond(bond).order == BondOrder::Single)
-                        .then_some((carbon, oxygen, bond))
-                })
-            })
-            .collect();
-        if let ([cation], [(carbon, oxygen, bond)]) = (cations.as_slice(), oxides.as_slice()) {
-            let mut candidate = normalized.clone();
-            for &idx in &component {
-                candidate.set_atom_aromatic(idx, true);
-            }
-            for (idx, edge) in mol.bonds() {
-                if component.contains(&edge.atom1)
-                    && component.contains(&edge.atom2)
-                    && aromatic_bond(idx)
-                {
-                    candidate.set_bond_order(idx, BondOrder::Aromatic);
-                }
-            }
-            candidate.set_charge(*cation, 0);
-            candidate.set_charge(*oxygen, 0);
-            candidate.set_bond_order(*bond, BondOrder::Double);
-            debug_assert_eq!(mol.atom(*carbon).element.atomic_number(), 6);
-            // Removing the second charge can leave a carbon without a
-            // permissible double bond (two adjacent neutral trivalent
-            // nitrogens, for example). Retain the original valence form
-            // unless the proposed one admits a Kekulé assignment.
-            if chematic_core::kekulize(&candidate).is_ok() {
-                normalized = candidate;
-            }
-        }
+        neutralize_fused_oxide(&mut normalized, mol, &component, aromatic_bond);
     }
     normalized
+}
+
+fn neutralize_fused_oxide(
+    normalized: &mut Molecule,
+    mol: &Molecule,
+    component: &[AtomIdx],
+    aromatic_bond: impl Fn(BondIdx) -> bool,
+) {
+    let cations: Vec<_> = component
+        .iter()
+        .copied()
+        .filter(|&idx| {
+            let atom = mol.atom(idx);
+            atom.element.atomic_number() == 7 && atom.charge == 1 && mol.degree(idx) == 3
+        })
+        .collect();
+    let oxides: Vec<_> = component
+        .iter()
+        .flat_map(|&carbon| {
+            mol.neighbors(carbon).filter_map(move |(oxygen, bond)| {
+                let atom = mol.atom(oxygen);
+                (mol.atom(carbon).element.atomic_number() == 6
+                    && atom.element.atomic_number() == 8
+                    && atom.charge == -1
+                    && mol.degree(oxygen) == 1
+                    && mol.bond(bond).order == BondOrder::Single)
+                    .then_some((oxygen, bond))
+            })
+        })
+        .collect();
+    if let ([cation], [(oxygen, bond)]) = (cations.as_slice(), oxides.as_slice()) {
+        let mut candidate = normalized.clone();
+        for &idx in component {
+            candidate.set_atom_aromatic(idx, true);
+        }
+        for (idx, edge) in mol.bonds() {
+            if component.contains(&edge.atom1)
+                && component.contains(&edge.atom2)
+                && aromatic_bond(idx)
+            {
+                candidate.set_bond_order(idx, BondOrder::Aromatic);
+            }
+        }
+        candidate.set_charge(*cation, 0);
+        candidate.set_charge(*oxygen, 0);
+        candidate.set_bond_order(*bond, BondOrder::Double);
+        // Removing the second charge can leave a carbon without a
+        // permissible double bond (two adjacent neutral trivalent
+        // nitrogens, for example). Retain the original valence form
+        // unless the proposed one admits a Kekulé assignment.
+        if chematic_core::kekulize(&candidate).is_ok() {
+            *normalized = candidate;
+        }
+    }
 }
 
 /// RDKit Cleanup charges a bare Li/Na/K atom to +1 and a bare Mg/Ca atom
