@@ -1,79 +1,8 @@
-//! A minimal, tetrahedral-only R/S assignment, built on the new comparator, for the
-//! sole purpose of producing labels the Milestone 2 corpus report can diff against
-//! RDKit's oracle. **Not** wired into `chematic_chem::assign_cip()` or any public
-//! surface beyond this crate -- explicitly experimental. No E/Z, no allene; this module
-//! only touches atoms with a `Chirality` annotation and exactly 4 resolvable substituent
-//! positions.
+//! Tetrahedral CIP assignment from constitutional and auxiliary priorities.
 //!
-//! # Rule 5 (pseudoasymmetry) -- Milestone 4A (2-row scope), generalized in
-//! Milestone 4A-2 to a real bottom-up auxiliary descriptor
-//!
-//! [`assign_cip_accurate_experimental`] runs a pass ([`apply_rule5_pass`]) after the
-//! Rules-1a/1b/2 pass ([`assign_all`]) and the Rule 4b pass (`crate::resolver`) complete,
-//! refining only atoms still left [`SkipReason::Tied`]. It resolves one shape: a tie
-//! between precisely 2 of the 4 physical positions, where each tied branch's *nearest*
-//! embedded stereocenter has an **auxiliary** R/S sign (see below) that differs from the
-//! other branch's (one R, one S) -- CIP's textbook pseudoasymmetric-center pattern. The
-//! resolved atom is labeled [`chematic_core::CipCode::LowerR`]/
-//! [`chematic_core::CipCode::LowerS`], not `R`/`S`.
-//!
-//! **Auxiliary, not molecular, descriptor** (Milestone 4A-2's fix to Milestone 4A's own
-//! documented limitation). Real CIP Rule 4c/5 compares an embedded center's *auxiliary*
-//! descriptor -- computed bottom-up, within the very same digraph rooted at the outer
-//! stereocenter under examination, per Hanson, Musacchio, Mayfield et al. 2018 (*J. Chem.
-//! Inf. Model.* 58(9), 1755-1765): "the descriptor for an auxiliary center does not
-//! depend upon any center between it and the root... the priority of a ligand leading
-//! back to the digraph root will always be ranked by Rule 1a." Milestone 4A shipped a
-//! *molecular*-descriptor stand-in instead (a `provisional: HashMap<AtomIdx, CipCode>`
-//! built from Pass 1's whole-molecule results), verified correct only for its own 2-row
-//! target where the embedded reference happened to already be independently resolved.
-//! That stand-in structurally cannot handle an embedded reference that is *itself*
-//! Pass-1/Rule-4b tied -- exactly the three-armed, locally-symmetric adamantane-cage
-//! family (`[C]12C[CH]3C[CH](C[CH](C3)C1)C2`-shaped, verified present in the validation
-//! corpus, 15 rows across 5 distinct molecules) Milestone 4A deferred as "Milestone
-//! 4A-2, needs symmetry/automorphism-aware joint resolution, a different architecture."
-//!
-//! That framing turned out to overstate what was needed. Diagnosing the cage family
-//! directly (see `docs/rfcs/cip_accurate_rfc.md`'s Milestone 4A-2 entry) found **no genuine
-//! cross-atom cycle**: within one digraph rooted at the outer atom, every embedded
-//! reference is strictly deeper (Hanson's own bottom-up postulate above), so
-//! `crate::resolver::resolve_chirality` -- already built, and already validated 72/72 for
-//! Rule 4b -- computes a correct-shaped `Option<bool>` auxiliary sign for the tied
-//! branches' nearest embedded stereocenters directly, with no modification, on every one
-//! of the 15 rows. [`assign_one_with_rule5`] now calls `resolve_chirality`
-//! (`crate::rule4b::nearest_embedded` to locate the reference node, matching Rule 4b's own
-//! mechanism) instead of looking `provisional` up, so an embedded reference that is
-//! itself tied gets resolved in place, recursively, rather than looked up in a map that
-//! was never populated for it. No SCC/fixed-point solver was built or needed -- see the
-//! RFC entry for the falsified alternative hypothesis and the concrete evidence.
-//!
-//! **Still out of scope**: a tied pair whose *nearest* embedded references share the same
-//! auxiliary sign (both R or both S -- not a distinguishing mirror-image pair) does not
-//! attempt a deeper chain comparison the way Rule 4b's `break_tie_rule4b` does; no row in
-//! this project's validation corpus exercises that shape for Rule 5, so extending to it
-//! is deferred rather than guessed. See `docs/rfcs/cip_accurate_rfc.md` for the full writeup.
-//!
-//! **Element-level guard: phosphorus stays tied.** The same code-path fix above, as a
-//! side effect, also reaches 2 cyclophosphazene phosphorus stereocenters
-//! (`docs/rfcs/cip_accurate_rfc.md` Milestone 4C-1) that were previously `SkipReason::Tied`
-//! for the identical chain-length-1 Rule 4b degeneracy the carbon cage family has.
-//! Unlike the 15 carbon rows, Milestone 4C-1 found **neither** RDKit CIP engine has a
-//! representation-stable answer for that phosphorus molecule -- both flip under a
-//! chemically-neutral Kekule respelling -- so there is no oracle a resolved phosphorus
-//! label could be checked against. [`assign_one_with_rule5`] therefore never emits a
-//! resolved label for a **phosphorus** stereocenter; the element is checked once,
-//! cheaply, before any digraph work, and falls back to `Err(SkipReason::Tied)` -- exactly
-//! this function's own existing convention for every other shape it doesn't recognize
-//! (see below). This is an element-level guard, not a molecule-specific one: it excludes
-//! every phosphorus stereocenter that reaches this path, not one specific SMILES. Note
-//! this project has, as of this writing, zero verified examples of this path being
-//! correct for *any* non-carbon element -- phosphorus is simply the only non-carbon
-//! element the validation corpus happens to exercise here, so a broader "unverified for
-//! any non-carbon element" framing may be more honest than "unverified for phosphorus
-//! specifically"; that broader guard is *not* implemented here, only flagged (see
-//! `docs/rfcs/cip_accurate_rfc.md`'s Milestone 4C-1 entry) -- narrowing to exactly the
-//! element asked about avoids expanding scope
-//! unilaterally.
+//! After constitutional ranking, Rules 4a–4c compare auxiliary descriptors
+//! in the same rooted digraph. Rule 5 can resolve further ties. The rank of
+//! an auxiliary center's back-to-root ligand is based on Rule 1a.
 //!
 //! # Positions come from `stereo_neighbor_order`, ranks come from the new comparator
 //!
@@ -483,17 +412,7 @@ fn rdkit_cip_position_order<'a>(mol: &Molecule, center: AtomIdx, raw: &'a [u32])
     }
 }
 
-/// Retry a Pass-1/Rule-4b-tied atom with Rule 5. Identical digraph/ranking setup to
-/// [`assign_one`]; the new logic is locating a single, exactly-2-physical-position tied
-/// group and, if each side's *nearest* embedded stereocenter resolves (via
-/// `crate::resolver::resolve_chirality`, the same bottom-up auxiliary-descriptor
-/// mechanism Rule 4b validated 72/72) to a differing auxiliary R/S sign, breaking the tie
-/// by that sign (R precedes S) before handing the (now fully split) group partition to
-/// the same [`resolve_is_r_from_groups`] parity math Pass 1 uses. Any shape this detector
-/// doesn't recognize -- 0 or 2+ tied groups, a tied group of size != 2, an
-/// unresolved/ambiguous embedded reference (`crate::rule4b::nearest_embedded` returning
-/// `None`), or matching auxiliary signs on both sides -- returns `Err(SkipReason::Tied)`
-/// unchanged, exactly Pass 1's own outcome (never a guess).
+/// Resolve a remaining tie with the auxiliary rules through Rule 5.
 fn assign_one_with_rule5(
     mol: &Molecule,
     idx: AtomIdx,
@@ -502,17 +421,7 @@ fn assign_one_with_rule5(
     budget: CipBudget,
     kekule: Option<&PreparedKekule<'_>>,
 ) -> Result<Option<CipCode>, SkipReason> {
-    // Element-level guard (see module docs, "Element-level guard: phosphorus stays
-    // tied"): this auxiliary-resolution path is oracle-verified only for carbon
-    // stereocenters (all 15 corpus rows it resolves are carbon). The only other element
-    // it has ever been observed to reach is phosphorus, on a cyclophosphazene molecule
-    // whose RDKit oracle is itself representation-unstable (Milestone 4C-1) -- there is
-    // no stable answer to check a resolved phosphorus label against, so never emit one.
-    // `idx`/`mol` name the same atom identity regardless of Kekule respelling (`mol` is
-    // always the original, pre-Kekule molecule here -- see `assign_one`'s own doc
-    // comment), so this check is stable across resonance respellings by construction.
-    // A saturated ring phosphine (three single bonds, lone pair) is not that
-    // case: its label is checked against RDKit's over random spellings.
+    // Unsupported unsaturated phosphazene auxiliaries can depend on Kekulé spelling.
     let lone_pair_centre = stereo_order.len() == 3;
     if mol.atom(idx).element == Element::P && !label_follows_rdkit_smiles_reading(mol, idx) {
         return Err(SkipReason::Tied);
@@ -534,96 +443,44 @@ fn assign_one_with_rule5(
     let mut ctx = CompareContext::new();
     let groups = rank_children(&mut graph, &root_children, &mut ctx).map_err(map_compare_err)?;
 
-    let mut tied_group_idx = None;
-    for (gi, group) in groups.iter().enumerate() {
-        let physical_count = group.iter().filter(|n| position_nodes.contains(n)).count();
-        if physical_count > 1 {
-            // A 3+-way tie in one group, or a second independently-tied group, is
-            // outside this milestone's narrow scope -- stay tied rather than guess.
-            if physical_count != 2 || tied_group_idx.is_some() {
-                return Err(SkipReason::Tied);
-            }
-            tied_group_idx = Some(gi);
-        }
-    }
-    let Some(tied_group_idx) = tied_group_idx else {
-        // Pass 2 only ever runs on atoms Pass 1 already found tied, so this shouldn't
-        // happen -- stay conservative rather than assume Pass 1/Pass 2 agree.
-        return Err(SkipReason::Tied);
-    };
-
-    let tied_group = &groups[tied_group_idx];
-    let physical_in_tied: Vec<NodeId> = tied_group
-        .iter()
-        .copied()
-        .filter(|n| position_nodes.contains(n))
-        .collect();
-    let (pos_a, pos_b) = (physical_in_tied[0], physical_in_tied[1]);
-
-    // Auxiliary descriptor, not molecular: each branch's own nearest embedded
-    // stereocenter's R/S sign, computed bottom-up *within this same digraph*
-    // (`crate::resolver::resolve_chirality`) -- not a lookup into a whole-molecule
-    // "already resolved" map, which cannot succeed when the embedded atom is itself
-    // Pass-1/Rule-4b tied (exactly the three-armed cage family's shape; see module
-    // docs). `embedded_chain` (not `nearest_embedded` directly -- see that function's
-    // own doc comment) is the same reference-location mechanism Rule 4b validated
-    // 72/72, reused rather than reimplemented: `pos_a`/`pos_b` are the tied group's own
-    // physical position nodes, so `pos_a`/`pos_b` themselves are chain position 0 when
-    // they're directly chirality-bearing (a monocyclic ring's immediate ring
-    // neighbor), and `embedded_chain` searches onward only when they aren't (a plain
-    // CH2 bridge, e.g. the three-armed cage family). Only chain position 0 (the
-    // nearest reference) is used here -- see module docs for why a deeper chain
-    // comparison is out of scope.
-    let chain_a = crate::rule4b::embedded_chain(&mut graph, mol, pos_a).map_err(map_compare_err)?;
-    let chain_b = crate::rule4b::embedded_chain(&mut graph, mol, pos_b).map_err(map_compare_err)?;
-    let (Some(&embedded_a), Some(&embedded_b)) = (chain_a.first(), chain_b.first()) else {
-        return Err(SkipReason::Tied);
-    };
-
+    let mut resolved_groups = Vec::with_capacity(groups.len());
     let mut cache = HashMap::new();
-    let sign_a =
-        crate::resolver::resolve_chirality(&mut graph, mol, embedded_a, budget, &mut cache)
-            .map_err(map_compare_err)?;
-    let sign_b =
-        crate::resolver::resolve_chirality(&mut graph, mol, embedded_b, budget, &mut cache)
-            .map_err(map_compare_err)?;
-    let (Some(is_r_a), Some(is_r_b)) = (sign_a, sign_b) else {
-        // The embedded reference itself has no resolvable auxiliary sign (a deeper,
-        // still-unresolvable tie) -- stay tied rather than guess.
-        return Err(SkipReason::Tied);
-    };
-    if is_r_a == is_r_b {
-        // Both R or both S -- not a distinguishing mirror-image pair in this scope
-        // (would need a deeper chain comparison, unexercised by this project's
-        // validation corpus for Rule 5 -- see module docs); stay tied rather than guess.
-        return Err(SkipReason::Tied);
-    }
-
-    // Rule 5: R precedes S. Verified against this project's full 17-row pseudoasymmetric
-    // corpus (2 Milestone-4A rows + 15 Milestone-4A-2 cage-family rows, all lowercase
-    // `r`/`s` per the RDKit oracle) -- not assumed from the textbook statement alone.
-    let (higher, lower) = if is_r_a {
-        (pos_a, pos_b)
-    } else {
-        (pos_b, pos_a)
-    };
-
-    // Split the one tied group into two singleton-physical-position groups (higher
-    // priority first), leaving every other group's relative order untouched. Any
-    // non-physical (duplicate) sibling that was in the tied group rides along with
-    // `lower` -- harmless, since `resolve_is_r_from_groups` only ever looks up ranks
-    // for the 4 physical `position_nodes`, never for duplicates directly.
-    let mut resolved_groups: Vec<Vec<NodeId>> = Vec::with_capacity(groups.len() + 1);
-    for (gi, group) in groups.iter().enumerate() {
-        if gi == tied_group_idx {
-            resolved_groups.push(vec![higher]);
-            let mut lower_group = vec![lower];
-            lower_group.extend(group.iter().copied().filter(|&n| n != higher && n != lower));
-            resolved_groups.push(lower_group);
-        } else {
-            resolved_groups.push(group.clone());
+    let mut pseudo_count = 0;
+    for mut group in groups {
+        let physical: Vec<_> = group
+            .iter()
+            .copied()
+            .filter(|n| position_nodes.contains(n))
+            .collect();
+        match physical.as_slice() {
+            [] | [_] => resolved_groups.push(group),
+            &[left, right] => {
+                let ranked = crate::rule4b::compare_tied_ligands(
+                    &mut graph,
+                    mol,
+                    left,
+                    right,
+                    &mut cache,
+                    crate::rule4b::StereoRuleLimit::Rule5,
+                )
+                .map_err(map_compare_err)?;
+                let Some((order, pseudo)) = ranked else {
+                    return Err(SkipReason::Tied);
+                };
+                let higher = if order == std::cmp::Ordering::Greater {
+                    left
+                } else {
+                    right
+                };
+                group.retain(|&n| n != higher);
+                resolved_groups.push(vec![higher]);
+                resolved_groups.push(group);
+                pseudo_count += usize::from(pseudo);
+            }
+            _ => return Err(SkipReason::Tied),
         }
     }
+    let pseudoasymmetric = pseudo_count == 1;
 
     let is_r = if lone_pair_centre {
         let invert =
@@ -635,10 +492,11 @@ fn assign_one_with_rule5(
     let Some(is_r) = is_r else {
         return Ok(None);
     };
-    Ok(Some(if is_r {
-        CipCode::LowerR
-    } else {
-        CipCode::LowerS
+    Ok(Some(match (is_r, pseudoasymmetric) {
+        (true, true) => CipCode::LowerR,
+        (false, true) => CipCode::LowerS,
+        (true, false) => CipCode::R,
+        (false, false) => CipCode::S,
     }))
 }
 

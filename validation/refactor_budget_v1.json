@@ -31,10 +31,6 @@
       "decisions": 29,
       "lines": 188
     },
-    "crates/chematic-cip/src/assign.rs::assign_one_with_rule5#1": {
-      "decisions": 24,
-      "lines": 148
-    },
     "crates/chematic-core/src/element.rs::from_symbol#1": {
       "decisions": 1,
       "lines": 123

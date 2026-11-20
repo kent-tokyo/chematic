@@ -317,3 +317,61 @@ fn aromatic_content_present_in_rows_original() {
         );
     }
 }
+
+#[test]
+fn hanson_tetrahedral_descriptors_and_their_mirrors() {
+    let fixtures = include_str!("../../../validation/cip_hanson2018_rule4b_suite.tsv");
+    let mut checked = 0;
+    for line in fixtures.lines() {
+        let mut fields = line.split('\t');
+        let smiles = fields.next().unwrap();
+        let case_id = fields.next().unwrap();
+        let expected = fields.next().unwrap();
+
+        let reflected = mirror_smiles(smiles);
+        let original = chematic_smiles::parse(smiles).unwrap();
+        let reflected = chematic_smiles::parse(&reflected).unwrap();
+        let permutation: Vec<_> = (0..original.atom_count()).rev().collect();
+        let (renumbered, old_to_new) =
+            chematic_cip::digraph_diff::renumber_molecule(&original, &permutation);
+        let budget = CipBudget::default_budget();
+        let original = assign_cip_accurate_experimental(&original, budget).unwrap();
+        let reflected = assign_cip_accurate_experimental(&reflected, budget).unwrap();
+        let renumbered = assign_cip_accurate_experimental(&renumbered, budget).unwrap();
+
+        for descriptor in expected.split_ascii_whitespace() {
+            let (position, code) = descriptor.split_at(descriptor.len() - 1);
+            let code = match code {
+                "R" => CipCode::R,
+                "S" => CipCode::S,
+                "r" => CipCode::LowerR,
+                "s" => CipCode::LowerS,
+                "E" | "Z" => continue,
+                _ => panic!("{case_id}: unknown fixture descriptor {descriptor}"),
+            };
+            let atom = position.parse::<u32>().unwrap() - 1;
+            let lookup = |assignments: &[(AtomIdx, CipCode)], idx| {
+                assignments
+                    .iter()
+                    .find_map(|&(id, value)| (id == AtomIdx(idx)).then_some(value))
+            };
+            assert_eq!(
+                lookup(&original.assignments, atom),
+                Some(code),
+                "{case_id} atom {atom}"
+            );
+            assert_eq!(
+                lookup(&reflected.assignments, atom),
+                Some(mirror_code(code)),
+                "{case_id} mirror atom {atom}"
+            );
+            assert_eq!(
+                lookup(&renumbered.assignments, old_to_new[atom as usize]),
+                Some(code),
+                "{case_id} renumbered atom {atom}"
+            );
+            checked += 1;
+        }
+    }
+    assert_eq!(checked, 289);
+}
