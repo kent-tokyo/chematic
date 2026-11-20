@@ -95,15 +95,13 @@ fn inline_layer_storage_keeps_frozen_seeds_and_atom_membership() {
     {
         let mol = chematic_smiles::parse_template(text).unwrap();
         let prepared = Prepared::new(&mol, false);
-        for plist in find_all_subgraphs(&mol, 1, 9).values() {
-            for path in plist {
-                let candidate = prepared.hashes(path);
-                let expected = prepared.frozen_hashes(path);
-                assert_eq!(candidate.seeds, expected.0, "{text} {path:?}");
-                assert_eq!(candidate.atoms.as_slice(), expected.1, "{text} {path:?}");
-                paths += 1;
-            }
-        }
+        for_each_subgraph(&mol, 9, |path| {
+            let candidate = prepared.hashes(path);
+            let expected = prepared.frozen_hashes(path);
+            assert_eq!(candidate.seeds, expected.0, "{text} {path:?}");
+            assert_eq!(candidate.atoms.as_slice(), expected.1, "{text} {path:?}");
+            paths += 1;
+        });
     }
     assert!(paths > 10000);
     // Configurable paths are not limited to the default seven bonds. Check
