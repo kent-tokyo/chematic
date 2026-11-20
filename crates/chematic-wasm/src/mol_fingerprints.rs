@@ -1182,6 +1182,75 @@ pub fn rdkit_torsion_config_detail_json(
     }))
 }
 
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct LayeredOptions {
+    layer_flags: u32,
+    min_path: usize,
+    max_path: usize,
+    nbits: usize,
+    branched_paths: bool,
+    from_atoms: Vec<u32>,
+    set_only_bits: Option<Vec<u8>>,
+    atom_counts: Option<Vec<u32>>,
+    max_visits: u64,
+    max_paths: usize,
+}
+
+impl Default for LayeredOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitLayeredConfig::default();
+        Self {
+            layer_flags: default.layer_flags,
+            min_path: default.min_path,
+            max_path: default.max_path,
+            nbits: default.fp_size,
+            branched_paths: default.branched_paths,
+            from_atoms: Vec::new(),
+            set_only_bits: default.set_only_bits,
+            atom_counts: default.atom_counts,
+            max_visits: default.max_visits,
+            max_paths: default.max_paths,
+        }
+    }
+}
+
+/// Return the configured RDKit Layered fingerprint and per-atom counters as JSON.
+/// Pass `{}` for defaults. `setOnlyBits` is an optional LSB-first packed byte
+/// array, and `atomCounts` optionally seeds the returned u32 counters.
+#[wasm_bindgen]
+pub fn rdkit_layered_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Layered options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: LayeredOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitLayeredConfig {
+        layer_flags: options.layer_flags,
+        min_path: options.min_path,
+        max_path: options.max_path,
+        fp_size: options.nbits,
+        branched_paths: options.branched_paths,
+        from_atoms: options
+            .from_atoms
+            .into_iter()
+            .map(chematic_core::AtomIdx)
+            .collect(),
+        set_only_bits: options.set_only_bits,
+        atom_counts: options.atom_counts,
+        max_visits: options.max_visits,
+        max_paths: options.max_paths,
+    };
+    let result = chematic_fp::rdkit_layered_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.bits,
+        "atomCounts": result.atom_counts,
+    }))
+}
+
 /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a
 /// bit-packed byte vector (`nbits / 8` bytes, LSB-first).
 ///

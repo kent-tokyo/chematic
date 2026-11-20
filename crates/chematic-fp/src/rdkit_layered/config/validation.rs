@@ -57,10 +57,11 @@ pub(super) fn validate(mol: &Molecule, c: &RdkitLayeredConfig) -> Result<(), Rdk
                 | BondOrder::Triple
                 | BondOrder::Quadruple
                 | BondOrder::Aromatic
+                | BondOrder::Dative
         ) {
             return Err(error(
                 "unsupported_bond",
-                "query, zero and dative bonds are unsupported",
+                "query and zero-order bonds are unsupported",
             ));
         }
     }
@@ -86,8 +87,7 @@ pub(super) fn same_indices(source: &Molecule, view: &Molecule) -> Result<(), Rdk
     if view.bonds().any(|(_, b)| {
         matches!(
             b.order,
-            BondOrder::Dative
-                | BondOrder::Zero
+            BondOrder::Zero
                 | BondOrder::QueryAny
                 | BondOrder::QuerySingleOrDouble
                 | BondOrder::QuerySingleOrAromatic

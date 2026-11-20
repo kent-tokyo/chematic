@@ -91,6 +91,7 @@ fn layer2_bond_type_code(order: BondOrder) -> u32 {
         BondOrder::Double => 2,
         BondOrder::Triple => 3,
         BondOrder::Quadruple => 4,
+        BondOrder::Dative => 17,
         _ => 1,
     }
 }
