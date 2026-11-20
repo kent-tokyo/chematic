@@ -44,7 +44,7 @@
 use std::fmt;
 use std::ops::RangeInclusive;
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, Chirality, Molecule};
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::{BitVec2048, BitVecN};
@@ -303,12 +303,20 @@ pub fn rdkit_atom_pair_config(
         return Err(RdkitAtomPairError::InvalidCountBounds);
     }
     chematic_smiles::with_rdkit_model_molecule(mol, |model| {
+        // Use the original SMILES graph unless hydrogen suppression has
+        // changed the atom indices. A sanitized aromatic projection can
+        // lose the Kekulé structure used by legacy stereo perception.
+        let stereo_input = if mol.atom_count() == model.atom_count() {
+            mol
+        } else {
+            model
+        };
         let chirality = if config.include_chirality
-            && model
+            && stereo_input
                 .atoms()
-                .any(|(_, atom)| atom.chirality.is_tetrahedral())
+                .any(|(_, atom)| atom.chirality != Chirality::None)
         {
-            chematic_smiles::rdkit_legacy_stereo(model)
+            chematic_smiles::rdkit_legacy_stereo(stereo_input)
                 .map_err(RdkitAtomPairError::Chirality)?
                 .atom_cip
         } else {
@@ -427,6 +435,34 @@ mod tests {
             ]
         );
         assert!(left.sparse_counts.iter().all(|&(_, count)| count == 1));
+    }
+
+    #[test]
+    fn uses_rdkit_legacy_labels_for_non_tetrahedral_and_aromatic_inputs() {
+        let config = RdkitAtomPairConfig {
+            nbits: 31,
+            count_bounds: None,
+            include_chirality: true,
+            ..Default::default()
+        };
+        // RDKit 2026.09.2 assigns legacy R/S even to these square-planar tags.
+        for (smiles, packed) in [
+            ("F[Pt@SP1](Cl)(Br)I", [36, 41, 132, 36]),
+            ("[Pt@SP2]([Br])([I])([Cl])[F]", [0, 105, 164, 4]),
+            (
+                "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+                [255, 255, 255, 127],
+            ),
+        ] {
+            let result = rdkit_atom_pair_config(&mol(smiles), &config).unwrap();
+            assert_eq!(result.fingerprint.to_le_bytes(), packed, "{smiles}");
+            assert!(
+                result
+                    .sparse_counts
+                    .iter()
+                    .any(|&(code, _)| code >> 16 > 511)
+            );
+        }
     }
 
     #[test]
