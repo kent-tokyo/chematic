@@ -525,7 +525,7 @@ fn assign_one_with_rule5(
         None => CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?,
     };
     let root = graph.root();
-    let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
+    let root_children = graph.expand_child_ids(root).map_err(map_digraph_err)?;
 
     let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
         return Ok(None);
@@ -660,7 +660,7 @@ fn assign_one(
         None => CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?,
     };
     let root = graph.root();
-    let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
+    let root_children = graph.expand_child_ids(root).map_err(map_digraph_err)?;
 
     let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
         return Ok(None);
@@ -729,7 +729,7 @@ fn assign_lone_pair_centre(
         None => CipDigraph::new(mol, idx, budget).map_err(map_digraph_err)?,
     };
     let root = graph.root();
-    let root_children = graph.expand_children(root).map_err(map_digraph_err)?;
+    let root_children = graph.expand_child_ids(root).map_err(map_digraph_err)?;
     let Some(position_nodes) = position_node_ids(&graph, stereo_order, &root_children) else {
         return Ok(None);
     };

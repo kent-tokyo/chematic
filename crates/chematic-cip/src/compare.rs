@@ -108,6 +108,7 @@
 //! sorting fully-resolved, deduplicated data, not a lazily-evaluated comparator.
 
 use rustc_hash::FxHashMap;
+use smallvec::SmallVec;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -515,7 +516,7 @@ pub(crate) fn ranked_child_ids(
     ctx: &mut CompareContext,
 ) -> Result<Vec<NodeId>, CipCompareError> {
     let children = graph
-        .expand_children(node)
+        .expand_child_ids(node)
         .map_err(CipCompareError::Digraph)?;
     Ok(rank_children(graph, &children, ctx)?
         .into_iter()
@@ -554,8 +555,8 @@ fn compare_by_level<K>(
 ) -> Result<LevelOutcome<K>, CipCompareError> {
     let roots = [(LevelSlot::Node(left), LevelSlot::Node(right))];
     let mut first_level = true;
-    let mut level = Vec::new();
-    let mut next_level = Vec::new();
+    let mut level = SmallVec::<[(LevelSlot, LevelSlot); 8]>::new();
+    let mut next_level = SmallVec::new();
 
     loop {
         ctx.recursive_calls += 1;
@@ -566,7 +567,7 @@ fn compare_by_level<K>(
             });
         }
 
-        let pairs = if first_level { &roots[..] } else { &level };
+        let pairs = if first_level { &roots[..] } else { &level[..] };
         for &(left_slot, right_slot) in pairs {
             let lk = key_fn(graph, left_slot);
             let rk = key_fn(graph, right_slot);

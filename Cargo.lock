@@ -362,6 +362,7 @@ dependencies = [
  "criterion",
  "rustc-hash",
  "serde_json",
+ "smallvec",
 ]
 
 [[package]]

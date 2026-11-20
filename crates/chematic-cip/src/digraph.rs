@@ -38,6 +38,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
+use smallvec::SmallVec;
 
 use crate::CipError;
 use crate::budget::CipBudget;
@@ -45,6 +46,8 @@ use crate::edge::{CipEdge, EdgeId};
 use crate::mancude::MancudeContext;
 use crate::node::{CipNode, CipNodeKind, NodeId};
 use crate::rational::AtomicNumberKey;
+
+type ChildIds = SmallVec<[NodeId; 8]>;
 
 /// A lazily-expanding hierarchical digraph rooted at one atom (typically a candidate
 /// stereocenter). See the module docs for the two structural rules that make this a
@@ -71,7 +74,7 @@ pub struct CipDigraph<'m> {
     nodes: Vec<CipNode>,
     edges: Vec<CipEdge>,
     /// Parallel to `nodes`: `None` until a node's children have been computed once.
-    children_cache: Vec<Option<Vec<NodeId>>>,
+    children_cache: Vec<Option<ChildIds>>,
     root: NodeId,
     budget: CipBudget,
     node_count: usize,
@@ -248,17 +251,21 @@ impl<'m> CipDigraph<'m> {
     /// nodes are always leaves: calling this on one returns `Ok(&[])` without touching
     /// the budget, since no expansion work happens.
     pub fn expand_children(&mut self, node_id: NodeId) -> Result<Vec<NodeId>, CipError> {
+        self.expand_child_ids(node_id).map(ChildIds::into_vec)
+    }
+
+    pub(crate) fn expand_child_ids(&mut self, node_id: NodeId) -> Result<ChildIds, CipError> {
         if let Some(cached) = &self.children_cache[node_id.0 as usize] {
             return Ok(cached.clone());
         }
         let Some(context) = self.expansion_context(node_id) else {
             // Duplicate/implicit-H nodes are leaves by design (see module docs) --
             // they represent a terminated branch, not a real atom to expand further.
-            self.children_cache[node_id.0 as usize] = Some(Vec::new());
-            return Ok(Vec::new());
+            self.children_cache[node_id.0 as usize] = Some(ChildIds::new());
+            return Ok(ChildIds::new());
         };
         self.consume_expansion_budget()?;
-        let mut children = Vec::new();
+        let mut children = ChildIds::new();
         self.append_arrival_duplicates(node_id, &context, &mut children)?;
         self.append_neighbor_children(node_id, &context, &mut children)?;
         self.append_implicit_hydrogens(node_id, &context, &mut children)?;
@@ -309,7 +316,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         // Arrival-side duplication: a multiple bond duplicates its partner into BOTH
         // atoms' own substituent lists, not just the one doing the iterating below
@@ -353,7 +360,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         for (nb, bond_idx) in self.mol.neighbors(context.atom_idx) {
             if Some(nb) == context.parent_atom {
@@ -417,7 +424,7 @@ impl<'m> CipDigraph<'m> {
         &mut self,
         node_id: NodeId,
         context: &ExpansionContext,
-        children: &mut Vec<NodeId>,
+        children: &mut ChildIds,
     ) -> Result<(), CipError> {
         let h_count = implicit_hcount(self.mol, context.atom_idx);
         for _ in 0..h_count {
@@ -552,7 +559,7 @@ impl<'m> CipDigraph<'m> {
     /// drive expansion, so tests that need to exercise the whole digraph (determinism,
     /// the residual-corpus smoke test) call this explicitly.
     pub fn expand_all(&mut self, node: NodeId) -> Result<(), CipError> {
-        let children = self.expand_children(node)?;
+        let children = self.expand_child_ids(node)?;
         for child in children {
             self.expand_all(child)?;
         }
@@ -567,7 +574,7 @@ impl<'m> CipDigraph<'m> {
     /// input. Used by the atom-renumbering and SMILES-representation invariance tests;
     /// forces full expansion of `node`'s subtree as a side effect.
     pub fn branch_signature(&mut self, node: NodeId) -> Result<u64, CipError> {
-        let children = self.expand_children(node)?;
+        let children = self.expand_child_ids(node)?;
         let mut child_sigs = Vec::with_capacity(children.len());
         for child in children {
             child_sigs.push(self.branch_signature(child)?);
