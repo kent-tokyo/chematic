@@ -364,7 +364,12 @@ mod tests {
         assert_eq!((mcs.atom_count(), mcs.bonds.len()), (4, 3));
         let projected = parse_smarts(&mcs_query_to_smarts(&mcs).unwrap()).unwrap();
         for query in [&mcs, &projected] {
-            for (mol, hit) in [(&iodine, true), (&implicit_h, true), (&inverted, false), (&achiral, false)] {
+            for (mol, hit) in [
+                (&iodine, true),
+                (&implicit_h, true),
+                (&inverted, false),
+                (&achiral, false),
+            ] {
                 assert_eq!(crate::has_match_with_config(query, mol, &matching), hit);
             }
         }
@@ -374,7 +379,9 @@ mod tests {
         for mol in [&iodine, &inverted] {
             assert!(crate::has_match_with_config(&projected, mol, &matching));
         }
-        assert!(!crate::has_match_with_config(&projected, &achiral, &matching));
+        assert!(!crate::has_match_with_config(
+            &projected, &achiral, &matching
+        ));
     }
 
     #[test]
@@ -390,8 +397,12 @@ mod tests {
             use_chirality: true,
             ..MatchConfig::default()
         };
-        for objective in [crate::McsObjective::AtomCount, crate::McsObjective::BondCount] {
-            let outcome = crate::find_mcs_with_objective_checked(&[&left, &right], &config, objective);
+        for objective in [
+            crate::McsObjective::AtomCount,
+            crate::McsObjective::BondCount,
+        ] {
+            let outcome =
+                crate::find_mcs_with_objective_checked(&[&left, &right], &config, objective);
             assert!(matches!(outcome, crate::McsOutcome::Exhaustive(_)));
             let query = outcome.into_query();
             assert_eq!((query.atom_count(), query.bonds.len()), (6, 5));
@@ -399,9 +410,16 @@ mod tests {
             assert!(crate::has_match_with_config(&projected, &left, &matching));
             assert!(crate::has_match_with_config(&projected, &right, &matching));
 
-            let complete_rings = McsConfig { complete_rings_only: true, ..config.clone() };
-            let result = crate::find_mcs_with_objective_checked(&[&left, &right], &complete_rings, objective)
-                .into_query();
+            let complete_rings = McsConfig {
+                complete_rings_only: true,
+                ..config.clone()
+            };
+            let result = crate::find_mcs_with_objective_checked(
+                &[&left, &right],
+                &complete_rings,
+                objective,
+            )
+            .into_query();
             assert_eq!((result.atom_count(), result.bonds.len()), (5, 5));
         }
     }
