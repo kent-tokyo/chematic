@@ -550,21 +550,15 @@ fn assign_valence_aware_metal_charge(
         if ligand_charge == -1 && valence_after == total_degree_after + 1 {
             ligand_charge = 0;
         }
-        let metal_gain = if atoms[metal].element.atomic_number() == 30
-            && ligand_atom.element.atomic_number() == 6
-            && radical_before > 0
-            && ligand_charge == 0
-        {
-            // Breaking a Zn--carbon bond to a carbon already carrying a
-            // radical increases the carbon's radical count, not Zn charge.
-            0
-        } else if ligand_charge == -1
+        let metal_gain = if ligand_charge == -1
             && ligand_atom.element.atomic_number() == 6
             && valence_after == total_degree_after + 2
         {
             0
         } else {
-            (-ligand_charge + lone_electrons).max(0)
+            // An electron retained by an existing ligand radical is not
+            // transferred from the metal during disconnection.
+            (-ligand_charge - lone_electrons).max(0)
         };
         atoms[ligand].charge = i8::try_from(ligand_charge).unwrap_or(original.charge);
         if ligand_atom.element.atomic_number() == 7
@@ -717,6 +711,30 @@ mod tests {
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
             Ok(expected)
         );
+    }
+
+    #[test]
+    fn cleanup_keeps_metal_neutral_when_a_carbon_radical_retains_the_electron() {
+        for (input, expected) in [
+            ("[Fe][C]=O", "[C]=O.[Fe]"),
+            ("[Mn][C]=O", "[C]=O.[Mn]"),
+            ("[Cu][C](C)O", "C[C]O.[Cu]"),
+        ] {
+            let cleaned = cleanup(&parse(input).unwrap());
+            assert_eq!(
+                chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+                Ok(expected),
+                "{input}"
+            );
+            assert_eq!(
+                cleaned
+                    .atoms()
+                    .map(|(_, atom)| i32::from(atom.charge))
+                    .sum::<i32>(),
+                0,
+                "{input}"
+            );
+        }
     }
 
     #[test]
