@@ -1249,8 +1249,8 @@ fn find_mcs_checked(
 /// Return the actual MCS query as SMARTS, preserving observed atom and bond
 /// alternatives. The status distinguishes a partial timeout result.
 ///
-/// Charge, isotope, and chirality matching flags are deliberately absent:
-/// the native MCS query does not yet encode those predicates for re-search.
+/// Optional charge and isotope predicates are preserved for re-search.
+/// Chirality matching is not yet representable by this serializer.
 #[pyfunction]
 #[pyo3(signature = (
     mols,
@@ -1263,6 +1263,9 @@ fn find_mcs_checked(
     bond_compare="order_or_aromatic",
     maximize_bonds=true,
     max_search_nodes=None,
+    *,
+    match_charge=false,
+    match_isotope=false,
 ))]
 #[allow(clippy::too_many_arguments)]
 fn find_mcs_smarts_checked(
@@ -1276,6 +1279,8 @@ fn find_mcs_smarts_checked(
     bond_compare: &str,
     maximize_bonds: bool,
     max_search_nodes: Option<usize>,
+    match_charge: bool,
+    match_isotope: bool,
 ) -> PyResult<(Option<String>, bool)> {
     let mut config = build_mcs_config(
         match_bonds,
@@ -1286,8 +1291,8 @@ fn find_mcs_smarts_checked(
         atom_compare,
         bond_compare,
         false,
-        false,
-        false,
+        match_charge,
+        match_isotope,
         maximize_bonds,
     )?;
     if let Some(limit) = max_search_nodes {

@@ -509,8 +509,8 @@ pub fn mcs_smiles_json_with_config(
 /// MCS SMARTS with status, preserving atom and bond query alternatives.
 ///
 /// Uses the same JSON input and configuration as `mcs_smiles_json_with_config`.
-/// Configuration requiring charge, isotope, or chirality predicates is rejected
-/// because those constraints are not yet encoded in the returned SMARTS.
+/// Charge and isotope predicates are preserved. Chirality predicates are
+/// rejected until the serializer can retain their matching semantics.
 #[wasm_bindgen]
 pub fn mcs_smarts_json_with_config(
     smiles_json: &str,
@@ -522,9 +522,9 @@ pub fn mcs_smarts_json_with_config(
         serde_json::from_str(config_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
     let rdkit_heavy = matches!(config.atom_compare, AtomCompareJson::RdkitAnyHeavyAtom);
     let config = config.into_mcs_config();
-    if config.match_chiral_tag || config.match_charge || config.match_isotope {
+    if config.match_chiral_tag {
         return Err(JsValue::from_str(
-            "MCS SMARTS does not encode matchChiralTag, matchCharge, or matchIsotope constraints",
+            "MCS SMARTS does not encode matchChiralTag constraints",
         ));
     }
 

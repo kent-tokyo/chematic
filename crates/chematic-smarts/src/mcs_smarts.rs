@@ -21,16 +21,35 @@ impl fmt::Display for McsSmartsError {
 
 impl std::error::Error for McsSmartsError {}
 
-fn atom_expression(query: &AtomQuery, out: &mut String) -> Result<(), McsSmartsError> {
+fn atom_alternatives(query: &AtomQuery, out: &mut String) -> Result<(), McsSmartsError> {
     match query {
         AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)) => {
             out.push('#');
             out.push_str(&number.to_string());
         }
         AtomQuery::Or(left, right) => {
-            atom_expression(left, out)?;
+            atom_alternatives(left, out)?;
             out.push(',');
-            atom_expression(right, out)?;
+            atom_alternatives(right, out)?;
+        }
+        _ => return Err(McsSmartsError::UnsupportedAtomQuery),
+    }
+    Ok(())
+}
+
+fn atom_expression(query: &AtomQuery, out: &mut String) -> Result<(), McsSmartsError> {
+    let AtomQuery::And(left, right) = query else {
+        return atom_alternatives(query, out);
+    };
+    atom_expression(left, out)?;
+    // ';' binds more loosely than ',', so the predicate applies to every
+    // observed element alternative rather than just to its last branch.
+    match right.as_ref() {
+        AtomQuery::Primitive(AtomPrimitive::Charge(charge)) => {
+            out.push_str(&format!(";{charge:+}"));
+        }
+        AtomQuery::Primitive(AtomPrimitive::Isotope(mass)) => {
+            out.push_str(&format!(";{mass}*"));
         }
         _ => return Err(McsSmartsError::UnsupportedAtomQuery),
     }
@@ -69,7 +88,7 @@ fn ring_label(number: usize, out: &mut String) {
 /// Serialize an MCS `QueryMolecule` without collapsing atom or bond alternatives.
 ///
 /// This accepts the `AtomicNum`/`Or` and bond-order/`Or` query subset emitted by
-/// MCS. Other query predicates and malformed graphs return an error rather than
+/// MCS, including trailing charge and isotope constraints. Other predicates and malformed graphs return an error rather than
 /// silently changing which molecules match. An empty query serializes to `""`.
 pub fn mcs_query_to_smarts(query: &QueryMolecule) -> Result<String, McsSmartsError> {
     validate_graph(query)?;

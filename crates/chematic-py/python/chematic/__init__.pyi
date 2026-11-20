@@ -4919,13 +4919,16 @@ def find_mcs_smarts_checked(
     bond_compare: McsBondComparison = "order_or_aromatic",
     maximize_bonds: bool = True,
     max_search_nodes: Optional[int] = None,
+    *,
+    match_charge: bool = False,
+    match_isotope: bool = False,
 ) -> tuple[Optional[str], bool]:
     """Return the MCS SMARTS query and whether the deadline stopped the search.
 
     Unlike :func:`find_mcs_checked`, this retains all observed atom and bond
     alternatives under relaxed comparison. A resource limit raises
-    ``ChematicInputError``. Charge, isotope, and chirality matching are not
-    exposed here because the returned query does not encode those constraints.
+    ``ChematicInputError``. Charge and isotope constraints are preserved when
+    requested. Chirality constraints are not supported by this serializer.
     """
     ...
 

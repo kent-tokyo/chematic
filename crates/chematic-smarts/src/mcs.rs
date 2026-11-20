@@ -229,7 +229,7 @@ fn find_mcs_impl(mols: &[&Molecule], config: &McsConfig, rdkit_heavy: bool) -> M
         return if config.max_search_nodes == Some(0) {
             McsOutcome::ResourceLimited(QueryMolecule::new())
         } else {
-            McsOutcome::Exhaustive(molecule_to_query(mols[0]))
+            McsOutcome::Exhaustive(molecule_to_query(mols[0], config))
         };
     }
 
@@ -688,7 +688,7 @@ fn atoms_compatible(
     if match_charge && a.charge != b.charge {
         return false;
     }
-    if match_isotope && a.isotope != b.isotope {
+    if match_isotope && a.isotope.unwrap_or(0) != b.isotope.unwrap_or(0) {
         return false;
     }
     true
@@ -743,6 +743,28 @@ fn mapping_has_complete_rings(
 // Build output QueryMolecule
 // ---------------------------------------------------------------------------
 
+fn constrain_atom(
+    mut query: AtomQuery,
+    atom: &chematic_core::Atom,
+    config: &McsConfig,
+) -> AtomQuery {
+    if config.match_charge {
+        query = AtomQuery::And(
+            Box::new(query),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Charge(atom.charge))),
+        );
+    }
+    if config.match_isotope {
+        query = AtomQuery::And(
+            Box::new(query),
+            Box::new(AtomQuery::Primitive(AtomPrimitive::Isotope(
+                atom.isotope.unwrap_or(0),
+            ))),
+        );
+    }
+    query
+}
+
 fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
     let mol0 = mols[0];
@@ -771,7 +793,7 @@ fn build_query(mols: &[&Molecule], mapping: &PartialMapping, config: &McsConfig)
             .map(|number| AtomQuery::Primitive(AtomPrimitive::AtomicNum(number)))
             .reduce(|left, right| AtomQuery::Or(Box::new(left), Box::new(right)))
             .expect("an MCS mapping includes its first input");
-        qmol.add_atom(query);
+        qmol.add_atom(constrain_atom(query, mol0.atom(row[0]), config));
     }
 
     // Add only bonds present in every input.  Extra edges in any one input
@@ -846,13 +868,13 @@ fn bond_order_to_query(order: BondOrder) -> BondQuery {
 // Convert a single molecule to a QueryMolecule (for the single-mol case)
 // ---------------------------------------------------------------------------
 
-fn molecule_to_query(mol: &Molecule) -> QueryMolecule {
+fn molecule_to_query(mol: &Molecule, config: &McsConfig) -> QueryMolecule {
     let mut qmol = QueryMolecule::new();
 
     for (_, atom) in mol.atoms() {
         let an = atom.element.atomic_number();
         let query = AtomQuery::Primitive(AtomPrimitive::AtomicNum(an));
-        qmol.add_atom(query);
+        qmol.add_atom(constrain_atom(query, atom, config));
     }
 
     for (_, bond) in mol.bonds() {

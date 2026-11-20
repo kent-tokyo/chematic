@@ -25,9 +25,18 @@ const { mcs_smiles_json, mcs_smiles_json_with_config, mcs_smarts_json_with_confi
   assert.match(result.smarts, /,/);
   assert.equal(result.wasTimedOut, false);
   assert.equal(result.wasResourceLimited, false);
-  assert.throws(() => mcs_smarts_json_with_config(
-    JSON.stringify(["[13CH4]", "C"]), JSON.stringify({ matchIsotope: true })
+  const constrained = JSON.parse(mcs_smarts_json_with_config(
+    JSON.stringify(["[13CH3][NH3+]", "[NH3+][13CH3]"]),
+    JSON.stringify({ matchIsotope: true, matchCharge: true })
   ));
+  assert.match(constrained.smarts, /;13\*/);
+  assert.match(constrained.smarts, /;\+1/);
+  assert.equal(constrained.wasTimedOut, false);
+  assert.equal(constrained.wasResourceLimited, false);
+  assert.throws(() => mcs_smarts_json_with_config(
+    JSON.stringify(["C[C@H](O)Cl", "C[C@H](O)Cl"]),
+    JSON.stringify({ matchChiralTag: true })
+  ), /matchChiralTag/);
 }
 
 // Default config (`{}`) matches the bare mcs_smiles_json's own default.
