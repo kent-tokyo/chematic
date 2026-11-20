@@ -4,6 +4,7 @@
 //! auxiliaries belong to occurrences in this rooted digraph, so different
 //! occurrences of the same ring atom can have different descriptors.
 
+use std::cell::OnceCell;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -25,6 +26,8 @@ pub(crate) enum StereoRuleLimit {
 struct StereoBranch {
     nodes: Vec<(NodeId, Vec<Vec<NodeId>>)>,
     reference_votes: [usize; 2],
+    has_pseudo_descriptor: bool,
+    profiles: [OnceCell<Vec<u8>>; 6],
 }
 
 fn describe_branch(
@@ -32,11 +35,12 @@ fn describe_branch(
     mol: &Molecule,
     start: NodeId,
     auxiliaries: &mut HashMap<NodeId, Option<CipCode>>,
+    ctx: &mut CompareContext,
 ) -> Result<StereoBranch, CipCompareError> {
     let mut level = vec![vec![start]];
     let mut nodes = Vec::new();
     let mut reference_votes = [0; 2];
-    let mut ctx = CompareContext::new();
+    let mut has_pseudo_descriptor = false;
 
     while !level.is_empty() {
         let mut next = Vec::new();
@@ -47,12 +51,13 @@ fn describe_branch(
                 match resolve_chirality(graph, mol, node, auxiliaries)? {
                     Some(CipCode::S) => votes[0] += 1,
                     Some(CipCode::R) => votes[1] += 1,
+                    Some(CipCode::LowerR | CipCode::LowerS) => has_pseudo_descriptor = true,
                     _ => {}
                 }
                 let children = graph
                     .expand_child_ids(node)
                     .map_err(CipCompareError::Digraph)?;
-                let ranks = rank_children(graph, &children, &mut ctx)?;
+                let ranks = rank_children(graph, &children, ctx)?;
                 // Keep corresponding constitutional groups together when
                 // looking for the first group containing reference descriptors.
                 for (index, children) in ranks.iter().enumerate() {
@@ -75,15 +80,19 @@ fn describe_branch(
     Ok(StereoBranch {
         nodes,
         reference_votes,
+        has_pseudo_descriptor,
+        profiles: Default::default(),
     })
 }
 
 #[derive(Clone, Copy)]
 enum DescriptorOrder {
     Class,
-    Like(CipCode),
+    LikeR,
+    LikeS,
     Pseudo,
-    Absolute(CipCode),
+    AbsoluteR,
+    AbsoluteS,
 }
 
 impl DescriptorOrder {
@@ -94,7 +103,8 @@ impl DescriptorOrder {
                 Some(CipCode::LowerR | CipCode::LowerS) => 1,
                 _ => 0,
             },
-            Self::Like(reference) | Self::Absolute(reference) => u8::from(code == Some(reference)),
+            Self::LikeR | Self::AbsoluteR => u8::from(code == Some(CipCode::R)),
+            Self::LikeS | Self::AbsoluteS => u8::from(code == Some(CipCode::S)),
             Self::Pseudo => match code {
                 Some(CipCode::LowerR) => 2,
                 Some(CipCode::LowerS) => 1,
@@ -124,6 +134,28 @@ impl StereoBranch {
         &self,
         auxiliaries: &HashMap<NodeId, Option<CipCode>>,
         order: DescriptorOrder,
+    ) -> &[u8] {
+        self.profiles[order as usize].get_or_init(|| {
+            let has_absolute = self.reference_votes != [0; 2];
+            let has_keys = match order {
+                DescriptorOrder::Class => has_absolute || self.has_pseudo_descriptor,
+                DescriptorOrder::Pseudo => self.has_pseudo_descriptor,
+                _ => has_absolute,
+            };
+            if has_keys {
+                self.build_profile(auxiliaries, order)
+            } else {
+                // With no matching descriptors every traversal gives the same
+                // sequence, including its length.
+                vec![0; self.nodes.len()]
+            }
+        })
+    }
+
+    fn build_profile(
+        &self,
+        auxiliaries: &HashMap<NodeId, Option<CipCode>>,
+        order: DescriptorOrder,
     ) -> Vec<u8> {
         let mut ordered_children = HashMap::with_capacity(self.nodes.len());
         // Resolve sibling ordering bottom-up and preserve each parent's
@@ -142,7 +174,10 @@ impl StereoBranch {
                             descriptor_sequence(child, &ordered_children, auxiliaries, order)
                         };
                         let class = sequence(DescriptorOrder::Class);
-                        let pseudo = if matches!(order, DescriptorOrder::Absolute(_)) {
+                        let pseudo = if matches!(
+                            order,
+                            DescriptorOrder::AbsoluteR | DescriptorOrder::AbsoluteS
+                        ) {
                             sequence(DescriptorOrder::Pseudo)
                         } else {
                             Vec::new()
@@ -159,14 +194,14 @@ impl StereoBranch {
         descriptor_sequence(self.nodes[0].0, &ordered_children, auxiliaries, order)
     }
 
-    fn like_profile(&self, auxiliaries: &HashMap<NodeId, Option<CipCode>>) -> Option<Vec<u8>> {
+    fn like_profile(&self, auxiliaries: &HashMap<NodeId, Option<CipCode>>) -> Option<&[u8]> {
         let [s, r] = self.reference_votes;
         match r.cmp(&s) {
-            Ordering::Greater => Some(self.profile(auxiliaries, DescriptorOrder::Like(CipCode::R))),
-            Ordering::Less => Some(self.profile(auxiliaries, DescriptorOrder::Like(CipCode::S))),
+            Ordering::Greater => Some(self.profile(auxiliaries, DescriptorOrder::LikeR)),
+            Ordering::Less => Some(self.profile(auxiliaries, DescriptorOrder::LikeS)),
             Ordering::Equal if r != 0 => Some(
-                self.profile(auxiliaries, DescriptorOrder::Like(CipCode::R))
-                    .max(self.profile(auxiliaries, DescriptorOrder::Like(CipCode::S))),
+                self.profile(auxiliaries, DescriptorOrder::LikeR)
+                    .max(self.profile(auxiliaries, DescriptorOrder::LikeS)),
             ),
             Ordering::Equal => None,
         }
@@ -194,46 +229,60 @@ fn compare_tied_ligands_with_reference(
     limit: StereoRuleLimit,
     reference: CipCode,
 ) -> Result<Option<(Ordering, bool)>, CipCompareError> {
-    let left = describe_branch(graph, mol, left, auxiliaries)?;
-    let right = describe_branch(graph, mol, right, auxiliaries)?;
+    let mut ctx = CompareContext::new();
+    let left = describe_branch(graph, mol, left, auxiliaries, &mut ctx)?;
+    let right = describe_branch(graph, mol, right, auxiliaries, &mut ctx)?;
+    Ok(compare_branches(
+        &left,
+        &right,
+        auxiliaries,
+        limit,
+        reference,
+    ))
+}
+
+fn compare_branches(
+    left: &StereoBranch,
+    right: &StereoBranch,
+    auxiliaries: &HashMap<NodeId, Option<CipCode>>,
+    limit: StereoRuleLimit,
+    reference: CipCode,
+) -> Option<(Ordering, bool)> {
     let compare = |order| {
         left.profile(auxiliaries, order)
-            .cmp(&right.profile(auxiliaries, order))
+            .cmp(right.profile(auxiliaries, order))
     };
 
     let class = compare(DescriptorOrder::Class);
     if class != Ordering::Equal {
-        return Ok(Some((class, false)));
+        return Some((class, false));
     }
     if let (Some(left), Some(right)) = (
         left.like_profile(auxiliaries),
         right.like_profile(auxiliaries),
     ) {
-        let like = left.cmp(&right);
+        let like = left.cmp(right);
         if like != Ordering::Equal {
-            return Ok(Some((like, false)));
+            return Some((like, false));
         }
     }
     let pseudo = compare(DescriptorOrder::Pseudo);
     if pseudo != Ordering::Equal {
-        return Ok(Some((pseudo, false)));
+        return Some((pseudo, false));
     }
 
     if limit == StereoRuleLimit::Rule5 {
-        let order = compare(DescriptorOrder::Absolute(reference));
+        let (primary, opposite) = if reference == CipCode::R {
+            (DescriptorOrder::AbsoluteR, DescriptorOrder::AbsoluteS)
+        } else {
+            (DescriptorOrder::AbsoluteS, DescriptorOrder::AbsoluteR)
+        };
+        let order = compare(primary);
         if order != Ordering::Equal {
-            let opposite = if reference == CipCode::R {
-                CipCode::S
-            } else {
-                CipCode::R
-            };
-            return Ok(Some((
-                order,
-                order != compare(DescriptorOrder::Absolute(opposite)),
-            )));
+            return Some((order, order != compare(opposite)));
         }
     }
-    Ok(None)
+    None
 }
 
 /// Apply the auxiliary rules within each existing tie without changing the
@@ -308,18 +357,16 @@ fn rank_stereo_group(
     let mut wins = vec![0; physical.len()];
     let mut comparisons = Vec::new();
     let mut reflection_flips = 0;
-    for (i, &left) in physical.iter().enumerate() {
-        for (j, &right) in physical.iter().enumerate().skip(i + 1) {
-            let (order, pseudo) = compare_tied_ligands_with_reference(
-                graph,
-                mol,
-                left,
-                right,
-                cache,
-                StereoRuleLimit::Rule5,
-                reference,
-            )?
-            .unwrap_or((Ordering::Equal, false));
+    let mut ctx = CompareContext::new();
+    let branches: Vec<_> = physical
+        .iter()
+        .map(|&node| describe_branch(graph, mol, node, cache, &mut ctx))
+        .collect::<Result<_, _>>()?;
+    for (i, left) in branches.iter().enumerate() {
+        for (j, right) in branches.iter().enumerate().skip(i + 1) {
+            let (order, pseudo) =
+                compare_branches(left, right, cache, StereoRuleLimit::Rule5, reference)
+                    .unwrap_or((Ordering::Equal, false));
             match order {
                 Ordering::Greater => wins[i] += 1,
                 Ordering::Less => wins[j] += 1,
