@@ -440,6 +440,32 @@ pub fn explain_rdkit_topological_torsion_code(
 /// Like RDKit (`useHs=false`), hydrogen atoms -- isotopic `[2H]`/`[3H]`
 /// included -- are never part of a path.
 fn visit_four_atom_paths(mol: &Molecule, mut visit: impl FnMut([AtomIdx; 4])) {
+    // One central edge per undirected path in a simple graph. Manually
+    // constructed self-edges retain the legacy traversal and multiplicity.
+    if mol.bonds().any(|(_, bond)| bond.atom1 == bond.atom2) {
+        visit_four_atom_paths_with_self_edges(mol, visit);
+        return;
+    }
+    let heavy = |atom| !is_hydrogen(mol, atom);
+    for (_, bond) in mol.bonds() {
+        let b = bond.atom1;
+        let c = bond.atom2;
+        if !(heavy(b) && heavy(c)) {
+            continue;
+        }
+        for (a, _) in mol.neighbors(b).filter(|&(a, _)| a != c && heavy(a)) {
+            for (d, _) in mol
+                .neighbors(c)
+                .filter(|&(d, _)| d != b && d != a && heavy(d))
+            {
+                let path = if a < d { [a, b, c, d] } else { [d, c, b, a] };
+                visit(path);
+            }
+        }
+    }
+}
+
+fn visit_four_atom_paths_with_self_edges(mol: &Molecule, mut visit: impl FnMut([AtomIdx; 4])) {
     let n = mol.atom_count();
     let heavy = |i: AtomIdx| !is_hydrogen(mol, i);
     for start in 0..n {
@@ -691,6 +717,26 @@ mod tests {
 
     fn mol(s: &str) -> Molecule {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e}"))
+    }
+
+    #[test]
+    fn central_bond_traversal_matches_previous_undirected_paths() {
+        for input in [
+            "C1CC1C",
+            "CC(C)(C)CC(C)C",
+            "[H]C([2H])C[3H]",
+            "C1C2CC3CC1CC(C2)C3",
+            "[Cu]<-NCCC",
+            "c1ccc2c(c1)cccc2",
+        ] {
+            let mol = mol(input);
+            let mut expected = Vec::new();
+            visit_four_atom_paths_with_self_edges(&mol, |path| expected.push(path));
+            let mut actual = four_atom_paths(&mol);
+            actual.sort_unstable();
+            expected.sort_unstable();
+            assert_eq!(actual, expected, "{input}");
+        }
     }
 
     #[test]
