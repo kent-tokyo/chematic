@@ -260,39 +260,35 @@ fn test_chirality_ignored_by_default() {
 }
 
 #[test]
-fn test_chirality_enforced_when_enabled() {
-    // L-alanine has [C@@H] — query [C@@H] should match, [C@H] should not.
-    let mol = parse("N[C@@H](C)C(=O)O").unwrap();
-
-    let q_ccw = parse_smarts("[C@@H]").unwrap(); // CCW (@@) = kind 2
-    let q_cw = parse_smarts("[C@H]").unwrap(); // CW  (@)  = kind 1
-
+fn test_chirality_enforced_for_a_complete_ligand_order() {
+    let l_alanine = parse("N[C@@H](C)C(=O)O").unwrap();
+    let d_alanine = parse("N[C@H](C)C(=O)O").unwrap();
+    let query = parse_smarts("N[C@@H](C)C(=O)O").unwrap();
     let config = MatchConfig {
         use_chirality: true,
         ..MatchConfig::default()
     };
 
-    let m_ccw = find_matches_with_config(&q_ccw, &mol, &config);
-    let m_cw = find_matches_with_config(&q_cw, &mol, &config);
-
-    // [C@@H] must match L-alanine's chiral center.
-    assert!(!m_ccw.is_empty(), "[C@@H] should match L-alanine (@@)");
-    // [C@H] must NOT match L-alanine.
-    assert!(m_cw.is_empty(), "[C@H] should not match L-alanine (@@)");
+    assert!(has_match_with_config(&query, &l_alanine, &config));
+    assert!(!has_match_with_config(&query, &d_alanine, &config));
 }
 
 #[test]
-fn test_chirality_d_alanine_positive_match() {
-    // D-alanine [C@H] should positively match [C@H] query when use_chirality=true.
-    // This complements test_chirality_enforced_when_enabled which only tested negative on L-ala.
-    let mol = parse("N[C@H](C)C(=O)O").unwrap(); // D-alanine (@, kind 1)
-    let q_cw = parse_smarts("[C@H]").unwrap(); // CW (@), kind 1
+fn test_isolated_chirality_only_requires_a_specified_stereocenter() {
+    let l_alanine = parse("N[C@@H](C)C(=O)O").unwrap();
+    let d_alanine = parse("N[C@H](C)C(=O)O").unwrap();
+    let unspecified = parse("NC(C)C(=O)O").unwrap();
     let config = MatchConfig {
         use_chirality: true,
         ..MatchConfig::default()
     };
-    let m = find_matches_with_config(&q_cw, &mol, &config);
-    assert!(!m.is_empty(), "[C@H] should positively match D-alanine (@)");
+
+    for smarts in ["[C@@H]", "[C@H]"] {
+        let query = parse_smarts(smarts).unwrap();
+        assert!(has_match_with_config(&query, &l_alanine, &config));
+        assert!(has_match_with_config(&query, &d_alanine, &config));
+        assert!(!has_match_with_config(&query, &unspecified, &config));
+    }
 }
 
 // S2: visit budget tests
