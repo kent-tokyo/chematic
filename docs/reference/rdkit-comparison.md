@@ -26,6 +26,14 @@ all 11 jobs, but its durable per-row packet is not checked in yet.
 These are output-validation results, not evidence for npm/WASM or v1.2.2
 package performance.
 
+The v1.2.2 source Cleanup comparison with RDKit 2026.09.1 matches 4,022/4,069
+comparable stress rows and 9,996/10,000 broad rows. Against the 2026-10-24
+source record, 47 and 2 previously exact rows now differ; the
+[stress](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json)
+and [broad](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-10k-2026-11-21.json)
+records classify each difference. The same source Reionize gate matches all
+4,072 stress rows. These are fixed-corpus string comparisons.
+
 | Lane | Recorded result | What it does not show |
 |---|---|---|
 | [v1.1.3 published Python wheels](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels reproduce the expected reaction, SMARTS, Morgan, descriptor, CIP, hybridization, MMFF94, MOL stereo, BioTransformer and A6 counts. Morgan is 10,000/10,000 exact on exposed rows and 5,000/5,000 on ChEMBL; A6 is 265/265 independently sound and stereo-clean. | npm/WASM or crates.io chemistry; native per-platform RDKit execution where no matching RDKit wheel exists; universal parity or speed superiority. |

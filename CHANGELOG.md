@@ -27,6 +27,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 - Moved Rust, Python/stub, WASM declaration and shared JSON compatibility checks to the v1.2.1 baseline.
 - A pre-publication macOS arm64 wheel gate with RDKit 2026.03.6 recorded one CIP difference in the exposed 10,000 corpus: a native-parsed bridgehead amine is R where RDKit reports S; the RDKit-parsed chematic model reports S. Published-wheel gates retain this in the denominator.
+- The v1.2.2 source Cleanup gate against RDKit 2026.09.1 matches 4,022/4,069 comparable stress rows and 9,996/10,000 broad rows. Relative to the 2026-10-24 source record, 47 and 2 previously exact rows differ. The record names every row and keeps the older result separate. Reionize matches 4,072/4,072 stress rows. These are fixed-corpus string comparisons, not chemical truth or published-wheel results.
 - Earlier frozen holdout evidence remains historical: SDF graph/properties/stereo matched on 64/64 rows; broad MCS and exact 3D coordinate parity remained incomplete. It does not validate all v1.2.2 changes.
 
 ## [1.2.1] - 2026-10-23
