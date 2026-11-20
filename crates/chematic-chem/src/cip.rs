@@ -282,6 +282,7 @@ pub fn assign_cip_with_mode(
             assignments: assign_cip(mol).assignments,
             unresolved: Vec::new(),
         }),
+        CipMode::Accurate if !has_cip_annotations(mol) => Ok(CipModeAssignment::default()),
         CipMode::Accurate => {
             let budget = chematic_cip::CipBudget::default_budget();
             let accurate = chematic_cip::assign_cip_accurate_experimental(mol, budget)
@@ -387,6 +388,15 @@ pub fn assign_cip_with_mode(
             })
         }
     }
+}
+
+/// All supported CIP assignments require a tetrahedral tag or bond direction.
+fn has_cip_annotations(mol: &Molecule) -> bool {
+    mol.has_bond_directions()
+        || mol.atoms().any(|(_, atom)| atom.chirality.is_tetrahedral())
+        || mol
+            .bonds()
+            .any(|(_, bond)| matches!(bond.order, BondOrder::Up | BondOrder::Down))
 }
 
 /// A single "sphere layer" in a CIP branch expansion: a sorted list of
