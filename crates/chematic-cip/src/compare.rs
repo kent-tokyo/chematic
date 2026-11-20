@@ -107,6 +107,7 @@
 //! only then orders the *classes* using their already-computed pairwise results --
 //! sorting fully-resolved, deduplicated data, not a lazily-evaluated comparator.
 
+use rustc_hash::FxHashMap;
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
@@ -323,7 +324,7 @@ pub struct CompareContext<'t> {
     /// or molecules. Measured in practice (5,000-molecule corpus, `docs/
     /// cip_perf_memoization_107.md`) to hold a few hundred entries per resolution
     /// even on the corpus's own worst-case fixtures -- nowhere near that ceiling.
-    cache: HashMap<PairwiseCacheKey, BranchComparison>,
+    cache: FxHashMap<PairwiseCacheKey, BranchComparison>,
     /// Diagnostic only (never read to decide a comparison): how many
     /// `compare_ligands` calls were satisfied from `cache` instead of recomputed.
     pub cache_hits: u64,
@@ -350,7 +351,7 @@ impl<'t> CompareContext<'t> {
             ranking_parent: None,
             fractional_comparisons: 0,
             fractional_decisions: 0,
-            cache: HashMap::new(),
+            cache: FxHashMap::default(),
             cache_hits: 0,
             cache_misses: 0,
             pass: None,
@@ -363,7 +364,7 @@ impl<'t> CompareContext<'t> {
             max_recursive_calls: 1_000_000,
             trace: Some(trace),
             ranking_parent: None,
-            cache: HashMap::new(),
+            cache: FxHashMap::default(),
             cache_hits: 0,
             cache_misses: 0,
             fractional_comparisons: 0,
@@ -733,6 +734,24 @@ pub fn rank_children(
         return Ok(vec![vec![children[0]]]);
     }
 
+    let cells = n
+        .checked_mul(n)
+        .ok_or_else(|| CipCompareError::BudgetExceeded {
+            expanded_nodes: graph.nodes().len(),
+            recursive_calls: ctx.recursive_calls,
+        })?;
+    const INLINE_CHILDREN: usize = 8;
+    let mut inline_pairs = [BranchComparison::Equal; INLINE_CHILDREN * INLINE_CHILDREN];
+    let mut inline_parents = [0; INLINE_CHILDREN];
+    let (mut heap_pairs, mut heap_parents);
+    let (pairwise, parent) = if n <= INLINE_CHILDREN {
+        (&mut inline_pairs[..cells], &mut inline_parents[..n])
+    } else {
+        heap_pairs = vec![BranchComparison::Equal; cells];
+        heap_parents = vec![0; n];
+        (heap_pairs.as_mut_slice(), heap_parents.as_mut_slice())
+    };
+
     // Every child in `children` is a sibling under the same parent (by construction --
     // this is always called with one node's own `expand_children` output) -- record it
     // for the pairwise calls below so their DecisionSteps are tagged with which sibling
@@ -746,14 +765,13 @@ pub fn rank_children(
     ctx.ranking_parent = siblings_parent;
 
     // Full pairwise matrix, computed once, up front.
-    let mut pairwise = vec![vec![BranchComparison::Equal; n]; n];
     let mut fill_err = None;
     'fill: for i in 0..n {
         for j in (i + 1)..n {
             match compare_ligands(graph, children[i], children[j], ctx) {
                 Ok(cmp) => {
-                    pairwise[i][j] = cmp;
-                    pairwise[j][i] = invert(cmp);
+                    pairwise[i * n + j] = cmp;
+                    pairwise[j * n + i] = invert(cmp);
                 }
                 Err(e) => {
                     fill_err = Some(e);
@@ -770,21 +788,23 @@ pub fn rank_children(
     // Union-find: Equal and Unresolved pairs merge into one equivalence class --
     // Unresolved is treated as "tied for this ranking's purposes," never used to
     // establish an order (see BranchComparison::Unresolved's doc comment).
-    let mut parent: Vec<usize> = (0..n).collect();
+    for (i, slot) in parent.iter_mut().enumerate() {
+        *slot = i;
+    }
     for i in 0..n {
         for j in (i + 1)..n {
             if matches!(
-                pairwise[i][j],
+                pairwise[i * n + j],
                 BranchComparison::Equal | BranchComparison::Unresolved
             ) {
-                union(&mut parent, i, j);
+                union(parent, i, j);
             }
         }
     }
 
     let mut groups_map: HashMap<usize, Vec<usize>> = HashMap::new();
     for i in 0..n {
-        let root = find(&mut parent, i);
+        let root = find(parent, i);
         groups_map.entry(root).or_default().push(i);
     }
     let mut groups: Vec<Vec<usize>> = groups_map.into_values().collect();
@@ -792,7 +812,7 @@ pub fn rank_children(
     // Order the (already deduplicated, already fully-resolved) classes using their
     // precomputed representative comparison -- sorting resolved data, not invoking the
     // comparator lazily mid-sort.
-    groups.sort_by(|a, b| match pairwise[a[0]][b[0]] {
+    groups.sort_by(|a, b| match pairwise[a[0] * n + b[0]] {
         BranchComparison::Higher => Ordering::Less,
         BranchComparison::Lower => Ordering::Greater,
         BranchComparison::Equal | BranchComparison::Unresolved => Ordering::Equal,
@@ -805,7 +825,7 @@ pub fn rank_children(
     debug_assert!(
         groups
             .windows(2)
-            .all(|w| !matches!(pairwise[w[1][0]][w[0][0]], BranchComparison::Higher)),
+            .all(|w| !matches!(pairwise[w[1][0] * n + w[0][0]], BranchComparison::Higher)),
         "rank_children: inconsistent (non-transitive) pairwise comparison among children"
     );
 

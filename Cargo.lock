@@ -360,6 +360,7 @@ dependencies = [
  "chematic-perception",
  "chematic-smiles",
  "criterion",
+ "rustc-hash",
  "serde_json",
 ]
 

@@ -20,6 +20,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 [dependencies]
 chematic-core       = { path = "../chematic-core",       version = "1.2.1" }
 chematic-perception = { path = "../chematic-perception", version = "1.2.1" }
+rustc-hash = "2"
 
 [dev-dependencies]
 # Path-only (no `version`): see chematic-smiles/Cargo.toml's dev-dependencies
