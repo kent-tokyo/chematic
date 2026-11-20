@@ -6,6 +6,10 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::sync::{Arc, OnceLock};
 
+mod rdkit_smarts_batch;
+use rdkit_smarts_batch::RelevantRingCounts;
+pub(crate) use rdkit_smarts_batch::{parity_error_status, parity_profile};
+
 /// Parse `smarts`, memoizing successful parses process-wide.
 ///
 /// Python callers typically pass the same pattern string for every molecule
@@ -53,6 +57,7 @@ pub(crate) struct PySmartsQuery {
 pub(crate) struct PyMoleculeBatch {
     molecules: Vec<Arc<chematic_core::Molecule>>,
     element_masks: OnceLock<Vec<u128>>,
+    relevant_ring_counts: OnceLock<RelevantRingCounts>,
 }
 
 #[pymethods]
@@ -65,6 +70,7 @@ impl PyMoleculeBatch {
                 .map(|mol| Arc::clone(&mol.inner))
                 .collect(),
             element_masks: OnceLock::new(),
+            relevant_ring_counts: OnceLock::new(),
         }
     }
 
@@ -82,6 +88,7 @@ impl PyMoleculeBatch {
         Ok(Self {
             molecules,
             element_masks: OnceLock::new(),
+            relevant_ring_counts: OnceLock::new(),
         })
     }
 

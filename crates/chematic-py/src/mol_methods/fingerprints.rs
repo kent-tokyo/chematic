@@ -973,27 +973,11 @@ impl Mol {
         profile: &str,
         py: Python<'py>,
     ) -> PyResult<Bound<'py, PyDict>> {
-        use chematic_smarts::{RdkitParityError, RdkitRingCountModel};
-
-        let ring_count_model = match profile {
-            "2026.03.6" => RdkitRingCountModel::SymmetrizedSssr,
-            "2026.09.1" => RdkitRingCountModel::RelevantCycles,
-            other => {
-                return Err(PyValueError::new_err(format!(
-                    "unknown profile '{other}': expected '2026.03.6' or '2026.09.1'"
-                )));
-            }
-        };
-
+        let config = crate::misc::parity_profile(profile)?;
         let query = crate::misc::cached_smarts(smarts).map_err(|e| {
             crate::errors::malformed("smarts", format!("invalid SMARTS '{smarts}': {e}"))
         })?;
         let result = PyDict::new(py);
-        let config = chematic_smarts::RdkitParityConfig {
-            use_rdkit_parity_aromaticity: true,
-            ring_count_model,
-            ..chematic_smarts::RdkitParityConfig::default()
-        };
         // RDKit matches its hydrogen-suppressed molecule (`MolFromSmiles`
         // removes most hydrogen graph atoms), in its atom numbering.
         let suppressed = chematic_smiles::rdkit_hydrogen_suppressed(&self.inner);
@@ -1010,15 +994,7 @@ impl Mol {
                 result.set_item("matches", py.None())?;
             }
             Err(error) => {
-                let (status, reason) = match &error {
-                    RdkitParityError::RingModelAmbiguous { .. } => {
-                        ("typed_unsupported", "ring_model_ambiguous")
-                    }
-                    RdkitParityError::RingModelBudgetExceeded { .. } => {
-                        ("typed_refusal", "ring_model_budget_exceeded")
-                    }
-                    RdkitParityError::Aromaticity(_) => ("typed_refusal", "aromaticity_failure"),
-                };
+                let (status, reason) = crate::misc::parity_error_status(&error);
                 result.set_item("status", status)?;
                 result.set_item("reason", reason)?;
                 result.set_item("matches", py.None())?;

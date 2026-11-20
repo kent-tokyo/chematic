@@ -103,10 +103,6 @@
       "decisions": 58,
       "lines": 303
     },
-    "crates/chematic-smarts/src/rdkit_parity_match.rs::run_rdkit_parity#1": {
-      "decisions": 33,
-      "lines": 171
-    },
     "crates/chematic-smiles/src/parser.rs::parse_chain#1": {
       "decisions": 27,
       "lines": 177

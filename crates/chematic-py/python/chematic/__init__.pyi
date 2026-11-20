@@ -135,6 +135,14 @@ class SmartsQuery:
     def matches_many(self, molecules: Iterable[Mol], use_chirality: bool = False) -> list[bool]: ...
 
     def matches_batch(self, batch: MoleculeBatch, use_chirality: bool = False) -> list[bool]: ...
+    def match_indices_rdkit_parity_batch(
+        self,
+        batch: MoleculeBatch,
+        profile: str = "2026.03.6",
+        use_chirality: bool = False,
+    ) -> tuple[list[int], list[tuple[int, str]]]:
+        """Sorted hit indices and (index, reason) refusals."""
+        ...
 
     def find_matches(self, mol: Mol, use_chirality: bool = False) -> list[list[int]]: ...
 
