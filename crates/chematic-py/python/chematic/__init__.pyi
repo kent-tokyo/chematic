@@ -153,6 +153,14 @@ class MoleculeBatch:
     def __len__(self) -> int: ...
 
     def hbd_counts(self) -> list[int]: ...
+    def rdkit_ecfp_config(
+        self,
+        radius: int = 2,
+        nbits: int = 2048,
+        include_chirality: bool = False,
+        count_simulation: bool = False,
+    ) -> list[bytes]: ...
+
 
 class MolecularForceField:
     """A prepared MMFF94 or UFF force field with mutable coordinates.

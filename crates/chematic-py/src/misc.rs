@@ -89,6 +89,34 @@ impl PyMoleculeBatch {
             .map(|mol| chematic_chem::hbd_count(mol))
             .collect()
     }
+
+    /// RDKit-compatible packed Morgan fingerprints in input order.
+    ///
+    /// Uses the same options as `Mol.rdkit_ecfp_config`. Raises ValueError
+    /// with the first failing molecule's index if preprocessing fails.
+    #[pyo3(signature = (radius = 2, nbits = 2048, include_chirality = false, count_simulation = false))]
+    fn rdkit_ecfp_config(
+        &self,
+        py: Python<'_>,
+        radius: u32,
+        nbits: usize,
+        include_chirality: bool,
+        count_simulation: bool,
+    ) -> PyResult<Vec<Vec<u8>>> {
+        use crate::mol_methods::{python_rdkit_morgan_config, rdkit_morgan_bytes};
+        let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
+        py.detach(|| {
+            self.molecules
+                .iter()
+                .enumerate()
+                .map(|(index, mol)| {
+                    rdkit_morgan_bytes(mol, &config, count_simulation)
+                        .map_err(|error| (index, error))
+                })
+                .collect::<Result<Vec<_>, _>>()
+        })
+        .map_err(|(index, error)| PyValueError::new_err(format!("molecule {index}: {error}")))
+    }
 }
 
 #[pymethods]

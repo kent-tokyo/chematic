@@ -356,14 +356,8 @@ impl Mol {
         count_simulation: bool,
     ) -> PyResult<Vec<u8>> {
         let config = python_rdkit_morgan_config(radius, nbits, include_chirality)?;
-        if count_simulation {
-            let fp = chematic_fp::rdkit_morgan_count_simulation(&self.inner, &config)
-                .map_err(|e| PyValueError::new_err(e.to_string()))?;
-            return Ok(bitvecn_to_bytes(&fp));
-        }
-        let fingerprint = chematic_fp::rdkit_morgan_bitvec(&self.inner, &config)
-            .map_err(|e| PyValueError::new_err(e.to_string()))?;
-        Ok(bitvecn_to_bytes(&fingerprint))
+        rdkit_morgan_bytes(&self.inner, &config, count_simulation)
+            .map_err(|e| PyValueError::new_err(e.to_string()))
     }
 
     /// Configurable RDKit-compatible Morgan fingerprint as a dense NumPy bit vector.
