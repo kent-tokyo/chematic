@@ -68,3 +68,42 @@ fn isolated_labels_show_hydrogen_counts_isotopes_and_charge() {
         }
     }
 }
+
+#[test]
+fn zero_width_fragments_do_not_overlap() {
+    for (smiles, expected_isolates) in [
+        ("[Na+].[Cl-]", 2),
+        ("[Cl-].[Na+]", 2),
+        ("[Mg+2].[Cl-].[Cl-]", 3),
+        ("[Na+].CC(=O)[O-]", 1),
+        ("CC(=O)[O-].[Na+]", 1),
+    ] {
+        let mol = parse(smiles).unwrap();
+        let layout = chematic_depict::compute_layout(&mol);
+        let isolates: Vec<_> = mol.atoms().filter(|(a, _)| mol.degree(*a) == 0).collect();
+        assert_eq!(isolates.len(), expected_isolates);
+        for (idx, _) in isolates {
+            let p = layout.get(idx);
+            for (other, _) in mol.atoms().filter(|(a, _)| *a != idx) {
+                let q = layout.get(other);
+                assert!(
+                    (p.x - q.x).abs() >= 2.0 * chematic_depict::BOND_LEN - 1e-8,
+                    "{smiles}"
+                );
+            }
+        }
+        for kekulize in [false, true] {
+            let svg = depict_svg_opts(
+                &mol,
+                &RenderOptions {
+                    kekulize,
+                    ..Default::default()
+                },
+            );
+            for (idx, _) in mol.atoms().filter(|(a, _)| mol.degree(*a) == 0) {
+                let p = layout.get(idx);
+                assert!(svg.contains(&format!("<text x=\"{:.2}\" y=\"{:.2}\"", p.x, p.y)));
+            }
+        }
+    }
+}

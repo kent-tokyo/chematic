@@ -131,7 +131,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
     let components = connected_components(mol);
 
     let mut all_coords: Vec<Option<Point>> = vec![None; n];
-    let mut fragment_max_x = 0.0_f64;
+    let mut fragment_max_x: Option<f64> = None;
 
     // One SSSR for the whole molecule (memoized on it), filtered per component.
     let ring_set = chematic_perception::find_sssr_shared(mol);
@@ -317,11 +317,7 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
         );
 
         // Offset this component to the right of the previous one.
-        let x_offset = if fragment_max_x == 0.0 {
-            0.0
-        } else {
-            fragment_max_x + 2.0 * BOND_LEN
-        };
+        let x_offset = fragment_max_x.map_or(0.0, |right| right + 2.0 * BOND_LEN);
 
         // Find the min_x of this component so we can pack left.
         let comp_min_x = component_atoms
@@ -336,9 +332,8 @@ pub fn compute_layout(mol: &Molecule) -> Layout {
             if let Some(p) = placed[a.0 as usize] {
                 let shifted = Point::new(p.x + shift, p.y);
                 all_coords[a.0 as usize] = Some(shifted);
-                if shifted.x > fragment_max_x {
-                    fragment_max_x = shifted.x;
-                }
+                fragment_max_x =
+                    Some(fragment_max_x.map_or(shifted.x, |right| right.max(shifted.x)));
             }
         }
     }
