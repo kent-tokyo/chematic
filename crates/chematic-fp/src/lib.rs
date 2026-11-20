@@ -42,6 +42,7 @@ pub mod pattern;
 pub mod pharmacophore_fp;
 pub mod rdkit_atom_pair;
 pub mod rdkit_avalon;
+mod rdkit_count_simulation;
 mod rdkit_isotope_delta_table;
 pub mod rdkit_layered;
 mod rdkit_morgan_config;
@@ -50,6 +51,7 @@ mod rdkit_morgan_hash;
 pub mod rdkit_pattern;
 pub mod rdkit_rdk;
 pub mod rdkit_torsion;
+mod rdkit_torsion_config;
 pub mod reaction_fp;
 pub mod search;
 pub mod sparse_matrix;
@@ -86,6 +88,9 @@ pub use rdkit_torsion::{
     explain_rdkit_topological_torsion_code, rdkit_atom_code, rdkit_legacy_torsion_counts,
     rdkit_topological_torsion_path_code, rdkit_torsion_counts, rdkit_torsion_fp,
     rdkit_torsion_sparse_counts,
+};
+pub use rdkit_torsion_config::{
+    RdkitTorsionConfig, RdkitTorsionError, RdkitTorsionResult, rdkit_torsion_config,
 };
 /// Diagnostic-only APIs, not meant for production use — a per-`(atom,
 /// radius)` trace of chematic's real Morgan expansion, for the RDKit

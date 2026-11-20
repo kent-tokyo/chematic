@@ -612,6 +612,19 @@ class Mol:
     def rdkit_atom_pair_sparse_counts(self) -> dict[int, int]:
         """``GetAtomPairGenerator().GetSparseCountFingerprint(m)`` elements."""
         ...
+    def rdkit_torsion_config_detail(
+        self,
+        *,
+        atom_count: int = 4,
+        nbits: int = 2048,
+        only_shortest_paths: bool = False,
+        include_chirality: bool = False,
+        count_simulation: bool = True,
+        count_bounds: Sequence[int] | None = None,
+    ) -> tuple[bytes, dict[int, int], dict[int, int]]:
+        """Return packed bits, folded counts and unhashed Topological Torsion counts."""
+        ...
+
     def rdkit_torsion_sparse_counts(self) -> dict[int, int]:
         """``GetTopologicalTorsionGenerator().GetSparseCountFingerprint(m)`` elements."""
         ...

@@ -1126,6 +1126,62 @@ pub fn rdkit_atom_pair_config_detail_json(
     }))
 }
 
+#[derive(serde::Deserialize)]
+#[serde(default, deny_unknown_fields, rename_all = "camelCase")]
+struct TorsionOptions {
+    atom_count: usize,
+    nbits: usize,
+    only_shortest_paths: bool,
+    include_chirality: bool,
+    count_bounds: Option<Vec<u32>>,
+}
+
+impl Default for TorsionOptions {
+    fn default() -> Self {
+        let default = chematic_fp::RdkitTorsionConfig::default();
+        Self {
+            atom_count: default.atom_count,
+            nbits: default.nbits,
+            only_shortest_paths: default.only_shortest_paths,
+            include_chirality: default.include_chirality,
+            count_bounds: default.count_bounds,
+        }
+    }
+}
+
+/// Return packed bits, folded counts and unhashed Topological Torsion counts.
+/// Pass JSON options or `{}` for defaults. A null `countBounds` disables
+/// simulation. Sparse identifiers are decimal strings to retain all 64 bits.
+#[wasm_bindgen]
+pub fn rdkit_torsion_config_detail_json(
+    mol: &MolHandle,
+    options_json: &str,
+) -> Result<String, JsValue> {
+    enforce_wasm_input_len("Topological Torsion options", options_json)?;
+    enforce_wasm_molecule_size(&mol.inner)?;
+    let options: TorsionOptions =
+        serde_json::from_str(options_json).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let config = chematic_fp::RdkitTorsionConfig {
+        atom_count: options.atom_count,
+        nbits: options.nbits,
+        only_shortest_paths: options.only_shortest_paths,
+        include_chirality: options.include_chirality,
+        count_bounds: options.count_bounds,
+    };
+    let result = chematic_fp::rdkit_torsion_config(&mol.inner, &config)
+        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+    let sparse_counts: Vec<_> = result
+        .sparse_counts
+        .into_iter()
+        .map(|(code, count)| (code.to_string(), count))
+        .collect();
+    bounded_json_string(&serde_json::json!({
+        "fingerprint": result.fingerprint.to_le_bytes(),
+        "foldedCounts": result.folded_counts,
+        "sparseCounts": sparse_counts,
+    }))
+}
+
 /// RDKit-bit-exact Morgan/ECFP fingerprint at a caller-chosen radius/bit-width, as a
 /// bit-packed byte vector (`nbits / 8` bytes, LSB-first).
 ///

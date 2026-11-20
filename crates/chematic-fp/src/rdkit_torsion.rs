@@ -13,10 +13,12 @@
 //! results do not establish universal bit-exactness. A separate substituted
 //! cyclopropane stress set is in `validation/results/rdkit-torsion-triangle-parity-2026-10-25.json`.
 
-use chematic_core::{AtomIdx, BondOrder, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Chirality, Molecule};
+use rustc_hash::FxHashMap;
 use std::fmt;
 
 use crate::bitvec::BitVec2048;
+use crate::rdkit_count_simulation::{COUNT_BOUNDS, folded_elements};
 use crate::rdkit_morgan_hash::hash_vec;
 
 // ---------------------------------------------------------------------------
@@ -37,6 +39,36 @@ const MAX_NUM_PI: u32 = (1 << NUM_PI_BITS) - 1;
 const NUM_BRANCH_BITS: u32 = 3;
 const MAX_NUM_BRANCHES: u32 = (1 << NUM_BRANCH_BITS) - 1;
 pub(crate) const CODE_SIZE: u32 = NUM_TYPE_BITS + NUM_PI_BITS + NUM_BRANCH_BITS;
+
+pub(crate) fn legacy_atom_stereo(
+    original: &Molecule,
+    model: &Molecule,
+    include_chirality: bool,
+) -> Result<Vec<Option<u8>>, chematic_smiles::RdkitSmilesError> {
+    // The original Kekulé spelling can be needed by legacy stereo. Hydrogen
+    // suppression may change indices, in which case use the resulting model.
+    let input = if original.atom_count() == model.atom_count() {
+        original
+    } else {
+        model
+    };
+    if include_chirality
+        && input
+            .atoms()
+            .any(|(_, atom)| atom.chirality != Chirality::None)
+    {
+        return Ok(chematic_smiles::rdkit_legacy_stereo(input)?.atom_cip);
+    }
+    Ok(Vec::new())
+}
+
+pub(crate) fn chirality_bits(chirality: &[Option<u8>], idx: usize) -> u32 {
+    match chirality.get(idx).copied().flatten() {
+        Some(b'R') => 1 << CODE_SIZE,
+        Some(b'S') => 2 << CODE_SIZE,
+        _ => 0,
+    }
+}
 
 /// Decoded fields of an RDKit atom-pair/topological-torsion atom code.
 ///
@@ -76,10 +108,6 @@ impl fmt::Display for RdkitTorsionDiagnosticError {
 
 impl std::error::Error for RdkitTorsionDiagnosticError {}
 
-/// Count-simulation thresholds (`AtomPairs.cpp`'s `bounds[4] = {1, 2, 4, 8}`),
-/// used only when `nBitsPerEntry == 4` (the default, and the only mode this
-/// module implements).
-const COUNT_BOUNDS: [u32; 4] = [1, 2, 4, 8];
 const N_BITS_PER_ENTRY: usize = 4;
 
 /// `Atom.cpp`'s `numPiElectrons`: `1` for any aromatic atom (regardless of
@@ -411,10 +439,9 @@ pub fn explain_rdkit_topological_torsion_code(
 ///
 /// Like RDKit (`useHs=false`), hydrogen atoms -- isotopic `[2H]`/`[3H]`
 /// included -- are never part of a path.
-fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
+fn visit_four_atom_paths(mol: &Molecule, mut visit: impl FnMut([AtomIdx; 4])) {
     let n = mol.atom_count();
     let heavy = |i: AtomIdx| !is_hydrogen(mol, i);
-    let mut paths = Vec::new();
     for start in 0..n {
         let a = AtomIdx(start as u32);
         if !heavy(a) {
@@ -429,17 +456,16 @@ fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
                     if d == a || d == b || d.0 <= a.0 {
                         continue;
                     }
-                    paths.push([a, b, c, d]);
+                    visit([a, b, c, d]);
                 }
             }
         }
     }
-    paths
 }
 
 /// A 3-membered ring's own closure bond makes the ring itself walkable as a
 /// 4-*position* torsion (`[a, b, c, a]`, revisiting `a`) using all 3 ring
-/// bonds -- not found by [`four_atom_paths`] (which requires 4 *distinct*
+/// bonds -- not found by [`visit_four_atom_paths`] (which requires 4 *distinct*
 /// atoms). Confirmed empirically against RDKit's own `SparseIntVect` output
 /// (`rdFingerprintGenerator.GetTopologicalTorsionGenerator().GetCountFingerprint`):
 /// a bare `C1CC1` (no substituent at all, only 3 heavy atoms -- no ordinary
@@ -459,9 +485,8 @@ fn is_hydrogen(mol: &Molecule, idx: AtomIdx) -> bool {
     !a.wildcard && a.element.atomic_number() == 1
 }
 
-fn triangle_closure_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
+fn visit_triangle_closures(mol: &Molecule, mut visit: impl FnMut([AtomIdx; 4])) {
     let n = mol.atom_count();
-    let mut paths = Vec::new();
     for start in 0..n {
         let a = AtomIdx(start as u32);
         for (b, _) in mol.neighbors(a) {
@@ -473,12 +498,30 @@ fn triangle_closure_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
                     continue;
                 }
                 if mol.bond_between(b, c).is_some() {
-                    paths.push([a, b, c, a]);
+                    visit([a, b, c, a]);
                 }
             }
         }
     }
+}
+
+#[cfg(test)]
+fn four_atom_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
+    let mut paths = Vec::new();
+    visit_four_atom_paths(mol, |path| paths.push(path));
     paths
+}
+
+#[cfg(test)]
+fn triangle_closure_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
+    let mut paths = Vec::new();
+    visit_triangle_closures(mol, |path| paths.push(path));
+    paths
+}
+
+fn visit_legacy_paths(mol: &Molecule, mut visit: impl FnMut([AtomIdx; 4])) {
+    visit_four_atom_paths(mol, &mut visit);
+    visit_triangle_closures(mol, visit);
 }
 
 /// `getTopologicalTorsionHash`: builds each path position's code via
@@ -489,36 +532,32 @@ fn triangle_closure_paths(mol: &Molecule) -> Vec<[AtomIdx; 4]> {
 /// from both ends inward) and reading from whichever end yields the
 /// lexicographically smaller sequence, then folds via [`hash_vec`] (the same
 /// `gboost::hash_combine` sequential fold already verified for Morgan/ECFP4).
-fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
-    let modulus = (1u32 << CODE_SIZE) - 1;
-    let mut path_codes: Vec<u32> = path
+pub(crate) fn orient_torsion_codes(codes: &mut [u32]) {
+    if codes.iter().cmp(codes.iter().rev()).is_gt() {
+        codes.reverse();
+    }
+}
+
+pub(crate) fn pack_torsion_codes(codes: &[u32], code_size: u32) -> u64 {
+    codes
         .iter()
         .enumerate()
-        .map(|(pos, &a)| {
-            let mut code = atom_invariants[a.0 as usize] % modulus + 1;
-            if pos != 0 && pos != path.len() - 1 {
-                code -= 1;
-            }
-            code
+        .fold(0, |packed, (position, &code)| {
+            packed | (u64::from(code) << (code_size as usize * position))
         })
-        .collect();
+}
 
-    let mut reverse_it = false;
-    let (mut i, mut j) = (0usize, path_codes.len() - 1);
-    while i < j {
-        if path_codes[i] > path_codes[j] {
-            reverse_it = true;
-            break;
-        } else if path_codes[i] < path_codes[j] {
-            break;
-        }
-        i += 1;
-        j -= 1;
-    }
-    if reverse_it {
-        path_codes.reverse();
-    }
-    hash_vec(&path_codes)
+fn torsion_hash(endpoint_codes: &[u32], path: &[AtomIdx; 4]) -> u32 {
+    let mut codes = path.map(|atom| endpoint_codes[atom.0 as usize]);
+    codes[1] -= 1;
+    codes[2] -= 1;
+    orient_torsion_codes(&mut codes);
+    hash_vec(&codes)
+}
+
+pub(crate) fn torsion_endpoint_code(atom_code: u32) -> u32 {
+    // RDKit subtracts two before reducing, even for a chiral atom code.
+    atom_code.wrapping_sub(2) % ((1u32 << CODE_SIZE) - 1) + 1
 }
 
 /// RDKit-compatible Topological Torsion fingerprint, matching
@@ -528,8 +567,8 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// at 4 (RDKit's own default); `includeChirality` is not supported (see
 /// [`atom_code`]).
 ///
-/// Every torsion path (both [`four_atom_paths`]'s ordinary 4-distinct-atom
-/// walks and [`triangle_closure_paths`]'s 3-membered-ring closures) folds
+/// Every torsion path (both [`visit_four_atom_paths`]'s ordinary 4-distinct-atom
+/// walks and [`visit_triangle_closures`]'s 3-membered-ring closures) folds
 /// (via [`torsion_hash`]) into one of 512 buckets (`2048 / 4`); each
 /// bucket's *count* of paths landing there is then expanded into 4
 /// threshold bits (`count >= 1, 2, 4, 8`) -- RDKit's "count simulation"
@@ -538,7 +577,7 @@ fn torsion_hash(atom_invariants: &[u32], path: &[AtomIdx; 4]) -> u32 {
 /// scheme) and this function produce structurally different bit patterns
 /// even before considering the atom-code/hashing differences.
 ///
-/// Three-membered-ring closures are enumerated by [`triangle_closure_paths`].
+/// Three-membered-ring closures are enumerated by [`visit_triangle_closures`].
 pub fn rdkit_torsion_fp(mol: &Molecule) -> BitVec2048 {
     chematic_smiles::with_rdkit_model_molecule(mol, rdkit_torsion_fp_impl)
 }
@@ -553,16 +592,13 @@ fn rdkit_torsion_fp_impl(mol: &Molecule) -> BitVec2048 {
 }
 
 /// Per-bucket torsion counts (`getHashedTopologicalTorsionFingerprint`).
-fn torsion_bucket_counts(mol: &Molecule, atom_invariants: &[u32], n_buckets: u32) -> Vec<u32> {
+fn torsion_bucket_counts(mol: &Molecule, endpoint_codes: &[u32], n_buckets: u32) -> Vec<u32> {
     let mut counts = vec![0u32; n_buckets as usize];
-    for path in four_atom_paths(mol)
-        .into_iter()
-        .chain(triangle_closure_paths(mol))
-    {
-        let h = torsion_hash(atom_invariants, &path);
+    visit_legacy_paths(mol, |path| {
+        let h = torsion_hash(endpoint_codes, &path);
         let bucket = (h % n_buckets) as usize;
         counts[bucket] = counts[bucket].saturating_add(1);
-    }
+    });
     counts
 }
 
@@ -578,59 +614,29 @@ fn rdkit_torsion_counts_impl(mol: &Molecule, n_bits: u32) -> Vec<(u32, u32)> {
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);
         let invariants: Vec<u32> = (0..m.atom_count())
-            .map(|i| atom_code(m, AtomIdx(i as u32), 0).wrapping_sub(2))
+            .map(|i| torsion_endpoint_code(atom_code(m, AtomIdx(i as u32), 0)))
             .collect();
-        torsion_bucket_counts(m, &invariants, n_bits)
-            .into_iter()
-            .enumerate()
-            .filter(|&(_, c)| c > 0)
-            .map(|(b, c)| (b as u32, c))
-            .collect()
+        folded_elements(torsion_bucket_counts(m, &invariants, n_bits))
     })
 }
 
-/// `getTopologicalTorsionCode(pathCodes, includeChirality=false)`: the
-/// path codes (read from the end with the smaller code first) packed
-/// `CODE_SIZE` bits apart, as an unsigned 64-bit value.
-fn torsion_code(path_codes: &[u32; 4]) -> u64 {
-    let mut reverse_it = false;
-    let (mut i, mut j) = (0usize, 3usize);
-    while i < j {
-        if path_codes[i] > path_codes[j] {
-            reverse_it = true;
-            break;
-        } else if path_codes[i] < path_codes[j] {
-            break;
-        }
-        i += 1;
-        j -= 1;
-    }
-    let mut res = 0u64;
-    for k in 0..4 {
-        let c = if reverse_it {
-            path_codes[3 - k]
-        } else {
-            path_codes[k]
-        };
-        res |= u64::from(c) << (CODE_SIZE as usize * k);
-    }
-    res
-}
-
 /// Nonzero `(code, count)` elements of the unhashed torsion codes, sorted.
-fn torsion_code_counts(mol: &Molecule, code_of: impl Fn(AtomIdx, bool) -> u32) -> Vec<(u64, u32)> {
-    let mut counts: std::collections::BTreeMap<u64, u32> = std::collections::BTreeMap::new();
-    for path in four_atom_paths(mol)
-        .into_iter()
-        .chain(triangle_closure_paths(mol))
-    {
-        let mut codes = [0u32; 4];
-        for (pos, &a) in path.iter().enumerate() {
-            codes[pos] = code_of(a, pos != 0 && pos != 3);
-        }
-        *counts.entry(torsion_code(&codes)).or_insert(0) += 1;
-    }
-    counts.into_iter().collect()
+fn torsion_code_counts(mol: &Molecule, endpoint_code: impl Fn(AtomIdx) -> u32) -> Vec<(u64, u32)> {
+    let endpoint_codes: Vec<_> = mol.atoms().map(|(atom, _)| endpoint_code(atom)).collect();
+    let mut counts = FxHashMap::<u64, u32>::default();
+    visit_legacy_paths(mol, |path| {
+        let mut codes = path.map(|atom| endpoint_codes[atom.0 as usize]);
+        codes[1] = codes[1].wrapping_sub(1);
+        codes[2] = codes[2].wrapping_sub(1);
+        orient_torsion_codes(&mut codes);
+        let count = counts
+            .entry(pack_torsion_codes(&codes, CODE_SIZE))
+            .or_default();
+        *count = count.saturating_add(1);
+    });
+    let mut counts: Vec<_> = counts.into_iter().collect();
+    counts.sort_unstable_by_key(|&(code, _)| code);
+    counts
 }
 
 /// RDKit's unhashed topological-torsion count fingerprint
@@ -640,11 +646,7 @@ fn torsion_code_counts(mol: &Molecule, code_of: impl Fn(AtomIdx, bool) -> u32) -
 pub fn rdkit_torsion_sparse_counts(mol: &Molecule) -> Vec<(u64, u32)> {
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);
-        let modulus = (1u32 << CODE_SIZE) - 1;
-        torsion_code_counts(m, |a, interior| {
-            let inv = atom_code(m, a, 0).wrapping_sub(2);
-            inv % modulus + 1 - u32::from(interior)
-        })
+        torsion_code_counts(m, |a| torsion_endpoint_code(atom_code(m, a, 0)))
     })
 }
 
@@ -661,14 +663,10 @@ pub fn rdkit_legacy_torsion_counts(mol: &Molecule) -> Vec<(i64, u32)> {
     }
     chematic_perception::with_rdkit_parity_view(mol, |view| {
         let m = view.unwrap_or(mol);
-        let mut v: Vec<(i64, u32)> = torsion_code_counts(m, |a, interior| {
-            atom_code(m, a, 0)
-                .wrapping_sub(1)
-                .wrapping_sub(u32::from(interior))
-        })
-        .into_iter()
-        .map(|(c, n)| (c as i64, n))
-        .collect();
+        let mut v: Vec<(i64, u32)> = torsion_code_counts(m, |a| atom_code(m, a, 0).wrapping_sub(1))
+            .into_iter()
+            .map(|(c, n)| (c as i64, n))
+            .collect();
         v.sort_unstable();
         v
     })
@@ -676,21 +674,12 @@ pub fn rdkit_legacy_torsion_counts(mol: &Molecule) -> Vec<(i64, u32)> {
 
 /// [`rdkit_torsion_fp`] on a molecule whose aromaticity is already RDKit-perceived.
 fn rdkit_torsion_fp_prepared(mol: &Molecule) -> BitVec2048 {
-    let n = mol.atom_count();
-    // `AtomPairAtomInvGenerator::getAtomInvariants()`'s
-    // `topologicalTorsionCorrection`: every atom invariant used for torsion
-    // hashing is `getAtomCode(atom, 0, includeChirality) - 2` -- a raw
-    // `uint32_t` subtraction (wraps on underflow when the code is 0 or 1,
-    // matching C++'s well-defined unsigned modular arithmetic; `%
-    // (2^codeSize-1) + 1` in `torsion_hash` washes the wraparound back into
-    // range, but the wraparound itself must happen first to get the same
-    // washed-out value RDKit does).
-    let atom_invariants: Vec<u32> = (0..n)
-        .map(|i| atom_code(mol, AtomIdx(i as u32), 0).wrapping_sub(2))
+    let endpoint_codes: Vec<_> = mol
+        .atoms()
+        .map(|(atom, _)| torsion_endpoint_code(atom_code(mol, atom, 0)))
         .collect();
-
     const BLOCK_LENGTH: u32 = 2048 / N_BITS_PER_ENTRY as u32;
-    let counts = torsion_bucket_counts(mol, &atom_invariants, BLOCK_LENGTH);
+    let counts = torsion_bucket_counts(mol, &endpoint_codes, BLOCK_LENGTH);
 
     let mut fp = BitVec2048::new();
     for (bucket, &count) in counts.iter().enumerate() {

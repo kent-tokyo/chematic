@@ -6,6 +6,12 @@ type RdkitAtomPairDetail = (
     std::collections::BTreeMap<u32, u32>,
 );
 
+type RdkitTorsionDetail = (
+    Vec<u8>,
+    std::collections::BTreeMap<u32, u32>,
+    std::collections::BTreeMap<u64, u32>,
+);
+
 #[pymethods]
 impl Mol {
     // -----------------------------------------------------------------------
@@ -210,6 +216,40 @@ impl Mol {
             return Err(PyValueError::new_err("nbits must be positive"));
         }
         Ok(chematic_fp::rdkit_torsion_counts(&self.inner, nbits))
+    }
+
+    /// Return packed bits, folded counts and unhashed counts for configured
+    /// RDKit Topological Torsion. Counts are independent of count simulation.
+    #[pyo3(signature = (*, atom_count = 4, nbits = 2048, only_shortest_paths = false,
+        include_chirality = false, count_simulation = true, count_bounds = None))]
+    fn rdkit_torsion_config_detail(
+        &self,
+        atom_count: usize,
+        nbits: usize,
+        only_shortest_paths: bool,
+        include_chirality: bool,
+        count_simulation: bool,
+        count_bounds: Option<Vec<u32>>,
+    ) -> PyResult<RdkitTorsionDetail> {
+        let mut config = chematic_fp::RdkitTorsionConfig {
+            atom_count,
+            nbits,
+            only_shortest_paths,
+            include_chirality,
+            ..Default::default()
+        };
+        if !count_simulation {
+            config.count_bounds = None;
+        } else if count_bounds.is_some() {
+            config.count_bounds = count_bounds;
+        }
+        let result = chematic_fp::rdkit_torsion_config(&self.inner, &config)
+            .map_err(|e| PyValueError::new_err(e.to_string()))?;
+        Ok((
+            result.fingerprint.to_le_bytes(),
+            result.folded_counts.into_iter().collect(),
+            result.sparse_counts.into_iter().collect(),
+        ))
     }
 
     /// RDKit-compatible "Layered fingerprint" (``rdkit.Chem.LayeredFingerprint``)

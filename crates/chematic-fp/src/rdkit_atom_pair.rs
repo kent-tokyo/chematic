@@ -44,12 +44,15 @@
 use std::fmt;
 use std::ops::RangeInclusive;
 
-use chematic_core::{AtomIdx, Chirality, Molecule};
+use chematic_core::{AtomIdx, Molecule};
 use rustc_hash::FxHashMap;
 
 use crate::bitvec::{BitVec2048, BitVecN};
+use crate::rdkit_count_simulation::{
+    COUNT_BOUNDS, ConfiguredCounts, MAX_CONFIGURED_BITS, folded_elements, valid_count_bounds,
+};
 use crate::rdkit_morgan_hash::hash_vec;
-use crate::rdkit_torsion::{CODE_SIZE, atom_code};
+use crate::rdkit_torsion::{CODE_SIZE, atom_code, chirality_bits, legacy_atom_stereo};
 
 /// `AtomPairArguments`: `minDistance = 1`, `maxDistance = maxPathLen - 1 = 30`
 /// (`numPathBits = 5` => `maxPathLen = (1 << 5) - 1 = 31`). Pairs outside this
@@ -59,9 +62,7 @@ const NUM_PATH_BITS: u32 = 5;
 const MIN_DISTANCE: u32 = 1;
 const MAX_DISTANCE: u32 = 30;
 
-const COUNT_BOUNDS: [u32; 4] = [1, 2, 4, 8];
 const N_BITS_PER_ENTRY: usize = 4;
-const MAX_CONFIGURED_BITS: usize = 1_048_576;
 
 /// Visit each undirected pair once. The queue also records which distances
 /// to clear before the next source, so distant and disconnected atoms cost
@@ -111,12 +112,7 @@ fn atom_codes(mol: &Molecule, chirality: &[Option<u8>], code_size: u32) -> Vec<u
     let limit = (1 << code_size) - 1;
     (0..mol.atom_count())
         .map(|idx| {
-            let stereo_bits = match chirality.get(idx).copied().flatten() {
-                Some(b'R') => 1 << CODE_SIZE,
-                Some(b'S') => 2 << CODE_SIZE,
-                _ => 0,
-            };
-            (atom_code(mol, AtomIdx(idx as u32), 0) | stereo_bits) % limit
+            (atom_code(mol, AtomIdx(idx as u32), 0) | chirality_bits(chirality, idx)) % limit
         })
         .collect()
 }
@@ -133,15 +129,6 @@ fn sparse_elements(counts: FxHashMap<u32, u32>) -> Vec<(u32, u32)> {
     let mut out: Vec<_> = counts.into_iter().collect();
     out.sort_unstable_by_key(|&(code, _)| code);
     out
-}
-
-fn folded_elements(counts: Vec<u32>) -> Vec<(u32, u32)> {
-    counts
-        .into_iter()
-        .enumerate()
-        .filter(|&(_, count)| count > 0)
-        .map(|(bucket, count)| (bucket as u32, count))
-        .collect()
 }
 
 /// RDKit-compatible Atom Pair fingerprint, matching
@@ -295,33 +282,12 @@ pub fn rdkit_atom_pair_config(
     if !(1..=MAX_CONFIGURED_BITS).contains(&config.nbits) {
         return Err(RdkitAtomPairError::InvalidBitWidth);
     }
-    if config.count_bounds.as_ref().is_some_and(|bounds| {
-        bounds.is_empty()
-            || bounds.len() >= config.nbits
-            || bounds.iter().any(|&bound| bound > i32::MAX as u32)
-    }) {
+    if !valid_count_bounds(config.count_bounds.as_deref(), config.nbits) {
         return Err(RdkitAtomPairError::InvalidCountBounds);
     }
     chematic_smiles::with_rdkit_model_molecule(mol, |model| {
-        // Use the original SMILES graph unless hydrogen suppression has
-        // changed the atom indices. A sanitized aromatic projection can
-        // lose the Kekulé structure used by legacy stereo perception.
-        let stereo_input = if mol.atom_count() == model.atom_count() {
-            mol
-        } else {
-            model
-        };
-        let chirality = if config.include_chirality
-            && stereo_input
-                .atoms()
-                .any(|(_, atom)| atom.chirality != Chirality::None)
-        {
-            chematic_smiles::rdkit_legacy_stereo(stereo_input)
-                .map_err(RdkitAtomPairError::Chirality)?
-                .atom_cip
-        } else {
-            Vec::new()
-        };
+        let chirality = legacy_atom_stereo(mol, model, config.include_chirality)
+            .map_err(RdkitAtomPairError::Chirality)?;
         Ok(chematic_perception::with_rdkit_parity_view(model, |view| {
             configured_pairs(view.unwrap_or(model), config, &chirality)
         }))
@@ -335,45 +301,24 @@ fn configured_pairs(
 ) -> RdkitAtomPairResult {
     let code_size = CODE_SIZE + if config.include_chirality { 2 } else { 0 };
     let codes = atom_codes(mol, chirality, code_size);
-    let bounds = config.count_bounds.as_deref().unwrap_or(&[1]);
-    let mut folded = vec![0u32; config.nbits];
-    let sim_width = config.nbits / bounds.len();
-    let mut simulated = (sim_width != config.nbits).then(|| vec![0u32; sim_width]);
+    let mut counts = ConfiguredCounts::new(config.nbits, config.count_bounds.as_deref());
     let mut sparse = FxHashMap::<u32, u32>::default();
     visit_pairs(
         mol,
         config.min_distance..=config.max_distance,
         |i, j, distance| {
             let (lo, hi) = pair_codes(&codes, i, j);
-            let hash = hash_vec(&[lo, distance, hi]) as usize;
-            let count = &mut folded[hash % config.nbits];
-            *count = count.saturating_add(1);
-            if let Some(simulated) = &mut simulated {
-                let count = &mut simulated[hash % sim_width];
-                *count = count.saturating_add(1);
-            }
+            counts.add(hash_vec(&[lo, distance, hi]));
             let count = sparse
                 .entry(sparse_code(lo, hi, distance, code_size))
                 .or_default();
             *count = count.saturating_add(1);
         },
     );
-    let mut fingerprint = BitVecN::new(config.nbits);
-    let bit_counts = simulated.as_deref().unwrap_or(&folded);
-    for (bucket, &count) in bit_counts
-        .iter()
-        .enumerate()
-        .filter(|&(_, &count)| count > 0)
-    {
-        for (i, &bound) in bounds.iter().enumerate() {
-            if count >= bound {
-                fingerprint.set(bucket * bounds.len() + i);
-            }
-        }
-    }
+    let (fingerprint, folded_counts) = counts.finish();
     RdkitAtomPairResult {
         fingerprint,
-        folded_counts: folded_elements(folded),
+        folded_counts,
         sparse_counts: sparse_elements(sparse),
     }
 }
