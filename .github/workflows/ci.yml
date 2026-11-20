@@ -389,7 +389,8 @@ jobs:
     name: A6 published/source wheel retention (Linux Python 3.9)
     # Full platform qualification runs on main, manual runs, and release tags.
     if: ${{ github.event_name != 'pull_request' }}
-    runs-on: ubuntu-latest
+    # setup-python does not provide CPython 3.9 for Ubuntu 26.04.
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
