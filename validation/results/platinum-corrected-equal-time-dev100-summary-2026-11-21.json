@@ -1,0 +1,22 @@
+{
+  "rows": 100,
+  "seconds": 0.2,
+  "errors": 0,
+  "recovery_difference": 0.02,
+  "paired_bootstrap_95_percentile_interval": [
+    -0.02,
+    0.06
+  ],
+  "chematic": {
+    "recovered": 52,
+    "median_accepted": 7.5,
+    "reached_candidate_cap": 17,
+    "stereo_violations": 0
+  },
+  "rdkit": {
+    "recovered": 50,
+    "median_accepted": 4.0,
+    "reached_candidate_cap": 8,
+    "stereo_violations": 0
+  }
+}

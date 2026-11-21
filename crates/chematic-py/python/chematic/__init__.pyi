@@ -425,6 +425,17 @@ class Mol:
         extra force-field evaluation."""
         ...
 
+    def etkdg_embed_multiple_confs_mmff_corrected(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate and optimize one ensemble with the corrected ETKDG torsion gradient."""
+        ...
+
     def etkdg_embed_multiple_confs_mmff_best_gradient(
         self,
         num_confs: int,

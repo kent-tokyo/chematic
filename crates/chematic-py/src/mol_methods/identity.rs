@@ -318,6 +318,40 @@ impl Mol {
         .map_err(|error| PyValueError::new_err(error.to_string()))
     }
 
+    /// Generate and optimize one ensemble using the corrected ETKDG torsion
+    /// gradient. This uses the requested number of embedding attempts and
+    /// MMFF94 minimizations without the extra batches in the quality profile.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200))]
+    fn etkdg_embed_multiple_confs_mmff_corrected(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+    ) -> PyResult<Vec<PyRdkitMmffConformer>> {
+        use chematic_3d::rdkit_embed::{
+            RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_corrected,
+        };
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || {
+            etkdg_embed_multiple_confs_mmff_corrected(&mol, num_confs, &options, max_mmff_iters)
+        })
+        .map(|conformers| {
+            conformers
+                .into_iter()
+                .map(|conformer| (conformer.status, conformer.energy, conformer.coords))
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// Compare two ETKDG/MMFF94 ensembles and retain the lowest finite-energy
     /// candidate plus converged candidates from both runs. The second uses the
     /// corrected gradient when relevant; otherwise two additional runs use

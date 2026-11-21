@@ -57,7 +57,7 @@ def stereo_violations(mol, conformers):
     return violations
 
 
-def score(reference, count, seed):
+def score(reference, count, seed, profile):
     heavy_ref = Chem.RemoveHs(reference)
     smiles = Chem.MolToSmiles(heavy_ref, isomericSmiles=True)
     graph = Chem.MolFromSmiles(smiles)
@@ -72,12 +72,15 @@ def score(reference, count, seed):
     result = {"status": "ok", "smiles": smiles}
     start = time.perf_counter()
     try:
-        raw = other.rdkit_embed_multiple_confs(count, random_seed=seed)
-        result["chematic_raw_seconds"] = time.perf_counter() - start
-        result["chematic_raw_rmsd"] = rms_values(mol, heavy_ref, raw)
-        result["chematic_raw_stereo"] = stereo_violations(mol, raw)
+        if profile == "compatible":
+            raw = other.rdkit_embed_multiple_confs(count, random_seed=seed)
+            result["chematic_raw_seconds"] = time.perf_counter() - start
+            result["chematic_raw_rmsd"] = rms_values(mol, heavy_ref, raw)
+            result["chematic_raw_stereo"] = stereo_violations(mol, raw)
         start = time.perf_counter()
-        candidates = other.rdkit_embed_multiple_confs_mmff(count, random_seed=seed, max_mmff_iters=200)
+        method = (other.rdkit_embed_multiple_confs_mmff if profile == "compatible"
+                  else other.etkdg_embed_multiple_confs_mmff_corrected)
+        candidates = method(count, random_seed=seed, max_mmff_iters=200)
         result["chematic_seconds"] = time.perf_counter() - start
         result["chematic_count"] = len(candidates)
         result["chematic_converged"] = sum(status == 0 for status, _, _ in candidates)
@@ -120,6 +123,7 @@ def main():
     parser.add_argument("--count", type=int, default=20)
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--profile", choices=("compatible", "corrected"), default="compatible")
     args = parser.parse_args()
     split = json.loads(args.split.read_text())
     assert hashlib.sha256(args.sdf.read_bytes()).hexdigest() == split["source_sha256"]
@@ -127,13 +131,13 @@ def main():
     rows.sort(key=lambda r: hashlib.sha256(r["name"].encode()).digest())
     selected = {r["index"]: r for r in rows[:args.limit]}
     supplier = Chem.SDMolSupplier(str(args.sdf), removeHs=False)
-    output = {"rdkit": rdBase.rdkitVersion, "chematic": importlib.metadata.version("chematic"), "platform": platform.platform(), "split_sha256": hashlib.sha256(args.split.read_bytes()).hexdigest(), "source_sha256": split["source_sha256"], "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "candidate_limit": args.count, "mmff_iterations": 200, "seed": args.seed, "selection": "development only sorted by SHA256(name)", "results": []}
+    output = {"rdkit": rdBase.rdkitVersion, "chematic": importlib.metadata.version("chematic"), "platform": platform.platform(), "split_sha256": hashlib.sha256(args.split.read_bytes()).hexdigest(), "source_sha256": split["source_sha256"], "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(), "profile": args.profile, "candidate_limit": args.count, "mmff_iterations": 200, "seed": args.seed, "selection": "development only sorted by SHA256(name)", "results": []}
     for index in sorted(selected):
         row = selected[index]
         try:
             reference = supplier[index]
             assert reference is not None and reference.GetProp("_Name") == row["name"]
-            result = score(reference, args.count, args.seed)
+            result = score(reference, args.count, args.seed, args.profile)
         except Exception as exc:
             result = {"status": "error", "error": repr(exc)}
         result.update(index=index, name=row["name"])
