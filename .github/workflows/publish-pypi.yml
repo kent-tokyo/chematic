@@ -5,6 +5,7 @@ name: Release
 on:
   push:
     tags: ['v[0-9]*.[0-9]*.[0-9]*']
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -15,6 +16,7 @@ concurrency:
 
 jobs:
   preflight:
+    if: github.event_name == 'push'
     name: Verify release tag
     runs-on: ubuntu-latest
     permissions:
@@ -273,3 +275,60 @@ jobs:
             --notes-file /tmp/release_notes.md \
             --verify-tag \
             "/tmp/chematic-release-metadata-${GITHUB_REF_NAME#v}.json"
+
+  recover-v122-pypi:
+    name: Recover v1.2.2 PyPI publication
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment:
+      name: pypi
+      url: https://pypi.org/project/chematic/
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+      - name: Verify original release run and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-list -n 1 v1.2.2)" = d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/44831147798" --jq '[.head_sha, .head_branch, .event, .path] | @tsv' > /tmp/release-run
+          printf 'd7962f9501da9ad2f2cdc5eaddf6d665d79d60bc\tv1.2.2\tpush\t.github/workflows/publish-pypi.yml\n' > /tmp/expected-run
+          diff -u /tmp/expected-run /tmp/release-run
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
+          run-id: 44831147798
+          github-token: ${{ github.token }}
+      - name: Validate original distribution matrix and wheel stubs
+        run: |
+          python scripts/release/check_pypi_dist.py --dist dist --version 1.2.2
+          python scripts/checks/check_python_stubs.py --wheel 'dist/chematic-*.whl'
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
+        with:
+          skip-existing: true
+      - name: Verify published hashes
+        run: python scripts/release/check_pypi_dist.py --dist dist --version 1.2.2 --verify-published
+
+  recover-v122-smoke:
+    needs: recover-v122-pypi
+    uses: ./.github/workflows/release-package-smoke.yml
+    with:
+      version: 1.2.2
+
+  recover-v122-chemistry:
+    needs: recover-v122-pypi
+    uses: ./.github/workflows/published-wheel-chemistry-gates.yml
+    with:
+      version: 1.2.2
+      biotransformer_corpus: true
