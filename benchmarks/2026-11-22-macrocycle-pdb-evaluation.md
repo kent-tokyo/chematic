@@ -1,0 +1,89 @@
+# PDB macrocycle reference preparation
+
+The [MacroCycle Benchmark](https://github.com/dptech-corp/MacroCycle-Benchmark)
+reports 1,861 protein-bound macrocycle cases, with reference ligand SDF files
+and an index. The repository's curation, index, and documentation are
+attributed to the MacroCycle Benchmark contributors under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the repository
+states that the PDB-derived structure data follow the PDB CC0 policy. Cite
+the original experimental structures when discussing individual cases. The
+index and split below are derived from that compilation.
+
+This preparation is separate from the earlier Prime benchmark. Protein-bound
+reference geometries and the Prime crystal population need not have the same
+distribution. A result on this dataset cannot retroactively make the earlier
+Prime noninferiority test pass, and unknown historical exposure to these
+public structures cannot be ruled out.
+
+## Pinned index and graph-only split
+
+The repository commit is `6afbb010770f8adaadb9db7f83f7a86538757a62`.
+Its `benchmark_index.csv` Git blob is
+`bb13d7f3c6cfff0f0e3fc06e85b1f38b5c4c8908`, and the exact CSV SHA-256 is
+`cf408bbcbeed78fe8862f8f1ccf48a2714f18dcaad5b9ac1fa6c482f4d7155dc`.
+The file contains 1,861 distinct case IDs and reported primary ring sizes of
+8–40 atoms. Use the index's *unprotonated* isomeric SMILES and the matching
+`ligand_unprotonated.sdf`; the pH-prepared derivative is a different input.
+The reference structures and metadata are provided by the source; these
+preparation checks do not independently establish their chemical correctness.
+
+`scripts/validation/macrocycle_reference_split.py` uses RDKit 2026.09.1,
+matching the version used to create prior scaffold hashes. It excludes every
+scaffold present in the supplied prior Platinum Diverse, complete Platinum,
+Prime and COD split manifests, including unused records in the COD sample.
+This conservative exclusion is based only on index SMILES and previous
+manifests. Remaining non-chiral canonical Murcko scaffold hashes are assigned
+by the first 32 bits modulo five: zero is development and all other values are
+holdout. All records sharing a scaffold remain together. The script records
+each exclusion file hash, index row, case ID, scaffold hash and input-SMILES
+hash; it does not use reference coordinates or conformer outcomes.
+
+| Partition | Cases | Distinct isomeric SMILES | Scaffold groups |
+| --- | ---: | ---: | ---: |
+| Development | 363 | 324 | 230 |
+| Holdout candidate | 1,243 | 1,067 | 802 |
+| Excluded known scaffold | 255 | 179 | 88 |
+
+The split was produced twice with identical uncompressed JSON SHA-256
+`cd50ed3f5460e15b7e8a8dc0e33075884490d0e3c090d7a1ee7d39a81bd361c2`.
+Its compressed copy is
+`validation/results/macrocycle-pdb-scaffold-split-2026-11-22.json.gz`
+(SHA-256 `e7ed8dff46d366cce15f90cc0504c1044b6e5544a26acd4fb9de2f6db2713795`).
+The partitions have no shared scaffold hashes. Eight prior exclusions could
+not be sanitized when the earlier manifests were created. The graph-only
+`scripts/validation/macrocycle_invalid_exclusion_audit.py` compares each
+eligible index scaffold as an atom-number subgraph against those eight
+unsanitized structures, ignoring bond orders. It found no possible overlap
+among 1,032 eligible scaffold groups; the audit is
+`validation/results/macrocycle-pdb-invalid-exclusion-audit-2026-11-22.json`
+(SHA-256 `1293b264be555e2802edb0a1067ec5e35fcfb5cc979935fdc2cf51ca9902c855`).
+The audit applies to index graphs, not yet to the individual SDF files.
+For an input-preparation pilot only, the first development case,
+`8ebk__Ligand_phospholipids_THR_B_4`, was fetched from the pinned commit.
+Its source SDF Git blob is `a5d104cb80fac9bcd4220ef9b13c8274d26b0e55`
+and SHA-256 is `aaac0c30b0df766e492011ba8bcfa1c1356d87982088afd29f13f7f7a4cc8ee4`.
+RDKit 2026.09.1 parsed one 164-heavy-atom record with one coordinate set;
+its canonical isomeric graph matched the index. A synthetic archive test of
+`scripts/validation/prepare_macrocycle_reference.py` retained every source
+SDF byte after the title line. This is one development input check, not a
+conformer evaluation or validation of the other cases.
+
+On this macOS arm64 CPython 3.13 environment, RDKit 2026.09.2 raised
+`RuntimeError: bad any cast` for Murcko decomposition even on cyclohexane;
+the isolated 2026.09.1 environment completed it. This observation is limited
+to these local installations and is not a cross-platform RDKit claim.
+
+## Required checks before performance scoring
+
+Fetch the remaining reference SDFs from the pinned commit on a host with enough
+space. Verify each file's case identity, atom and bond graph, formal charges,
+isotopes and declared stereochemistry against the indexed SMILES; preserve the
+experimental coordinates and report parse failures and unsupported chemistry.
+If a mismatch affects the candidate holdout, resolve the inclusion rule and
+whether a fresh holdout is needed before viewing any conformer outcomes.
+Record source and prepared-data hashes, wheel identities, error handling,
+candidate and time budgets, scorer, noninferiority threshold and confidence
+interval method before scoring. Use development cases first. At the time this
+split and index audit were fixed, no holdout SDF coordinate or conformer
+outcome had been inspected. Reference preparation checks coordinate finiteness
+without scoring, and no performance claim is made for these partitions.

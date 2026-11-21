@@ -1,0 +1,10 @@
+{
+  "index_sha256": "cf408bbcbeed78fe8862f8f1ccf48a2714f18dcaad5b9ac1fa6c482f4d7155dc",
+  "split_sha256": "cd50ed3f5460e15b7e8a8dc0e33075884490d0e3c090d7a1ee7d39a81bd361c2",
+  "rdkit_version": "2026.09.1",
+  "invalid_exclusion_count": 8,
+  "eligible_scaffolds": 1032,
+  "overlap_counts": {},
+  "overlaps": [],
+  "rule": "Match each eligible non-chiral scaffold as an atom-number graph substructure of each unsanitized prior invalid exclusion, ignoring bond order. Match requires excluding its complete scaffold group before scoring."
+}
