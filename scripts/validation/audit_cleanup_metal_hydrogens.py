@@ -41,7 +41,14 @@ def main():
     for index in sorted(cases):
         text = corpus[index].split()[0]
         source = chematic.from_smiles(text)
-        cleaned = source.cleanup()
+        try:
+            cleaned = source.cleanup()
+        except chematic.ChematicInputError as error:
+            if error.category != "ambiguous" or error.code != "cleanup_metal_hydrogen":
+                raise
+            rows.append({"index": index, "input_formula": source.formula,
+                         "refused": {"category": error.category, "code": error.code}})
+            continue
         output = cleaned.rdkit_smiles
         reparsed = chematic.from_smiles(output)
         repeated = cleaned.cleanup()
@@ -63,12 +70,12 @@ def main():
               "source_record": str(RECORD.relative_to(ROOT)), "rows": rows}
     path = ROOT / "validation/results/cleanup-metal-hydrogen-wheel-2026-11-21.json"
     path.write_text(json.dumps(report, indent=2) + "\n")
-    failures = [row["index"] for row in rows if len({row["input_formula"], row["output_formula"],
+    failures = [row["index"] for row in rows if "refused" not in row and (len({row["input_formula"], row["output_formula"],
                                                       row["reparsed_formula"], row["repeated_formula"]}) != 1
-                or len(set(row["formal_charges"])) != 1]
+                or len(set(row["formal_charges"])) != 1)]
     if failures:
         raise ValueError(f"formula differs on rows {failures}")
-    print(f"Formula and formal charge preserved across input, Cleanup, round trip and repeat for {len(rows)} rows")
+    print(f"Formula and charge preserved for {sum('refused' not in row for row in rows)} accepted rows; refused {[row['index'] for row in rows if 'refused' in row]}")
 
 
 if __name__ == "__main__":

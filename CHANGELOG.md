@@ -8,6 +8,15 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Preserve explicit metal hydrogens during Cleanup when their loss accounts for the molecule's hydrogen deficit after metal-bond disconnection.
+- Return an explicit ambiguity error from Cleanup when a cut metal bond leaves an explicit metal hydrogen unaccounted for.
+
+### Changed
+
+- Rust `cleanup` now returns `Result<Molecule, CleanupError>`; `cleanup_unchecked` retains the earlier best-effort behavior for callers that explicitly need it. This is a Rust API breaking change.
+
 ## [1.2.2] - 2026-11-21
 
 ### Added

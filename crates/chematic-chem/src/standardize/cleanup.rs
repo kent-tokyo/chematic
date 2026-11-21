@@ -25,7 +25,7 @@ pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
 /// groups are normalized. The ordered catalog proposes proton transfers.
 /// Cleanup rejects a transfer when the product's newly protonated site
 /// matches an acid in an equally strong or stronger catalog class.
-pub fn cleanup(mol: &Molecule) -> Molecule {
+pub fn cleanup_unchecked(mol: &Molecule) -> Molecule {
     let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens(mol));
     let disconnected = disconnect_metals_for_cleanup(&without_h);
     let normalized = normalize_for_cleanup(&disconnected);
@@ -46,6 +46,60 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
     let normalized = charge_originally_isolated_metals(&without_h, normalized);
     let cleaned = acid_base::reionize_for_cleanup(&normalized);
     restore_cut_metal_hydrogens(&without_h, &normalized, cleaned)
+}
+
+/// A Cleanup input whose metal-bound hydrogen cannot be accounted for safely.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CleanupError {
+    /// A metal--ligand bond was cut and an explicit metal hydrogen disappeared
+    /// while hydrogen counts elsewhere also changed.
+    AmbiguousMetalHydrogen,
+}
+
+impl std::fmt::Display for CleanupError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AmbiguousMetalHydrogen => write!(
+                f,
+                "Cleanup cannot determine the destination of an explicit metal hydrogen"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CleanupError {}
+
+/// Apply Cleanup and reject an unresolved explicit-metal-hydrogen change.
+///
+/// [`cleanup_unchecked`] retains the historical best-effort behavior.
+pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
+    let cleaned = cleanup_unchecked(mol);
+    if !mol
+        .atoms()
+        .any(|(_, atom)| is_metal(atom.element) && atom.hydrogen_count.unwrap_or(0) > 0)
+    {
+        return Ok(cleaned);
+    }
+    let before = remove_hydrogens(mol);
+    for (idx, atom) in before.atoms() {
+        let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
+            continue;
+        };
+        if is_metal(atom.element)
+            && cleaned.atom(idx).hydrogen_count.unwrap_or(0) < hydrogens
+            && before
+                .neighbors(idx)
+                .any(|(neighbor, _)| cleaned.bond_between(idx, neighbor).is_none())
+        {
+            return Err(CleanupError::AmbiguousMetalHydrogen);
+        }
+    }
+    Ok(cleaned)
+}
+
+/// Alias for [`cleanup`], retained for callers that prefer an explicit name.
+pub fn cleanup_checked(mol: &Molecule) -> Result<Molecule, CleanupError> {
+    cleanup(mol)
 }
 
 fn restore_cut_metal_hydrogens(
@@ -71,12 +125,15 @@ fn restore_cut_metal_hydrogens(
     if changes.is_empty() {
         return cleaned;
     }
-    let hydrogen_count = |mol: &Molecule| -> u32 {
-        mol.atoms()
-            .map(|(idx, atom)| {
-                u32::from(implicit_hcount(mol, idx)) + u32::from(atom.element.atomic_number() == 1)
-            })
-            .sum()
+    let hydrogen_counts = |mol: &Molecule| -> (u32, u32) {
+        mol.atoms().fold((0, 0), |(total, nonmetal), (idx, atom)| {
+            let count =
+                u32::from(implicit_hcount(mol, idx)) + u32::from(atom.element.atomic_number() == 1);
+            (
+                total + count,
+                nonmetal + if is_metal(atom.element) { 0 } else { count },
+            )
+        })
     };
     let restored: u32 = changes
         .iter()
@@ -84,7 +141,11 @@ fn restore_cut_metal_hydrogens(
             u32::from(hydrogens - cleaned.atom(idx).hydrogen_count.unwrap_or(0))
         })
         .sum();
-    if hydrogen_count(&cleaned).checked_add(restored) != Some(hydrogen_count(before)) {
+    let (before_total, before_nonmetal) = hydrogen_counts(before);
+    let (cleaned_total, cleaned_nonmetal) = hydrogen_counts(&cleaned);
+    if before_nonmetal != cleaned_nonmetal
+        || cleaned_total.checked_add(restored) != Some(before_total)
+    {
         return cleaned;
     }
     for (idx, hydrogens) in changes {
@@ -715,7 +776,7 @@ fn rebuild_cleanup_graph(
 
 #[cfg(test)]
 mod tests {
-    use super::cleanup;
+    use super::cleanup_unchecked as cleanup;
     use chematic_core::{Molecule, implicit_hcount};
     use chematic_smiles::parse;
 
@@ -1077,6 +1138,22 @@ mod tests {
         assert_eq!(
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
             Ok("C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]")
+        );
+    }
+
+    #[test]
+    fn metal_hydrogen_restoration_does_not_mask_nonmetal_hydrogen_loss() {
+        let before = parse("[FeH]C.[ZnH]N").unwrap();
+        let disconnected = parse("[Fe].[CH2].[ZnH2].[NH2]").unwrap();
+        let cleaned =
+            super::restore_cut_metal_hydrogens(&before, &disconnected, disconnected.clone());
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(0)).hydrogen_count,
+            Some(0)
+        );
+        assert_ne!(
+            crate::calc_mol_formula(&before),
+            crate::calc_mol_formula(&cleaned)
         );
     }
 

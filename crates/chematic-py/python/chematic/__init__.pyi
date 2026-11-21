@@ -1632,6 +1632,10 @@ class Mol:
         Proton transfers use the ordered acid/base catalog and check the
         resulting acid before moving a proton. Metal disconnection covers
         the supported ligand and coordination patterns.
+
+        Raises:
+            ChematicInputError: If the destination of an explicit metal
+                hydrogen is ambiguous, with code ``cleanup_metal_hydrogen``.
         """
         ...
 

@@ -9,7 +9,6 @@ const wasm = await import(moduleUrl);
 for (const input of [
   "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
   "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
-  "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
 ]) {
   const source = wasm.parse_smiles(input);
   const cleaned = wasm.cleanup_mol(source);
@@ -28,6 +27,13 @@ for (const input of [
     cleaned.free();
     source.free();
   }
+}
+
+const ambiguous = wasm.parse_smiles("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N");
+try {
+  assert.throws(() => wasm.cleanup_mol(ambiguous), /cleanup_metal_hydrogen/);
+} finally {
+  ambiguous.free();
 }
 
 console.log("Cleanup preserves metal hydrogen formula across the WASM API");

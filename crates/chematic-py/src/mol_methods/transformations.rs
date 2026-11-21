@@ -63,10 +63,20 @@ impl Mol {
     /// Unlike :meth:`standardize`, this does not choose a tautomer, neutralize
     /// formal charges, or select a fragment. Catalog-based proton transfers
     /// check the resulting acid before accepting a move.
-    fn cleanup(&self) -> Mol {
-        let mut result = Mol::bare(chematic_chem::cleanup(&self.inner));
+    /// Raises ``ChematicInputError`` with code ``cleanup_metal_hydrogen``
+    /// when an explicit metal hydrogen has an ambiguous destination.
+    fn cleanup(&self) -> PyResult<Mol> {
+        let cleaned = chematic_chem::cleanup_checked(&self.inner).map_err(|error| {
+            crate::errors::input_error(
+                "ambiguous",
+                "cleanup_metal_hydrogen",
+                "cleanup",
+                error.to_string(),
+            )
+        })?;
+        let mut result = Mol::bare(cleaned);
         result.props.rdkit_cleanup_output = true;
-        result
+        Ok(result)
     }
 
     /// Return the fragment parent, retaining the largest chemically relevant

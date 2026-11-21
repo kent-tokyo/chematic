@@ -70,13 +70,20 @@ def main():
             except ValueError as error:
                 excluded.append({"input": form, "reason": str(error)})
                 continue
+            try:
+                output = parsed.cleanup().rdkit_smiles
+            except chematic.ChematicInputError as error:
+                if error.category != "ambiguous" or error.code != "cleanup_metal_hydrogen":
+                    raise
+                output = None
             variants.append({"input": form,
                              "rdkit": Chem.MolToSmiles(rdMolStandardize.Cleanup(reparsed), isomericSmiles=True),
-                             "chematic": parsed.cleanup().rdkit_smiles})
+                             "chematic": output})
         records.append({"index": index, "inputs": len(forms),
                         "excluded": excluded,
                         "rdkit_distinct_outputs": len({row["rdkit"] for row in variants}),
-                        "chematic_distinct_outputs": len({row["chematic"] for row in variants}),
+                        "chematic_distinct_outputs": len({row["chematic"] for row in variants if row["chematic"] is not None}),
+                        "chematic_refusals": sum(row["chematic"] is None for row in variants),
                         "variants": variants})
     report = {"method": "one deterministic noncanonical SMILES rooted at each atom; duplicate strings removed",
               "rdkit_version": rdBase.rdkitVersion, "chematic_version": chematic.__version__,
