@@ -820,16 +820,18 @@ fn verify_double_bond(
         Err(reason) => return Some(StereoStatus::Unevaluable(reason)),
     };
 
-    Some(verify_double_bond_constraint(coords, &constraint))
+    Some(verify_double_bond_constraint(mol, coords, &constraint))
 }
 
-fn verify_double_bond_constraint(
+fn geometry_constraint(
+    mol: &Molecule,
     coords: &Coords3D,
     constraint: &DoubleBondConstraint,
-) -> StereoStatus {
+) -> Option<DoubleBondConstraint> {
     // A dihedral is numerically defined for almost-collinear substituents but
-    // does not provide a reliable E/Z assignment. Reject either end within
-    // five degrees of the bond axis, independent of coordinate scale.
+    // does not provide a reliable E/Z assignment when all substituents at an
+    // end are nearly collinear. Use a scale-free five-degree check, retaining
+    // the marked substituent and its parity if another arm is well separated.
     let end1 = coords.get(constraint.end1);
     let end2 = coords.get(constraint.end2);
     let axis = end2.sub(&end1);
@@ -841,10 +843,32 @@ fn verify_double_bond_constraint(
             || arm_norm < 1e-10
             || arm.cross(&axis).norm() < axis_norm * arm_norm * 0.087_155_742_747_658_17
     };
-    if near_axis(coords.get(constraint.sub1), end1) || near_axis(coords.get(constraint.sub2), end2)
-    {
-        return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+    for (end, other, sub) in [
+        (constraint.end1, constraint.end2, constraint.sub1),
+        (constraint.end2, constraint.end1, constraint.sub2),
+    ] {
+        if !near_axis(coords.get(sub), coords.get(end)) {
+            continue;
+        }
+        let has_usable_alternative = mol
+            .neighbors(end)
+            .filter(|(neighbor, _)| *neighbor != other && *neighbor != sub)
+            .any(|(neighbor, _)| !near_axis(coords.get(neighbor), coords.get(end)));
+        if !has_usable_alternative {
+            return None;
+        }
     }
+    Some(*constraint)
+}
+
+fn verify_double_bond_constraint(
+    mol: &Molecule,
+    coords: &Coords3D,
+    constraint: &DoubleBondConstraint,
+) -> StereoStatus {
+    let Some(constraint) = geometry_constraint(mol, coords, constraint) else {
+        return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+    };
     let Some(angle) = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
         coords.get(constraint.end2),
@@ -903,10 +927,8 @@ pub fn debug_double_bond(
     bond_idx: BondIdx,
 ) -> Option<DoubleBondDebugInfo> {
     let constraint = double_bond_constraint_for(mol, bond_idx)?.ok()?;
-    let status = verify_double_bond_constraint(coords, &constraint);
-    if matches!(status, StereoStatus::Unevaluable(_)) {
-        return None;
-    }
+    let constraint = geometry_constraint(mol, coords, &constraint)?;
+    let status = verify_double_bond_constraint(mol, coords, &constraint);
 
     let angle = crate::stereo3d::dihedral(
         coords.get(constraint.end1),

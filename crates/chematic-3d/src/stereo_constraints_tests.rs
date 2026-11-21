@@ -434,6 +434,27 @@ mod tests {
     }
 
     #[test]
+    fn ez_keeps_marked_substituent_when_other_arm_is_not_near_axis() {
+        let m = chematic_chem::add_hydrogens(&mol("F/C=C/F"));
+        let h = m
+            .neighbors(AtomIdx(1))
+            .map(|(neighbor, _)| neighbor)
+            .find(|&neighbor| m.atom(neighbor).element.atomic_number() == 1)
+            .unwrap();
+        let mut c = Coords3D::new_zeroed(m.atom_count());
+        c.set(AtomIdx(0), Point3::new(-1.0, 0.01, 0.0));
+        c.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+        c.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        c.set(AtomIdx(3), Point3::new(2.0, -1.0, 0.0));
+        c.set(h, Point3::new(0.0, -1.0, 0.0));
+        let report = verify_stereo(&m, &c);
+        assert_eq!(report.double_bond[0].status, StereoStatus::Satisfied);
+        let debug = debug_double_bond(&m, &c, report.double_bond[0].bond).unwrap();
+        assert_eq!(debug.sub1, AtomIdx(0));
+        assert_eq!(debug.status, StereoStatus::Satisfied);
+    }
+
+    #[test]
     fn ez_declared_e_matches_trans_geometry() {
         let m = mol("C/C=C/C"); // but2ene_E
         let coords = trans_but2ene_coords(&m);
