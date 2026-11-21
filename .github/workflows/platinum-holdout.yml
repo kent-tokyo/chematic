@@ -1,0 +1,48 @@
+name: Platinum holdout comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-holdout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install comparison tools
+        run: python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+      - name: Build and identify source wheel
+        run: |
+          git rev-parse HEAD > platinum-source-commit.txt
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/platinum-wheel
+          python -m pip install --force-reinstall --no-deps dist/platinum-wheel/chematic-*.whl
+          sha256sum dist/platinum-wheel/chematic-*.whl > platinum-wheel.sha256
+      - name: Fetch Platinum Diverse reference
+        run: |
+          curl --fail --location --retry 3 --max-time 120 --output platinum.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-diverse-dataset-2017-01-sdf.zip
+          echo 'e65e7d6a8ca55c55d1d1dda9e8805251714f45859c10998dfabe4752831bc212  platinum.zip' | sha256sum --check
+          unzip -q platinum.zip
+      - name: Score fixed candidate holdout
+        run: |
+          python scripts/benchmarks/platinum_development_probe.py --sdf platinum_diverse_dataset_2017_01.sdf --split validation/results/platinum-diverse-scaffold-split-audited-2026-11-21.json --invalid-exclusion-audit validation/results/platinum-invalid-exclusion-graph-audit-2026-11-22.json --partition holdout --output platinum-holdout.json --limit 1606 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_holdout.py platinum-holdout.json validation/results/platinum-diverse-scaffold-split-audited-2026-11-21.json --output platinum-holdout-summary.json
+      - name: Score equal-time holdout
+        run: |
+          python scripts/benchmarks/platinum_time_budget.py --sdf platinum_diverse_dataset_2017_01.sdf --baseline platinum-holdout.json --output platinum-holdout-time.json --limit 1606 --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_time_budget.py platinum-holdout-time.json --output platinum-holdout-time-summary.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: platinum-holdout-linux-${{ github.sha }}
+          path: |
+            platinum-source-commit.txt
+            platinum-wheel.sha256
+            platinum-holdout*.json
+          if-no-files-found: warn
