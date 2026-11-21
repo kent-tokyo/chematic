@@ -271,12 +271,14 @@ def test_cleanup_preserves_explicit_metal_hydrogens():
 
 
 def test_cleanup_refuses_unresolved_metal_hydrogen():
-    source = chematic.from_smiles("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N")
-    with pytest.raises(chematic.ChematicInputError) as captured:
-        source.cleanup()
-    assert captured.value.category == "ambiguous"
-    assert captured.value.code == "cleanup_metal_hydrogen"
-    assert captured.value.format == "cleanup"
+    for smiles in ("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+                   "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N"):
+        source = chematic.from_smiles(smiles)
+        with pytest.raises(chematic.ChematicInputError) as captured:
+            source.cleanup()
+        assert captured.value.category == "ambiguous"
+        assert captured.value.code == "cleanup_metal_hydrogen"
+        assert captured.value.format == "cleanup"
 
 
 def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():

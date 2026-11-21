@@ -29,11 +29,16 @@ for (const input of [
   }
 }
 
-const ambiguous = wasm.parse_smiles("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N");
-try {
-  assert.throws(() => wasm.cleanup_mol(ambiguous), /cleanup_metal_hydrogen/);
-} finally {
-  ambiguous.free();
+for (const input of [
+  "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+  "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N",
+]) {
+  const ambiguous = wasm.parse_smiles(input);
+  try {
+    assert.throws(() => wasm.cleanup_mol(ambiguous), /cleanup_metal_hydrogen/);
+  } finally {
+    ambiguous.free();
+  }
 }
 
 console.log("Cleanup preserves metal hydrogen formula across the WASM API");

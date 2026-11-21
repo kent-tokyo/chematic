@@ -74,13 +74,25 @@ impl std::error::Error for CleanupError {}
 /// [`cleanup_unchecked`] retains the historical best-effort behavior.
 pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
     let cleaned = cleanup_unchecked(mol);
-    if !mol
+    if !mol.atoms().any(|(idx, atom)| {
+        is_metal(atom.element)
+            && (atom.hydrogen_count.unwrap_or(0) > 0
+                || mol
+                    .neighbors(idx)
+                    .any(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() == 1))
+    }) {
+        return Ok(cleaned);
+    }
+    // Removing explicit hydrogen atoms can turn a metal--H bond into a
+    // bracket hydrogen count. Check after that conversion so equivalent
+    // `[SnH]` and `[Sn]([H])` inputs receive the same decision.
+    let before = remove_hydrogens(mol);
+    if !before
         .atoms()
         .any(|(_, atom)| is_metal(atom.element) && atom.hydrogen_count.unwrap_or(0) > 0)
     {
         return Ok(cleaned);
     }
-    let before = remove_hydrogens(mol);
     for (idx, atom) in before.atoms() {
         let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
             continue;
