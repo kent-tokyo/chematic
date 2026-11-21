@@ -213,6 +213,22 @@ class MolecularForceField:
 
     def gradient(self) -> list[list[float]]: ...
 
+    def gradient_with_consistent_torsions(self) -> list[list[float]]:
+        """Evaluate the MMFF gradient with energy-consistent torsion terms.
+
+        Other terms retain their RDKit-compatible gradients. Raises ValueError
+        for UFF fields or non-finite gradients.
+        """
+        ...
+
+    def gradient_with_consistent_planes(self) -> list[list[float]]:
+        """Evaluate MMFF torsion and out-of-plane gradients with unrounded normals.
+
+        Other terms retain their RDKit-compatible gradients. Raises ValueError
+        for UFF fields or non-finite gradients.
+        """
+        ...
+
     def energy_gradient(self) -> tuple[float, list[list[float]]]: ...
 
     def minimize_(self, max_iters: int = 200) -> tuple[int, float]: ...

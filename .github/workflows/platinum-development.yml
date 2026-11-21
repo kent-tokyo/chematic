@@ -44,6 +44,10 @@ jobs:
         run: |
           python scripts/benchmarks/platinum_time_budget.py --sdf platinum_diverse_dataset_2017_01.sdf --baseline platinum-development.json --output platinum-time.json --limit 100 --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
           python scripts/benchmarks/summarize_platinum_time_budget.py platinum-time.json --output platinum-time-summary.json
+      - name: Compare force fields on common coordinates
+        run: |
+          python scripts/benchmarks/platinum_force_fields.py --development platinum-development.json --output platinum-force-fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py platinum-force-fields.json --output platinum-force-fields-summary.json
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -55,4 +59,6 @@ jobs:
             platinum-development-summary.json
             platinum-time.json
             platinum-time-summary.json
+            platinum-force-fields.json
+            platinum-force-fields-summary.json
           if-no-files-found: warn

@@ -29,6 +29,8 @@ at least one returned structure has heavy-atom symmetry-aware RMSD at most
 1 Å to the crystal reference and retains the specified tetrahedral and
 double-bond stereochemistry. The full development denominator includes
 failures. Percentile intervals use paired molecule bootstrap samples.
+Molecules with a shared scaffold may be correlated; the reported intervals
+do not model scaffold-level clustering.
 
 | Stage | chematic | RDKit | Difference | Paired 95% interval |
 | --- | ---: | ---: | ---: | ---: |
@@ -66,6 +68,18 @@ field per molecule agree with central differences. Its result and conditions
 are recorded in `validation/results/force-field-coordinate-parity-pilot-2026-11-21.json`.
 RDKit MMFF property construction can alter aromaticity on its input, so each
 force field is built from a fresh molecule copy.
+
+The 444 development inputs above were also checked at one shared ETKDG
+coordinate set per molecule. This set was already filtered for RDKit MMFF
+support during the preceding generation run. All 444 were prepared by both
+engines for MMFF94, MMFF94s and UFF. The 95th percentile of absolute energy
+differences was at most `1.99e-13 kcal/mol`, and the 95th percentile over all
+gradient-component differences was at most `1.53e-13 kcal/mol/Å`. Maximum
+gradient-component differences were `8.85e-6`, `8.87e-6` and `4.30e-4`
+respectively. Six sampled coordinates per field per molecule were also
+checked by central differences at `1e-5 Å`. Maximum differences were 0.011,
+0.055 and `4.31e-7 kcal/mol/Å`, respectively. Both larger MMFF residuals
+occurred on `07U_3TXO_A` and warrant further numerical analysis.
 
 The candidate wheel exposes the existing corrected sixth-order ETKDG gradient
 through Python for one requested ensemble. Its SHA-256 is
@@ -137,7 +151,44 @@ the three checked unfinished conformers reached status 0 and energies of
 36.402, 38.199 and 54.036 kcal/mol. Their earlier energies were 172.855,
 162.082 and 163.252 kcal/mol. The repair wheel SHA-256 is
 `aa69dafd9975d6bd05d263e694c907a863319b09280b9d36c729fdd2569b3053`.
-The near-singular MMFF derivative remains an open numerical issue.
+An opt-in torsion-gradient evaluator now uses the same unrounded plane norms
+as the torsion energy, and its torsion-only gradient was checked against
+finite differences for near-linear geometries. A second opt-in evaluator also
+uses unrounded normals for out-of-plane terms, with term-specific finite
+difference checks. Other MMFF terms retain their RDKit-compatible gradients,
+and the optimizer has not yet been migrated to the alternate derivatives.
+Full near-singular gradient and minimizer validation remain open.
+
+The 444-row development rerun with the retry enabled changed four conformers
+in two molecules. Three were the near-linear amine conformers above, and one
+was in `NNL_3P0Q_A`. The independent angle screen flagged 33/8,880 returned
+chematic conformers, compared with 37/8,880 before the retry. The number of
+inputs with a screened conformer within 1 Å remained 271/444 for chematic and
+273/444 for RDKit. The same fixed-candidate comparison had concurrent local
+workload, so its recorded elapsed times are not used for performance claims.
+
+With the optional 400-iteration retry included in the 0.2-second per-engine
+budget, the same development protocol recovered 222/444 for chematic and
+192/444 for RDKit. The paired 95% bootstrap interval for the difference was
++4.05 to +9.68 percentage points. Requiring a converged matching conformer
+gave 172 and 152 recoveries, with an interval of +2.48 to +6.76 points.
+The results changed across the two local runs for both engines, so repeated
+measurements on additional hosts remain necessary.
+Repeating the repair-enabled protocol produced 224/444 and 199/444 recoveries
+(paired 95% interval +3.15 to +8.11 points). Requiring convergence gave
+172/444 and 157/444 (interval +1.35 to +5.41 points).
+
+The [hosted Linux source-wheel run](https://github.com/kent-tokyo/chematic/actions/runs/44912969456)
+built the pull-request merge commit `e64c00a710c859627aeb3e425158dc4a1d80ce43`
+from head `16c19ef4c9b625cd397e1c184a9174941931e541` and base
+`0be29688d88c13baebc323418a5f4143cd31836d`. Its wheel SHA-256 was
+`d986e7c59fe810023b30002b2fccb132feac0881f030c0067109c152d1b28ad8`.
+On 444 development molecules under the geometry and stereo screens, each
+engine recovered 272 within 1 Å (paired 95% interval −1.80 to +1.80 points).
+The 0.2-second, 100-molecule development sample recovered 46 for chematic
+and 37 for RDKit (interval +4 to +15 points). Requiring convergence gave
+37 and 33 (interval 0 to +9 points). The hosted source wheel and the smaller
+time-budget sample are separate from published-artifact and holdout evidence.
 
 RDKit 2026.09.2 on this host raises `RuntimeError: bad any cast` for
 `MurckoScaffoldSmiles(smiles="Cc1ccccc1")` even in a fresh environment.

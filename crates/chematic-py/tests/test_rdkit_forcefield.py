@@ -11,7 +11,9 @@ The recorded Linux comparison is bit-identical. Portable assertions allow
 the same host-libm/minimizer tolerances as the Rust tests.
 """
 
+import json
 import math
+from pathlib import Path
 
 import pytest
 
@@ -101,6 +103,41 @@ def test_persistent_mmff_force_field_reuses_prepared_terms(mol, variant):
     assert status == 0
     assert optimized_energy < energy
     assert len(field.positions) == len(COORDS)
+
+
+def test_consistent_torsion_gradient_available_for_mmff(mol):
+    mmff = mol.mmff_force_field(COORDS)
+    compatible = mmff.gradient()
+    consistent = mmff.gradient_with_consistent_torsions()
+    consistent_planes = mmff.gradient_with_consistent_planes()
+    assert len(consistent) == len(compatible)
+    for a, b in zip(compatible, consistent):
+        assert a == pytest.approx(b, abs=1e-8)
+    for a, b in zip(compatible, consistent_planes):
+        assert a == pytest.approx(b, abs=1e-8)
+    uff = mol.uff_force_field(COORDS)
+    with pytest.raises(ValueError, match="require an MMFF"):
+        uff.gradient_with_consistent_torsions()
+    with pytest.raises(ValueError, match="require an MMFF"):
+        uff.gradient_with_consistent_planes()
+
+
+def test_consistent_plane_gradient_near_linear_amine():
+    fixture_path = Path(__file__).resolve().parents[2] / "chematic-ff/tests/mmff94_near_linear_amine.json"
+    fixture = json.loads(fixture_path.read_text())
+    mol = chematic.from_smiles(fixture["smiles"]).add_hydrogens()
+    field = mol.mmff_force_field(fixture["coords"])
+    compatible = field.gradient()[5][1]
+    consistent = field.gradient_with_consistent_planes()[5][1]
+    coords = [point[:] for point in fixture["coords"]]
+    step = 1e-8
+    coords[5][1] += step
+    plus = field.set_positions_(coords).energy()
+    coords[5][1] -= 2 * step
+    minus = field.set_positions_(coords).energy()
+    numeric = (plus - minus) / (2 * step)
+    assert abs(consistent - numeric) < 0.01 * abs(numeric)
+    assert abs(compatible - numeric) > 1000
 
 
 def test_persistent_uff_force_field_and_input_validation(mol):

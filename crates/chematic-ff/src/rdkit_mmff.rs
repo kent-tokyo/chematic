@@ -555,13 +555,29 @@ impl RdkitMmffField {
     /// `ForceField::calcGrad(pos, grad)`: adds every contribution's gradient
     /// to `grad` (unscaled).
     pub fn gradient(&self, pos: &[f64], grad: &mut [f64]) {
-        self.gradient_with_distance_fn(pos, grad, |i, j| distance(pos, i, j));
+        self.gradient_with_distance_fn(pos, grad, false, false, |i, j| distance(pos, i, j));
+    }
+
+    /// Evaluate MMFF gradients with a torsion derivative consistent with the
+    /// torsion energy away from its zero-plane cutoff. Other terms retain
+    /// their RDKit-compatible gradients. Inside that cutoff the torsion
+    /// energy is constant and its gradient contribution is zero.
+    pub fn gradient_with_consistent_torsions(&self, pos: &[f64], grad: &mut [f64]) {
+        self.gradient_with_distance_fn(pos, grad, true, false, |i, j| distance(pos, i, j));
+    }
+
+    /// Evaluate torsion and out-of-plane gradients without the compatibility
+    /// floors on their plane normals. Other terms keep their existing behavior.
+    pub fn gradient_with_consistent_planes(&self, pos: &[f64], grad: &mut [f64]) {
+        self.gradient_with_distance_fn(pos, grad, true, true, |i, j| distance(pos, i, j));
     }
 
     fn gradient_with_distance_fn(
         &self,
         pos: &[f64],
         grad: &mut [f64],
+        consistent_torsions: bool,
+        consistent_oop: bool,
         mut pair_distance: impl FnMut(usize, usize) -> f64,
     ) {
         if self.terms[0] {
@@ -574,10 +590,10 @@ impl RdkitMmffField {
             self.stbn_grad(pos, grad, &mut pair_distance);
         }
         if self.terms[3] {
-            self.oop_grad(pos, grad);
+            self.oop_grad(pos, grad, consistent_oop);
         }
         if self.terms[4] {
-            self.torsion_grad(pos, grad);
+            self.torsion_grad(pos, grad, consistent_torsions);
         }
         if self.terms[5] || self.terms[6] {
             self.nonbonded_grad(pos, grad, &mut pair_distance);
@@ -780,7 +796,7 @@ impl RdkitMmffField {
         total
     }
 
-    fn oop_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn oop_grad(&self, pos: &[f64], grad: &mut [f64], consistent: bool) {
         let c2 = MDYNE_A_TO_KCAL_MOL * DEG2RAD * DEG2RAD;
         for &(i, j, k, l, koop) in &self.oops {
             let (ip, jp, kp, lp) = (
@@ -815,15 +831,24 @@ impl RdkitMmffField {
             );
             let chi = RAD2DEG * sin_chi.asin();
             let cos_theta = clip_to_one(rji.dot(rjk));
-            let sin_theta_sq = smax(1.0 - cos_theta * cos_theta, 1.0e-8);
-            let sin_theta = smax(
-                if sin_theta_sq > 0.0 {
-                    sin_theta_sq.sqrt()
-                } else {
-                    0.0
-                },
-                1.0e-8,
-            );
+            let sin_theta_sq = if consistent {
+                let cross = rji.cross(rjk);
+                cross.dot(cross)
+            } else {
+                smax(1.0 - cos_theta * cos_theta, 1.0e-8)
+            };
+            let sin_theta = if consistent {
+                sin_theta_sq.sqrt()
+            } else {
+                smax(
+                    if sin_theta_sq > 0.0 {
+                        sin_theta_sq.sqrt()
+                    } else {
+                        0.0
+                    },
+                    1.0e-8,
+                )
+            };
             let de_dchi = RAD2DEG * c2 * koop * chi;
             let t1 = rjl.cross(rjk);
             let t2 = rji.cross(rjl);
@@ -885,7 +910,7 @@ impl RdkitMmffField {
         total
     }
 
-    fn torsion_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn torsion_grad(&self, pos: &[f64], grad: &mut [f64], consistent: bool) {
         for &(i, j, k, l, v1, v2, v3) in &self.torsions {
             let (p1, p2, p3, p4) = (
                 P3::at(pos, i),
@@ -899,10 +924,21 @@ impl RdkitMmffField {
             let r2 = r1.neg();
             let r3 = p4.sub(p3);
             let mut t0 = r0.cross(r1);
-            let d0 = smax(t0.length(), 1.0e-5);
-            t0 = t0.div(d0);
             let mut t1 = r2.cross(r3);
-            let d1 = smax(t1.length(), 1.0e-5);
+            if consistent && (is_double_zero(t0.length()) || is_double_zero(t1.length())) {
+                continue;
+            }
+            let d0 = if consistent {
+                t0.length()
+            } else {
+                smax(t0.length(), 1.0e-5)
+            };
+            t0 = t0.div(d0);
+            let d1 = if consistent {
+                t1.length()
+            } else {
+                smax(t1.length(), 1.0e-5)
+            };
             t1 = t1.div(d1);
             let dp = t0.dot(t1);
             let cos_phi = smax(-1.0, if 1.0 < dp { 1.0 } else { dp });
@@ -915,12 +951,16 @@ impl RdkitMmffField {
             let sin2 = 2.0 * sin_phi * cos_phi;
             let sin3 = 3.0 * sin_phi - 4.0 * sin_phi * sin_phi_sq;
             let de_dphi = 0.5 * (-v1 * sin_phi + 2.0 * v2 * sin2 - 3.0 * v3 * sin3);
-            let sin_term = -de_dphi
-                * (if is_double_zero(sin_phi) {
-                    1.0 / cos_phi
-                } else {
-                    1.0 / sin_phi
-                });
+            let sin_term = if consistent {
+                0.5 * (v1 - 4.0 * v2 * cos_phi + v3 * (12.0 * cos_phi * cos_phi - 3.0))
+            } else {
+                -de_dphi
+                    * (if is_double_zero(sin_phi) {
+                        1.0 / cos_phi
+                    } else {
+                        1.0 / sin_phi
+                    })
+            };
             let dc = [
                 1.0 / d0 * (t1.x - cos_phi * t0.x),
                 1.0 / d0 * (t1.y - cos_phi * t0.y),
@@ -1067,7 +1107,7 @@ impl RdkitMmffField {
         }
         let mut cache = cache.borrow_mut();
         cache.prepare(pos);
-        self.gradient_with_distance_fn(pos, grad, |i, j| cache.get(pos, i, j));
+        self.gradient_with_distance_fn(pos, grad, false, false, |i, j| cache.get(pos, i, j));
         crate::rdkit_bfgs::scale_gradient(grad)
     }
 

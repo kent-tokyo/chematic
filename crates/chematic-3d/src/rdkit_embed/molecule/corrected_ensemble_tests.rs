@@ -388,3 +388,87 @@ fn corrected_repair_is_bounded_and_stereo_safe() {
             .any(|(a, b)| a.coords != b.coords)
     );
 }
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[test]
+fn near_linear_mmff_consistent_gradient_matches_energy_difference() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let rows =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    for index in [9, 16, 17] {
+        let coords = &rows[index].coords;
+        let field = chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+            &molecule,
+            coords,
+            chematic_ff::rdkit_mmff::MmffVariant::Mmff94,
+            100.0,
+            true,
+            [false, false, false, false, true, false, false],
+        )
+        .unwrap();
+        let mut flat = coords.as_flattened().to_vec();
+        let mut gradient = vec![0.0; flat.len()];
+        field.gradient_with_consistent_torsions(&flat, &mut gradient);
+        for axis in 0..flat.len() {
+            let step = 1e-10;
+            flat[axis] += step;
+            let plus = field.energy(&flat);
+            flat[axis] -= 2.0 * step;
+            let minus = field.energy(&flat);
+            flat[axis] += step;
+            let finite = (plus - minus) / (2.0 * step);
+            assert!(gradient[axis].is_finite() && finite.is_finite());
+            assert!(
+                (gradient[axis] - finite).abs() < 0.02 * (1.0 + finite.abs()),
+                "conformer {index} axis {axis}: analytic {} finite {}",
+                gradient[axis],
+                finite
+            );
+        }
+    }
+}
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[test]
+fn near_linear_mmff_plane_gradient_matches_energy_difference() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let rows =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    for index in [9, 16, 17] {
+        let coords = &rows[index].coords;
+        let field = chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+            &molecule,
+            coords,
+            chematic_ff::rdkit_mmff::MmffVariant::Mmff94,
+            100.0,
+            true,
+            [false, false, false, true, false, false, false],
+        )
+        .unwrap();
+        let mut flat = coords.as_flattened().to_vec();
+        let mut gradient = vec![0.0; flat.len()];
+        field.gradient_with_consistent_planes(&flat, &mut gradient);
+        for axis in 0..flat.len() {
+            let step = 1e-8;
+            flat[axis] += step;
+            let plus = field.energy(&flat);
+            flat[axis] -= 2.0 * step;
+            let minus = field.energy(&flat);
+            flat[axis] += step;
+            let finite = (plus - minus) / (2.0 * step);
+            assert!(gradient[axis].is_finite() && finite.is_finite());
+            assert!(
+                (gradient[axis] - finite).abs() < 0.02 * (1.0 + finite.abs()),
+                "conformer {index} axis {axis}: analytic {} finite {}",
+                gradient[axis],
+                finite
+            );
+        }
+    }
+}
