@@ -15,6 +15,7 @@ import zipfile
 import chematic
 import networkx as nx
 from rdkit import Chem, RDLogger, rdBase
+from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.MolStandardize import rdMolStandardize
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -24,6 +25,8 @@ RECORD = ROOT / "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-2
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wheel", type=Path, required=True)
+    parser.add_argument("--candidate-commit")
+    parser.add_argument("--output", type=Path)
     args = parser.parse_args()
     if chematic.__version__ != "1.2.2" or rdBase.rdkitVersion != "2026.09.1":
         raise ValueError("expected chematic 1.2.2 and RDKit 2026.09.1")
@@ -47,7 +50,8 @@ def main():
             raise ValueError(f"input atom alignment changed for index {case['index']}")
         source = source_input.cleanup()
         oracle = rdMolStandardize.Cleanup(oracle_input)
-        if source.rdkit_smiles != case["chematic_cleanup"]:
+        source_output = source.rdkit_smiles
+        if args.candidate_commit is None and source_output != case["chematic_cleanup"]:
             raise ValueError(f"published wheel differs from recorded source output for index {case['index']}")
         source_atoms = source.atom_table
         oracle_atoms = list(oracle.GetAtoms())
@@ -76,8 +80,12 @@ def main():
         bond_isomorphic = None
         oracle_text = Chem.MolToSmiles(oracle, canonical=True, isomericSmiles=True)
         oracle_reparsed = Chem.MolFromSmiles(oracle_text)
-        source_reparsed = Chem.MolFromSmiles(case["chematic_cleanup"])
+        source_reparsed = Chem.MolFromSmiles(source_output)
         source_second = source.cleanup().rdkit_smiles
+        formula_preserved = source_input.formula == source.formula
+        oracle_formula_preserved = (
+            rdMolDescriptors.CalcMolFormula(oracle_input) == rdMolDescriptors.CalcMolFormula(oracle)
+        )
         oracle_iterations = [oracle_text]
         current_oracle = oracle
         for _ in range(5):
@@ -121,12 +129,17 @@ def main():
                 except (ValueError, RuntimeError, KeyError):
                     bond_isomorphic = None
         rows.append({"index": case["index"], "recorded_category": case["classification"],
+                     "output_matches_published_record": source_output == case["chematic_cleanup"],
                      "charge_or_h_differences": changes,
                      "chematic_only_bonds": sorted(source_edges - oracle_edges),
                      "rdkit_only_bonds": sorted(oracle_edges - source_edges),
                      "charge_h_connectivity_isomorphic": isomorphic,
                      "bond_isotope_graph_isomorphic": bond_isomorphic,
                      "same_after_rdkit_sanitize": sanitized_equal,
+                     "input_formula": source_input.formula,
+                     "output_formula": source.formula,
+                     "formula_preserved": formula_preserved,
+                     "rdkit_formula_preserved": oracle_formula_preserved,
                      "rdkit_serialization_reparseable": oracle_reparsed is not None,
                      "chematic_second_cleanup_matches": source_second == source.rdkit_smiles,
                      "rdkit_second_cleanup_matches": oracle_second == oracle_text,
@@ -139,19 +152,22 @@ def main():
                      "chematic_serialized_radical_electrons": None if source_reparsed is None else sum(
                          atom.GetNumRadicalElectrons() for atom in source_reparsed.GetAtoms()
                      ),
-                     "assessment": ("chemical_difference" if not isomorphic or bond_isomorphic is False
+                     "assessment": ("chemical_difference" if not formula_preserved or not isomorphic or bond_isomorphic is False
                                     else "representation_difference_after_sanitize" if sanitized_equal
                                     else "requires_stereo_radical_review")})
     counts = collections.Counter(row["assessment"] for row in rows)
     for assessment in ("chemical_difference", "representation_difference_after_sanitize", "refusal", "requires_stereo_radical_review"):
         counts.setdefault(assessment, 0)
     result = {"source_record": str(RECORD.relative_to(ROOT)), "chematic_version": chematic.__version__,
+              "candidate_commit": args.candidate_commit,
               "wheel": args.wheel.name, "wheel_sha256": hashlib.sha256(args.wheel.read_bytes()).hexdigest(),
               "installed_package_files_verified": len(files),
               "rdkit_version": rdBase.rdkitVersion, "networkx_version": nx.__version__,
               "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Representation differences require matching canonical isomeric SMILES after RDKit sanitizes its in-memory Cleanup product and reparses the chematic output; the original unsanitized radical state is recorded separately.",
               "counts": dict(counts), "rows": rows}
-    output = ROOT / "validation/results/cleanup-v1.2.2-47-atom-audit-2026-11-21.json"
+    if args.candidate_commit and args.output is None:
+        parser.error("candidate audits require --output")
+    output = args.output or ROOT / "validation/results/cleanup-v1.2.2-47-atom-audit-2026-11-21.json"
     output.write_text(json.dumps(result, indent=2) + "\n")
     print(result["counts"])
 

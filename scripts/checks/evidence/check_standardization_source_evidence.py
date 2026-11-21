@@ -6,12 +6,13 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RECORD = ROOT / "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-metal-hydrogen-stress-2026-11-21.json"
 PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-integrated-prs-stress-2026-10-24.json"
-TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-v1.2.2-source-10k-2026-11-21.json"
+TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-metal-hydrogen-10k-2026-11-21.json"
 TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-integrated-prs-10k-2026-10-24.json"
 REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
@@ -55,6 +56,23 @@ def check_current_record(record: dict) -> None:
     check_lane(record, "normalize_", "normalize_exact_rows")
     check_lane(cleanup, "cleanup_", "exact_rows")
     check_lane(record, "reionize_", "reionize_exact_rows")
+    semantic_counts = Counter(row["semantic_classification"] for row in record["mismatches"])
+    assert dict(sorted(semantic_counts.items())) == record["semantic_classification_counts"]
+    assert record["sanitized_equivalent_mismatches"] == sum(
+        row["equivalent_after_sanitization"] is True for row in record["mismatches"]
+    )
+    assert record["sanitization_unavailable_mismatches"] == sum(
+        row["equivalent_after_sanitization"] is None for row in record["mismatches"]
+    )
+    for row in record["mismatches"]:
+        if row["source_error"] is not None:
+            assert row["semantic_classification"] == "source_error"
+        elif row["equivalent_after_sanitization"] is True:
+            assert row["semantic_classification"] == "representation_after_sanitization"
+        elif row["equivalent_after_sanitization"] is False:
+            assert row["semantic_classification"] == "different_after_sanitization"
+        else:
+            assert row["semantic_classification"] == "unclassified"
 
 
 def check_comparison(
@@ -107,12 +125,14 @@ def main() -> None:
     record = json.loads(RECORD.read_text())
     previous = json.loads(PREVIOUS_RECORD.read_text())
     check_current_record(record)
+    # Rows 3075 and 3402 retain explicit metal H that the earlier source and
+    # RDKit dropped. They are exact-string differences with conserved formula.
     check_comparison(
         record, previous, PREVIOUS_RECORD,
         [65, 83, 101, 403, 809, 911, 1366, 1432, 1437, 1471, 1497, 1577,
          1630, 1664, 1781, 1831, 1854, 1875, 1878, 1890, 2003, 2025,
          2069, 2076, 2130, 2178, 2203, 2576, 2598, 2602, 2677, 2787,
-         2855, 2909, 3153, 3154, 3207, 3369, 3501, 3504, 3590, 3700,
+         2855, 2909, 3075, 3153, 3154, 3207, 3369, 3402, 3501, 3504, 3590, 3700,
          3720, 3849, 3910, 4023, 4027],
     )
     assert record["baseline_comparison"]["fixed_indices"] == []
@@ -122,7 +142,15 @@ def main() -> None:
         4019, 4066
     ]
     assert record["reionize_exact_rows"] == record["normalize_exact_rows"] == 4069
-    assert record["exact_rows"] == 4022
+    assert record["exact_rows"] == 4020
+    assert record["semantic_classification_counts"] == {
+        "different_after_sanitization": 34,
+        "representation_after_sanitization": 15,
+    }
+    mismatches = {row["index"]: row for row in record["mismatches"]}
+    for index, metal in ((2025, "[FeH+2]"), (2203, "[PtH+2]"),
+                         (3075, "[CuH+]"), (3402, "[ZnH+3]")):
+        assert metal in mismatches[index]["chematic_cleanup"], index
     assert record["reionize_all_rows_exact"] == 4072
     assert previous["reionize_exact_rows"] == previous["normalize_exact_rows"] == 4055
     assert record["oracle_nonreparseable_indices"] == [1497, 1630, 2677]
@@ -155,7 +183,7 @@ def main() -> None:
     assert summary["candidate_reionize_exact_rows"] == reionize["reionize_exact_rows"]
     assert summary["candidate_cleanup_exact_rows"] == reionize["exact_rows"]
     assert summary["candidate_normalize_exact_rows"] == reionize["normalize_exact_rows"]
-    print("Current-source standardization evidence checked: Cleanup exact-SMILES regressions 47/2; Reionize unchanged")
+    print("Current-source standardization evidence checked: Cleanup exact-SMILES regressions 49/2; Reionize unchanged")
 
 
 if __name__ == "__main__":

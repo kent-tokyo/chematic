@@ -1,6 +1,7 @@
 {
   "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
   "chematic_version": "1.2.2",
+  "candidate_commit": null,
   "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
   "wheel_sha256": "682c96b2c74b9f43c21efb11a8d8979e9760f7856d911af7c455238560464266",
   "installed_package_files_verified": 44,
@@ -8,8 +9,8 @@
   "networkx_version": "3.6.1",
   "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Representation differences require matching canonical isomeric SMILES after RDKit sanitizes its in-memory Cleanup product and reparses the chematic output; the original unsanitized radical state is recorded separately.",
   "counts": {
-    "chemical_difference": 31,
-    "representation_difference_after_sanitize": 16,
+    "chemical_difference": 32,
+    "representation_difference_after_sanitize": 15,
     "refusal": 0,
     "requires_stereo_radical_review": 0
   },
@@ -17,6 +18,7 @@
     {
       "index": 65,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 2,
@@ -48,6 +50,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -67,6 +73,7 @@
     {
       "index": 83,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 2,
@@ -98,6 +105,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C11H11-",
+      "output_formula": "C11H11-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -117,6 +128,7 @@
     {
       "index": 101,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 2,
@@ -148,6 +160,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C15H15-",
+      "output_formula": "C15H15-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -167,6 +183,7 @@
     {
       "index": 403,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 1,
@@ -198,6 +215,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C10H10Fe",
+      "output_formula": "C10H10Fe",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -217,6 +238,7 @@
     {
       "index": 809,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 1,
@@ -248,6 +270,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -267,6 +293,7 @@
     {
       "index": 911,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 17,
@@ -298,6 +325,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C19H19-",
+      "output_formula": "C19H19-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -317,6 +348,7 @@
     {
       "index": 1366,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 4,
@@ -348,6 +380,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H29N2OPt",
+      "output_formula": "C23H29N2OPt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -367,6 +403,7 @@
     {
       "index": 1432,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 30,
@@ -398,6 +435,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C73H99N12O18-",
+      "output_formula": "C73H99N12O18-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -417,6 +458,7 @@
     {
       "index": 1437,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 3,
@@ -448,6 +490,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C17H14ClOZn",
+      "output_formula": "C17H14ClOZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -467,6 +513,7 @@
     {
       "index": 1471,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 6,
@@ -498,6 +545,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C18H23FeNO",
+      "output_formula": "C18H23FeNO",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -517,6 +568,7 @@
     {
       "index": 1497,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 10,
@@ -548,6 +600,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -567,6 +623,7 @@
     {
       "index": 1577,
       "recorded_category": "metal_charge_assignment",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 15,
@@ -598,6 +655,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C66H93N12O17Zn",
+      "output_formula": "C66H93N12O17Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -617,6 +678,7 @@
     {
       "index": 1630,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 5,
@@ -648,6 +710,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H12N5O3-",
+      "output_formula": "C12H12N5O3-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -667,6 +733,7 @@
     {
       "index": 1664,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 17,
@@ -698,6 +765,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C19H23KO4Zn",
+      "output_formula": "C19H23KO4Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -717,12 +788,17 @@
     {
       "index": 1781,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C15H17N3O3Pt",
+      "output_formula": "C15H17N3O3Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -742,12 +818,17 @@
     {
       "index": 1831,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C17H24NOZn",
+      "output_formula": "C17H24NOZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -767,6 +848,7 @@
     {
       "index": 1854,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 1,
@@ -798,6 +880,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C11H14NZn",
+      "output_formula": "C11H14NZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -817,6 +903,7 @@
     {
       "index": 1875,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 2,
@@ -848,6 +935,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C9H10ClNOPt",
+      "output_formula": "C9H10ClNOPt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -867,6 +958,7 @@
     {
       "index": 1878,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 9,
@@ -898,6 +990,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C14H17ClN3O4-",
+      "output_formula": "C14H17ClN3O4-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -917,6 +1013,7 @@
     {
       "index": 1890,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 2,
@@ -972,6 +1069,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C17H18N5O3-",
+      "output_formula": "C17H18N5O3-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -991,12 +1092,17 @@
     {
       "index": 2003,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C13H18ClN2O5Zn",
+      "output_formula": "C13H18ClN2O5Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1016,6 +1122,7 @@
     {
       "index": 2025,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 7,
@@ -1047,6 +1154,10 @@
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C3H12FeN2NaO5P",
+      "output_formula": "C3H11FeN2NaO5P",
+      "formula_preserved": false,
+      "rdkit_formula_preserved": false,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1061,17 +1172,22 @@
       "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "representation_difference_after_sanitize"
+      "assessment": "chemical_difference"
     },
     {
       "index": 2069,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C28H36N2O5PtS",
+      "output_formula": "C28H36N2O5PtS",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1091,6 +1207,7 @@
     {
       "index": 2076,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 7,
@@ -1122,6 +1239,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C18H24N-",
+      "output_formula": "C18H24N-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -1141,12 +1262,17 @@
     {
       "index": 2130,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C20H14FNO2Pt",
+      "output_formula": "C20H14FNO2Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1166,12 +1292,17 @@
     {
       "index": 2178,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C24H25Cl2N4O2Zn+3",
+      "output_formula": "C24H25Cl2N4O2Zn+3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1191,6 +1322,7 @@
     {
       "index": 2203,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 6,
@@ -1222,6 +1354,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H27NO5Pt",
+      "output_formula": "C20H26NO5Pt",
+      "formula_preserved": false,
+      "rdkit_formula_preserved": false,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1241,12 +1377,17 @@
     {
       "index": 2576,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C37H33ClFeN5O6S2",
+      "output_formula": "C37H33ClFeN5O6S2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1266,12 +1407,17 @@
     {
       "index": 2598,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C21H14FFeNO2",
+      "output_formula": "C21H14FFeNO2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1291,12 +1437,17 @@
     {
       "index": 2602,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C9H15FeNO4P",
+      "output_formula": "C9H15FeNO4P",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1316,6 +1467,7 @@
     {
       "index": 2677,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 5,
@@ -1347,6 +1499,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1366,12 +1522,17 @@
     {
       "index": 2787,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C15H18N5O3Zn",
+      "output_formula": "C15H18N5O3Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1391,6 +1552,7 @@
     {
       "index": 2855,
       "recorded_category": "metal_charge_assignment",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 3,
@@ -1422,6 +1584,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C21H24ClCuN3O2P",
+      "output_formula": "C21H24ClCuN3O2P",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
@@ -1441,6 +1607,7 @@
     {
       "index": 2909,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 3,
@@ -1472,6 +1639,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C24H28N7O-",
+      "output_formula": "C24H28N7O-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1491,6 +1662,7 @@
     {
       "index": 3153,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 1,
@@ -1522,6 +1694,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1541,6 +1717,7 @@
     {
       "index": 3154,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 3,
@@ -1572,6 +1749,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H16N2O6Zn+",
+      "output_formula": "C20H16N2O6Zn+",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1591,6 +1772,7 @@
     {
       "index": 3207,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 9,
@@ -1622,6 +1804,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C43H55BrN10O6Zn+2",
+      "output_formula": "C43H55BrN10O6Zn+2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1641,12 +1827,17 @@
     {
       "index": 3369,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H18FeNO",
+      "output_formula": "C19H18FeNO",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1666,12 +1857,17 @@
     {
       "index": 3501,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H20ClF2FeN3O",
+      "output_formula": "C19H20ClF2FeN3O",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1691,6 +1887,7 @@
     {
       "index": 3504,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 13,
@@ -1722,6 +1919,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C21H20CuNO6",
+      "output_formula": "C21H20CuNO6",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1741,12 +1942,17 @@
     {
       "index": 3590,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C22H20NO2Pt",
+      "output_formula": "C22H20NO2Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1766,6 +1972,7 @@
     {
       "index": 3700,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 0,
@@ -1797,6 +2004,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H19N5O2Zn",
+      "output_formula": "C20H19N5O2Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1816,12 +2027,17 @@
     {
       "index": 3720,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H31FeN3O2",
+      "output_formula": "C19H31FeN3O2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1841,6 +2057,7 @@
     {
       "index": 3849,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 16,
@@ -1872,6 +2089,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C22H26CuN2O2",
+      "output_formula": "C22H26CuN2O2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1891,12 +2112,17 @@
     {
       "index": 3910,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [],
       "chematic_only_bonds": [],
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
       "same_after_rdkit_sanitize": true,
+      "input_formula": "C16H16CuN2O5S",
+      "output_formula": "C16H16CuN2O5S",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1916,6 +2142,7 @@
     {
       "index": 4023,
       "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 1,
@@ -1947,6 +2174,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
@@ -1966,6 +2197,7 @@
     {
       "index": 4027,
       "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
       "charge_or_h_differences": [
         {
           "atom": 3,
@@ -1997,6 +2229,10 @@
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
       "same_after_rdkit_sanitize": null,
+      "input_formula": "C16H18FeNO2S",
+      "output_formula": "C16H18FeNO2S",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
