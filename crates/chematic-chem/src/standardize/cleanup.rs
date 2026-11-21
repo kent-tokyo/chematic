@@ -11,7 +11,39 @@ use chematic_core::{
 };
 
 use super::{clone_molecule, is_metal, normalize_groups};
-use crate::hydrogen::remove_hydrogens;
+use crate::hydrogen::{is_removable_explicit_h, remove_hydrogens};
+
+fn remove_hydrogens_for_cleanup(mol: &Molecule) -> Molecule {
+    let mut result = remove_hydrogens(mol);
+    let mut next_index = 0_u32;
+    for (idx, atom) in mol.atoms() {
+        if is_removable_explicit_h(mol, idx) {
+            continue;
+        }
+        let out_idx = AtomIdx(next_index);
+        next_index += 1;
+        if is_metal(atom.element)
+            || !mol
+                .neighbors(idx)
+                .any(|(neighbor, _)| is_metal(mol.atom(neighbor).element))
+        {
+            continue;
+        }
+        let explicit_h = mol
+            .neighbors(idx)
+            .filter(|(neighbor, _)| is_removable_explicit_h(mol, *neighbor))
+            .count();
+        if explicit_h != 0 {
+            // Once a metal bond is cut, valence inference can invent H on a
+            // ligand that originally had an explicit hydrogen atom. Retain
+            // the input's H count just as a bracket-H spelling does.
+            let count =
+                implicit_hcount(mol, idx).saturating_add(explicit_h.min(u8::MAX as usize) as u8);
+            result.set_hydrogen_count(out_idx, Some(count));
+        }
+    }
+    result
+}
 
 pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
     acid_base::reionize_with_catalog(mol)
@@ -25,8 +57,8 @@ pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
 /// groups are normalized. The ordered catalog proposes proton transfers.
 /// Cleanup rejects a transfer when the product's newly protonated site
 /// matches an acid in an equally strong or stronger catalog class.
-pub fn cleanup(mol: &Molecule) -> Molecule {
-    let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens(mol));
+pub fn cleanup_unchecked(mol: &Molecule) -> Molecule {
+    let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens_for_cleanup(mol));
     let disconnected = disconnect_metals_for_cleanup(&without_h);
     let normalized = normalize_for_cleanup(&disconnected);
     let normalized = if disconnected.bond_count() < without_h.bond_count()
@@ -44,7 +76,166 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
         normalized
     };
     let normalized = charge_originally_isolated_metals(&without_h, normalized);
-    acid_base::reionize_for_cleanup(&normalized)
+    let cleaned = acid_base::reionize_for_cleanup(&normalized);
+    restore_cut_metal_hydrogens(&without_h, &normalized, cleaned)
+}
+
+/// A Cleanup input whose metal transformation cannot be performed safely.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CleanupError {
+    /// A metal--ligand bond was cut and its hydrogen count changed while
+    /// hydrogen counts elsewhere also changed.
+    AmbiguousMetalHydrogen,
+    /// A detached neutral metal would be charged on a subsequent Cleanup.
+    UnstableMetalDisconnection,
+    /// A tetrahedral center has five declared ligands including a metal.
+    UnstableMetalStereo,
+}
+
+impl CleanupError {
+    /// Stable machine-readable error code shared by language bindings.
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::AmbiguousMetalHydrogen => "cleanup_metal_hydrogen",
+            Self::UnstableMetalDisconnection => "cleanup_unstable_metal",
+            Self::UnstableMetalStereo => "cleanup_metal_stereo",
+        }
+    }
+}
+
+impl std::fmt::Display for CleanupError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::AmbiguousMetalHydrogen => {
+                write!(f, "Cleanup cannot account for the metal hydrogen change")
+            }
+            Self::UnstableMetalDisconnection => write!(
+                f,
+                "Cleanup would charge the detached metal on a subsequent call"
+            ),
+            Self::UnstableMetalStereo => write!(
+                f,
+                "Cleanup cannot reliably represent a tetrahedral center with five ligands including a metal"
+            ),
+        }
+    }
+}
+
+impl std::error::Error for CleanupError {}
+
+/// Apply Cleanup and reject unresolved or unstable metal transformations.
+///
+/// [`cleanup_unchecked`] retains the historical best-effort behavior.
+pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
+    if mol.atoms().any(|(idx, atom)| {
+        matches!(
+            atom.chirality,
+            Chirality::Clockwise | Chirality::CounterClockwise
+        ) && mol.degree(idx) + usize::from(implicit_hcount(mol, idx)) > 4
+            && mol
+                .neighbors(idx)
+                .any(|(neighbor, _)| is_metal(mol.atom(neighbor).element))
+    }) {
+        return Err(CleanupError::UnstableMetalStereo);
+    }
+    let cleaned = cleanup_unchecked(mol);
+    if !mol.atoms().any(|(_, atom)| is_metal(atom.element)) {
+        return Ok(cleaned);
+    }
+    // Removing explicit hydrogen atoms can turn a metal--H bond into a
+    // bracket hydrogen count. Check after that conversion so equivalent
+    // `[SnH]` and `[Sn]([H])` inputs receive the same decision.
+    let before = remove_hydrogens_for_cleanup(mol);
+    for (idx, atom) in before.atoms() {
+        if is_metal(atom.element)
+            && implicit_hcount(&cleaned, idx) != implicit_hcount(&before, idx)
+            && before
+                .neighbors(idx)
+                .any(|(neighbor, _)| cleaned.bond_between(idx, neighbor).is_none())
+        {
+            return Err(CleanupError::AmbiguousMetalHydrogen);
+        }
+        if matches!(atom.element.atomic_number(), 3 | 11 | 12 | 19 | 20)
+            && before.degree(idx) > 0
+            && cleaned.degree(idx) == 0
+            && cleaned.atom(idx).charge == 0
+            && implicit_hcount(&cleaned, idx) == 0
+        {
+            return Err(CleanupError::UnstableMetalDisconnection);
+        }
+    }
+    Ok(cleaned)
+}
+
+/// Alias for [`cleanup`], retained for callers that prefer an explicit name.
+pub fn cleanup_checked(mol: &Molecule) -> Result<Molecule, CleanupError> {
+    cleanup(mol)
+}
+
+fn restore_cut_metal_hydrogens(
+    before: &Molecule,
+    disconnected: &Molecule,
+    mut cleaned: Molecule,
+) -> Molecule {
+    let mut changes = Vec::new();
+    for (idx, atom) in before.atoms() {
+        if !is_metal(atom.element)
+            || implicit_hcount(&cleaned, idx) == implicit_hcount(before, idx)
+            || !before
+                .neighbors(idx)
+                .any(|(neighbor, _)| disconnected.bond_between(idx, neighbor).is_none())
+        {
+            continue;
+        }
+        changes.push((idx, implicit_hcount(before, idx)));
+    }
+    if changes.is_empty() {
+        return cleaned;
+    }
+    let gain = changes
+        .iter()
+        .any(|&(idx, original)| implicit_hcount(&cleaned, idx) > original);
+    let loss = changes
+        .iter()
+        .any(|&(idx, original)| implicit_hcount(&cleaned, idx) < original);
+    if gain && loss {
+        // A hydrogen could have moved between metals. Conservation alone
+        // cannot establish which metal should retain it.
+        return cleaned;
+    }
+    let hydrogen_counts = |mol: &Molecule| -> (u32, u32) {
+        mol.atoms().fold((0, 0), |(total, nonmetal), (idx, atom)| {
+            let count =
+                u32::from(implicit_hcount(mol, idx)) + u32::from(atom.element.atomic_number() == 1);
+            (
+                total + count,
+                nonmetal + if is_metal(atom.element) { 0 } else { count },
+            )
+        })
+    };
+    let removed: u32 = changes
+        .iter()
+        .map(|&(idx, _)| u32::from(implicit_hcount(&cleaned, idx)))
+        .sum();
+    let restored: u32 = changes
+        .iter()
+        .map(|&(_, hydrogens)| u32::from(hydrogens))
+        .sum();
+    let (before_total, before_nonmetal) = hydrogen_counts(before);
+    let (cleaned_total, cleaned_nonmetal) = hydrogen_counts(&cleaned);
+    if before_nonmetal != cleaned_nonmetal
+        || cleaned_total
+            .checked_sub(removed)
+            .and_then(|count| count.checked_add(restored))
+            != Some(before_total)
+    {
+        return cleaned;
+    }
+    for (idx, hydrogens) in changes {
+        // A metal--ligand cut neither creates nor removes a metal hydrogen.
+        cleaned.set_hydrogen_count(idx, Some(hydrogens));
+    }
+    cleaned
 }
 
 fn prepare_alkali_bridge_aromaticity(mol: Molecule) -> Molecule {
@@ -367,9 +558,9 @@ fn disconnect_metal_ligand_bonds(
             && bond.order == BondOrder::Single
         {
             // A hypervalent aromatic source token can sanitize to an
-            // ordinary nonaromatic carbon. RDKit cuts its Pt bond without
-            // charge transfer and lets the resulting carbon regain H.
-            atoms[ligand].hydrogen_count = None;
+            // ordinary nonaromatic carbon. Cutting the Pt bond without
+            // charge transfer must not invent an additional hydrogen.
+            atoms[ligand].hydrogen_count = Some(implicit_hcount(mol, AtomIdx(ligand as u32)));
             continue;
         }
         transfer_metal_ligand_charge(mol, atoms, metal, ligand, bond.order);
@@ -398,8 +589,12 @@ fn metal_aromatic_exclusions(
     bond_order: BondOrder,
     aromaticity: Option<&chematic_perception::AromaticityModel>,
 ) -> (bool, bool) {
+    // Copper-bound aromatic carbon can lose the perception flag when the
+    // source uses aromatic bond tokens. Honor that source annotation as well
+    // so Kekule and aromatic spellings retain the same coordination bond.
     let aromatic_carbon = ligand_z == 6
-        && aromaticity.is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)));
+        && (aromaticity.is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)))
+            || (metal_z == 29 && mol.atom(AtomIdx(ligand as u32)).aromatic));
     let zinc_fused_aromatic_edge = metal_z == 30
         && ligand_z == 6
         && bond_order == BondOrder::Double
@@ -594,13 +789,6 @@ fn assign_valence_aware_metal_charge(
             (-ligand_charge - lone_electrons).max(0)
         };
         atoms[ligand].charge = i8::try_from(ligand_charge).unwrap_or(original.charge);
-        if ligand_atom.element.atomic_number() == 7
-            && ligand_charge == 0
-            && radical_before == 0
-            && ligand_atom.hydrogen_count == Some(0)
-        {
-            atoms[ligand].hydrogen_count = None;
-        }
         atoms[metal].charge = atoms[metal]
             .charge
             .saturating_add(i8::try_from(metal_gain).unwrap_or(0));
@@ -668,7 +856,7 @@ fn rebuild_cleanup_graph(
 
 #[cfg(test)]
 mod tests {
-    use super::cleanup;
+    use super::cleanup_unchecked as cleanup;
     use chematic_core::{Molecule, implicit_hcount};
     use chematic_smiles::parse;
 
@@ -749,7 +937,7 @@ mod tests {
         for (input, expected) in [
             (
                 "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
-                "CC1=CC=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+                "CC1=C[C]=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
             ),
             (
                 "N(CCCN(C)CCCNC(C1C2C(C=C(Cl)C=1)=NC1C(=CC=CC=1)N=2)=O)C(C1C2[C](=[Zn][C]3=CC=CC=C3N=2)C=C(Cl)C=1)=O",
@@ -960,10 +1148,10 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_recomputes_hydrogens_on_disconnected_metals() {
+    fn cleanup_preserves_hydrogens_on_disconnected_metals() {
         for (input, expected) in [
-            ("O->[Mg](<-O)(<-O)<-O", "O.O.O.O.[MgH2]"),
-            ("C[N]([SnH])C", "C[N-]C.[SnH3+]"),
+            ("O->[Mg](<-O)(<-O)<-O", "O.O.O.O.[Mg]"),
+            ("C[N]([SnH])C", "C[N-]C.[SnH+]"),
         ] {
             let output = cleanup(&parse(input).unwrap());
             assert_eq!(
@@ -972,6 +1160,97 @@ mod tests {
                 "{input}"
             );
         }
+    }
+
+    #[test]
+    fn cleanup_preserves_explicit_hydrogen_on_disconnected_platinum() {
+        let input = "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5";
+        let molecule = parse(input).unwrap();
+        let cleaned = cleanup(&molecule);
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&molecule)
+        );
+        let platinum = cleaned
+            .atoms()
+            .find(|(_, atom)| atom.element.atomic_number() == 78)
+            .unwrap();
+        assert_eq!(platinum.1.hydrogen_count, Some(1));
+        let text = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+        let reparsed = parse(&text).unwrap();
+        assert_eq!(
+            crate::calc_mol_formula(&reparsed),
+            crate::calc_mol_formula(&molecule)
+        );
+        assert_eq!(
+            crate::calc_mol_formula(&cleanup(&cleaned)),
+            crate::calc_mol_formula(&molecule)
+        );
+    }
+
+    #[test]
+    fn cleanup_preserves_metal_hydrides_when_bonds_are_cut() {
+        for input in [
+            "C[PtH]C",
+            "C[FeH]C",
+            "N[ZnH]N",
+            "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+        ] {
+            let molecule = parse(input).unwrap();
+            let cleaned = cleanup(&molecule);
+            assert_eq!(
+                crate::calc_mol_formula(&cleaned),
+                crate::calc_mol_formula(&molecule),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_preserves_tin_and_imine_hydrogens() {
+        let input = "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N";
+        let molecule = parse(input).unwrap();
+        let cleaned = cleanup(&molecule);
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&molecule)
+        );
+        assert_eq!(
+            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+            Ok("C/N=C(\\S)N/N=C/C(C)=[N].N[CH]=[SnH]")
+        );
+    }
+
+    #[test]
+    fn metal_hydrogen_restoration_does_not_mask_nonmetal_hydrogen_loss() {
+        let before = parse("[FeH]C.[ZnH]N").unwrap();
+        let disconnected = parse("[Fe].[CH2].[ZnH2].[NH2]").unwrap();
+        let cleaned =
+            super::restore_cut_metal_hydrogens(&before, &disconnected, disconnected.clone());
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(0)).hydrogen_count,
+            Some(0)
+        );
+        assert_ne!(
+            crate::calc_mol_formula(&before),
+            crate::calc_mol_formula(&cleaned)
+        );
+    }
+
+    #[test]
+    fn metal_hydrogen_restoration_does_not_guess_a_transfer_between_metals() {
+        let before = parse("[FeH]C.[Zn]N").unwrap();
+        let disconnected = parse("[Fe].[CH3].[ZnH].[NH2]").unwrap();
+        let cleaned =
+            super::restore_cut_metal_hydrogens(&before, &disconnected, disconnected.clone());
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(0)).hydrogen_count,
+            Some(0)
+        );
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(2)).hydrogen_count,
+            Some(1)
+        );
     }
 
     #[test]
@@ -1036,7 +1315,7 @@ mod tests {
         let cleaned = cleanup(&parse("O->[Mg](<-O)(<-O)<-O").unwrap());
         assert_eq!(
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok("O.O.O.O.[MgH2]")
+            Ok("O.O.O.O.[Mg]")
         );
     }
 

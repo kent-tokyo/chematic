@@ -1632,6 +1632,12 @@ class Mol:
         Proton transfers use the ordered acid/base catalog and check the
         resulting acid before moving a proton. Metal disconnection covers
         the supported ligand and coordination patterns.
+
+        Raises:
+            ChematicInputError: If a metal hydrogen change cannot be accounted
+                for (``cleanup_metal_hydrogen``), or a detached metal would
+                change on repeat (``cleanup_unstable_metal``), or a metal-bound
+                tetrahedral center has five ligands (``cleanup_metal_stereo``).
         """
         ...
 

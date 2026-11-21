@@ -101,6 +101,16 @@ class StubGateTests(unittest.TestCase):
         self.assertEqual(len(r['errors']),2)
         self.assertTrue(all(e['kind']=='mismatch' for e in r['errors']))
 
+    def test_release_wheel_is_checked_against_tagged_source_not_newer_source(self):
+        tagged = self.root / 'tagged' / 'chematic'
+        tagged.mkdir(parents=True)
+        (tagged / '__init__.pyi').write_bytes(self.valid)
+        (tagged / 'py.typed').write_bytes(b'')
+        wheel = self.wheel()
+        (self.package / '__init__.pyi').write_bytes(self.valid + b'def new_api() -> None: ...\n')
+        self.assertEqual(gate.audit(self.package, [str(wheel)])['status'], 'failed')
+        self.assertEqual(gate.audit(tagged, [str(wheel)])['status'], 'passed')
+
     def test_unexpected_packaged_stub_and_other_package_syntax_are_checked(self):
         p=self.wheel([('chematic/__init__.pyi',self.valid),('chematic/py.typed',b''),('chematic/extra.pyi',b'x: int\n'),('other/broken.pyi',b'None: int\n')])
         r=gate.audit(self.package,[str(p)])

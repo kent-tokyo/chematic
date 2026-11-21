@@ -1,0 +1,102 @@
+{
+  "conclusion": "success",
+  "createdAt": "2026-11-21T08:59:53Z",
+  "databaseId": 44887442455,
+  "event": "workflow_dispatch",
+  "headSha": "e3bbb16fe6916f744df325f494fd7bc64577ffa5",
+  "jobs": [
+    {
+      "conclusion": "success",
+      "name": "Recover v1.2.2 PyPI publication",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795736378"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-smoke / Python wheel runtime (macos-latest / 3.13)",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795994997"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-smoke / Python wheel runtime (ubuntu-24.04 / 3.9)",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995024"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-smoke / Python wheel runtime (windows-latest / 3.13)",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995030"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / xsmarts-autoconf linux-x86_64-cp312-sdist",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995045"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / xsmarts-autoconf macos-arm64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995075"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / chematic linux-x86_64-cp39",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995089"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / chematic macos-arm64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995093"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / xsmarts-autoconf windows-amd64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995131"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / chematic macos-x86_64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995136"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / chematic windows-amd64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136795995149"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / RDKit compare macos-arm64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136797378228"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / RDKit compare macos-x86_64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136797378271"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / RDKit compare windows-amd64-cp312",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136797378284"
+    },
+    {
+      "conclusion": "success",
+      "name": "recover-v122-chemistry / RDKit compare linux-x86_64-cp39",
+      "status": "completed",
+      "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455/job/136797378303"
+    }
+  ],
+  "status": "completed",
+  "updatedAt": "2026-11-21T09:12:59Z",
+  "url": "https://github.com/kent-tokyo/chematic/actions/runs/44887442455"
+}

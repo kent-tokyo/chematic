@@ -15,7 +15,7 @@ use chematic_smarts::{MatchConfig, parse_smarts};
 mod cleanup;
 mod groups;
 mod reionize;
-pub use cleanup::cleanup;
+pub use cleanup::{CleanupError, cleanup, cleanup_checked, cleanup_unchecked};
 pub use groups::normalize_groups;
 
 /// Salt removal catalog: common salt patterns (counterions and solvates).

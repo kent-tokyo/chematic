@@ -312,8 +312,13 @@ jobs:
           github-token: ${{ github.token }}
       - name: Validate original distribution matrix and wheel stubs
         run: |
+          set -euo pipefail
+          # The recovery workflow runs from main, but its wheels were built
+          # from v1.2.2. Compare stubs with that tag even after main evolves.
+          mkdir -p "$RUNNER_TEMP/v122-source"
+          git archive v1.2.2 crates/chematic-py/python/chematic | tar -x -C "$RUNNER_TEMP/v122-source"
           python scripts/release/check_pypi_dist.py --dist dist --version 1.2.2
-          python scripts/checks/check_python_stubs.py --wheel 'dist/chematic-*.whl'
+          python scripts/checks/check_python_stubs.py --source-package "$RUNNER_TEMP/v122-source/crates/chematic-py/python/chematic" --wheel 'dist/chematic-*.whl'
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # release/v1
         with:
           skip-existing: true
