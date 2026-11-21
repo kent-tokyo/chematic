@@ -53,6 +53,7 @@ fn restore_cut_metal_hydrogens(
     disconnected: &Molecule,
     mut cleaned: Molecule,
 ) -> Molecule {
+    let mut changes = Vec::new();
     for (idx, atom) in before.atoms() {
         let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
             continue;
@@ -65,6 +66,28 @@ fn restore_cut_metal_hydrogens(
         {
             continue;
         }
+        changes.push((idx, hydrogens));
+    }
+    if changes.is_empty() {
+        return cleaned;
+    }
+    let hydrogen_count = |mol: &Molecule| -> u32 {
+        mol.atoms()
+            .map(|(idx, atom)| {
+                u32::from(implicit_hcount(mol, idx)) + u32::from(atom.element.atomic_number() == 1)
+            })
+            .sum()
+    };
+    let restored: u32 = changes
+        .iter()
+        .map(|&(idx, hydrogens)| {
+            u32::from(hydrogens - cleaned.atom(idx).hydrogen_count.unwrap_or(0))
+        })
+        .sum();
+    if hydrogen_count(&cleaned).checked_add(restored) != Some(hydrogen_count(before)) {
+        return cleaned;
+    }
+    for (idx, hydrogens) in changes {
         // Cutting another ligand does not remove a metal's explicit H.
         cleaned.set_hydrogen_count(idx, Some(hydrogens));
     }
@@ -1040,6 +1063,21 @@ mod tests {
                 "{input}"
             );
         }
+    }
+
+    #[test]
+    fn cleanup_does_not_add_hydrogen_when_total_is_already_conserved() {
+        let input = "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N";
+        let molecule = parse(input).unwrap();
+        let cleaned = cleanup(&molecule);
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&molecule)
+        );
+        assert_eq!(
+            chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
+            Ok("C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]")
+        );
     }
 
     #[test]

@@ -262,6 +262,7 @@ def test_cleanup_preserves_explicit_metal_hydrogens():
     for text in (
         "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
         "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+        "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
     ):
         source = chematic.from_smiles(text)
         cleaned = source.cleanup()
