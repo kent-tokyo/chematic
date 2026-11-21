@@ -1985,9 +1985,10 @@ void CtPartFill( Graph *G,
             /****************** Well-defined part of isotopic keys ***************************/
             if (pCD->iso_sort_key && Ct->iso_sort_key)
             {
-                for (j = startAtOrd; j < i; j++)
+                int iso_index;
+                for (iso_index = startAtOrd; iso_index < i; iso_index++)
                 {
-                    Ct->iso_sort_key[j] = pCD->iso_sort_key[p->AtNumber[j]];
+                    Ct->iso_sort_key[iso_index] = pCD->iso_sort_key[p->AtNumber[iso_index]];
                 }
                 Ct->len_iso_sort_key = i;
             }
