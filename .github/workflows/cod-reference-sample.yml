@@ -1,0 +1,34 @@
+name: Prepare COD reference sample
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cod-reference-sample.yml'
+      - 'scripts/validation/select_cod_reference_sample.py'
+
+permissions:
+  contents: read
+
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch public reference archive
+        run: |
+          curl --fail --location --retry 3 --max-time 900 --output cod.tar https://bits.csb.pitt.edu/files/cod.tgz
+          python -c 'import pathlib; assert pathlib.Path("cod.tar").stat().st_size==510146560'
+      - name: Select by member path hash without scoring
+        run: python scripts/validation/select_cod_reference_sample.py cod.tar --sample-size 12000 --sdf cod-sample.sdf --manifest cod-sample-manifest.json
+      - name: Upload the sample and provenance
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: cod-reference-sample-${{ github.sha }}
+          path: |
+            cod-sample.sdf
+            cod-sample-manifest.json
+          if-no-files-found: error

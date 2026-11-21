@@ -309,3 +309,19 @@ It applies the previously registered 0.2-second protocol without selecting
 or excluding any records based on the fixed-count outcome. Its host is a
 separate hosted runner, so the timing is an independent run on the same
 population, not a continuation of the original process.
+
+## Additional reference candidate after the inconclusive result
+
+Because the revised candidate's 430-record Linux fixed-count interval did not
+meet the preregistered margin, an additional, post-hoc validation population
+is being prepared from the [processed Crystallography Open Database archive](https://github.com/dkoes/conformer_analysis#raw-data).
+This does not change or replace the result above. The preparation workflow
+selects the 12,000 SDF members with lowest SHA-256 of their archive paths,
+without examining conformer outcomes; it records the archive and sample
+hashes. Before scoring, exclude the full 4,548-record Platinum dataset, the
+full Prime dataset, and the other known exposure manifests by scaffold, audit
+invalid exclusions, set the candidate limit, split, scoring and acceptance
+rules, and retain a separate development partition. The archive is 510,146,560
+bytes and is downloaded only on the hosted runner. Any later result must be
+reported as an additional test initiated after the inconclusive 430-record
+result, not as if it were part of the original preregistration.
