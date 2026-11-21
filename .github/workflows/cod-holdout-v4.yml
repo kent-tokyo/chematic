@@ -2,7 +2,7 @@ name: Stereo candidate COD holdout comparison
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-holdout-v4.yml'
 
