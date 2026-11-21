@@ -493,3 +493,15 @@ interval was −2.13 to +4.26 points and the scaffold-cluster interval was
 −2.69 to +4.71 points. The preregistered −2-point noninferiority criterion
 was not met. Converged matching recovery was 39 and 38. The gzip row data
 SHA-256 is `d9f74cb2f6f6b70c8dc6bd9a7fef5730ebc7387a64ee086d46a7afd94909a283`.
+
+A separate RDKit 2026.09.2 charge-sum audit over the 1,606 exposed Platinum
+records found two cases where MMFF partial charges differ from the input
+formal charge by more than `1e-6` elementary charge: `NR4_3L4Y_A` (formal 0,
+MMFF sum −1) and `PP9_1Z53_A` (formal −4, MMFF sum −6). All 1,606 were
+processed. This is a property of the measured RDKit reference behavior and is
+not evidence that its charge assignment is physically valid. The audit is
+reproducible with `scripts/validation/rdkit_mmff_charge_conservation.py`;
+its compressed per-record data SHA-256 is
+`b286358190270d1d541c1bd2d1b4c5d05c6fbe42c525cada7010f37c252d4f8e`.
+The [atom-order regression run](https://github.com/kent-tokyo/chematic/actions/runs/44933256225)
+passed all 30 variants on both frozen Linux and macOS candidate wheels.
