@@ -485,3 +485,11 @@ of the ten already-exposed type-76 molecules, with per-atom RDKit 2026.09.2
 types and partial charges. It tests atom-order sensitivity on both frozen
 candidate wheels. It is development evidence and does not cover the untested
 case of equally short relevant rings with different type-76 membership.
+
+The [Prime macOS time recovery](https://github.com/kent-tokyo/chematic/actions/runs/44931816522)
+completed all 188 records without reported errors or specified-stereo
+violations. At 2 seconds chematic recovered 60 and RDKit 58; the molecule
+interval was −2.13 to +4.26 points and the scaffold-cluster interval was
+−2.69 to +4.71 points. The preregistered −2-point noninferiority criterion
+was not met. Converged matching recovery was 39 and 38. The gzip row data
+SHA-256 is `d9f74cb2f6f6b70c8dc6bd9a7fef5730ebc7387a64ee086d46a7afd94909a283`.

@@ -2,6 +2,7 @@ name: MMFF N5M atom-order regression
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/mmff-n5m-atom-order.yml'
       - 'scripts/validation/check_n5m_atom_order.py'
