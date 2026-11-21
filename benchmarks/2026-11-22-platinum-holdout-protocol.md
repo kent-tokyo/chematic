@@ -58,8 +58,9 @@ The results record 32,100 minimized conformers for each engine. No
 specified-stereo violations were detected. The heuristic screen flagged
 angle violations in 75 chematic and 88 RDKit conformers, and no bond-length
 or heavy-atom clash flags. All eligible molecular bonds and angles had
-reference parameters for the screen. For one input, `840_3I8P_A`, chematic returned no conformers and the
-RDKit evaluation raised `ValueError('Bad Conformer Id')`; both were counted
+reference parameters for the screen. For one input, `840_3I8P_A`, both engines returned no conformers. An
+independent rerun confirmed that RDKit embedded zero conformers before its
+optimization call raised `ValueError('Bad Conformer Id')`. Both were counted
 as failures. The screen is a
 practical flagging rule rather than a proof of chemical validity.
 
