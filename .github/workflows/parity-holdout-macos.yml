@@ -2,6 +2,7 @@ name: Revised 3D parity macOS holdouts
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-holdout-macos.yml'
 
@@ -44,7 +45,7 @@ jobs:
             echo 'SPLIT=validation/results/platinum-complete-scaffold-split-2026-11-22.json' >> "$GITHUB_ENV"
             echo 'AUDIT=validation/results/platinum-complete-invalid-exclusion-audit-2026-11-22.json' >> "$GITHUB_ENV"
             echo 'COUNT=430' >> "$GITHUB_ENV"
-            echo 'SECONDS=0.2' >> "$GITHUB_ENV"
+            echo 'PARITY_TIME_BUDGET=0.2' >> "$GITHUB_ENV"
           else
             curl --fail --location --retry 3 --max-time 120 --output input.tar.gz https://zenodo.org/records/8137603/files/benchmarking_datasets_and_code.tar.gz
             echo '30a5218e80e442a7e5f9129433d307b7b11dd569930d33244fd9fbd26fbf173b  input.tar.gz' | shasum -a 256 -c
@@ -53,7 +54,7 @@ jobs:
             echo 'SPLIT=validation/results/prime-scaffold-split-2026-11-22.json' >> "$GITHUB_ENV"
             echo 'AUDIT=validation/results/prime-invalid-exclusion-graph-audit-2026-11-22.json' >> "$GITHUB_ENV"
             echo 'COUNT=188' >> "$GITHUB_ENV"
-            echo 'SECONDS=2.0' >> "$GITHUB_ENV"
+            echo 'PARITY_TIME_BUDGET=2.0' >> "$GITHUB_ENV"
           fi
       - name: Measure fixed candidates
         run: |
@@ -61,7 +62,7 @@ jobs:
           python scripts/benchmarks/summarize_platinum_holdout.py holdout-fixed.json "$SPLIT" --output holdout-fixed-summary.json
       - name: Measure equal-time candidates
         run: |
-          python scripts/benchmarks/platinum_time_budget.py --sdf input.sdf --baseline holdout-fixed.json --output holdout-time.json --limit "$COUNT" --seconds "$SECONDS" --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/platinum_time_budget.py --sdf input.sdf --baseline holdout-fixed.json --output holdout-time.json --limit "$COUNT" --seconds "$PARITY_TIME_BUDGET" --max-candidates 20 --geometry --repair-iters 400
           python scripts/benchmarks/summarize_platinum_time_budget.py holdout-time.json --output holdout-time-summary.json
           python scripts/benchmarks/summarize_platinum_time_holdout.py holdout-time.json "$SPLIT" --output holdout-time-cluster.json
       - name: Upload evidence

@@ -3,6 +3,7 @@ name: Freeze 3D parity candidate wheels
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-candidate-wheel.yml'
       - 'crates/chematic-ff/src/mmff94_numeric/**'

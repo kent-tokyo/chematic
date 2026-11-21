@@ -3,6 +3,7 @@ name: Platinum complete development comparison
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/platinum-complete-development.yml'
       - 'crates/chematic-ff/src/mmff94_numeric/**'
