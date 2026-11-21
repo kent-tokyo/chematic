@@ -203,6 +203,23 @@ fn o2cm_sm_formal_charge(view: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
     0.0
 }
 
+// RDKit 2026.09 defaults to relevant cycles, rather than its older
+// symmetrized SSSR, for the ring information used by MMFF. Only type 76
+// consults ring membership here. Cap enumeration to avoid unbounded work on
+// highly symmetric graphs; the pre-existing SSSR path remains the fallback.
+fn mmff_charge_rings(mol: &Molecule, types: &[u8]) -> Vec<Vec<AtomIdx>> {
+    if !types.contains(&76) {
+        return Vec::new();
+    }
+    chematic_perception::relevant_cycles(mol, 10_000).unwrap_or_else(|_| {
+        chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
+            chematic_perception::find_symmetrized_sssr(mol)
+                .rings()
+                .to_vec()
+        })
+    })
+}
+
 /// Compute MMFF94 partial charges using the full PBCI+CHG tables (Halgren 1996).
 ///
 /// Implements equation 15 from MMFF.V paper. For most neutral organic atoms
@@ -230,11 +247,7 @@ pub fn mmff94_charges_numeric(mol: &Molecule) -> Result<Vec<f64>, NumericTypeErr
     // -- NOT the molecule's raw/literal `atom.charge`. See
     // `mmff_derived_formal_charge`'s doc for why this distinction is load-
     // bearing (issue #227 Phase 2 Step 6 BCI residual fix).
-    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
-        chematic_perception::find_symmetrized_sssr(mol)
-            .rings()
-            .to_vec()
-    });
+    let rings = mmff_charge_rings(mol, &types);
     let fchg: Vec<f64> = (0..n)
         .map(|i| mmff_derived_formal_charge(mol, &mmff_mol, &rings, &types, AtomIdx(i as u32)))
         .collect();
@@ -341,11 +354,7 @@ pub(crate) fn mmff94_charges_rdkit_order(
 ) -> Result<Vec<f64>, NumericTypeError> {
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let n = mol.atom_count();
-    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
-        chematic_perception::find_symmetrized_sssr(mol)
-            .rings()
-            .to_vec()
-    });
+    let rings = mmff_charge_rings(mol, &types);
     let fchg: Vec<f64> = (0..n)
         .map(|i| mmff_derived_formal_charge(mol, &mmff_mol, &rings, &types, AtomIdx(i as u32)))
         .collect();

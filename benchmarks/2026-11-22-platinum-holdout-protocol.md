@@ -103,7 +103,8 @@ gradient-component error was at most `1.55e-13 kcal/mol/Å`.
 The maximum MMFF94 and MMFF94s energy error was **309.36 kcal/mol**, on
 `PP9_1Z53_A`; the maximum component gradient error was 22.37 kcal/mol/Å.
 The error came entirely from electrostatics. The numeric atom types and all
-other force-field terms matched in the diagnostic. RDKit assigned the two
+other force-field terms matched in the diagnostic. RDKit selects the first
+ring containing a type-76 atom in its [MMFF charge implementation](https://github.com/rdkit/rdkit/blob/Release_2026_09/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp#L3220). RDKit assigned the two
 type-76 nitrogen formal charges independently on their respective five-member
 rings; the candidate shared the charge across a larger ring. Their MMFF
 partial-charge totals were −6 and −5 respectively, although the molecule's
