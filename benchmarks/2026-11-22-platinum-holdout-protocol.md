@@ -623,6 +623,18 @@ stereo check. Linux regression and independent RDKit tests remain required.
 
 ## Prospective second COD holdout protocol after stereo changes
 
+The [stereo-corrected wheel build](https://github.com/kent-tokyo/chematic/actions/runs/44950293868)
+used merge commit `9db581ac6d2cab75a9fb5809fae1a5ee60870054`, parents
+`f97aa95253f2dc38b0d98a58fde1f646febe8aca` and
+`91f53c1a60cd599bf92884c7db3a17b32c71776b`, crates tree
+`1c8c06ddd74f06762e969948f2c08042aafd484f` and benchmark tree
+`00a8c3615c849288c7d31f718a502bbd40da4fdc`. The CPython 3.12 Linux wheel
+SHA-256 is `3db87234071e820b55c2acfce0b61d42f2edf870094f840d4d22ff9acd725957`;
+the macOS arm64 wheel SHA-256 is
+`438528ccacc94551233a35b3be3b7f914eb71f77f6e00ed0af9ad6c89d993037`.
+These are source-built candidates, not published packages. The Linux regression
+and final-candidate development comparison remain pending.
+
 No conformer outcome from the 2,288 round-two holdout records has been
 inspected. After the stereo regression passes, freeze and fingerprint new
 Linux x86-64 and macOS arm64 wheels, their exact source and benchmark trees,
@@ -648,3 +660,15 @@ checked chematic profile is an open correctness failure. Score force fields on
 common coordinates separately. This extra post-hoc test cannot make the
 earlier Platinum or Prime criteria pass retrospectively and cannot establish
 independence from unrecorded prior exposure.
+
+To keep individual scoring jobs bounded, partition the eligible records into
+four shards by the integer value of each scaffold SHA-256 modulo four. Every
+record in a scaffold goes to the same shard. Run both engines for each record
+on the same runner, preserve the host and result hashes for each shard, and
+recombine all four before the molecule and scaffold-cluster bootstrap. A
+missing, duplicate, misassigned, or differently configured shard makes the
+aggregate invalid. Runtime results are therefore a paired comparison across
+four separately identified hosts per platform, not one homogeneous host.
+The timed scorer alternates engine order within each shard, restarting the
+alternation at each shard boundary; per-record order remains in the results.
+This partitioning is fixed before any second-holdout conformer score.
