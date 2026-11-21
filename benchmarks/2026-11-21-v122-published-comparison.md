@@ -37,3 +37,15 @@ An additional 20-block run uses 1.2.2's `find_mcs_smarts_checked` with the bond-
 | COSMolKit 0.6.2, SMARTS | 13.34 | 0.490 | 0.0755 | 0.0191 | 43.1 |
 
 The raw `2026-11-21-v122-published-mcs-smarts.json` includes the five wheel hashes, validated installed files, per-case measurements and paired ratios. Timings include creation of each library's native result; conversion of a concrete molecule to SMARTS and query comparison happen after timing.
+
+A third 20-block run uses SMARTS as the timed output for all five packages. For 1.2.0 and 1.2.1, the timed call includes converting the concrete MCS molecule with `rdkit_smarts()`. The 1.2.2 lane uses `find_mcs_smarts_checked` with the bond-first objective. RDKit and COSMolKit return SMARTS directly. Post-timing validation compares atom and bond query predicates and input matches. Successful query predicates agree for 1.2.0 on cases 0 and 2, for 1.2.1 on cases 0–3, and for 1.2.2, RDKit and COSMolKit on all five cases. The older versions return a serialization error on case 4. The timing table uses case 0, benzene/toluene, where all five queries pass.
+
+| Package | Import, ms | First parse of five cases, ms | First MCS, ms | Repeated MCS, ms | Process peak, MiB |
+|---|---:|---:|---:|---:|---:|
+| chematic 1.2.0 | 52.30 | 0.057 | 0.0871 | 0.0217 | 44.0 |
+| chematic 1.2.1 | 51.75 | 0.055 | 0.2560 | 0.1839 | 44.0 |
+| chematic 1.2.2 | 52.22 | 0.060 | 0.0364 | 0.0062 | 43.5 |
+| RDKit 2026.9.2 | 32.87 | 408.218 | 0.0885 | 0.0313 | 41.4 |
+| COSMolKit 0.6.2 | 13.18 | 0.488 | 0.0735 | 0.0191 | 43.2 |
+
+The full measurements, wheel verification, validation outcomes, paired ratios and excluded cases are in `2026-11-21-v122-published-mcs-uniform.json`. The five cases are a limited input set.

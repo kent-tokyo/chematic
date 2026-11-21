@@ -76,16 +76,21 @@ def same_query_predicates(actual, reference, chem):
     return False
 
 
-def worker(arm, v122_smarts=False):
+def worker(arm, v122_smarts=False, uniform_smarts=False):
     start = time.perf_counter_ns()
     if arm.startswith("v"):
         lib = importlib.import_module("chematic")
         parse = lib.from_smiles
         def search(mols):
-            if arm == "v122" and v122_smarts:
+            if arm == "v122" and (v122_smarts or uniform_smarts):
                 result, limited = lib.find_mcs_smarts_checked(mols, timeout_ms=2000, bond_count_first=True)
                 return result, limited, "smarts"
             result, limited = lib.find_mcs_checked(mols, timeout_ms=2000)
+            if uniform_smarts and result is not None:
+                try:
+                    return result.rdkit_smarts(), limited, "smarts"
+                except ValueError as error:
+                    return None, limited, f"output error: {error}"
             return (result.smiles if result is not None else None), limited, "smiles"
     elif arm == "rdkit":
         lib = importlib.import_module("rdkit")
@@ -131,17 +136,18 @@ def main():
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--wheel-dir", type=Path)
     parser.add_argument("--v122-smarts", action="store_true")
+    parser.add_argument("--uniform-smarts", action="store_true")
     for arm in ARMS[:3]:
         parser.add_argument(f"--{arm}-path", type=Path)
     args = parser.parse_args()
     if args.worker:
-        print(json.dumps(worker(args.worker, args.v122_smarts)))
+        print(json.dumps(worker(args.worker, args.v122_smarts, args.uniform_smarts)))
         return
     if args.blocks < 20 or not args.output or any(getattr(args, f"{arm}_path") is None for arm in ARMS[:3]):
         parser.error("20 blocks, output and all three installed package paths are required")
     report = {"cases": CASES, "case_sha256": hashlib.sha256(json.dumps(CASES).encode()).hexdigest(),
               "host": platform.platform(), "python": sys.version, "blocks": [], "complete": False,
-              "v122_smarts": args.v122_smarts}
+              "v122_smarts": args.v122_smarts or args.uniform_smarts, "uniform_smarts": args.uniform_smarts}
     if args.validate_only:
         report = json.loads(args.output.read_text())
         if report["cases"] != CASES or len(report["blocks"]) != args.blocks:
@@ -172,6 +178,8 @@ def main():
             command = [sys.executable, __file__, "--worker", arm]
             if args.v122_smarts:
                 command.append("--v122-smarts")
+            if args.uniform_smarts:
+                command.append("--uniform-smarts")
             result = subprocess.run(command, env=env,
                                     text=True, capture_output=True, timeout=120, check=True)
             block[arm] = json.loads(result.stdout)
@@ -186,7 +194,8 @@ def main():
             validations = []
             for case, (query, limited, kind) in zip(CASES, block[arm]["results"], strict=True):
                 if not query:
-                    validations.append({"error": "no MCS output", "limited": limited})
+                    validations.append({"error": kind if kind.startswith("output error:") else "no MCS output",
+                                        "limited": limited})
                     continue
                 mol = Chem.MolFromSmiles(query) if kind == "smiles" else Chem.MolFromSmarts(query)
                 if mol is None:
@@ -255,7 +264,9 @@ def main():
         "search": "prepared molecules; first and second calls timed per case",
         "validation": "RDKit checks parseability, input matches, and query graph predicates after timing; concrete molecules are converted to SMARTS",
         "memory": "whole process peak RSS",
-        "note": ("The v1.2.2 lane returns SMARTS; earlier chematic versions return concrete molecules. "
+        "note": ("Every lane returns SMARTS; earlier chematic versions convert their concrete result within the timed search. "
+                 if report.get("uniform_smarts") else
+                 "The v1.2.2 lane returns SMARTS; earlier chematic versions return concrete molecules. "
                  if report.get("v122_smarts") else
                  "The chematic API returns a concrete molecule; RDKit and COSMolKit return SMARTS. ")
                 + "RDKit parse includes first-use initialization. Query predicates are compared after "

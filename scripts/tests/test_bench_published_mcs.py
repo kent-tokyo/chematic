@@ -32,6 +32,15 @@ class PublishedMcsTests(unittest.TestCase):
             self.assertIsNone(report["paired_repeated_search"][arm][4]["competitor_over_v122"])
         self.assertIsNotNone(report["paired_repeated_search"]["v120"][0]["competitor_over_v122"])
 
+    def test_uniform_smarts_record_excludes_conversion_errors(self):
+        path = Path(__file__).parents[2] / "benchmarks/2026-11-21-v122-published-mcs-uniform.json"
+        report = json.loads(path.read_text())
+        self.assertTrue(report["uniform_smarts"])
+        self.assertTrue(all(row["passes_all_blocks"] for row in report["case_summary"]["v122"]))
+        for arm in ("v120", "v121"):
+            self.assertIn("output error:", report["blocks"][0][arm]["validation"][4]["error"])
+            self.assertIsNone(report["paired_repeated_search"][arm][4]["competitor_over_v122"])
+
     def test_verify_wheel_rejects_an_installed_file_change(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
