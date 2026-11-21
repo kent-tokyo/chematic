@@ -1,5 +1,6 @@
 """Partition integrity checks for audited COD holdouts."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import unittest
@@ -109,6 +110,8 @@ class ShardTest(unittest.TestCase):
         merged = merge_mod.merge(self.split_bytes, pairs, "time")
         self.assertEqual(len(merged["results"]), 6)
         self.assertEqual([r["platform"] for r in merged["shard_provenance"]], ["linux-0", "linux-1", "linux-2"])
+        expected = sorted(range(6), key=lambda i: (hashlib.sha256(f"record-{i}".encode()).digest(), i))
+        self.assertEqual([r["index"] for r in merged["results"]], expected)
 
 
 if __name__ == "__main__":

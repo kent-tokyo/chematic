@@ -2,6 +2,7 @@ name: Stereo candidate COD development comparison
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-development-v3.yml'
 
