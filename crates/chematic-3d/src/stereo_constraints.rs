@@ -903,6 +903,10 @@ pub fn debug_double_bond(
     bond_idx: BondIdx,
 ) -> Option<DoubleBondDebugInfo> {
     let constraint = double_bond_constraint_for(mol, bond_idx)?.ok()?;
+    let status = verify_double_bond_constraint(coords, &constraint);
+    if matches!(status, StereoStatus::Unevaluable(_)) {
+        return None;
+    }
 
     let angle = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
@@ -911,11 +915,6 @@ pub fn debug_double_bond(
         coords.get(constraint.sub2),
     )?;
     let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
-    let status = if actual_same_side == constraint.same_side {
-        StereoStatus::Satisfied
-    } else {
-        StereoStatus::Violated
-    };
     let boundary_deg = 90.0;
     let angle_deg = angle.to_degrees();
     let margin_from_boundary_deg = (angle_deg.abs() - boundary_deg).abs();

@@ -423,10 +423,12 @@ mod tests {
                 c.set(AtomIdx(3), Point3::new(2.0 * scale, -0.5 * scale, 0.0));
                 let x = if atom == 0 { -scale } else { 2.0 * scale };
                 c.set(AtomIdx(atom), Point3::new(x, 0.01 * scale, 0.0));
+                let report = verify_stereo(&m, &c);
                 assert_eq!(
-                    verify_stereo(&m, &c).double_bond[0].status,
+                    report.double_bond[0].status,
                     StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry)
                 );
+                assert!(debug_double_bond(&m, &c, report.double_bond[0].bond).is_none());
             }
         }
     }
