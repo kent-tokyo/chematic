@@ -514,3 +514,23 @@ and geometry-screened recovery counts were identical for both engines. The
 100-candidate run is exploratory: check whether the first 20 candidates
 actually match the prior run before interpreting a difference as a nested
 budget effect, and do not treat it as evidence on the Prime holdout.
+
+## Aromatic silicon follow-up (experimental)
+
+A supplementary constructor audit on the selected COD records, using the
+older local macOS wheel, found one molecule for which RDKit constructs MMFF
+but chematic rejects aromaticity re-perception: an aromatic negatively charged
+silicon connected to positively charged nitrogens. RDKit assigns a double
+bond to the silicon; the current core candidate rule excludes all anionic
+silicon from matching. This support observation has exposed that COD input,
+so any revised implementation must use another untouched evaluation set.
+
+The proposed targeted valence rule is recorded as an **unapplied** patch in
+`validation/experiments/silicon-anion-kekulization.patch`. In a separate
+copy of `chematic-core`, a six-membered synthetic silaanion regression passed
+and all 171 core unit tests passed after applying it. The experimental CI
+applies the patch only in its disposable checkout and compares atom types,
+charges, and common-coordinate MMFF94/MMFF94s energy and gradients against
+RDKit for two synthetic examples and the exposed COD input. Until that CI and
+broader compatibility checks pass, neither the frozen candidate nor the PR's
+production source includes this proposed change.
