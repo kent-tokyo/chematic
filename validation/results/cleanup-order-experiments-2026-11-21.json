@@ -120,6 +120,27 @@
       "report_sha256": "9230a2636a1deb8b80aae7c9efb7e01a1a11bb70465a72033dc803826f127883",
       "source_note": "The report source_commit is the base; acid_base.rs, rdkit/mod.rs and lib.rs contained uncommitted candidate edits recorded by source_sha256.",
       "decision": "reverted after six newly regressed rows"
+    },
+    {
+      "name": "canonical-embedding-stress",
+      "change": "Sort complete query embeddings by canonical target atom order instead of ranking only the transfer site.",
+      "exact_rows": 4017,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        3207
+      ],
+      "regressed_indices": [
+        119,
+        1217,
+        2914,
+        3002,
+        3075,
+        3328
+      ],
+      "report": "cleanup-canonical-embedding-stress-2026-11-21.json",
+      "report_sha256": "3c3cac5d4e0450b19a878e80281693b15c65a0d8a4111b6b52ea56c7163fc200",
+      "source_note": "The report source_commit is the base; acid_base.rs had an uncommitted candidate edit recorded by source_sha256.",
+      "decision": "reverted after six newly regressed rows"
     }
   ]
 }
