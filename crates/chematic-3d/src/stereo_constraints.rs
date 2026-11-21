@@ -676,11 +676,57 @@ fn has_any_direction_marker(mol: &Molecule, alkene_end: AtomIdx, other_end: Atom
     })
 }
 
-/// `true` when `atom_idx` has at least one heavy-atom neighbor other than
-/// `other_end` -- i.e. it's a genuine, non-terminal alkene end that could plausibly
-/// carry its own substituent-direction marker.
+/// Reject a terminal alkene end with no substituents or two identical explicit
+/// hydrogen isotopes. Hydrogen isotopes with distinct labels must remain
+/// distinguishable, including an unspecified H versus explicitly labelled 1H.
 fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -> bool {
-    mol.neighbors(atom_idx).any(|(nb, _)| nb != other_end)
+    let mut neighbors = mol.neighbors(atom_idx).filter(|(nb, _)| *nb != other_end);
+    let Some((first, _)) = neighbors.next() else {
+        return false;
+    };
+    let Some((second, _)) = neighbors.next() else {
+        return true;
+    };
+    if neighbors.next().is_some() {
+        return true;
+    }
+    let first = mol.atom(first);
+    let second = mol.atom(second);
+    !(first.element.atomic_number() == 1
+        && second.element.atomic_number() == 1
+        && first.isotope == second.isotope)
+}
+
+/// A single directional bond can describe the adjacent double bond instead of
+/// the bond currently being inspected. Only attribute it elsewhere when every
+/// marker at this end connects to another doubly marked, evaluable alkene.
+fn markers_belong_to_adjacent_alkene(mol: &Molecule, end: AtomIdx, other: AtomIdx) -> bool {
+    let mut found = false;
+    for (neighbor, marker) in mol.neighbors(end) {
+        if neighbor == other
+            || !matches!(
+                mol.bond_direction(marker).unwrap_or(mol.bond(marker).order),
+                BondOrder::Up | BondOrder::Down
+            )
+        {
+            continue;
+        }
+        found = true;
+        let belongs_elsewhere = mol.neighbors(neighbor).any(|(next, double)| {
+            next != end
+                && mol.bond(double).order == BondOrder::Double
+                && has_real_substituent(mol, neighbor, next)
+                && has_real_substituent(mol, next, neighbor)
+                && !is_cumulated(mol, neighbor, double)
+                && !is_cumulated(mol, next, double)
+                && marked_substituent(mol, neighbor, next).is_some()
+                && marked_substituent(mol, next, neighbor).is_some()
+        });
+        if !belongs_elsewhere {
+            return false;
+        }
+    }
+    found
 }
 
 /// Declared-parity-only prefix of double-bond verification, needing no geometry --
@@ -727,8 +773,16 @@ fn double_bond_constraint_for(
         return None;
     }
 
-    if !has_any_direction_marker(mol, a1, a2) && !has_any_direction_marker(mol, a2, a1) {
+    let first_marked = has_any_direction_marker(mol, a1, a2);
+    let second_marked = has_any_direction_marker(mol, a2, a1);
+    if !first_marked && !second_marked {
         return None; // no declared E/Z on this double bond
+    }
+
+    if (first_marked && !second_marked && markers_belong_to_adjacent_alkene(mol, a1, a2))
+        || (second_marked && !first_marked && markers_belong_to_adjacent_alkene(mol, a2, a1))
+    {
+        return None;
     }
 
     if is_cumulated(mol, a1, bond_idx) || is_cumulated(mol, a2, bond_idx) {

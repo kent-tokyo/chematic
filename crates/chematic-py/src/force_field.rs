@@ -222,6 +222,42 @@ impl PyMolecularForceField {
         nested_positions(&self.field.gradient(&self.positions))
     }
 
+    /// Cartesian MMFF gradient with torsion terms differentiated consistently
+    /// with their energy. Other terms retain their RDKit-compatible behavior.
+    fn gradient_with_consistent_torsions(&self) -> PyResult<Vec<[f64; 3]>> {
+        match &self.field {
+            PreparedField::Mmff { field, .. } => {
+                let mut gradient = vec![0.0; self.positions.len()];
+                field.gradient_with_consistent_torsions(&self.positions, &mut gradient);
+                if gradient.iter().any(|value| !value.is_finite()) {
+                    return Err(PyValueError::new_err("MMFF gradient is non-finite"));
+                }
+                Ok(nested_positions(&gradient))
+            }
+            PreparedField::Uff(_) => Err(PyValueError::new_err(
+                "consistent torsion gradients require an MMFF force field",
+            )),
+        }
+    }
+
+    /// Cartesian MMFF gradient with torsion and out-of-plane terms using
+    /// unrounded plane normals. Other terms keep their existing behavior.
+    fn gradient_with_consistent_planes(&self) -> PyResult<Vec<[f64; 3]>> {
+        match &self.field {
+            PreparedField::Mmff { field, .. } => {
+                let mut gradient = vec![0.0; self.positions.len()];
+                field.gradient_with_consistent_planes(&self.positions, &mut gradient);
+                if gradient.iter().any(|value| !value.is_finite()) {
+                    return Err(PyValueError::new_err("MMFF gradient is non-finite"));
+                }
+                Ok(nested_positions(&gradient))
+            }
+            PreparedField::Uff(_) => Err(PyValueError::new_err(
+                "consistent plane gradients require an MMFF force field",
+            )),
+        }
+    }
+
     /// Return ``(energy, gradient)`` without rebuilding the field.
     fn energy_gradient(&self) -> (f64, Vec<[f64; 3]>) {
         (self.energy(), self.gradient())

@@ -5,6 +5,9 @@ bounds comparisons. These unit tests protect deterministic embedding, atom
 counts, and representative RDKit 2026.09.1 bounds without making all-platform
 bit-identity a unit-test contract.
 """
+import platform
+import sys
+
 import pytest
 
 import chematic
@@ -137,6 +140,46 @@ def test_rdkit_embed_multiple_confs_mmff_matches_individual_optimizer():
     assert optimized[0][0] == status
     assert optimized[0][1] == energy
     assert optimized[0][2] == coords
+
+
+def test_corrected_ensemble_uses_one_batch_and_preserves_default_molecule_behavior():
+    mol = chematic.from_smiles("CCO").add_hydrogens()
+    corrected = mol.etkdg_embed_multiple_confs_mmff_corrected(3, random_seed=42)
+    assert corrected == mol.rdkit_embed_multiple_confs_mmff(3, random_seed=42)
+    assert corrected == mol.etkdg_embed_multiple_confs_mmff_corrected(3, random_seed=42)
+    assert mol.etkdg_embed_multiple_confs_mmff_corrected(0) == []
+    high_order = chematic.from_smiles("CS(=O)(=O)NCC").add_hydrogens()
+    corrected_raw = high_order.etkdg_embed_multiple_confs_mmff_corrected(2, max_mmff_iters=0)
+    compatible_raw = high_order.rdkit_embed_multiple_confs_mmff(2, max_mmff_iters=0)
+    assert len(corrected_raw) == len(compatible_raw) == 2
+    assert corrected_raw[0][2] != compatible_raw[0][2]
+
+
+def test_corrected_ensemble_checks_final_gradient():
+    mol = chematic.from_smiles("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").add_hydrogens()
+    conformers = mol.etkdg_embed_multiple_confs_mmff_corrected(20, random_seed=42)
+    assert len(conformers) == 20
+    gradients = [
+        max(abs(value) for atom in mol.mmff_force_field(coords).gradient() for value in atom)
+        for _, _, coords in conformers
+    ]
+    assert all(status != 0 or gradient <= 0.01 for (status, _, _), gradient in zip(conformers, gradients))
+    assert any(gradient > 0.01 for gradient in gradients)
+
+
+def test_corrected_ensemble_can_repair_near_linear_nitrogen():
+    mol = chematic.from_smiles("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").add_hydrogens()
+    initial = mol.etkdg_embed_multiple_confs_mmff_corrected(20, random_seed=42)
+    repaired = mol.etkdg_embed_multiple_confs_mmff_corrected(20, random_seed=42, repair_mmff_iters=400)
+    assert len(initial) == len(repaired) == 20
+    for before, after in zip(initial, repaired):
+        if before != after:
+            status, energy, coords = after
+            assert status == 0
+            assert energy <= before[1]
+            assert max(abs(v) for atom in mol.mmff_force_field(coords).gradient() for v in atom) <= 0.01
+    if sys.platform == "darwin" and platform.machine() == "arm64":
+        assert any(before != after for before, after in zip(initial, repaired))
 
 
 def test_etkdg_best_gradient_quality_mode_exposes_bounded_energy():

@@ -768,6 +768,18 @@ pub fn atom_must_be_matched(mol: &Molecule, idx: AtomIdx) -> bool {
             let h = i32::from(atom.hydrogen_count.unwrap_or(0));
             bonds + h == 3 - i32::from(atom.charge).abs()
         }
+        // Anionic aromatic silicon has default valence 4. With two aromatic
+        // bonds and charge -1 its target valence is 3, so it requires a pi bond.
+        14 if atom.charge < 0 => {
+            let bonds: i32 = mol
+                .neighbors(idx)
+                .map(|(_, b)| match mol.bond(b).order {
+                    BondOrder::Aromatic => 1,
+                    order => i32::from(order.order_int()),
+                })
+                .sum();
+            bonds + i32::from(atom.hydrogen_count.unwrap_or(0)) == 3 - i32::from(atom.charge).abs()
+        }
         // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
         _ if atom.charge < 0 => false,
         // Any atom (typically C) that already has an exocyclic π bond (e.g. `c(=O)` in
