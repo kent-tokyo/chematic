@@ -35,3 +35,10 @@ paired intervals and errors. Time-budget results are specific to the host and
 load. The source-built wheel is not evidence about a published release; run
 and report the same verification with published macOS and Linux wheels after
 release. Do not conclude general RDKit parity from this benchmark alone.
+
+The macOS arm64 source wheel was built before opening holdout results from
+source commit `d30d186` (the subsequent benchmark-only commits do not change
+`crates/`). Its SHA-256 is
+`018eeb2fd87f6b0958610b4f3e2974de33a50bd31cf0a9a82324a7f01954ec35`.
+The holdout probe and reporting scripts are pinned by their Git commits and
+the probe records its own SHA-256 in its output.
