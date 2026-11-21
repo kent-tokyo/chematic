@@ -121,3 +121,26 @@ and `0.00629 kcal/mol/Å`. The raw per-record follow-up is
 (SHA-256 `2eb33a5e5c908e86e4e2fde743b33ee687aaf8c1ac611a0edee18ff9ca3340f0`);
 the adjacent JSON summary includes sampled finite-difference errors. The
 run resumed from a validated prefix after a disk-space interruption.
+
+## Linux x86-64 source-wheel results for the preceding candidate
+
+[Hosted run 44917477313](https://github.com/kent-tokyo/chematic/actions/runs/44917477313)
+built merge commit `615187d54fd59c0d572e25732cfb03bd88414f4b`, combining
+base `f97aa95253f2dc38b0d98a58fde1f646febe8aca` and head
+`9dd693ef8874833fba5d1ceeb029111710ed08cd`. Its CPython 3.12 Linux wheel
+SHA-256 is `c6252725d3e632c485ca6289597c4450aed1e74242598fcb1c0922a0deb16c0e`.
+The fixed-candidate recovery was 1,012/1,606 for chematic and 1,005/1,606 for
+RDKit; the paired scaffold-cluster 95% interval for the difference was −0.56
+to +1.44 points. Converged matching recovery was 699 and 701 respectively.
+
+At 0.2 seconds, recovery was 735 and 679 respectively, with a
+scaffold-cluster interval of +2.42 to +4.59 points. Requiring a converged
+matching conformer yielded 574 and 540, interval +1.23 to +3.03 points.
+No timed rows reported errors or specified-stereo violations. These are
+single-host source-wheel results, not published-wheel evidence. They predate
+the type-76 charge change and do not independently validate that change.
+
+Raw records are `validation/results/platinum-holdout-linux-fixed-2026-11-22.json.gz`
+(SHA-256 `eb9ad8fdadfeec2776b87f9b99d0cd9b0efe7f3b48f4274635c1832143f2a4a3`)
+and `validation/results/platinum-holdout-linux-time-2026-11-22.json.gz`
+(SHA-256 `eede0b2905ad049781d6a937c0fafaf62c64374de641882cf7101096932dce04`).

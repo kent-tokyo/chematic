@@ -88,3 +88,32 @@ fn fused_anion_energy_and_gradient_match_rdkit_on_common_coordinates() {
         }
     }
 }
+
+#[test]
+fn exposed_n5m_corpus_matches_rdkit_partial_charges() {
+    let fixture: serde_json::Value =
+        serde_json::from_str(include_str!("mmff94_n5m_exposed_fixture.json")).unwrap();
+    let molecules = fixture["molecules"].as_array().unwrap();
+    assert_eq!(molecules.len(), 10);
+    for row in molecules {
+        let smiles = row["smiles"].as_str().unwrap();
+        let name = row["name"].as_str().unwrap();
+        let mol = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let types = assign_mmff94_numeric_types(&mol).unwrap();
+        let charges = mmff94_charges_numeric(&mol).unwrap();
+        let expected_types: Vec<u8> = serde_json::from_value(row["types"].clone()).unwrap();
+        let expected_charges: Vec<f64> = serde_json::from_value(row["charges"].clone()).unwrap();
+        assert_eq!(types, expected_types, "{name}: atom types");
+        assert_eq!(
+            charges.len(),
+            expected_charges.len(),
+            "{name}: charge count"
+        );
+        for (i, (actual, expected)) in charges.iter().zip(expected_charges).enumerate() {
+            assert!(
+                (actual - expected).abs() < 1e-10,
+                "{name} atom {i}: {actual} != {expected}"
+            );
+        }
+    }
+}
