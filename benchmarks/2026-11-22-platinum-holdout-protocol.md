@@ -104,7 +104,7 @@ The maximum MMFF94 and MMFF94s energy error was **309.36 kcal/mol**, on
 `PP9_1Z53_A`; the maximum component gradient error was 22.37 kcal/mol/Å.
 The error came entirely from electrostatics. The numeric atom types and all
 other force-field terms matched in the diagnostic. RDKit selects the first
-ring containing a type-76 atom in its [MMFF charge implementation](https://github.com/rdkit/rdkit/blob/Release_2026_09/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp#L3220). RDKit assigned the two
+ring containing a type-76 atom in its [MMFF charge implementation](https://github.com/rdkit/rdkit/blob/Release_2026_09_2/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp#L3220). RDKit assigned the two
 type-76 nitrogen formal charges independently on their respective five-member
 rings; the candidate shared the charge across a larger ring. Their MMFF
 partial-charge totals were −6 and −5 respectively, although the molecule's
@@ -200,3 +200,27 @@ wheels, evaluation, error handling and acceptance criteria before scoring the
 holdout. Confirm the number of scorable records and interpret uncertainty in
 view of the 430-record denominator; a wide interval cannot establish the
 2-point margin. The published-package checks remain a separate step.
+
+The type-76 fix's ten exposed regression molecules contain 36 type-76 atoms.
+Among them, no atom has equally short containing rings with different numbers
+of type-76 nitrogens. They therefore do not test the equal-length cycle-order
+boundary. Relevant-cycle enumeration is capped at 10,000 cycles; above that
+cap the code retains its earlier SSSR fallback, which is not established as
+RDKit 2026.09 parity for every graph.
+
+The revised candidate's [Linux development run](https://github.com/kent-tokyo/chematic/actions/runs/44926444020)
+built merge commit `fdb86b4598785a68ee0eb12c9ace49a1a98790fc` from base
+`f97aa95253f2dc38b0d98a58fde1f646febe8aca` and head
+`d3d320839993ce18437c496483f62ba032b2d83e`. Its source-wheel SHA-256 was
+`5dc978885dab49252e20c5f955f9aa23a1bf74e3249129edd245900454fcaa2c`.
+All 129 development records were processed by both engines, and all bond
+and angle references were available. The screened 1 Å recovery was 68 for
+chematic and 63 for RDKit; the paired molecule-bootstrap interval was +0.78
+to +7.75 percentage points. The 2,580 minimized candidates per engine had
+no detected specified-stereo violations; the heuristic screen flagged angle
+violations in 23 and 24 conformers, respectively. This is development data,
+not evidence on the remaining 430 records. The wheel was not retained as an
+artifact, so it must not be treated as an executable artifact for holdout
+scoring. Raw development results are in
+`validation/results/platinum-complete-linux-development-2026-11-22.json.gz`
+(SHA-256 `1681d406cfba385cb2a6466e5ab92010b36c4623a64885c4cdf853f0bc653f60`).
