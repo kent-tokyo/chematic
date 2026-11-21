@@ -2,6 +2,7 @@ name: Revised complete holdout macOS time recovery
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-complete-macos-time.yml'
 

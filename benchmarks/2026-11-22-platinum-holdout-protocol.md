@@ -374,3 +374,13 @@ records, fix the scorer, eligible population, handling of one-sided support,
 comparison denominator, fixed and timed budgets, artifact hashes, and
 bootstrap/noninferiority rule. The earlier 430-record criterion remains unmet
 regardless of this additional assessment.
+
+The [macOS time recovery](https://github.com/kent-tokyo/chematic/actions/runs/44931051084)
+completed all 430 records without reported per-row errors or specified-stereo
+violations. Chematic recovered 104 and RDKit 82 within 0.2 seconds; the
+paired molecule interval was +2.79 to +7.67 points and the scaffold-cluster
+interval was +2.75 to +7.58 points. Both exceed the registered −2-point
+lower-bound criterion. Converged matching recovery was 72 and 59, with
+scaffold interval +0.91 to +5.33 points. The compressed row data SHA-256 is
+`e18f9025b7046fcb02f231e9786567c03342faf86ca1076eef048724422ad751`.
+These timed results do not alter the fixed-candidate criterion's failure.
