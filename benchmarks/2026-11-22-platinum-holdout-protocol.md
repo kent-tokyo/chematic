@@ -525,12 +525,12 @@ bond to the silicon; the current core candidate rule excludes all anionic
 silicon from matching. This support observation has exposed that COD input,
 so any revised implementation must use another untouched evaluation set.
 
-The proposed targeted valence rule is recorded as an **unapplied** patch in
-`validation/experiments/silicon-anion-kekulization.patch`. In a separate
-copy of `chematic-core`, a six-membered synthetic silaanion regression passed
-and all 171 core unit tests passed after applying it. The experimental CI
-applies the patch only in its disposable checkout and compares atom types,
-charges, and common-coordinate MMFF94/MMFF94s energy and gradients against
-RDKit for two synthetic examples and the exposed COD input. Until that CI and
-broader compatibility checks pass, neither the frozen candidate nor the PR's
-production source includes this proposed change.
+The targeted valence rule was first recorded as an experimental patch in
+`validation/experiments/silicon-anion-kekulization.patch`. In an isolated
+copy of `chematic-core`, a synthetic silaanion regression and all 171 core
+unit tests passed. [Experimental CI](https://github.com/kent-tokyo/chematic/actions/runs/44935610099)
+then confirmed atom types, charges, and common-coordinate MMFF94/MMFF94s
+energy and gradients against RDKit for two synthetic examples and the exposed
+COD input. The rule is now included in the PR source with regression tests.
+The earlier frozen wheels and their COD holdout measurements predate it; a
+new candidate and a separate untouched validation set are required.

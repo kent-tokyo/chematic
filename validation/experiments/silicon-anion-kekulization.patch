@@ -1,6 +1,6 @@
 --- a/crates/chematic-core/src/kekulization.rs
 +++ b/crates/chematic-core/src/kekulization.rs
-@@ -768,6 +768,19 @@
+@@ -768,6 +768,18 @@
              let h = i32::from(atom.hydrogen_count.unwrap_or(0));
              bonds + h == 3 - i32::from(atom.charge).abs()
          }
@@ -14,8 +14,7 @@
 +                    order => i32::from(order.order_int()),
 +                })
 +                .sum();
-+            bonds + i32::from(atom.hydrogen_count.unwrap_or(0))
-+                == 3 - i32::from(atom.charge).abs()
++            bonds + i32::from(atom.hydrogen_count.unwrap_or(0)) == 3 - i32::from(atom.charge).abs()
 +        }
          // Any anionic aromatic atom (e.g. cyclopentadienyl [cH-]) donates its lone pair.
          _ if atom.charge < 0 => false,
