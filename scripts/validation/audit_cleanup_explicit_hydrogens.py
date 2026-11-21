@@ -24,6 +24,7 @@ def main():
     parser.add_argument("--wheel", required=True, type=Path)
     parser.add_argument("--candidate-commit", required=True)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--rooted", action="store_true", help="also root the explicit-H graph at each heavy atom")
     args = parser.parse_args()
     if chematic.__version__ != "1.2.2" or rdBase.rdkitVersion != "2026.09.1":
         raise ValueError("expected chematic 1.2.2 and RDKit 2026.09.1")
@@ -58,11 +59,36 @@ def main():
                 row["error"] = {"category": error.category, "code": error.code}
             variants.append(row)
         accepted = all("error" not in x for x in variants)
-        refused = all(x.get("error") == {"category": "ambiguous", "code": "cleanup_metal_hydrogen"} for x in variants)
+        refused = (variants[0].get("error") == variants[1].get("error")
+                   and variants[0].get("error", {}).get("category") == "ambiguous"
+                   and variants[0]["error"].get("code") in ("cleanup_metal_hydrogen", "cleanup_unstable_metal"))
         matches = (variants[0]["input_formula"] == variants[1]["input_formula"] and
                    ((accepted and variants[0]["output"] == variants[1]["output"] and
                      all(x["output_formula"] == x["input_formula"] for x in variants)) or refused))
-        rows.append({"index": index, "matches": matches, "variants": variants})
+        rooted = None
+        if args.rooted:
+            expanded = Chem.AddHs(reference)
+            forms = sorted({Chem.MolToSmiles(expanded, canonical=False, isomericSmiles=True, rootedAtAtom=i)
+                            for i, atom in enumerate(expanded.GetAtoms()) if atom.GetAtomicNum() != 1})
+            failures = []
+            for text in forms:
+                rdkit_input = Chem.MolFromSmiles(text)
+                if rdkit_input is None or Chem.MolToSmiles(rdkit_input, isomericSmiles=True) != Chem.MolToSmiles(reference, isomericSmiles=True):
+                    failures.append({"input": text, "reason": "RDKit input differs"})
+                    continue
+                try:
+                    source = chematic.from_smiles(text)
+                    outcome = source.cleanup()
+                    if (not accepted or source.formula != variants[0]["input_formula"]
+                            or outcome.formula != source.formula or outcome.rdkit_smiles != variants[0]["output"]):
+                        failures.append({"input": text, "reason": "output or formula differs"})
+                except chematic.ChematicInputError as error:
+                    if not refused or {"category": error.category, "code": error.code} != variants[0]["error"]:
+                        failures.append({"input": text, "reason": f"unexpected {error.category}/{error.code}"})
+            rooted = {"count": len(forms), "forms_sha256": hashlib.sha256("\n".join(forms).encode()).hexdigest(),
+                      "failures": failures}
+            matches = matches and not failures
+        rows.append({"index": index, "matches": matches, "variants": variants, "rooted": rooted})
     report = {"candidate_commit": args.candidate_commit, "wheel": args.wheel.name,
               "wheel_sha256": digest(args.wheel), "rdkit_version": rdBase.rdkitVersion,
               "installed_package_files_verified": len(files), "corpus_sha256": digest(CORPUS),

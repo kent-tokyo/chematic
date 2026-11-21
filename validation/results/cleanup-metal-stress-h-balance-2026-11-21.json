@@ -1,0 +1,162 @@
+{
+  "candidate_commit": "98cc9103f5c674066b2e4e95a314b92342e09edf",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "8860d478b500f8afa55aa499f972bd02daf820c3f1560e067d3948f1c95b12b9",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "rdkit_version": "2026.09.1",
+  "installed_package_files_verified": 44,
+  "method": "metal element set follows cleanup; RDKit AddHs then reparse; compare exact cleanup outcomes and explicit/implicit hydrogen counts; charge changes reported separately",
+  "counts": {
+    "metal_rows": 575,
+    "compared": 575,
+    "both_refused": 1,
+    "hydrogen_not_conserved": 3,
+    "different_variants": 3
+  },
+  "exception_rows": [
+    {
+      "index": 1294,
+      "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+      "expanded": "C(/N=C(\\S[H])N(/N=C(/C(C([H])([H])[H])=[N]/[Sn](=[C](/N([H])[H])[H])[H])[H])[H])([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_metal_hydrogen"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_metal_hydrogen"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 1413,
+      "input": "[Na]12=[C](C=C(F)C=[CH]1)N(C1=C[C+]=C(C=C1)Cl)C1C(=[N]2)C(=O)N(C)C(=O)N=1",
+      "expanded": "[Na]12=[C](C([H])=C(F)C([H])=[C]1[H])N(C1=C([H])[C+]=C(Cl)C([H])=C1[H])C1=NC(=O)N(C([H])([H])[H])C(=O)C1=[N]2",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CN1C(=O)N=C(N(C2=C[C+]=C(Cl)C=C2)[C]2=[Na][CH]=CC(F)=C2)C(=N)C1=O",
+          "input_hydrogens": 9,
+          "output_hydrogens": 10,
+          "input_charge": 1,
+          "output_charge": 1
+        },
+        {
+          "outcome": "ok",
+          "output": "CN1C(=O)N=C(N(C2=C[C+]=C(Cl)C=C2)[C]2=[Na][CH]=CC(F)=C2)C(=N)C1=O",
+          "input_hydrogens": 9,
+          "output_hydrogens": 10,
+          "input_charge": 1,
+          "output_charge": 1
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": false
+    },
+    {
+      "index": 1686,
+      "input": "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
+      "expanded": "C(C1=C([H])[C]([Pt])=C(Oc2c([H])c([H])c(O[H])c([H])c2C(C(=O)O[H])([H])[H])S(Cl)=C1[H])([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CC1=CC=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+          "input_hydrogens": 12,
+          "output_hydrogens": 13,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "CC1=C[C]=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+          "input_hydrogens": 12,
+          "output_hydrogens": 12,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": false,
+      "hydrogen_conserved": false
+    },
+    {
+      "index": 2289,
+      "input": "O=C(O)[C@@H]1([SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+      "expanded": "O=C(O[H])[C@]1(->[Sn][H])([H])C([H])([H])[C@](/C(=C(/C(P(=O)(O[H])O[H])([H])[H])[H])[H])([H])C([H])([H])C([H])([H])N1[H]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "O=C(O)[C@@H]1(->[SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "O=C(O)[C@H]1(->[SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": false,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 2796,
+      "input": "CCCCc1cccc([3CH](C)C)c1O.[K]",
+      "expanded": "C(C(C(C(c1c([H])c([H])c([H])c([3C](C([H])([H])[H])(C([H])([H])[H])[H])c1O[H])([H])[H])([H])[H])([H])[H])([H])([H])[H].[K]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CCCCc1cccc([3CH](C)C)c1[O-].[K+]",
+          "input_hydrogens": 20,
+          "output_hydrogens": 19,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "CCCCc1cccc([3CH](C)C)c1[O-].[K+]",
+          "input_hydrogens": 20,
+          "output_hydrogens": 19,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": false
+    },
+    {
+      "index": 3014,
+      "input": "CN(C)C1=[C]([Cu][C@@H](CC2=CC=C(NC(=O)C3=C(Cl)C=NC=C3Cl)C=C2)C(=O)O)C(=O)C1=O",
+      "expanded": "C(N(C([H])([H])[H])c1[c]([Cu][C@@](C(c2c([H])c([H])c(N(C(=O)c3c(Cl)c([H])nc([H])c3Cl)[H])c([H])c2[H])([H])[H])(C(=O)O[H])[H])c(=O)c1=O)([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CN(C)c1[c]([Cu+])c(=O)c1=O.O=C([O-])CCc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "CN(C)c1[c]c(=O)c1=O.O=C([O-])CCc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1.[Cu+]",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": false,
+      "hydrogen_conserved": true
+    }
+  ]
+}

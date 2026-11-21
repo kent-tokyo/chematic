@@ -10,9 +10,9 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RECORD = ROOT / "validation/results/rdkit-cleanup-ligand-h-stress-2026-11-21.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-unstable-metal-stress-2026-11-21.json"
 PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-integrated-prs-stress-2026-10-24.json"
-TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-ligand-h-10k-2026-11-21.json"
+TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-unstable-metal-10k-2026-11-21.json"
 TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-integrated-prs-10k-2026-10-24.json"
 REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
@@ -129,11 +129,11 @@ def main() -> None:
     # RDKit dropped. They are exact-string differences with conserved formula.
     check_comparison(
         record, previous, PREVIOUS_RECORD,
-        [65, 83, 101, 403, 809, 911, 1294, 1366, 1432, 1437, 1471, 1497, 1577,
-         1630, 1664, 1781, 1831, 1854, 1875, 1878, 1890, 2003, 2025,
-         2069, 2076, 2130, 2178, 2203, 2576, 2598, 2602, 2677, 2787,
-         2855, 2909, 3075, 3153, 3154, 3207, 3369, 3402, 3501, 3504, 3590, 3700,
-         3720, 3849, 3910, 4023, 4027],
+        [65, 83, 101, 403, 457, 809, 911, 1294, 1331, 1366, 1367, 1368, 1387, 1432, 1437, 1471, 1497, 1556, 1577,
+         1630, 1664, 1756, 1781, 1831, 1854, 1875, 1878, 1890, 2003, 2025,
+         2069, 2076, 2130, 2178, 2203, 2501, 2532, 2543, 2576, 2598, 2602, 2677, 2787,
+         2855, 2909, 3075, 3153, 3154, 3160, 3207, 3369, 3376, 3402, 3501, 3504, 3590, 3700,
+         3720, 3755, 3849, 3910, 3944, 3963, 4023, 4027],
     )
     assert record["baseline_comparison"]["fixed_indices"] == []
     assert record["baseline_comparison"]["reionize_fixed_indices"] == []
@@ -142,14 +142,16 @@ def main() -> None:
         4019, 4066
     ]
     assert record["reionize_exact_rows"] == record["normalize_exact_rows"] == 4069
-    assert record["exact_rows"] == 4019
+    assert record["exact_rows"] == 4004
     assert record["semantic_classification_counts"] == {
-        "different_after_sanitization": 34,
+        "different_after_sanitization": 44,
         "representation_after_sanitization": 15,
-        "source_error": 1,
+        "source_error": 6,
     }
     mismatches = {row["index"]: row for row in record["mismatches"]}
     assert mismatches[1294]["source_error"].startswith("cleanup_metal_hydrogen:")
+    for index in (457, 1556, 1756, 3755, 3944):
+        assert mismatches[index]["source_error"].startswith("cleanup_unstable_metal:")
     for index, metal in ((2025, "[FeH+2]"), (2203, "[PtH+2]"),
                          (3075, "[CuH+]"), (3402, "[ZnH+3]")):
         assert metal in mismatches[index]["chematic_cleanup"], index
@@ -161,8 +163,10 @@ def main() -> None:
     ten_k = json.loads(TEN_K_RECORD.read_text())
     ten_k_previous = json.loads(TEN_K_PREVIOUS.read_text())
     check_current_record(ten_k)
-    check_comparison(ten_k, ten_k_previous, TEN_K_PREVIOUS, [6991, 7850])
-    assert ten_k["exact_rows"] == 9996
+    check_comparison(ten_k, ten_k_previous, TEN_K_PREVIOUS, [6991, 7850, 7998, 9504])
+    assert ten_k["exact_rows"] == 9994
+    assert next(row for row in ten_k["mismatches"] if row["index"] == 7998)["source_error"].startswith("cleanup_metal_hydrogen:")
+    assert next(row for row in ten_k["mismatches"] if row["index"] == 9504)["source_error"].startswith("cleanup_unstable_metal:")
     assert ten_k_previous["exact_rows"] == 9998
     assert ten_k["baseline_comparison"]["fixed_indices"] == []
 
@@ -185,7 +189,7 @@ def main() -> None:
     assert summary["candidate_reionize_exact_rows"] == reionize["reionize_exact_rows"]
     assert summary["candidate_cleanup_exact_rows"] == reionize["exact_rows"]
     assert summary["candidate_normalize_exact_rows"] == reionize["normalize_exact_rows"]
-    print("Current-source standardization evidence checked: Cleanup exact-SMILES regressions 50/2 including one refusal; Reionize unchanged")
+    print("Current-source standardization evidence checked: Cleanup exact-SMILES regressions 65/4 including 6/2 refusals; Reionize unchanged")
 
 
 if __name__ == "__main__":
