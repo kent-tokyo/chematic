@@ -384,3 +384,24 @@ lower-bound criterion. Converged matching recovery was 72 and 59, with
 scaffold interval +0.91 to +5.33 points. The compressed row data SHA-256 is
 `e18f9025b7046fcb02f231e9786567c03342faf86ca1076eef048724422ad751`.
 These timed results do not alter the fixed-candidate criterion's failure.
+
+The revised candidate's Prime fixed-count runs each processed all 188 records
+without reported engine errors or specified-stereo violations, with complete
+bond and angle screen references. Linux recovered 59 for chematic and 61 for
+RDKit; its molecule interval was −4.26 to +2.13 points and scaffold interval
+−4.79 to +2.29 points. macOS recovered 60 and 61, with molecule interval
+−3.72 to +3.19 points and scaffold interval −4.37 to +3.14 points. Neither
+platform met the prespecified −2-point fixed-count noninferiority criterion.
+Converged matching recoveries were 40/40 on Linux and 39/38 on macOS. Both
+engines recovered roughly one third of the experimental reference records;
+this population remains difficult for both implementations.
+
+The Linux fixed raw SHA-256 is
+`fc45178879a365f9781a601c16b8228836845f67563ec683baa3668715fdc8df`
+(gzip SHA-256 `8ad6d4da273a415bca40aa4e1848741c157dc77e7af299f17a8066a06906c7d7`);
+the macOS raw SHA-256 is
+`3ce64efde873fcde6a265a94d1346a7e78adaf210dee36661ad79feab0ffc2d5`
+(gzip SHA-256 `88611204e5d9f871bdeca1c7d62f809ff23a7a5ca61045c0d09011c9345a466c`).
+Their time steps also stopped before scoring due to the `SECONDS` collision.
+Separate recovery jobs use the corresponding frozen wheel, fixed-result hash
+and the preregistered 2-second protocol on the same 188 records.

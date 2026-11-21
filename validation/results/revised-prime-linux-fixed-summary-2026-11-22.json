@@ -1,0 +1,38 @@
+{
+  "rows": 188,
+  "statuses": {
+    "ok": 188
+  },
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 42,
+  "stages": {
+    "recovery": {
+      "chematic_recovered": 59,
+      "rdkit_recovered": 61,
+      "difference": -0.010638297872340425,
+      "paired_molecule_95_interval": [
+        -0.0425531914893617,
+        0.02127659574468085
+      ],
+      "scaffold_clusters": 158,
+      "paired_scaffold_cluster_95_interval": [
+        -0.047872340425531915,
+        0.022857142857142857
+      ]
+    },
+    "converged_recovery": {
+      "chematic_recovered": 40,
+      "rdkit_recovered": 40,
+      "difference": 0.0,
+      "paired_molecule_95_interval": [
+        -0.015957446808510637,
+        0.015957446808510637
+      ],
+      "scaffold_clusters": 158,
+      "paired_scaffold_cluster_95_interval": [
+        -0.015789473684210527,
+        0.015873015873015872
+      ]
+    }
+  }
+}
