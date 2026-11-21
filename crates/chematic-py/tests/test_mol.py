@@ -258,6 +258,18 @@ def test_cleanup_preserves_donor_valence_after_metal_disconnection():
     assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[LiH]"
 
 
+def test_cleanup_preserves_explicit_metal_hydrogens():
+    for text in (
+        "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+        "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+    ):
+        source = chematic.from_smiles(text)
+        cleaned = source.cleanup()
+        assert cleaned.formula == source.formula
+        assert chematic.from_smiles(cleaned.rdkit_smiles).formula == source.formula
+        assert cleaned.cleanup().formula == source.formula
+
+
 def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():
     source = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
     assert source.cleanup().rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"

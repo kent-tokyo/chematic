@@ -44,7 +44,31 @@ pub fn cleanup(mol: &Molecule) -> Molecule {
         normalized
     };
     let normalized = charge_originally_isolated_metals(&without_h, normalized);
-    acid_base::reionize_for_cleanup(&normalized)
+    let cleaned = acid_base::reionize_for_cleanup(&normalized);
+    restore_cut_metal_hydrogens(&without_h, &normalized, cleaned)
+}
+
+fn restore_cut_metal_hydrogens(
+    before: &Molecule,
+    disconnected: &Molecule,
+    mut cleaned: Molecule,
+) -> Molecule {
+    for (idx, atom) in before.atoms() {
+        let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
+            continue;
+        };
+        if !is_metal(atom.element)
+            || cleaned.atom(idx).hydrogen_count.unwrap_or(0) >= hydrogens
+            || !before
+                .neighbors(idx)
+                .any(|(neighbor, _)| disconnected.bond_between(idx, neighbor).is_none())
+        {
+            continue;
+        }
+        // Cutting another ligand does not remove a metal's explicit H.
+        cleaned.set_hydrogen_count(idx, Some(hydrogens));
+    }
+    cleaned
 }
 
 fn prepare_alkali_bridge_aromaticity(mol: Molecule) -> Molecule {
@@ -969,6 +993,50 @@ mod tests {
             assert_eq!(
                 chematic_smiles::rdkit_cleanup_canonical_smiles(&output).as_deref(),
                 Ok(expected),
+                "{input}"
+            );
+        }
+    }
+
+    #[test]
+    fn cleanup_preserves_explicit_hydrogen_on_disconnected_platinum() {
+        let input = "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5";
+        let molecule = parse(input).unwrap();
+        let cleaned = cleanup(&molecule);
+        assert_eq!(
+            crate::calc_mol_formula(&cleaned),
+            crate::calc_mol_formula(&molecule)
+        );
+        let platinum = cleaned
+            .atoms()
+            .find(|(_, atom)| atom.element.atomic_number() == 78)
+            .unwrap();
+        assert_eq!(platinum.1.hydrogen_count, Some(1));
+        let text = chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).unwrap();
+        let reparsed = parse(&text).unwrap();
+        assert_eq!(
+            crate::calc_mol_formula(&reparsed),
+            crate::calc_mol_formula(&molecule)
+        );
+        assert_eq!(
+            crate::calc_mol_formula(&cleanup(&cleaned)),
+            crate::calc_mol_formula(&molecule)
+        );
+    }
+
+    #[test]
+    fn cleanup_preserves_metal_hydrides_when_bonds_are_cut() {
+        for input in [
+            "C[PtH]C",
+            "C[FeH]C",
+            "N[ZnH]N",
+            "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+        ] {
+            let molecule = parse(input).unwrap();
+            let cleaned = cleanup(&molecule);
+            assert_eq!(
+                crate::calc_mol_formula(&cleaned),
+                crate::calc_mol_formula(&molecule),
                 "{input}"
             );
         }
