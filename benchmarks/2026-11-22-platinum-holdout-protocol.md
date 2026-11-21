@@ -608,11 +608,43 @@ macOS Rust test matches those counts without unsupported entries. The fixture
 is development evidence, not an independent holdout or a complete stereo
 validation of the dataset.
 
-The macOS arm64 Python 3.12 wheel from the same merge commit has SHA-256
+The macOS arm64 Python 3.12 wheel from the silicon-corrected merge commit has SHA-256
 `b5c01642b5c545835071dedc808ad0d930865512444dd0f3b80e58c7d43b0201`.
 The [independent Linux stereo diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44937409465)
 reproduced the exposed Prime development mismatch at candidate index 43:
 the specified E double bond had a −0.49-degree dihedral (Z-like) after the
 MMFF stage, with nonconverged status 1. The same case was not reproduced in
-the earlier local macOS run. Whether the mismatch arose during embedding or
-MMFF minimization requires a separate raw-coordinate comparison.
+the earlier local macOS run. A [second Linux diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44937817100)
+measured the same seed's embedded dihedral at −177.49 degrees before MMFF,
+confirming that the specified E bond flipped during the MMFF stage on that
+runner. The checked profile now attempts a stereo-valid embedded fallback,
+marks it unfinished, and omits a candidate when both geometries fail its
+stereo check. Linux regression and independent RDKit tests remain required.
+
+## Prospective second COD holdout protocol after stereo changes
+
+No conformer outcome from the 2,288 round-two holdout records has been
+inspected. After the stereo regression passes, freeze and fingerprint new
+Linux x86-64 and macOS arm64 wheels, their exact source and benchmark trees,
+and the RDKit 2026.09.2 oracle. First repeat the 225 already-exposed
+development records for the final candidate, including constructor coverage,
+input identity, stereo violations, errors and convergence. Do not use their
+results as holdout evidence.
+
+On each platform, audit input identity and MMFF/UFF constructor support on all
+2,288 holdout records before scoring, retain one-sided support and parsing
+failures in a separate coverage table, and derive the common MMFF domain using
+the existing eligibility and exclusion scripts. Stop before scoring if the
+input identity audit reveals a mismatch requiring a protocol change. On that
+common domain, use the same geometry and specified-stereo screening,
+20-attempt seed-42 fixed protocol with 200 MMFF iterations and up to 400
+retry iterations, and a separate 0.2-second per-engine, 20-attempt deadline.
+Count runtime errors as failures, report convergence-required results and
+stereo violations, and compare both paired-molecule and scaffold-cluster 95%
+bootstrap intervals. The lower bound must exceed −2 percentage points for
+both resampling methods on each platform and each budget. Also report
+specified-stereo violations for every returned candidate; any violation by the
+checked chematic profile is an open correctness failure. Score force fields on
+common coordinates separately. This extra post-hoc test cannot make the
+earlier Platinum or Prime criteria pass retrospectively and cannot establish
+independence from unrecorded prior exposure.
