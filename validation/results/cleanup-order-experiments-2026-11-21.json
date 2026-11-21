@@ -1,0 +1,146 @@
+{
+  "baseline_commit": "e3bbb16fe6916f744df325f494fd7bc64577ffa5",
+  "rdkit_version": "2026.09.1",
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "status": "experiments reverted after newly regressed rows",
+  "experiments": [
+    {
+      "name": "index-order",
+      "exact_rows": 4022,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        1664,
+        1878,
+        2855
+      ],
+      "regressed_indices": [
+        119,
+        2824,
+        3075
+      ],
+      "report_sha256": "52f33ae04b9898a1e66b77e72174519120a59695d236c1a48890f2412299b906",
+      "report": "cleanup-index-order-stress-2026-11-21.json",
+      "change": "Replace canonical atom-order ranks in verified_transfer with input atom indices.",
+      "source_note": "The report source_commit identifies the base; the candidate had an uncommitted acid_base.rs edit. Its source_sha256 records the candidate file."
+    },
+    {
+      "name": "embedding-order",
+      "exact_rows": 4026,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        65,
+        83,
+        101,
+        809,
+        911,
+        1664,
+        2076,
+        2855
+      ],
+      "regressed_indices": [
+        1217,
+        2824,
+        2914,
+        3075
+      ],
+      "report_sha256": "e58a57260bf0196993797e74c6c29497329132287539eb552dcbcc885773a1e3",
+      "report": "cleanup-embedding-order-stress-2026-11-21.json",
+      "change": "Sort complete query embeddings by input indices instead of canonical position of the transfer site.",
+      "source_note": "The report source_commit identifies the base; the candidate had an uncommitted acid_base.rs edit. Its source_sha256 records the candidate file."
+    },
+    {
+      "name": "unverified-acid-stress",
+      "exact_rows": 4046,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        65,
+        83,
+        101,
+        403,
+        809,
+        911,
+        1366,
+        1432,
+        1437,
+        1577,
+        1664,
+        1854,
+        1875,
+        1878,
+        1890,
+        2076,
+        2855,
+        2909,
+        3153,
+        3154,
+        3207,
+        3504,
+        3700,
+        4023
+      ],
+      "regressed_indices": [],
+      "report_sha256": "20dfae7d76a1ae71938d89dc89a1f8c8fb8a4cb104e5308b3cbfad59383977d6",
+      "decision": "reverted; four existing Cleanup tests failed for acid strength, annulene valence and ferrocene product",
+      "report": "cleanup-unguarded-acid-stress-2026-11-21.json",
+      "change": "Use the unchecked catalog reionization path for Cleanup instead of the acidity-verified path.",
+      "source_note": "The report source_commit identifies the base; the candidate had an uncommitted acid_base.rs edit. Its source_sha256 records the candidate file."
+    },
+    {
+      "name": "unverified-acid-10k",
+      "exact_rows": 9998,
+      "compatible_rows": 10000,
+      "fixed_indices": [
+        6991,
+        7850
+      ],
+      "regressed_indices": [],
+      "report_sha256": "1223c7544afc2c1f4865b0ec5e08abb459a749f04233272426c6a3da6765cccc",
+      "decision": "reverted; four existing Cleanup tests failed for acid strength, annulene valence and ferrocene product",
+      "report": "cleanup-unguarded-acid-10k-2026-11-21.json",
+      "change": "Use the unchecked catalog reionization path for Cleanup instead of the acidity-verified path.",
+      "source_note": "The report source_commit identifies the base; the candidate had an uncommitted acid_base.rs edit. Its source_sha256 records the candidate file."
+    },
+    {
+      "name": "rdkit-ranks-stress",
+      "change": "Order transfer sites by RDKit-compatible atom ranks, falling back to native canonical order when unavailable.",
+      "exact_rows": 4017,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        1664
+      ],
+      "regressed_indices": [
+        119,
+        2027,
+        2824,
+        2914,
+        3075,
+        3386
+      ],
+      "report": "cleanup-rdkit-ranks-stress-2026-11-21.json",
+      "report_sha256": "9230a2636a1deb8b80aae7c9efb7e01a1a11bb70465a72033dc803826f127883",
+      "source_note": "The report source_commit is the base; acid_base.rs, rdkit/mod.rs and lib.rs contained uncommitted candidate edits recorded by source_sha256.",
+      "decision": "reverted after six newly regressed rows"
+    },
+    {
+      "name": "canonical-embedding-stress",
+      "change": "Sort complete query embeddings by canonical target atom order instead of ranking only the transfer site.",
+      "exact_rows": 4017,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        3207
+      ],
+      "regressed_indices": [
+        119,
+        1217,
+        2914,
+        3002,
+        3075,
+        3328
+      ],
+      "report": "cleanup-canonical-embedding-stress-2026-11-21.json",
+      "report_sha256": "3c3cac5d4e0450b19a878e80281693b15c65a0d8a4111b6b52ea56c7163fc200",
+      "source_note": "The report source_commit is the base; acid_base.rs had an uncommitted candidate edit recorded by source_sha256.",
+      "decision": "reverted after six newly regressed rows"
+    }
+  ]
+}

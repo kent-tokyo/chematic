@@ -39,6 +39,23 @@ def value(result: dict) -> tuple[str | None, str | None]:
     return None, result.get("Err", "missing result")
 
 
+def equivalent_after_sanitization(oracle: Chem.Mol, actual: str | None) -> bool | None:
+    """Compare parseable output with a sanitized copy of the Cleanup result."""
+    if actual is None:
+        return None
+    try:
+        parsed = Chem.MolFromSmiles(actual)
+        if parsed is None:
+            return None
+        sanitized = Chem.Mol(oracle)
+        Chem.SanitizeMol(sanitized)
+        return Chem.MolToSmiles(sanitized, isomericSmiles=True) == Chem.MolToSmiles(
+            parsed, isomericSmiles=True
+        )
+    except (ValueError, RuntimeError):
+        return None
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--corpus", type=Path, default=DEFAULT_CORPUS)
@@ -128,9 +145,8 @@ def main() -> None:
                              "source_input": source_input, "rdkit_input": rdkit_input})
             continue
         try:
-            expected = Chem.MolToSmiles(
-                rdMolStandardize.Cleanup(rdkit_mol), canonical=True, isomericSmiles=True
-            )
+            oracle_cleanup = rdMolStandardize.Cleanup(rdkit_mol)
+            expected = Chem.MolToSmiles(oracle_cleanup, canonical=True, isomericSmiles=True)
         except Exception as exc:
             errors.append({"index": index, "input": input_text,
                            "oracle_error": f"{type(exc).__name__}: {exc}"})
@@ -194,6 +210,15 @@ def main() -> None:
             )
             cleanup_classes[classification] += 1
             cleanup_statuses[support_status] += 1
+            equivalent = equivalent_after_sanitization(oracle_cleanup, actual)
+            if source_error is not None:
+                semantic_classification = "source_error"
+            elif equivalent is True:
+                semantic_classification = "representation_after_sanitization"
+            elif equivalent is False:
+                semantic_classification = "different_after_sanitization"
+            else:
+                semantic_classification = "unclassified"
             mismatches.append({
                 "index": index,
                 "input": input_text,
@@ -202,6 +227,8 @@ def main() -> None:
                 "source_error": source_error,
                 "classification": classification,
                 "support_status": support_status,
+                "equivalent_after_sanitization": equivalent,
+                "semantic_classification": semantic_classification,
             })
         if index not in reionize_compatible:
             pass
@@ -333,6 +360,15 @@ def main() -> None:
         "normalize_mismatches": None if args.cleanup_only else normalize_mismatches,
         "exact_rows": len(exact),
         "classification_counts": dict(sorted(cleanup_classes.items())),
+        "semantic_classification_counts": dict(sorted(Counter(
+            row["semantic_classification"] for row in mismatches
+        ).items())),
+        "sanitized_equivalent_mismatches": sum(
+            row["equivalent_after_sanitization"] is True for row in mismatches
+        ),
+        "sanitization_unavailable_mismatches": sum(
+            row["equivalent_after_sanitization"] is None for row in mismatches
+        ),
         "support_status_counts": dict(sorted(cleanup_statuses.items())),
         "reionize_compatible_rows": len(reionize_compatible),
         "reionize_exact_rows": len(reionize_exact),
@@ -352,6 +388,7 @@ def main() -> None:
         "limits": [
             "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
             "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
+            "sanitized equivalence applies after sanitizing a copy of the RDKit product and reparsing the chematic output; it does not establish equality of the original in-memory states",
             "RDKit agreement is not independent chemical truth",
         ],
     }

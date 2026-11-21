@@ -1,0 +1,75 @@
+{
+  "checked_at": "2026-11-21T13:17:10.589346+00:00",
+  "mcs_record": "benchmarks/2026-11-21-v122-published-mcs-uniform-cos063.json",
+  "mcs_record_sha256": "b11f32aad97a06078fecf6f49833b05f634ed7ee8e969c6c4b64dff97318c9aa",
+  "speed_record": "benchmarks/2026-11-21-v122-published-speed-cos063.json",
+  "speed_record_sha256": "e287e5e3288e51a3ec84a287a09d4ebc2888a8ea077b75a12112ca2a333d2e1d",
+  "release_record": "validation/results/pypi-v1.2.2-artifact-verification-2026-11-21.json",
+  "release_record_sha256": "cca2669a47ac95925163c3f36a1eab76dc5863248cca87e6fbfd81d1063d8f5c",
+  "v122_complete_file_set_matches": true,
+  "method": "compare exact wheel filename and SHA-256 in PyPI JSON with both measurement records",
+  "wheels": [
+    {
+      "arm": "v120",
+      "package": "chematic",
+      "version": "1.2.0",
+      "filename": "chematic-1.2.0-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "660fbc39f2c388c4c362648b4d0a782e8e995e756c4dc6c29f528ff9a8bc70dd",
+      "pypi_url": "https://pypi.org/pypi/chematic/1.2.0/json",
+      "pypi_response_sha256": "1f12dffe279c3ebd5b6e033c35b4dff0c666f18fd0168a278d184aa8396d7f1a",
+      "installed_files_verified_in_mcs": 44
+    },
+    {
+      "arm": "v121",
+      "package": "chematic",
+      "version": "1.2.1",
+      "filename": "chematic-1.2.1-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "b6fb1f43defeb1d4f9f93b61107c3015abfbe6bf66dcf934d0a572c302f5e9e6",
+      "pypi_url": "https://pypi.org/pypi/chematic/1.2.1/json",
+      "pypi_response_sha256": "dd46107dec8bc834edf9e3eade6ccca36b5c4c78038f37694c6f17305b56ecd9",
+      "installed_files_verified_in_mcs": 44
+    },
+    {
+      "arm": "v122",
+      "package": "chematic",
+      "version": "1.2.2",
+      "filename": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "682c96b2c74b9f43c21efb11a8d8979e9760f7856d911af7c455238560464266",
+      "pypi_url": "https://pypi.org/pypi/chematic/1.2.2/json",
+      "pypi_response_sha256": "6af1ad04f623ed5e0d17af54e060a7fbc1bce9707c0ab6922673507c268acbb0",
+      "installed_files_verified_in_mcs": 44
+    },
+    {
+      "arm": "rdkit",
+      "package": "rdkit",
+      "version": "2026.9.2",
+      "filename": "rdkit-2026.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "3860ba53505f27cb24d05383027f78e3f82aefd6caf193c217a94d876d91b023",
+      "pypi_url": "https://pypi.org/pypi/rdkit/2026.9.2/json",
+      "pypi_response_sha256": "7e68ff465c29e65207acf8d9dc9a26766123c080ef03557e21e8c7d4b118c1fb",
+      "installed_files_verified_in_mcs": 656
+    },
+    {
+      "arm": "cosmolkit",
+      "package": "cosmolkit",
+      "version": "0.6.3",
+      "filename": "cosmolkit-0.6.3-cp313-cp313-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl",
+      "sha256": "cb6840a6040565e66a2244cf7becce37b87d17b0fd644aeb517fba0578cbfc30",
+      "pypi_url": "https://pypi.org/pypi/cosmolkit/0.6.3/json",
+      "pypi_response_sha256": "30f5837f767808b9c50038242f7422e5bcc75f7803bced0864d9efc1eafe98b2",
+      "installed_files_verified_in_mcs": 4
+    }
+  ],
+  "latest_stable_at_check": {
+    "rdkit": {
+      "version": "2026.9.2",
+      "pypi_url": "https://pypi.org/pypi/rdkit/json",
+      "pypi_response_sha256": "6150edfc9e7bfa1277fb49a322c10a897b474bd36cfd53f20246479889fd2728"
+    },
+    "cosmolkit": {
+      "version": "0.6.3",
+      "pypi_url": "https://pypi.org/pypi/cosmolkit/json",
+      "pypi_response_sha256": "bd99a289ba9d7f855dde7663cce01134c5816785a2186c3f7ff1dd43a848b748"
+    }
+  }
+}

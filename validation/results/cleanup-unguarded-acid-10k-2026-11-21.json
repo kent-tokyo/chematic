@@ -1,0 +1,90 @@
+{
+  "profile": "source_cleanup_vs_rdkit_2026_09_1",
+  "detail_scope": "all",
+  "source_commit": "e3bbb16fe6916f744df325f494fd7bc64577ffa5",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "7b55e01acda12d0b0e68b84a6e7a6dab1845f00a44de849369bf7b4e9590a2c8",
+    "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
+    "crates/chematic-chem/src/standardize/reionize.rs": "8206cf61448859b527cb40424ef2c4fb5edc114965f30dd5f7ddc20d7bb960cb",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "eb2b0c77102a4da264be39e0199652c9894875a5d7cdad1cec4b0872d57e55b9",
+    "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "3c7caa345a246f85a4e0c3a05ba6ec0a1ad6786b6eb85619421bb883e9fa51c0",
+    "crates/chematic-chem/src/hydrogen.rs": "aec88111ce1afff2d70a43dee2385adbb13d16eda76e2c81a6cd156da542c374",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
+    "crates/chematic-core/src/molecule/builder.rs": "428383c24b1c4e61896956cd148272b354c563bcd85133eef96dac6bf9bcc968",
+    "crates/chematic-core/src/molecule/metadata.rs": "20606bb414962cda8222913eeb17373c2d278d758c5202237ffa61acf5ddfbd0",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
+    "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "5e83f8039e4384679e908c39b90c4c27899c9b9459d44ac922d0d048bd3da817",
+    "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "ba475b91bbfbd5e7a59b88a76f97e354833a619e37e0616e1df0eb7563249ca3",
+    "scripts/rdkit_cleanup_source_gate.py": "0bb222ff559690d528db0c54bd0996f96fda1464a20e349e75eb599a72ea5755"
+  },
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "source_dump_sha256": "9e00ec4762c2f9b68d461bc60c5775ab9045a64d366103e85468a8b8737f2583",
+  "rdkit_version": "2026.09.1",
+  "source_rows": 10000,
+  "compatible_rows": 10000,
+  "normalize_compatible_rows": 10000,
+  "normalize_exact_rows": 10000,
+  "normalize_oracle_errors": [],
+  "normalize_classification_counts": {},
+  "normalize_support_status_counts": {},
+  "normalize_mismatches": [],
+  "exact_rows": 9998,
+  "classification_counts": {
+    "canonical_representation": 1,
+    "metal_disconnection_policy": 1
+  },
+  "support_status_counts": {
+    "not_implemented": 1,
+    "representation_only": 1
+  },
+  "reionize_compatible_rows": 10000,
+  "reionize_exact_rows": 10000,
+  "reionize_all_rows_exact": 10000,
+  "reionize_all_rows_oracle_errors": [],
+  "reionize_oracle_errors": [],
+  "reionize_classification_counts": {},
+  "reionize_support_status_counts": {},
+  "reionize_mismatches": [],
+  "rdkit_changed_rows": 148,
+  "oracle_nonreparseable_indices": [],
+  "source_nonreparseable_indices": [],
+  "excluded": [],
+  "oracle_errors": [],
+  "mismatches": [
+    {
+      "index": 8341,
+      "input": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+      "rdkit_cleanup": "CN(C)CC1C=[C-]C=C1.[C-2]1C=CC=C1.[Fe+4]",
+      "chematic_cleanup": "CN(C)C[c-]1cccc1.[Fe+2].c1cc[cH-]c1",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 8791,
+      "input": "S1C2=C(C=CC=C2)N3C1=[S+][Cu]34[S+]=C5SC6=C(C=CC=C6)N45",
+      "rdkit_cleanup": "S=C1[N-]c2ccccc2S1.S=C1[N-]c2ccccc2S1.[Cu+2]",
+      "chematic_cleanup": "S=c1[n-]c2ccccc2s1.S=c1[n-]c2ccccc2s1.[Cu+2]",
+      "source_error": null,
+      "classification": "canonical_representation",
+      "support_status": "representation_only"
+    }
+  ],
+  "baseline_comparison": {
+    "previous_source_commit": "5826756132ef272e423fc941c31eb821b3861de6",
+    "previous_dump_sha256": "0cfeaad66cb9353b9465e21a5c7b085c62f8b53a02b4681fe6da92890c7580fd",
+    "previous_exact": 9996,
+    "fixed_indices": [
+      6991,
+      7850
+    ],
+    "regressed_indices": []
+  },
+  "limits": [
+    "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
+    "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
+    "RDKit agreement is not independent chemical truth"
+  ]
+}
