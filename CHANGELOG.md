@@ -10,6 +10,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- 2D depiction typesets bonded atom labels like isolated ones: charges as superscripts (O⁻, NH₃⁺, S²⁺), hydrogen counts as subscripts (NH₂) and isotopes as superscript prefixes (¹³C). A drawing no longer mixes `O-` with `Na⁺` (#1280).
 - Preserve metal hydrogen counts during Cleanup when correcting a gain or loss restores the molecule's hydrogen total without changing nonmetal hydrogen counts.
 - Preserve explicit ligand hydrogen counts during Cleanup when cutting metal bonds would otherwise invent hydrogens.
 - Preserve aromatic copper coordination across Kekule and aromatic input spellings, and retain explicit zero hydrogen on an imine after metal disconnection.
