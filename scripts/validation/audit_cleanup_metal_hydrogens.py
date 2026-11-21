@@ -68,7 +68,7 @@ def main():
               "installed_package_files_verified": len(files),
               "corpus_sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest(),
               "source_record": str(RECORD.relative_to(ROOT)), "rows": rows}
-    path = ROOT / "validation/results/cleanup-metal-hydrogen-wheel-2026-11-21.json"
+    path = ROOT / "validation/results/cleanup-metal-hydrogen-checked-wheel-2026-11-21.json"
     path.write_text(json.dumps(report, indent=2) + "\n")
     failures = [row["index"] for row in rows if "refused" not in row and (len({row["input_formula"], row["output_formula"],
                                                       row["reparsed_formula"], row["repeated_formula"]}) != 1

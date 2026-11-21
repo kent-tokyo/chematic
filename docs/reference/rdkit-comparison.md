@@ -37,11 +37,12 @@ records classify each difference. The same source Reionize gate matches all
 4,072 stress rows. These are fixed-corpus string comparisons.
 
 The later source candidate preserves explicit metal hydrogens when their loss
-accounts for a molecular hydrogen deficit. Its fixed-corpus comparison records
-4,020/4,069 exact stress strings and 9,996/10,000 broad strings. Two newly
-different stress rows retain a hydrogen that both earlier chematic and RDKit
-discarded. The [row audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md)
-separates the released wheel from the source candidate.
+accounts for a molecular hydrogen deficit and rejects an unresolved hydrogen
+transfer. Its fixed-corpus comparison records 4,019/4,069 exact stress strings,
+including one refusal, and 9,996/10,000 broad strings. Two newly different
+stress rows retain a hydrogen that both earlier chematic and RDKit discarded.
+The [row audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md)
+separates the released wheel from the source candidates.
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|
