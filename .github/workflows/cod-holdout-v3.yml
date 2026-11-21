@@ -105,6 +105,8 @@ jobs:
         run: |
           python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split "shard/split-$PARITY_SHARD.json" --invalid-exclusion-audit "shard/audit-$PARITY_SHARD.json" --partition holdout --output "fixed-$PARITY_SHARD.json" --limit "$PARITY_SAMPLE_COUNT" --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
           python scripts/benchmarks/platinum_time_budget.py --sdf reference/cod-sample.sdf --baseline "fixed-$PARITY_SHARD.json" --output "time-$PARITY_SHARD.json" --limit "$PARITY_SAMPLE_COUNT" --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py "fixed-$PARITY_SHARD.json" --output "fixed-summary-$PARITY_SHARD.json"
+          python scripts/benchmarks/summarize_platinum_time_budget.py "time-$PARITY_SHARD.json" --output "time-summary-$PARITY_SHARD.json"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
@@ -114,6 +116,8 @@ jobs:
             shard/audit-${{ matrix.shard }}.json
             fixed-${{ matrix.shard }}.json
             time-${{ matrix.shard }}.json
+            fixed-summary-${{ matrix.shard }}.json
+            time-summary-${{ matrix.shard }}.json
             host.json
           if-no-files-found: warn
 
@@ -153,7 +157,7 @@ jobs:
             cp "piece-$part/fixed-$part.json" "shards/fixed-$part.json"
             cp "piece-$part/time-$part.json" "shards/time-$part.json"
           done
-          python -c 'import glob,hashlib,os,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()==os.environ["PARITY_WHEEL_SHA"]; assert hashlib.sha256(pathlib.Path("scripts/validation/merge_cod_holdout_shards.py").read_bytes()).hexdigest()=="8a0da99f75373c1911d37e42fbb4805fa2b5bcb6310d82c4fd1c65d6be5be013"'
+          python -c 'import glob,hashlib,os,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()==os.environ["PARITY_WHEEL_SHA"]; assert hashlib.sha256(pathlib.Path("scripts/validation/merge_cod_holdout_shards.py").read_bytes()).hexdigest()=="ab0cbf9b1580b123910004800dbb45cd3b9db898efc55316649bc1e585eaea61"'
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'
           python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
       - name: Merge and summarize complete holdout

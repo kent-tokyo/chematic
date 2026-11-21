@@ -19,7 +19,7 @@ def merge(parent_bytes, pairs, kind):
     if not expected or len(expected) != sum(r.get("split") == "holdout" for r in parent["rows"]):
         raise ValueError("parent holdout is empty or has duplicate indices")
     combined, seen, parts, provenance = [], set(), set(), []
-    common, template = None, None
+    common, template, platform_family = None, None, None
     count = len(pairs)
     for split_bytes, data_bytes in pairs:
         split, data = json.loads(split_bytes), json.loads(data_bytes)
@@ -49,9 +49,10 @@ def merge(parent_bytes, pairs, kind):
         if kind == "fixed" and data["split_sha256"] != digest(split_bytes):
             raise ValueError("fixed result split hash mismatch")
         metadata = {k: v for k, v in data.items() if k not in ("platform", "split_sha256", "results")}
+        family = data["platform"].split("-", 1)[0]
         if common is None:
-            common, template = metadata, dict(data)
-        elif metadata != common:
+            common, template, platform_family = metadata, dict(data), family
+        elif metadata != common or family != platform_family:
             raise ValueError("shard run settings or software identity differ")
         provenance.append({"shard_index": part, "platform": data["platform"], "split_sha256": digest(split_bytes), "result_sha256": digest(data_bytes), "records": len(rows)})
         combined.extend(rows)

@@ -674,4 +674,15 @@ aggregate invalid. Runtime results are therefore a paired comparison across
 four separately identified hosts per platform, not one homogeneous host.
 The timed scorer alternates engine order within each shard, restarting the
 alternation at each shard boundary; per-record order remains in the results.
+Report recovery separately for each shard as well. The combined intervals
+condition on these particular runners and do not quantify uncertainty from
+host-to-host variation.
 This partitioning is fixed before any second-holdout conformer score.
+Before scoring, a local integration check split and reassembled the 225
+already-exposed COD development rows: every row was identical, and the
+existing summarizer retained recovery counts of 161 and 163 across 200
+scaffolds. A separate check reassembled all 430 previously-exposed Platinum
+Linux time rows identically and retained the 385-scaffold recovery difference
+of +2.79 percentage points. These are tests of the merge procedure using old
+results, not new holdout measurements. Synthetic tests also verify rejection
+of missing, duplicated, misassigned or differently configured shards.

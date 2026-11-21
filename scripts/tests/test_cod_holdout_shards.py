@@ -99,6 +99,10 @@ class ShardTest(unittest.TestCase):
         changed["split_sha256"] = "wrong"
         with self.assertRaises(ValueError):
             merge_mod.merge(self.split_bytes, [pairs[0], (pairs[1][0], mod.json_bytes(changed)), pairs[2]], "fixed")
+        changed["split_sha256"] = mod.digest(pairs[1][0])
+        changed["platform"] = "macOS-arm64"
+        with self.assertRaises(ValueError):
+            merge_mod.merge(self.split_bytes, [pairs[0], (pairs[1][0], mod.json_bytes(changed)), pairs[2]], "fixed")
 
     def test_timed_rows_merge_with_per_shard_provenance(self):
         pairs = []
