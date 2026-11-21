@@ -150,6 +150,17 @@ fn restore_cut_metal_hydrogens(
     if changes.is_empty() {
         return cleaned;
     }
+    let gain = changes
+        .iter()
+        .any(|&(idx, original)| implicit_hcount(&cleaned, idx) > original);
+    let loss = changes
+        .iter()
+        .any(|&(idx, original)| implicit_hcount(&cleaned, idx) < original);
+    if gain && loss {
+        // A hydrogen could have moved between metals. Conservation alone
+        // cannot establish which metal should retain it.
+        return cleaned;
+    }
     let hydrogen_counts = |mol: &Molecule| -> (u32, u32) {
         mol.atoms().fold((0, 0), |(total, nonmetal), (idx, atom)| {
             let count =
@@ -1184,6 +1195,22 @@ mod tests {
         assert_ne!(
             crate::calc_mol_formula(&before),
             crate::calc_mol_formula(&cleaned)
+        );
+    }
+
+    #[test]
+    fn metal_hydrogen_restoration_does_not_guess_a_transfer_between_metals() {
+        let before = parse("[FeH]C.[Zn]N").unwrap();
+        let disconnected = parse("[Fe].[CH3].[ZnH].[NH2]").unwrap();
+        let cleaned =
+            super::restore_cut_metal_hydrogens(&before, &disconnected, disconnected.clone());
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(0)).hydrogen_count,
+            Some(0)
+        );
+        assert_eq!(
+            cleaned.atom(chematic_core::AtomIdx(2)).hydrogen_count,
+            Some(1)
         );
     }
 
