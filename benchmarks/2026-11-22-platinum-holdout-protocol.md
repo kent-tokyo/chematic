@@ -456,3 +456,17 @@ common-domain selector SHA-256 is
 `d2825bd9951a939333bf5f8ad926883f2801318f1b66ba68b28c68634d757d15`.
 The decompressed split SHA-256 is
 `138fff6f10426bf4041faae25fc07717e436eb7f965e2df65c5983cde65e3449`.
+
+A supplementary identity audit was added after the COD jobs started because
+their original graph check compares atom numbers and bond connectivity/order,
+but does not itself compare per-atom formal charge or aromaticity. An audit of
+all 2,263 selected holdout records on the local macOS wheel from source commit
+`d30d186` found matching atomic number, formal charge and aromaticity at every
+atom. The parsing and hydrogen-addition sources are unchanged between that
+wheel and the revised candidate; the force-field code differs. One record
+contains isotopic atoms, and the two implementations produced the same
+isotope-aware molecular formula; atom-by-atom isotope identity was not
+independently checked. This retrospective input audit did not change the
+registered eligibility or scoring rules. Its records are in
+`validation/results/cod-holdout-atom-identity-audit-2026-11-22.json.gz`
+(SHA-256 `9b8c17f2afbd8c3746f102014c3a2517117ec132c1305bd3a14a1e3da5c95010`).

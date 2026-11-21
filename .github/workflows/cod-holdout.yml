@@ -2,6 +2,7 @@ name: Revised COD holdout comparison
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-holdout.yml'
 
