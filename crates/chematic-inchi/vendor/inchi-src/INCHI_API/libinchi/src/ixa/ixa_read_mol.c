@@ -137,7 +137,7 @@ void INCHI_DECL IXA_MOL_ReadMolfile(IXA_STATUS_HANDLE hStatus,
     {
         if (error_string[0])
         {
-            STATUS_PushMessage( hStatus, IXA_STATUS_ERROR, error_string );
+            STATUS_PushMessage( hStatus, IXA_STATUS_ERROR, "%s", error_string );
         }
         else
         {
