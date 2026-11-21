@@ -224,3 +224,60 @@ artifact, so it must not be treated as an executable artifact for holdout
 scoring. Raw development results are in
 `validation/results/platinum-complete-linux-development-2026-11-22.json.gz`
 (SHA-256 `1681d406cfba385cb2a6466e5ab92010b36c4623a64885c4cdf853f0bc653f60`).
+
+The revised candidate's [Prime development run](https://github.com/kent-tokyo/chematic/actions/runs/44926079891)
+built Linux merge commit `8451329616ebac9d4089d77caa094097e653fb2d` from base
+`f97aa95253f2dc38b0d98a58fde1f646febe8aca` and head
+`4b24f16884d4d57d676a37803c578e041a1714ea`. The source-wheel SHA-256 was
+`d9d011803b68df28309b353645b030f09c639ff87bf585fb1b9ce34349abbccc`.
+All 31 records were processed by both engines with complete bond and angle
+screen references. Twenty candidates per engine gave 11 screened recoveries
+within 1 Å for chematic and 8 for RDKit; the paired molecule-bootstrap
+interval was −3.23 to +22.58 points. The molecular and scaffold dependence
+of repeated records is not modeled by this development summary. The results
+are highly uncertain and neither engine recovered most references. Across
+620 minimized candidates each, no specified-stereo violations were detected;
+the angle screen flagged one chematic conformer and no RDKit conformers.
+The fixed-candidate elapsed time per engine reached approximately 54 seconds
+for chematic and 189 seconds for RDKit on individual records on this host.
+Those batch times are exploratory and do not establish a speed comparison.
+The executable wheel was not retained. Raw records are
+`validation/results/prime-linux-development-2026-11-22.json.gz` (SHA-256
+`15b45a33a7f8015f1579c103b55178197b0f5248ca9133bfff84298281fe9230`).
+
+## Preregistered evaluation of the revised Linux candidate
+
+After reviewing the two development splits, the candidate wheel is frozen
+before scoring either new holdout. [Candidate build 44927371343](https://github.com/kent-tokyo/chematic/actions/runs/44927371343)
+produced Linux CPython 3.12 wheel SHA-256
+`046fd444e4131fbc5fabc4c1d14f5c9fe64b6525f42158abc961496f741a7898`
+from merge commit `ac055be0c0262b32bfe52f7a9dd1cb3607cd1919`, parents
+`f97aa95253f2dc38b0d98a58fde1f646febe8aca` and
+`eea47ed329b1f67b7066005aadbcb2d8ebd1a4ab`. The executable wheel, rather
+than a later rebuild, is the input to the evaluation.
+
+Evaluate all 430 complete-Platinum holdout records and all 188 Prime holdout
+records, separately, with RDKit 2026.09.2 and the same 20-candidate,
+seed-42, maximum-200-iteration MMFF94, corrected-embedding and optional
+400-iteration retry protocol used above. Score symmetry-aware heavy-atom
+RMSD (up to 100,000 graph matches), specified stereochemistry and the same
+heuristic geometry screen. Keep all records and count errors as failures;
+report engine-specific errors and convergence-required recovery. The split
+SHA-256 values are `00a3871e2157745dd1a90efeaa0c357912c5e04ec97a668b8c926c9815e63b0b`
+and `52cb71f7b9d45b6085251fdd72c689d9f99f3f281ef65098e2446748e42cd330`.
+Use paired molecule and scaffold-cluster bootstrap intervals. The fixed-count
+noninferiority criterion for each population is a lower 95% interval bound
+above −2 percentage points under both resampling methods; otherwise the test
+is inconclusive or fails that criterion, not proof of equivalence. Repeated
+Prime records may describe one molecule, making cluster intervals important.
+
+Separately measure both engines using a 0.2-second per-engine deadline on
+complete-Platinum and a 2-second deadline on Prime, both with at most 20
+attempts and the original seed schedule. Prime's longer budget is selected
+before scoring because its development molecules are substantially slower.
+Report completion, recovery and convergence, molecule and cluster intervals,
+errors and host details. The same −2-point lower-bound criterion applies to
+each fixed-time comparison. Measurements are limited to the recorded host,
+retry settings and populations. The geometry checks are flags, not a proof
+of physical validity. Unknown historical exposure, unsupported chemistry,
+equal-length cycle order and the relevant-cycle cap remain boundaries.
