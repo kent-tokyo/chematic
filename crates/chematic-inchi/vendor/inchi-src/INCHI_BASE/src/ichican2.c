@@ -1640,9 +1640,10 @@ Node CellGetMinNode( Partition *p, Cell *W, Node v, CANON_DATA *pCD )
             uInpAuxRank = 0;
         }
         /* find vMin = min { vCur : (vCur > vInp) && (vCur in W) } */
-        for (; i < W->next; i++)
+        int cell_index;
+        for (cell_index = i; cell_index < W->next; cell_index++)
         {
-            nCurAtNumb = (int) p->AtNumber[(int) i];
+            nCurAtNumb = (int) p->AtNumber[cell_index];
             if (!( p->Rank[nCurAtNumb] & rank_mark_bit ))
             {
                 /* vertex nCurAtNumb is not marked, find whether it fits the conditions */
