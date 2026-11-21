@@ -23,13 +23,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     for arm in SOURCES:
         parser.add_argument(f'--{arm}-metadata', required=True, type=Path)
+    parser.add_argument('--cosmolkit-version', default='0.6.2')
+    parser.add_argument('--mcs-record', type=Path, default=MCS)
+    parser.add_argument('--speed-record', type=Path, default=SPEED)
+    parser.add_argument('--rdkit-current-metadata', type=Path)
+    parser.add_argument('--cosmolkit-current-metadata', type=Path)
     parser.add_argument('--output', required=True, type=Path)
     args = parser.parse_args()
-    mcs = json.loads(MCS.read_text())
-    speed = json.loads(SPEED.read_text())
+    mcs_path = args.mcs_record.resolve()
+    speed_path = args.speed_record.resolve()
+    mcs = json.loads(mcs_path.read_text())
+    speed = json.loads(speed_path.read_text())
     release = json.loads(RELEASE.read_text())
     rows = []
     for arm, (package, version) in SOURCES.items():
+        if arm == 'cosmolkit':
+            version = args.cosmolkit_version
         path = getattr(args, f'{arm}_metadata')
         metadata = json.loads(path.read_text())
         wheel = mcs['wheel_verification'][arm]
@@ -57,13 +66,24 @@ def main():
                      'pypi_url': f'https://pypi.org/pypi/{package}/{version}/json',
                      'pypi_response_sha256': digest(path),
                      'installed_files_verified_in_mcs': wheel['installed_files_verified']})
+    latest = {}
+    for arm in ('rdkit', 'cosmolkit'):
+        path = getattr(args, f'{arm}_current_metadata')
+        if path is None:
+            continue
+        meta = json.loads(path.read_text())
+        expected_version = SOURCES[arm][1] if arm == 'rdkit' else args.cosmolkit_version
+        if meta['info']['name'].lower() != arm or meta['info']['version'] != expected_version:
+            raise ValueError(f'{arm} latest stable version differs from measured wheel')
+        latest[arm] = {'version': expected_version, 'pypi_url': f'https://pypi.org/pypi/{arm}/json',
+                       'pypi_response_sha256': digest(path)}
     report = {'checked_at': datetime.now(timezone.utc).isoformat(),
-              'mcs_record': str(MCS.relative_to(ROOT)), 'mcs_record_sha256': digest(MCS),
-              'speed_record': str(SPEED.relative_to(ROOT)), 'speed_record_sha256': digest(SPEED),
+              'mcs_record': str(mcs_path.relative_to(ROOT)), 'mcs_record_sha256': digest(mcs_path),
+              'speed_record': str(speed_path.relative_to(ROOT)), 'speed_record_sha256': digest(speed_path),
               'release_record': str(RELEASE.relative_to(ROOT)), 'release_record_sha256': digest(RELEASE),
               'v122_complete_file_set_matches': True,
               'method': 'compare exact wheel filename and SHA-256 in PyPI JSON with both measurement records',
-              'wheels': rows}
+              'wheels': rows, 'latest_stable_at_check': latest}
     args.output.write_text(json.dumps(report, indent=2) + '\n')
     print(f"PyPI metadata matches both benchmark records for {len(rows)} wheels")
 

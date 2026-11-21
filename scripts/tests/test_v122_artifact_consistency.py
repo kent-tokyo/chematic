@@ -15,6 +15,17 @@ class ArtifactConsistencyTests(unittest.TestCase):
     def test_current_records_agree(self):
         gate.check(*self.records)
 
+    def test_current_cosmolkit_wheel_records_agree(self):
+        records = copy.deepcopy(self.records)
+        records[0] = json.loads(gate.CURRENT_REGISTRY.read_text())
+        records[6] = json.loads(gate.CURRENT_MCS.read_text())
+        records[7] = json.loads(gate.CURRENT_SPEED.read_text())
+        versions = dict(gate.VERSIONS, cosmolkit=('cosmolkit', '0.6.3'))
+        gate.check(*records, versions)
+        records[0]['wheels'][-1]['version'] = '0.6.2'
+        with self.assertRaisesRegex(ValueError, 'benchmark registry/MCS'):
+            gate.check(*records, versions)
+
     def test_candidate_benchmark_wheel_hash_cannot_change(self):
         records = copy.deepcopy(self.records)
         next(row for row in records[0]['wheels'] if row['arm'] == 'v122')['sha256'] = '0' * 64

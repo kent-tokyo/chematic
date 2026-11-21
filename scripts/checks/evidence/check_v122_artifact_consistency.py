@@ -20,6 +20,7 @@ from scripts.release.check_pypi_dist import check_layout
 
 RESULTS = ROOT / 'validation/results'
 REGISTRY = RESULTS / 'published-benchmark-wheel-registry-verification-2026-11-21.json'
+CURRENT_REGISTRY = RESULTS / 'published-benchmark-wheel-registry-cos063-2026-11-21.json'
 PYPI = RESULTS / 'pypi-v1.2.2-artifact-verification-2026-11-21.json'
 CRATES = RESULTS / 'crates-v1.2.2-artifact-verification-2026-11-21.json'
 NPM = RESULTS / 'npm-v1.2.2-artifact-verification-2026-11-21.json'
@@ -27,6 +28,8 @@ CHANNELS = RESULTS / 'release-channel-verification-v1.2.2.json'
 GATES = RESULTS / 'pypi-v1.2.2-published-gates-2026-11-21.json'
 MCS = ROOT / 'benchmarks/2026-11-21-v122-published-mcs-uniform.json'
 SPEED = ROOT / 'benchmarks/2026-11-21-v122-published-speed-frontier.json'
+CURRENT_MCS = ROOT / 'benchmarks/2026-11-21-v122-published-mcs-uniform-cos063.json'
+CURRENT_SPEED = ROOT / 'benchmarks/2026-11-21-v122-published-speed-cos063.json'
 TAG_COMMIT = 'd7962f9501da9ad2f2cdc5eaddf6d665d79d60bc'
 CRATE_NAMES = {'chematic-core', 'chematic-perception', 'chematic-cip', 'chematic-smarts',
                'chematic-smiles', 'chematic-rxn', 'chematic-fp', 'chematic-iupac',
@@ -105,7 +108,7 @@ def check_measurements(mcs, speed):
                         f'MCS ratio gate differs: {arm}/{index}')
 
 
-def check(registry, pypi, crates, npm, channels, gates, mcs, speed):
+def check(registry, pypi, crates, npm, channels, gates, mcs, speed, versions=VERSIONS):
     check_measurements(mcs, speed)
     require(channels['release'] == {'version': '1.2.2', 'tag': 'v1.2.2', 'commit': TAG_COMMIT},
             'release tag identity differs')
@@ -144,9 +147,9 @@ def check(registry, pypi, crates, npm, channels, gates, mcs, speed):
             'published runtime or chemistry gate differs')
     rows = registry['wheels']
     by_arm = {row['arm']: row for row in rows}
-    require(len(rows) == 5 and set(by_arm) == set(VERSIONS), 'benchmark wheel set differs')
+    require(len(rows) == 5 and set(by_arm) == set(versions), 'benchmark wheel set differs')
     require(registry['v122_complete_file_set_matches'] is True, 'PyPI file-set comparison absent')
-    for arm, (package, version) in VERSIONS.items():
+    for arm, (package, version) in versions.items():
         row, measured = by_arm[arm], mcs['wheel_verification'][arm]
         require(row['package'] == package and row['version'] == version and
                 row['pypi_url'] == f'https://pypi.org/pypi/{package}/{version}/json' and
@@ -167,13 +170,25 @@ def check(registry, pypi, crates, npm, channels, gates, mcs, speed):
 
 
 def main():
-    registry = json.loads(REGISTRY.read_text())
-    for prefix, path in [('mcs', MCS), ('speed', SPEED), ('release', PYPI)]:
-        require(registry[f'{prefix}_record'] == str(path.relative_to(ROOT)) and
-                registry[f'{prefix}_record_sha256'] == digest(path), f'{prefix} record hash differs')
-    records = [json.loads(path.read_text()) for path in (PYPI, CRATES, NPM, CHANNELS, GATES, MCS, SPEED)]
-    check(registry, *records)
-    print('v1.2.2 release and five published benchmark wheel identities are consistent')
+    common = [json.loads(path.read_text()) for path in (PYPI, CRATES, NPM, CHANNELS, GATES)]
+    for registry_path, mcs_path, speed_path, cos_version in (
+        (REGISTRY, MCS, SPEED, '0.6.2'),
+        (CURRENT_REGISTRY, CURRENT_MCS, CURRENT_SPEED, '0.6.3'),
+    ):
+        registry = json.loads(registry_path.read_text())
+        for prefix, path in [('mcs', mcs_path), ('speed', speed_path), ('release', PYPI)]:
+            require(registry[f'{prefix}_record'] == str(path.relative_to(ROOT)) and
+                    registry[f'{prefix}_record_sha256'] == digest(path), f'{prefix} record hash differs')
+        versions = dict(VERSIONS, cosmolkit=('cosmolkit', cos_version))
+        check(registry, *common, json.loads(mcs_path.read_text()), json.loads(speed_path.read_text()), versions)
+        if cos_version == '0.6.3':
+            latest = registry['latest_stable_at_check']
+            require({arm: latest[arm]['version'] for arm in ('rdkit', 'cosmolkit')} ==
+                    {'rdkit': '2026.9.2', 'cosmolkit': '0.6.3'} and
+                    all(latest[arm]['pypi_url'] == f'https://pypi.org/pypi/{arm}/json' and
+                        re.fullmatch(r'[0-9a-f]{64}', latest[arm]['pypi_response_sha256']) is not None
+                        for arm in ('rdkit', 'cosmolkit')), 'latest comparator record differs')
+    print('v1.2.2 release and historical/current published benchmark wheel identities are consistent')
 
 
 if __name__ == '__main__':

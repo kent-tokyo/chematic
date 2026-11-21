@@ -1,5 +1,33 @@
 # Published Python package comparison, 2026-11-21
 
+## Current COSMolKit 0.6.3 rerun
+
+After COSMolKit 0.6.3 became the latest stable PyPI release, all five arms were rerun in 20 rotating fresh-process blocks on the same macOS arm64/Python 3.13 host. The other arms are the published chematic 1.2.0, 1.2.1 and 1.2.2 wheels and RDKit 2026.9.2. The [registry record](../validation/results/published-benchmark-wheel-registry-cos063-2026-11-21.json) verifies all five wheel hashes against PyPI and records that RDKit 2026.9.2 and COSMolKit 0.6.3 were the latest stable versions when checked.
+
+All five packages matched TPSA, ring count and Morgan-2/2048 on the same 1,000 pinned inputs under the recorded tolerance. The fresh-molecule TPSA column follows one warm-up call on a separate molecule. Peak memory covers imports and all worker operations, not TPSA alone.
+
+| Package | TPSA with parse, ms | TPSA on fresh molecules, ms | TPSA after preparation, ms | Process peak, MiB |
+|---|---:|---:|---:|---:|
+| chematic 1.2.0 | 5.168 | 1.580 | 0.045 | 54.5 |
+| chematic 1.2.1 | 5.230 | 1.575 | 0.045 | 54.6 |
+| chematic 1.2.2 | 4.968 | 1.494 | 0.042 | 54.6 |
+| RDKit 2026.9.2 | 76.240 | 2.553 | 0.478 | 97.6 |
+| COSMolKit 0.6.3 | 58.720 | 0.927 | 0.082 | 122.5 |
+
+The separate MCS run uses the same five published wheels and 20 rotating blocks. Every timed call returns SMARTS, including concrete-molecule-to-SMARTS conversion for chematic 1.2.0 and 1.2.1. The table reports the benzene/toluene case, whose query predicates and input matches agree for all five. First parse covers all five cases, and RDKit's parse includes lazy initialization.
+
+| Package | Import, ms | First parse of five cases, ms | First MCS, ms | Repeated MCS, ms | Process peak, MiB |
+|---|---:|---:|---:|---:|---:|
+| chematic 1.2.0 | 85.91 | 0.090 | 0.1317 | 0.0345 | 44.2 |
+| chematic 1.2.1 | 85.68 | 0.089 | 0.3982 | 0.2917 | 44.2 |
+| chematic 1.2.2 | 85.75 | 0.087 | 0.0539 | 0.0100 | 43.6 |
+| RDKit 2026.9.2 | 53.12 | 668.955 | 0.1429 | 0.0499 | 41.5 |
+| COSMolKit 0.6.3 | 21.67 | 0.780 | 0.1125 | 0.0320 | 43.5 |
+
+On the five cases, the query-predicate and input-match checks pass for cases 0 and 2 in 1.2.0, cases 0–3 in 1.2.1, and all five in 1.2.2, RDKit and COSMolKit. Earlier releases fail to serialize case 4 as SMARTS; invalid or unequal results are excluded from paired ratios. These numbers are medians for a small case set on a shared host; the earlier run below is a separate measurement and its timings should not be combined with this one. The full samples, load observations, wheel hashes, case results and paired ratios are in [descriptor](2026-11-21-v122-published-speed-cos063.json) and [uniform MCS](2026-11-21-v122-published-mcs-uniform-cos063.json).
+
+## Earlier COSMolKit 0.6.2 run
+
 The measured packages are chematic 1.2.0, 1.2.1 and 1.2.2, RDKit 2026.9.2, and COSMolKit 0.6.2 on macOS arm64 with Python 3.13. Their wheel hashes and individual measurements are retained in the adjacent JSON files. Each block ran all five packages in a rotating order in fresh processes. Medians below describe this host and the specified inputs.
 
 The [registry verification](../validation/results/published-benchmark-wheel-registry-verification-2026-11-21.json) checks the exact filename and SHA-256 of all five measured wheels against their PyPI JSON entries and both timing records. It also rechecks the complete 26-file v1.2.2 PyPI hash set against the release evidence. The dated record retains the registry URLs and response hashes; CI checks the retained records for consistency without making live registry requests.

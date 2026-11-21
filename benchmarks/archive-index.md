@@ -8,8 +8,10 @@ through 2026-10-09 remain recoverable from the immutable `v1.0.41` tag.
 
 - [2026-11-21-v122-published-mcs-smarts.json](2026-11-21-v122-published-mcs-smarts.json)
 - [2026-11-21-v122-published-mcs-uniform.json](2026-11-21-v122-published-mcs-uniform.json)
+- [2026-11-21-v122-published-mcs-uniform-cos063.json](2026-11-21-v122-published-mcs-uniform-cos063.json)
 - [2026-11-21-v122-published-mcs.json](2026-11-21-v122-published-mcs.json)
 - [2026-11-21-v122-published-speed-frontier.json](2026-11-21-v122-published-speed-frontier.json)
+- [2026-11-21-v122-published-speed-cos063.json](2026-11-21-v122-published-speed-cos063.json)
 
 - [2026-09-04-streaming-formats.md](2026-09-04-streaming-formats.md)
 - [2026-09-04-wasm-size.md](2026-09-04-wasm-size.md)
