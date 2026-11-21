@@ -323,3 +323,68 @@ fn corrected_ensemble_preserves_single_seed_and_opt_in_boundary() {
     assert!(best(&selected) <= best(&compatibility));
     assert!(best(&selected) <= best(&optimized));
 }
+
+#[test]
+fn corrected_checked_ensemble_verifies_the_returned_gradient() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let original = etkdg_embed_multiple_confs_mmff_corrected(&molecule, 20, &options, 200).unwrap();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    assert_eq!(original.len(), checked.len());
+    for (before, after) in original.iter().zip(&checked) {
+        assert_eq!(before.coords, after.coords);
+        assert_eq!(before.energy, after.energy);
+        if after.status == 0 {
+            let field =
+                chematic_ff::rdkit_mmff::RdkitMmffField::new(&molecule, &after.coords, 100.0, true)
+                    .unwrap();
+            let flat = after.coords.as_flattened();
+            let mut gradient = vec![0.0; flat.len()];
+            field.gradient(flat, &mut gradient);
+            assert!(gradient.iter().all(|v| v.is_finite() && v.abs() <= 0.01));
+        }
+    }
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    assert!(
+        original
+            .iter()
+            .zip(&checked)
+            .any(|(before, after)| before.status == 0 && after.status == 1)
+    );
+}
+
+#[test]
+fn corrected_repair_is_bounded_and_stereo_safe() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    let disabled =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 20, &options, 200, 0).unwrap();
+    let repaired =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 20, &options, 200, 400)
+            .unwrap();
+    assert_eq!(checked.len(), repaired.len());
+    for ((initial, no_retry), after) in checked.iter().zip(&disabled).zip(&repaired) {
+        assert_eq!(initial.coords, no_retry.coords);
+        assert_eq!(initial.energy, no_retry.energy);
+        assert_eq!(initial.status, no_retry.status);
+        if initial.coords != after.coords {
+            assert_eq!(after.status, 0);
+            assert!(after.energy <= initial.energy);
+            assert!(stereo_safe_retry(&molecule, &after.coords));
+        }
+    }
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    assert!(
+        checked
+            .iter()
+            .zip(&repaired)
+            .any(|(a, b)| a.coords != b.coords)
+    );
+}

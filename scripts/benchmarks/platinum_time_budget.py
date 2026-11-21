@@ -15,10 +15,12 @@ from rdkit import Chem, rdBase
 from rdkit.Chem import AllChem
 
 from platinum_development_probe import graph_matches, rms_values, stereo_violations
+from platinum_geometry import check_geometry, prepare_geometry_checks
 
 
-def attempts(engine, mol, other, seconds, max_candidates):
+def attempts(engine, mol, other, seconds, max_candidates, repair_iters=0):
     accepted = []
+    statuses = []
     attempted = 0
     start = time.perf_counter()
     deadline = start + seconds
@@ -27,16 +29,23 @@ def attempts(engine, mol, other, seconds, max_candidates):
         attempted += 1
         if engine == "chematic":
             result = other.etkdg_embed_multiple_confs_mmff_corrected(
-                1, random_seed=seed, max_mmff_iters=200
+                1, random_seed=seed, max_mmff_iters=200, repair_mmff_iters=repair_iters
             )
             coords = result[0][2] if result else None
+            status = result[0][0] if result else 1
         else:
             generated = Chem.Mol(mol)
             params = AllChem.ETKDGv3()
             params.randomSeed = seed
             params.numThreads = 1
             if AllChem.EmbedMolecule(generated, params) == 0:
-                AllChem.MMFFOptimizeMolecule(generated, maxIters=200)
+                status = AllChem.MMFFOptimizeMolecule(generated, maxIters=200)
+                if status == 0:
+                    props = AllChem.MMFFGetMoleculeProperties(generated)
+                    field = AllChem.MMFFGetMoleculeForceField(generated, props)
+                    gradient = field.CalcGrad()
+                    if any(not math.isfinite(g) or abs(g) > 0.01 for g in gradient):
+                        status = 1
                 coords = [
                     list(generated.GetConformer().GetAtomPosition(i))
                     for i in range(generated.GetNumAtoms())
@@ -45,10 +54,12 @@ def attempts(engine, mol, other, seconds, max_candidates):
                 coords = None
         if coords is not None and time.perf_counter() <= deadline:
             accepted.append(coords)
+            statuses.append(status)
     return accepted, {
         "attempted": attempted,
         "accepted": len(accepted),
         "elapsed": time.perf_counter() - start,
+        "statuses": statuses,
     }
 
 
@@ -60,12 +71,15 @@ def main():
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--seconds", type=float, default=1.0)
     parser.add_argument("--max-candidates", type=int, default=20)
+    parser.add_argument("--repair-iters", type=int, default=0)
+    parser.add_argument("--geometry", action="store_true")
     args = parser.parse_args()
     if (
         args.limit < 1
         or not math.isfinite(args.seconds)
         or args.seconds <= 0
         or args.max_candidates < 1
+        or args.repair_iters < 0
     ):
         parser.error("limits must be positive")
     baseline = json.loads(args.baseline.read_text())
@@ -83,6 +97,8 @@ def main():
         "source_sha256": baseline["source_sha256"],
         "seconds": args.seconds,
         "max_candidates": args.max_candidates,
+        "repair_iters": args.repair_iters,
+        "geometry_checked": args.geometry,
         "seed_schedule": "42 * (attempt + 1)",
         "timing": "individual embedding and minimization attempts, accept only attempts completed before the deadline; scoring excluded",
         "results": [],
@@ -102,18 +118,37 @@ def main():
             mol = Chem.AddHs(Chem.MolFromSmiles(row["smiles"]))
             other = chematic.from_smiles(row["smiles"]).add_hydrogens()
             assert graph_matches(other, mol)
+            checks = prepare_geometry_checks(mol) if args.geometry else None
+            if checks is not None:
+                result["geometry_reference"] = {
+                    "bonds_supported": len(checks[0]),
+                    "bonds_total": mol.GetNumBonds(),
+                    "angles_supported": len(checks[1]),
+                    "angles_total": sum(
+                        a.GetDegree() * (a.GetDegree() - 1) // 2 for a in mol.GetAtoms()
+                    ),
+                }
             order = ("chematic", "rdkit") if index % 2 == 0 else ("rdkit", "chematic")
             result["order"] = order
             ensembles = {}
             for engine in order:
                 conformers, timing = attempts(
-                    engine, mol, other, args.seconds, args.max_candidates
+                    engine,
+                    mol,
+                    other,
+                    args.seconds,
+                    args.max_candidates,
+                    args.repair_iters,
                 )
                 ensembles[engine] = conformers
                 result[engine] = timing
             for engine, conformers in ensembles.items():
                 result[engine]["rmsd"] = rms_values(mol, reference, conformers)
                 result[engine]["stereo"] = stereo_violations(mol, conformers)
+                if checks is not None:
+                    result[engine]["geometry"] = [
+                        check_geometry(coords, checks) for coords in conformers
+                    ]
         except Exception as exc:
             result["error"] = repr(exc)
         output["results"].append(result)

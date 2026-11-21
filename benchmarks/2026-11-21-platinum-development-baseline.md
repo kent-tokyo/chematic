@@ -13,6 +13,11 @@ A stricter split additionally excludes the 4,999-SMILES ChEMBL accuracy
 corpus, which includes inputs used in earlier conformer experiments. It has
 444 development, 1,780 holdout and 635 excluded records. The 480-row
 measurements below remain development results under the earlier split.
+A broader split also excludes the NCI 5k and browser 10k scaffolds, leaving
+404 development, 1,610 holdout and 845 excluded records. Eight exclusion
+SMILES fail RDKit sanitization and are listed in the split file; their
+scaffolds could not be compared. Other previously used datasets also require
+an exposure audit before the holdout is treated as independent.
 
 The macOS arm64 run uses the published chematic 1.2.2 wheel and RDKit
 2026.09.2, seed 42, up to 20 candidates and at most 200 MMFF94 iterations.
@@ -38,9 +43,9 @@ the input on the recorded host.
 
 The source wheel build and other diagnostics ran concurrently on the host.
 Times in the row data are exploratory and do not support a speed comparison.
-These development data were inspected to guide changes. A separate equal-time
-benchmark, independent holdout, geometry checks and Linux published-wheel
-reproduction remain necessary.
+These development data were inspected to guide changes. Repeated equal-time
+measurements, independent holdout and Linux published-wheel reproduction remain
+necessary.
 
 The commands below use the SDF from the supplied ZIP and the recorded split.
 The baseline script is available at commit `7b912c7`.
@@ -81,6 +86,58 @@ Stereochemistry and RMSD scoring occur after timing. The candidate recovered
 interval of −2 to +6 percentage points. Median completed candidates were 7.5
 and 4 respectively, and no specified-stereo violations were detected. This
 small development sample supports further investigation under the same budget.
+
+The stricter 444-row development split was measured again with a geometry
+screen. It uses UFF reference bond lengths with 50% relative tolerance, UFF
+reference angles with 35° tolerance, 60°/90° reference angles for three- and
+four-membered rings, and a heavy-atom nonbonded cutoff of 0.65 times the sum
+of van der Waals radii for pairs separated by at least three graph bonds.
+These are screening thresholds. All reference bonds and angles were available
+on these inputs. Among 8,880 MMFF-refined conformers per engine, the screen
+flagged 37 angle cases in each engine and no bond-length or heavy-atom clash
+cases. With the screen and the 1 Å RMSD and stereo conditions applied together,
+the candidate recovered 271/444 and RDKit 273/444, with a paired 95% interval
+of −2.48 to +1.58 percentage points.
+
+The equal-time rerun uses the stricter split and the wheel with the final
+gradient check, SHA-256
+`2f0f74d80e95ae9708241825b44470222de360898439a76d5a9e507351af14d1`.
+At 0.2 seconds per engine, the 444 inputs gave 227 recoveries for chematic and
+202 for RDKit. The paired 95% interval for the difference was +3.15 to
++8.33 percentage points. Median completed candidates were 9 and 5. The run
+uses individual embed/minimize calls and alternates engine order per input.
+This is development evidence for that specific time budget and host.
+Recovery accepts conformers meeting the RMSD, stereo and geometry screens,
+including those with a nonzero optimizer status. The row data report final
+gradient-checked optimizer statuses separately for both engines.
+Requiring the matching conformer to report convergence under the common
+gradient threshold reduced recoveries to 174/444 and 158/444 respectively,
+with a paired 95% interval for the difference of +1.58 to +5.63 points.
+
+On one input (`07U_3TXO_A`), the prior candidate returned three converged
+statuses at nearly linear C–N–C geometries. At those returned coordinates,
+independent RDKit evaluation also produced extremely large MMFF gradients.
+The checked API now reports a nonzero status when the final gradient is
+nonfinite or exceeds 0.01 kcal/mol/Å in any component. The term-level
+diagnostic records finite differences near the singular geometry for further
+investigation. These checks report the optimizer outcome more conservatively.
+For conformer 9, RDKit's torsion gradient at component 16 is approximately
+−1.20 million kcal/mol/Å while central differences at steps `1e-8` and
+`1e-10` Å are approximately +42,735 and +42,769. This is a near-singular
+example and needs a dedicated derivative fix and further numerical analysis.
+The checked API leaves the returned coordinates in place and marks the
+conformer unfinished when its final gradient exceeds the threshold.
+
+An opt-in retry moves a near-linear three-coordinate nitrogen by 0.02 Å
+perpendicular to the near-linear bond and runs a bounded additional MMFF94
+minimization. The retry is accepted only if it converges, does not increase
+energy, passes the 0.01 kcal/mol/Å final-gradient check, and retains declared
+stereochemistry. With 400 additional iterations allowed on `07U_3TXO_A`,
+the three checked unfinished conformers reached status 0 and energies of
+36.402, 38.199 and 54.036 kcal/mol. Their earlier energies were 172.855,
+162.082 and 163.252 kcal/mol. The repair wheel SHA-256 is
+`aa69dafd9975d6bd05d263e694c907a863319b09280b9d36c729fdd2569b3053`.
+The near-singular MMFF derivative remains an open numerical issue.
 
 RDKit 2026.09.2 on this host raises `RuntimeError: bad any cast` for
 `MurckoScaffoldSmiles(smiles="Cc1ccccc1")` even in a fresh environment.

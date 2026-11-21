@@ -321,8 +321,11 @@ impl Mol {
     /// Generate and optimize one ensemble using the corrected ETKDG torsion
     /// gradient. This uses the requested number of embedding attempts and
     /// MMFF94 minimizations without the extra batches in the quality profile.
+    /// Status 0 additionally requires a finite final gradient whose largest
+    /// absolute component is at most 0.01 kcal/mol/angstrom.
+    /// `repair_mmff_iters` enables a bounded retry for near-linear nitrogen.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
-                        max_mmff_iters = 200))]
+                        max_mmff_iters = 200, repair_mmff_iters = 0))]
     fn etkdg_embed_multiple_confs_mmff_corrected(
         &self,
         py: Python<'_>,
@@ -330,9 +333,10 @@ impl Mol {
         random_seed: i32,
         max_iterations: u32,
         max_mmff_iters: u32,
+        repair_mmff_iters: u32,
     ) -> PyResult<Vec<PyRdkitMmffConformer>> {
         use chematic_3d::rdkit_embed::{
-            RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_corrected,
+            RdkitEmbedOptions, etkdg_embed_multiple_confs_mmff_corrected_repair,
         };
         let options = RdkitEmbedOptions {
             random_seed,
@@ -341,7 +345,13 @@ impl Mol {
         };
         let mol = self.inner.clone();
         py.detach(move || {
-            etkdg_embed_multiple_confs_mmff_corrected(&mol, num_confs, &options, max_mmff_iters)
+            etkdg_embed_multiple_confs_mmff_corrected_repair(
+                &mol,
+                num_confs,
+                &options,
+                max_mmff_iters,
+                repair_mmff_iters,
+            )
         })
         .map(|conformers| {
             conformers

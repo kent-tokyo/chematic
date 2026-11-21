@@ -23,6 +23,100 @@ pub(super) fn stereo_safe_retry(mh: &Molecule, coords: &[[f64; 3]]) -> bool {
     stereo.n_violations() == 0 && stereo.n_unevaluable() == 0
 }
 
+/// Escape near-linear three-coordinate nitrogen geometries with one bounded
+/// minimization. The original conformer is retained if any check fails.
+pub(super) fn repair_linear_nitrogen(
+    mh: &Molecule,
+    candidate: &mut RdkitMmffConformer,
+    retry_iters: u32,
+) {
+    if retry_iters == 0
+        || candidate.status == 0
+        || !candidate.energy.is_finite()
+        || candidate.coords.len() != mh.atom_count()
+        || candidate.coords.iter().flatten().any(|x| !x.is_finite())
+    {
+        return;
+    }
+    for (center, atom) in mh.atoms() {
+        if atom.element.atomic_number() != 7 {
+            continue;
+        }
+        let neighbors: Vec<_> = mh
+            .neighbors(center)
+            .map(|(idx, _)| idx.0 as usize)
+            .collect();
+        if neighbors.len() != 3 {
+            continue;
+        }
+        let j = center.0 as usize;
+        for a in 0..neighbors.len() {
+            for b in a + 1..neighbors.len() {
+                let u = core::array::from_fn::<_, 3, _>(|d| {
+                    candidate.coords[neighbors[a]][d] - candidate.coords[j][d]
+                });
+                let v = core::array::from_fn::<_, 3, _>(|d| {
+                    candidate.coords[neighbors[b]][d] - candidate.coords[j][d]
+                });
+                let unorm = u.iter().map(|x| x * x).sum::<f64>().sqrt();
+                let vnorm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
+                if !unorm.is_finite() || !vnorm.is_finite() || unorm == 0.0 || vnorm == 0.0 {
+                    continue;
+                }
+                let cosine = u.iter().zip(v).map(|(x, y)| x * y).sum::<f64>() / (unorm * vnorm);
+                if cosine >= -0.9999 {
+                    continue;
+                }
+                let axis = (0..3)
+                    .min_by(|&x, &y| u[x].abs().total_cmp(&u[y].abs()))
+                    .unwrap();
+                let mut basis = [0.0; 3];
+                basis[axis] = 1.0;
+                let cross = [
+                    u[1] * basis[2] - u[2] * basis[1],
+                    u[2] * basis[0] - u[0] * basis[2],
+                    u[0] * basis[1] - u[1] * basis[0],
+                ];
+                let length = cross.iter().map(|x| x * x).sum::<f64>().sqrt();
+                let mut coords = candidate.coords.clone();
+                for d in 0..3 {
+                    coords[j][d] += 0.02 * cross[d] / length;
+                }
+                let Ok(field) =
+                    chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &coords, 100.0, true)
+                else {
+                    return;
+                };
+                let mut retry = optimize_mmff_conformer(&field, coords, retry_iters);
+                if retry.status != 0
+                    || !retry.energy.is_finite()
+                    || retry.energy > candidate.energy
+                    || !stereo_safe_retry(mh, &retry.coords)
+                {
+                    return;
+                }
+                let Ok(final_field) =
+                    chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &retry.coords, 100.0, true)
+                else {
+                    return;
+                };
+                let flat = retry.coords.as_flattened();
+                let final_energy = final_field.energy(flat);
+                if !final_energy.is_finite() || final_energy > candidate.energy {
+                    return;
+                }
+                let mut gradient = vec![0.0; flat.len()];
+                final_field.gradient(flat, &mut gradient);
+                if gradient.iter().all(|x| x.is_finite() && x.abs() <= 0.01) {
+                    retry.energy = final_energy;
+                    *candidate = retry;
+                }
+                return;
+            }
+        }
+    }
+}
+
 pub(super) fn refine_unfinished_quality_minimum(
     mh: &Molecule,
     mut candidates: Vec<RdkitMmffConformer>,

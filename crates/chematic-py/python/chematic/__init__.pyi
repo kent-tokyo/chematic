@@ -432,8 +432,16 @@ class Mol:
         random_seed: int = 42,
         max_iterations: int = 0,
         max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
     ) -> list[tuple[int, float, list[list[float]]]]:
-        """Generate and optimize one ensemble with the corrected ETKDG torsion gradient."""
+        """Generate one corrected-gradient ensemble and optimize it with MMFF94.
+
+        A status of 0 also requires a finite final gradient with every
+        component at most 0.01 kcal/mol/angstrom in magnitude. Other
+        conformers retain a nonzero minimization status. A positive
+        ``repair_mmff_iters`` permits that many additional iterations to
+        repair a near-linear three-coordinate nitrogen geometry.
+        """
         ...
 
     def etkdg_embed_multiple_confs_mmff_best_gradient(

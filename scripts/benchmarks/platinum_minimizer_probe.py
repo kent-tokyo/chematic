@@ -30,9 +30,18 @@ def main():
     params.randomSeed = 42
     params.numThreads = 1
     ids = list(AllChem.EmbedMultipleConfs(mol, numConfs=20, params=params))
-    output = {"name": args.name, "rdkit": rdBase.rdkitVersion, "seed": 42, "max_iters": 200, "results": []}
+    output = {
+        "name": args.name,
+        "rdkit": rdBase.rdkitVersion,
+        "seed": 42,
+        "max_iters": 200,
+        "results": [],
+    }
     for cid in ids:
-        initial = [list(mol.GetConformer(cid).GetAtomPosition(i)) for i in range(mol.GetNumAtoms())]
+        initial = [
+            list(mol.GetConformer(cid).GetAtomPosition(i))
+            for i in range(mol.GetNumAtoms())
+        ]
         field = other.mmff_force_field(initial)
         cstatus, cenergy = field.minimize_(max_iters=200)
         ccoords = field.positions
@@ -42,10 +51,22 @@ def main():
         rstatus = rdfield.Minimize(maxIts=200)
         renergy = rdfield.CalcEnergy()
         flat = rdfield.Positions()
-        rcoords = [list(flat[3*i:3*i+3]) for i in range(mol.GetNumAtoms())]
+        rcoords = [list(flat[3 * i : 3 * i + 3]) for i in range(mol.GetNumAtoms())]
         rms = rms_values(mol, ref_heavy, [initial, ccoords, rcoords])
         stereo = stereo_violations(mol, [ccoords, rcoords])
-        output["results"].append({"cid": cid, "initial_rmsd": rms[0], "chematic_rmsd": rms[1], "rdkit_rmsd": rms[2], "chematic_status": cstatus, "rdkit_status": rstatus, "chematic_energy": cenergy, "rdkit_energy": renergy, "stereo": stereo})
+        output["results"].append(
+            {
+                "cid": cid,
+                "initial_rmsd": rms[0],
+                "chematic_rmsd": rms[1],
+                "rdkit_rmsd": rms[2],
+                "chematic_status": cstatus,
+                "rdkit_status": rstatus,
+                "chematic_energy": cenergy,
+                "rdkit_energy": renergy,
+                "stereo": stereo,
+            }
+        )
     args.output.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")
     print(json.dumps(output["results"], indent=2))
 

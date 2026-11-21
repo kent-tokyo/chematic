@@ -5,7 +5,7 @@ use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
 mod quality_retry;
-use quality_retry::{refine_unfinished_quality_minimum, stereo_safe_retry};
+use quality_retry::{refine_unfinished_quality_minimum, repair_linear_nitrogen, stereo_safe_retry};
 mod torsion_search;
 use torsion_search::refine_best_with_torsion_moves;
 #[path = "molecule/ensemble_seed.rs"]
@@ -464,6 +464,65 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
     let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
     Ok(optimize_mmff_conformers(&field, conformers, max_iters))
+}
+
+/// Generate a corrected ETKDG/MMFF94 ensemble and check its final gradients.
+/// A status of zero requires finite coordinates and energy, and every
+/// gradient component to have magnitude at most 0.01 kcal/mol/angstrom.
+pub fn etkdg_embed_multiple_confs_mmff_corrected_checked(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let mut conformers = etkdg_embed_multiple_confs_mmff_corrected(mh, num_confs, o, max_iters)?;
+    for conformer in &mut conformers {
+        if conformer.status != 0 {
+            continue;
+        }
+        if !conformer.energy.is_finite()
+            || conformer
+                .coords
+                .iter()
+                .flatten()
+                .any(|value| !value.is_finite())
+        {
+            conformer.status = 1;
+            continue;
+        }
+        let field =
+            chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &conformer.coords, 100.0, true)
+                .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
+        let coordinates = conformer.coords.as_flattened();
+        let mut gradient = vec![0.0; coordinates.len()];
+        field.gradient(coordinates, &mut gradient);
+        if gradient
+            .iter()
+            .any(|value| !value.is_finite() || value.abs() > 0.01)
+        {
+            conformer.status = 1;
+        }
+    }
+    Ok(conformers)
+}
+
+/// Generate a checked ensemble and optionally retry near-linear nitrogen
+/// geometries for up to `retry_iters` additional MMFF94 iterations each.
+/// A retry is retained only when it converges, lowers energy, passes the final
+/// gradient check and preserves all declared stereochemistry.
+pub fn etkdg_embed_multiple_confs_mmff_corrected_repair(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let mut conformers =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(mh, num_confs, o, max_iters)?;
+    for conformer in &mut conformers {
+        repair_linear_nitrogen(mh, conformer, retry_iters);
+    }
+    Ok(conformers)
 }
 
 /// Quality-oriented ETKDG/MMFF94 profile: optimize both the RDKit-compatible
