@@ -29,11 +29,13 @@ jobs:
           python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="046fd444e4131fbc5fabc4c1d14f5c9fe64b6525f42158abc961496f741a7898"; assert hashlib.sha256(pathlib.Path("reference/cod-sample.sdf").read_bytes()).hexdigest()=="6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"'
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'
           python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Unpack pinned scaffold split
+        run: gzip -dc validation/results/cod-scaffold-split-2026-11-22.json.gz > cod-split.json
       - name: Audit development support separately
-        run: python scripts/validation/cod_support_probe.py reference/cod-sample.sdf validation/results/cod-scaffold-split-2026-11-22.json --partition development --output cod-support.json
+        run: python scripts/validation/cod_support_probe.py reference/cod-sample.sdf cod-split.json --partition development --output cod-support.json
       - name: Compare development conformers
         run: |
-          python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split validation/results/cod-scaffold-split-2026-11-22.json --output cod-development.json --limit 223 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split cod-split.json --output cod-development.json --limit 223 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
           python scripts/benchmarks/summarize_platinum_probe.py cod-development.json --output cod-development-summary.json
       - name: Upload evidence
         if: always()
