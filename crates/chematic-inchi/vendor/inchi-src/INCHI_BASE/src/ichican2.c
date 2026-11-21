@@ -1723,9 +1723,10 @@ Node CellGetMinNode( Partition *p, Cell *W, Node v, CANON_DATA *pCD )
 #endif /* } USE_AUX_RANKING */
 
     {
-        for (i = W->first; i < W->next; i++)
+        int cell_index;
+        for (cell_index = W->first; cell_index < W->next; cell_index++)
         {
-            uCurAtNumb = p->AtNumber[(int) i];
+            uCurAtNumb = p->AtNumber[cell_index];
             if (uCurAtNumb >= v && !( p->Rank[(int) uCurAtNumb] & rank_mark_bit ) && uCurAtNumb < uMinAtNumb)
             {
                 uMinAtNumb = uCurAtNumb;
@@ -2000,9 +2001,10 @@ void CtPartFill( Graph *G,
             /****************** Well-defined part of isotopic iso_exchg_atnos ***************************/
             if (pCD->iso_exchg_atnos && Ct->iso_exchg_atnos)
             {
-                for (j = startAtOrd; j < i; j++)
+                int iso_index;
+                for (iso_index = startAtOrd; iso_index < i; iso_index++)
                 {
-                    Ct->iso_exchg_atnos[j] = pCD->iso_exchg_atnos[p->AtNumber[j]];
+                    Ct->iso_exchg_atnos[iso_index] = pCD->iso_exchg_atnos[p->AtNumber[iso_index]];
                 }
                 Ct->len_iso_exchg_atnos = i;
             }
