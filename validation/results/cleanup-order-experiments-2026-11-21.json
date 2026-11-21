@@ -99,6 +99,27 @@
       "report": "cleanup-unguarded-acid-10k-2026-11-21.json",
       "change": "Use the unchecked catalog reionization path for Cleanup instead of the acidity-verified path.",
       "source_note": "The report source_commit identifies the base; the candidate had an uncommitted acid_base.rs edit. Its source_sha256 records the candidate file."
+    },
+    {
+      "name": "rdkit-ranks-stress",
+      "change": "Order transfer sites by RDKit-compatible atom ranks, falling back to native canonical order when unavailable.",
+      "exact_rows": 4017,
+      "compatible_rows": 4069,
+      "fixed_indices": [
+        1664
+      ],
+      "regressed_indices": [
+        119,
+        2027,
+        2824,
+        2914,
+        3075,
+        3386
+      ],
+      "report": "cleanup-rdkit-ranks-stress-2026-11-21.json",
+      "report_sha256": "9230a2636a1deb8b80aae7c9efb7e01a1a11bb70465a72033dc803826f127883",
+      "source_note": "The report source_commit is the base; acid_base.rs, rdkit/mod.rs and lib.rs contained uncommitted candidate edits recorded by source_sha256.",
+      "decision": "reverted after six newly regressed rows"
     }
   ]
 }
