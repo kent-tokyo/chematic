@@ -540,9 +540,9 @@ fn disconnect_metal_ligand_bonds(
             && bond.order == BondOrder::Single
         {
             // A hypervalent aromatic source token can sanitize to an
-            // ordinary nonaromatic carbon. RDKit cuts its Pt bond without
-            // charge transfer and lets the resulting carbon regain H.
-            atoms[ligand].hydrogen_count = None;
+            // ordinary nonaromatic carbon. Cutting the Pt bond without
+            // charge transfer must not invent an additional hydrogen.
+            atoms[ligand].hydrogen_count = Some(implicit_hcount(mol, AtomIdx(ligand as u32)));
             continue;
         }
         transfer_metal_ligand_charge(mol, atoms, metal, ligand, bond.order);
@@ -922,7 +922,7 @@ mod tests {
         for (input, expected) in [
             (
                 "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
-                "CC1=CC=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
+                "CC1=C[C]=C(Oc2ccc(O)cc2CC(=O)O)S(Cl)=C1.[Pt]",
             ),
             (
                 "N(CCCN(C)CCCNC(C1C2C(C=C(Cl)C=1)=NC1C(=CC=CC=1)N=2)=O)C(C1C2[C](=[Zn][C]3=CC=CC=C3N=2)C=C(Cl)C=1)=O",

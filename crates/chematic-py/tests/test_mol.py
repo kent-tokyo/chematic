@@ -302,6 +302,18 @@ def test_cleanup_explicit_ligand_hydrogens_keep_formula_after_metal_cut():
         assert expanded.cleanup().rdkit_smiles == source.cleanup().rdkit_smiles
 
 
+def test_cleanup_platinum_aromatic_cut_preserves_input_hydrogens():
+    variants = (
+        "Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1",
+        "C(C1=C([H])[C]([Pt])=C(Oc2c([H])c([H])c(O[H])c([H])c2C(C(=O)O[H])([H])[H])S(Cl)=C1[H])([H])([H])[H]",
+    )
+    inputs = [chematic.from_smiles(text) for text in variants]
+    outputs = [source.cleanup() for source in inputs]
+    assert inputs[0].formula == inputs[1].formula
+    assert all(result.formula == inputs[0].formula for result in outputs)
+    assert outputs[0].rdkit_smiles == outputs[1].rdkit_smiles
+
+
 def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():
     source = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
     assert source.cleanup().rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"

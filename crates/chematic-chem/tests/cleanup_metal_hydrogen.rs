@@ -132,3 +132,21 @@ fn refuses_detached_metals_that_would_change_on_repeat() {
         }
     }
 }
+
+#[test]
+fn platinum_aromatic_cut_preserves_the_ligand_radical_and_formula() {
+    let original = parse("Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1").unwrap();
+    let expanded = parse("C(C1=C([H])[C]([Pt])=C(Oc2c([H])c([H])c(O[H])c([H])c2C(C(=O)O[H])([H])[H])S(Cl)=C1[H])([H])([H])[H]").unwrap();
+    let a = cleanup(&original).unwrap();
+    let b = cleanup(&expanded).unwrap();
+    assert_eq!(calc_mol_formula(&a), calc_mol_formula(&original));
+    assert_eq!(calc_mol_formula(&b), calc_mol_formula(&original));
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&a),
+        rdkit_cleanup_canonical_smiles(&b)
+    );
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&a),
+        rdkit_cleanup_canonical_smiles(&cleanup(&a).unwrap())
+    );
+}

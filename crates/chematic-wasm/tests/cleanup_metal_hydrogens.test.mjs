@@ -43,6 +43,23 @@ for (const input of ["O->[Mg](<-O)(<-O)<-O", "C(=[O][Li])O"]) {
   }
 }
 
+{
+  const compact = wasm.parse_smiles("Cc1c[c]([Pt])c(Oc2ccc(O)cc2CC(=O)O)s(Cl)c1");
+  const explicit = wasm.parse_smiles("C(C1=C([H])[C]([Pt])=C(Oc2c([H])c([H])c(O[H])c([H])c2C(C(=O)O[H])([H])[H])S(Cl)=C1[H])([H])([H])[H]");
+  const compactResult = wasm.cleanup_mol(compact);
+  const explicitResult = wasm.cleanup_mol(explicit);
+  try {
+    assert.equal(compactResult.formula(), compact.formula());
+    assert.equal(explicitResult.formula(), compact.formula());
+    assert.equal(compactResult.rdkit_smiles(), explicitResult.rdkit_smiles());
+  } finally {
+    compactResult.free();
+    explicitResult.free();
+    compact.free();
+    explicit.free();
+  }
+}
+
 for (const input of [
   "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
   "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
