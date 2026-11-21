@@ -281,6 +281,19 @@ def test_cleanup_refuses_unresolved_metal_hydrogen():
         assert captured.value.format == "cleanup"
 
 
+def test_cleanup_explicit_ligand_hydrogens_keep_formula_after_metal_cut():
+    for smiles in (
+        "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
+        "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
+        "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+    ):
+        source = chematic.from_smiles(smiles)
+        expanded = source.add_hydrogens()
+        assert expanded.formula == source.formula
+        assert expanded.cleanup().formula == source.formula
+        assert expanded.cleanup().rdkit_smiles == source.cleanup().rdkit_smiles
+
+
 def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():
     source = chematic.from_smiles("F[Pt@SP1](Cl)(Br)I")
     assert source.cleanup().rdkit_smiles == "[Br-].[Cl-].[F-].[I-].[Pt@SP1+4]"

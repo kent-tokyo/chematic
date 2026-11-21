@@ -11,7 +11,39 @@ use chematic_core::{
 };
 
 use super::{clone_molecule, is_metal, normalize_groups};
-use crate::hydrogen::remove_hydrogens;
+use crate::hydrogen::{is_removable_explicit_h, remove_hydrogens};
+
+fn remove_hydrogens_for_cleanup(mol: &Molecule) -> Molecule {
+    let mut result = remove_hydrogens(mol);
+    let mut next_index = 0_u32;
+    for (idx, atom) in mol.atoms() {
+        if is_removable_explicit_h(mol, idx) {
+            continue;
+        }
+        let out_idx = AtomIdx(next_index);
+        next_index += 1;
+        if is_metal(atom.element)
+            || !mol
+                .neighbors(idx)
+                .any(|(neighbor, _)| is_metal(mol.atom(neighbor).element))
+        {
+            continue;
+        }
+        let explicit_h = mol
+            .neighbors(idx)
+            .filter(|(neighbor, _)| is_removable_explicit_h(mol, *neighbor))
+            .count();
+        if explicit_h != 0 {
+            // Once a metal bond is cut, valence inference can invent H on a
+            // ligand that originally had an explicit hydrogen atom. Retain
+            // the input's H count just as a bracket-H spelling does.
+            let count =
+                implicit_hcount(mol, idx).saturating_add(explicit_h.min(u8::MAX as usize) as u8);
+            result.set_hydrogen_count(out_idx, Some(count));
+        }
+    }
+    result
+}
 
 pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
     acid_base::reionize_with_catalog(mol)
@@ -26,7 +58,7 @@ pub(super) fn reionize_with_catalog(mol: &Molecule) -> Molecule {
 /// Cleanup rejects a transfer when the product's newly protonated site
 /// matches an acid in an equally strong or stronger catalog class.
 pub fn cleanup_unchecked(mol: &Molecule) -> Molecule {
-    let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens(mol));
+    let without_h = prepare_alkali_bridge_aromaticity(remove_hydrogens_for_cleanup(mol));
     let disconnected = disconnect_metals_for_cleanup(&without_h);
     let normalized = normalize_for_cleanup(&disconnected);
     let normalized = if disconnected.bond_count() < without_h.bond_count()
@@ -86,7 +118,7 @@ pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
     // Removing explicit hydrogen atoms can turn a metal--H bond into a
     // bracket hydrogen count. Check after that conversion so equivalent
     // `[SnH]` and `[Sn]([H])` inputs receive the same decision.
-    let before = remove_hydrogens(mol);
+    let before = remove_hydrogens_for_cleanup(mol);
     if !before
         .atoms()
         .any(|(_, atom)| is_metal(atom.element) && atom.hydrogen_count.unwrap_or(0) > 0)

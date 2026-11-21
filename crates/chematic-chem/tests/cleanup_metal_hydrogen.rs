@@ -1,4 +1,4 @@
-use chematic_chem::{CleanupError, calc_mol_formula, cleanup, cleanup_checked};
+use chematic_chem::{CleanupError, add_hydrogens, calc_mol_formula, cleanup, cleanup_checked};
 use chematic_smiles::{parse, rdkit_cleanup_canonical_smiles};
 
 #[test]
@@ -58,6 +58,35 @@ fn checked_cleanup_retains_ferrocene_and_resolved_metal_hydrogen() {
         assert_eq!(
             calc_mol_formula(&cleaned),
             calc_mol_formula(&hydride),
+            "{input}"
+        );
+    }
+}
+
+#[test]
+fn explicit_ligand_hydrogens_do_not_gain_hydrogen_after_metal_cut() {
+    for input in [
+        "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
+        "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
+        "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+    ] {
+        let molecule = parse(input).unwrap();
+        let expanded = add_hydrogens(&molecule);
+        let compact_result = cleanup(&molecule).unwrap();
+        let expanded_result = cleanup(&expanded).unwrap();
+        assert_eq!(
+            calc_mol_formula(&expanded),
+            calc_mol_formula(&molecule),
+            "{input}"
+        );
+        assert_eq!(
+            calc_mol_formula(&expanded_result),
+            calc_mol_formula(&molecule),
+            "{input}"
+        );
+        assert_eq!(
+            rdkit_cleanup_canonical_smiles(&expanded_result),
+            rdkit_cleanup_canonical_smiles(&compact_result),
             "{input}"
         );
     }

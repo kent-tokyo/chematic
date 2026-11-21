@@ -30,6 +30,27 @@ for (const input of [
 }
 
 for (const input of [
+  "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
+  "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
+  "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+]) {
+  const source = wasm.parse_smiles(input);
+  const expanded = wasm.add_hydrogens(source);
+  const compactResult = wasm.cleanup_mol(source);
+  const expandedResult = wasm.cleanup_mol(expanded);
+  try {
+    assert.equal(expanded.formula(), source.formula(), input);
+    assert.equal(expandedResult.formula(), source.formula(), input);
+    assert.equal(expandedResult.rdkit_smiles(), compactResult.rdkit_smiles(), input);
+  } finally {
+    expandedResult.free();
+    compactResult.free();
+    expanded.free();
+    source.free();
+  }
+}
+
+for (const input of [
   "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
   "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N",
 ]) {
