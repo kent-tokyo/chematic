@@ -17,6 +17,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--exclude-manifest", type=Path, action="append", default=[])
     parser.add_argument("--exclude-smiles", type=Path, action="append", default=[])
+    parser.add_argument("--exclude-jsonl", type=Path, action="append", default=[])
     parser.add_argument("--allow-invalid-exclusions", action="store_true")
     args = parser.parse_args()
     source_hash = hashlib.sha256(args.sdf.read_bytes()).hexdigest()
@@ -45,6 +46,20 @@ def main():
             scaffold = MurckoScaffold.MurckoScaffoldSmiles(
                 mol=mol, includeChirality=False
             )
+            excluded.add(hashlib.sha256(scaffold.encode()).hexdigest())
+    for path in args.exclude_jsonl:
+        for line in path.read_text().splitlines():
+            if not line.strip():
+                continue
+            row = json.loads(line)
+            smiles = row["smiles"]
+            mol = Chem.MolFromSmiles(smiles)
+            if mol is None:
+                if not args.allow_invalid_exclusions:
+                    raise ValueError(f"invalid SMILES in {path}: {smiles}")
+                invalid_exclusions.append({"path": str(path), "smiles": smiles})
+                continue
+            scaffold = MurckoScaffold.MurckoScaffoldSmiles(mol=mol, includeChirality=False)
             excluded.add(hashlib.sha256(scaffold.encode()).hexdigest())
     rows = []
     counts = Counter()
@@ -80,7 +95,7 @@ def main():
         counts[split] += 1
     exclusions = {
         str(path): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in args.exclude_manifest + args.exclude_smiles
+        for path in args.exclude_manifest + args.exclude_smiles + args.exclude_jsonl
     }
     args.output.write_text(
         json.dumps(

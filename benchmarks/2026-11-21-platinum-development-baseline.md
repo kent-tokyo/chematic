@@ -18,6 +18,9 @@ A broader split also excludes the NCI 5k and browser 10k scaffolds, leaving
 SMILES fail RDKit sanitization and are listed in the split file; their
 scaffolds could not be compared. Other previously used datasets also require
 an exposure audit before the holdout is treated as independent.
+An additional audit against the four MMFF94 post-freeze manifests and both
+3D trust-holdout files leaves 404 development, 1,606 holdout and 849 excluded
+records. The eight invalid exclusion inputs are unchanged.
 
 The macOS arm64 run uses the published chematic 1.2.2 wheel and RDKit
 2026.09.2, seed 42, up to 20 candidates and at most 200 MMFF94 iterations.

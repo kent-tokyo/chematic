@@ -124,7 +124,7 @@ def test_consistent_torsion_gradient_available_for_mmff(mol):
 
 def test_consistent_plane_gradient_near_linear_amine():
     fixture_path = Path(__file__).resolve().parents[2] / "chematic-ff/tests/mmff94_near_linear_amine.json"
-    fixture = json.loads(fixture_path.read_text())
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
     mol = chematic.from_smiles(fixture["smiles"]).add_hydrogens()
     field = mol.mmff_force_field(fixture["coords"])
     compatible = field.gradient()[5][1]
