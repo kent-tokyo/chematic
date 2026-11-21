@@ -13,6 +13,17 @@ SPEC.loader.exec_module(bench)
 
 
 class PublishedMcsTests(unittest.TestCase):
+    def test_query_graph_predicates_must_match(self):
+        from rdkit import Chem
+
+        first = Chem.MolFromSmarts("[#6]-[#6]-[#7]")
+        reordered = Chem.MolFromSmarts("[#7]-[#6]-[#6]")
+        different_atom = Chem.MolFromSmarts("[#8]-[#6]-[#6]")
+        different_bond = Chem.MolFromSmarts("[#7]=[#6]-[#6]")
+        self.assertTrue(bench.same_query_predicates(first, reordered, Chem))
+        self.assertFalse(bench.same_query_predicates(first, different_atom, Chem))
+        self.assertFalse(bench.same_query_predicates(first, different_bond, Chem))
+
     def test_record_suppresses_ratios_for_invalid_or_different_results(self):
         path = Path(__file__).parents[2] / "benchmarks/2026-11-21-v122-published-mcs.json"
         report = json.loads(path.read_text())

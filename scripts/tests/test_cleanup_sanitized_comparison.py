@@ -22,3 +22,10 @@ def test_compares_sanitized_copy_without_changing_oracle():
     assert gate.equivalent_after_sanitization(oracle, "CC") is False
     assert gate.equivalent_after_sanitization(oracle, None) is None
     assert gate.equivalent_after_sanitization(oracle, "not-smiles") is None
+
+
+def test_ferrocene_charge_distribution_remains_a_chemical_difference():
+    molecule = Chem.MolFromSmiles("C1=CC=CC1[Fe]C1C=CC=C1")
+    oracle = rdMolStandardize.Cleanup(molecule)
+    actual = "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]"
+    assert gate.equivalent_after_sanitization(oracle, actual) is False

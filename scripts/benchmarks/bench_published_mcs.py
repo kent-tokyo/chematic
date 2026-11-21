@@ -50,12 +50,41 @@ def verify_wheel(arm, wheel_dir, installed_root):
             "installed_files_verified": len(files)}
 
 
-def worker(arm):
+def same_query_predicates(actual, reference, chem):
+    if (actual.GetNumAtoms(), actual.GetNumBonds()) != (reference.GetNumAtoms(), reference.GetNumBonds()):
+        return False
+    params = chem.SubstructMatchParameters()
+    params.useQueryQueryMatches = True
+    params.useChirality = True
+    params.maxMatches = 10000
+    for mapping in actual.GetSubstructMatches(reference, params):
+        atoms_match = all(
+            reference.GetAtomWithIdx(i).DescribeQuery() == actual.GetAtomWithIdx(j).DescribeQuery()
+            and reference.GetAtomWithIdx(i).GetChiralTag() == actual.GetAtomWithIdx(j).GetChiralTag()
+            for i, j in enumerate(mapping)
+        )
+        if not atoms_match:
+            continue
+        bonds_match = True
+        for bond in reference.GetBonds():
+            other = actual.GetBondBetweenAtoms(mapping[bond.GetBeginAtomIdx()], mapping[bond.GetEndAtomIdx()])
+            if other is None or bond.DescribeQuery() != other.DescribeQuery() or bond.GetStereo() != other.GetStereo():
+                bonds_match = False
+                break
+        if bonds_match:
+            return True
+    return False
+
+
+def worker(arm, v122_smarts=False):
     start = time.perf_counter_ns()
     if arm.startswith("v"):
         lib = importlib.import_module("chematic")
         parse = lib.from_smiles
         def search(mols):
+            if arm == "v122" and v122_smarts:
+                result, limited = lib.find_mcs_smarts_checked(mols, timeout_ms=2000, bond_count_first=True)
+                return result, limited, "smarts"
             result, limited = lib.find_mcs_checked(mols, timeout_ms=2000)
             return (result.smiles if result is not None else None), limited, "smiles"
     elif arm == "rdkit":
@@ -101,16 +130,18 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--validate-only", action="store_true")
     parser.add_argument("--wheel-dir", type=Path)
+    parser.add_argument("--v122-smarts", action="store_true")
     for arm in ARMS[:3]:
         parser.add_argument(f"--{arm}-path", type=Path)
     args = parser.parse_args()
     if args.worker:
-        print(json.dumps(worker(args.worker)))
+        print(json.dumps(worker(args.worker, args.v122_smarts)))
         return
     if args.blocks < 20 or not args.output or any(getattr(args, f"{arm}_path") is None for arm in ARMS[:3]):
         parser.error("20 blocks, output and all three installed package paths are required")
     report = {"cases": CASES, "case_sha256": hashlib.sha256(json.dumps(CASES).encode()).hexdigest(),
-              "host": platform.platform(), "python": sys.version, "blocks": [], "complete": False}
+              "host": platform.platform(), "python": sys.version, "blocks": [], "complete": False,
+              "v122_smarts": args.v122_smarts}
     if args.validate_only:
         report = json.loads(args.output.read_text())
         if report["cases"] != CASES or len(report["blocks"]) != args.blocks:
@@ -138,7 +169,10 @@ def main():
             path = getattr(args, f"{arm}_path", None)
             if path:
                 env["PYTHONPATH"] = str(path)
-            result = subprocess.run([sys.executable, __file__, "--worker", arm], env=env,
+            command = [sys.executable, __file__, "--worker", arm]
+            if args.v122_smarts:
+                command.append("--v122-smarts")
+            result = subprocess.run(command, env=env,
                                     text=True, capture_output=True, timeout=120, check=True)
             block[arm] = json.loads(result.stdout)
         report["blocks"].append(block)
@@ -160,8 +194,20 @@ def main():
                     continue
                 validations.append({"atoms": mol.GetNumAtoms(), "bonds": mol.GetNumBonds(),
                                     "matches": [Chem.MolFromSmiles(s).HasSubstructMatch(mol) for s in case],
+                                    "query_smarts": Chem.MolToSmarts(mol) if kind == "smiles" else query,
                                     "limited": limited})
             block[arm]["validation"] = validations
+        for arm in ARMS:
+            for index, actual in enumerate(block[arm]["validation"]):
+                reference = block["rdkit"]["validation"][index]
+                if "error" in actual or "error" in reference:
+                    actual["same_query_predicates_as_rdkit"] = False
+                    continue
+                query = Chem.MolFromSmarts(actual["query_smarts"])
+                expected = Chem.MolFromSmarts(reference["query_smarts"])
+                actual["same_query_predicates_as_rdkit"] = (
+                    query is not None and expected is not None and same_query_predicates(query, expected, Chem)
+                )
     report["summary"] = {arm: {key: statistics.median(b[arm][key] for b in report["blocks"])
                                 for key in ("import_ns", "parse_ns", "peak_rss_bytes")}
                          for arm in ARMS}
@@ -177,6 +223,7 @@ def main():
                     "error" not in actual and "error" not in reference
                     and not actual["limited"] and not reference["limited"]
                     and all(actual["matches"]) and all(reference["matches"])
+                    and actual["same_query_predicates_as_rdkit"]
                     and actual["atoms"] == reference["atoms"]
                     and actual["bonds"] == reference["bonds"]
                 )
@@ -199,18 +246,20 @@ def main():
                     [block["v122"]["repeated_ns"][index] for block in report["blocks"]],
                     seed=index,
                 )
-            comparisons.append({"case": index, "comparable_by_counts_and_input_matches": comparable,
+            comparisons.append({"case": index, "comparable_by_query_predicates_and_input_matches": comparable,
                                 "competitor_over_v122": interval})
         report["paired_repeated_search"][arm] = comparisons
     report["protocol"] = {
         "order": f"{args.blocks} rotating blocks of five fresh processes",
         "timeout_seconds": 2,
         "search": "prepared molecules; first and second calls timed per case",
-        "validation": "RDKit checks output parseability, atom and bond counts, and matches against inputs after timing",
+        "validation": "RDKit checks parseability, input matches, and query graph predicates after timing; concrete molecules are converted to SMARTS",
         "memory": "whole process peak RSS",
-        "note": "The chematic API returns a concrete molecule; RDKit and COSMolKit return SMARTS. "
-                "RDKit parse includes first-use initialization. Matching counts and input matches "
-                "do not prove query semantic equivalence. Invalid or differing results cannot support speed ratios.",
+        "note": ("The v1.2.2 lane returns SMARTS; earlier chematic versions return concrete molecules. "
+                 if report.get("v122_smarts") else
+                 "The chematic API returns a concrete molecule; RDKit and COSMolKit return SMARTS. ")
+                + "RDKit parse includes first-use initialization. Query predicates are compared after "
+                "conversion; invalid or differing results cannot support speed ratios.",
     }
     report["complete"] = True
     args.output.write_text(json.dumps(report, indent=2) + "\n")
