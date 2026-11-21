@@ -1,0 +1,916 @@
+{
+  "candidate_commit": "091052eb9df2423bbda874bcec8d68d97f8b5038",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "c58f26f444f4b303d653ccab35fa12199fc3744d602333845d7dfc9325936a20",
+  "rdkit_version": "2026.09.1",
+  "installed_package_files_verified": 44,
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "source_record_sha256": "9eebc29460ae9023f07f4e46cb856ea0c951f3ace3dc70f5e82388aebf54e007",
+  "method": "RDKit AddHs and noncanonical isomeric SMILES; verify RDKit reparse, compare chematic formulas, output and typed refusals",
+  "rows": [
+    {
+      "index": 65,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[cH-]1cccccc1",
+          "input_formula": "C7H7-",
+          "output": "[C-]1=CC=CCC=C1",
+          "output_formula": "C7H7-"
+        },
+        {
+          "input": "[C-]1([H])C([H])=C([H])C([H])=C([H])C([H])=C1[H]",
+          "input_formula": "C7H7-",
+          "output": "[C-]1=CC=CCC=C1",
+          "output_formula": "C7H7-"
+        }
+      ]
+    },
+    {
+      "index": 83,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[cH-]1cccccccccc1",
+          "input_formula": "C11H11-",
+          "output": "[C-]1=CC=CC=CC=CCC=C1",
+          "output_formula": "C11H11-"
+        },
+        {
+          "input": "[C-]1([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C1[H]",
+          "input_formula": "C11H11-",
+          "output": "[C-]1=CC=CC=CC=CCC=C1",
+          "output_formula": "C11H11-"
+        }
+      ]
+    },
+    {
+      "index": 101,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[cH-]1cccccccccccccc1",
+          "input_formula": "C15H15-",
+          "output": "[C-]1=CC=CC=CC=CC=CC=CCC=C1",
+          "output_formula": "C15H15-"
+        },
+        {
+          "input": "[C-]1([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C1[H]",
+          "input_formula": "C15H15-",
+          "output": "[C-]1=CC=CC=CC=CC=CC=CCC=C1",
+          "output_formula": "C15H15-"
+        }
+      ]
+    },
+    {
+      "index": 403,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1=CC=CC1[Fe]C1C=CC=C1",
+          "input_formula": "C10H10Fe",
+          "output": "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]",
+          "output_formula": "C10H10Fe"
+        },
+        {
+          "input": "C1([H])=C([H])C([H])=C([H])[C]1([Fe][C]1([H])C([H])=C([H])C([H])=C1[H])[H]",
+          "input_formula": "C10H10Fe",
+          "output": "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]",
+          "output_formula": "C10H10Fe"
+        }
+      ]
+    },
+    {
+      "index": 809,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1=CC=CC=C[CH-]1",
+          "input_formula": "C7H7-",
+          "output": "[C-]1=CC=CCC=C1",
+          "output_formula": "C7H7-"
+        },
+        {
+          "input": "C1([H])=C([H])C([H])=C([H])C([H])=C([H])[C-]1[H]",
+          "input_formula": "C7H7-",
+          "output": "[C-]1=CC=CCC=C1",
+          "output_formula": "C7H7-"
+        }
+      ]
+    },
+    {
+      "index": 911,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1C=CC=CC=CC=CC=CC=CC=C[CH-]C=CC=1",
+          "input_formula": "C19H19-",
+          "output": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1",
+          "output_formula": "C19H19-"
+        },
+        {
+          "input": "C1([H])=C([H])C([H])=C([H])[C-]([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C([H])C([H])=C1[H]",
+          "input_formula": "C19H19-",
+          "output": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1",
+          "output_formula": "C19H19-"
+        }
+      ]
+    },
+    {
+      "index": 1294,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "input_formula": "C6H13N5SSn",
+          "error": {
+            "category": "ambiguous",
+            "code": "cleanup_metal_hydrogen"
+          }
+        },
+        {
+          "input": "C(/N=C(\\S[H])N(/N=C(/C(C([H])([H])[H])=[N]/[Sn](=[C](/N([H])[H])[H])[H])[H])[H])([H])([H])[H]",
+          "input_formula": "C6H13N5SSn",
+          "error": {
+            "category": "ambiguous",
+            "code": "cleanup_metal_hydrogen"
+          }
+        }
+      ]
+    },
+    {
+      "index": 1366,
+      "matches": true,
+      "variants": [
+        {
+          "input": "COC1=C2[C@@H2]CC[C@@H](CN(C)C[CH]([Pt])C3=CC4=C(C=C3)CNC4)C2=CC=C1",
+          "input_formula": "C23H29N2OPt",
+          "output": "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]",
+          "output_formula": "C23H29N2OPt"
+        },
+        {
+          "input": "C(Oc1c2c(c([H])c([H])c1[H])[C@@](C(N(C([H])([H])[H])C([C]([Pt])(c1c([H])c3c(c([H])c1[H])C([H])([H])N([H])C3([H])[H])[H])([H])[H])([H])[H])([H])C([H])([H])C([H])([H])C2([H])[H])([H])([H])[H]",
+          "input_formula": "C23H29N2OPt",
+          "output": "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]",
+          "output_formula": "C23H29N2OPt"
+        }
+      ]
+    },
+    {
+      "index": 1432,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=C2OC3=C(C)C(OC(=O)C45CC6CC(CC(C6)C4)C5)=CC(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5[CH-]CC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)=C3N=C2C(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)=C(N)C1=O",
+          "input_formula": "C73H99N12O18-",
+          "output": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+          "output_formula": "C73H99N12O18-"
+        },
+        {
+          "input": "C(c1c2oc3c(C([H])([H])[H])c(OC(=O)C45C([H])([H])C6([H])C([H])([H])C([H])(C([H])([H])C([H])(C6([H])[H])C4([H])[H])C5([H])[H])c([H])c(C(=O)N([C@]4([H])C(=O)N([H])[C@@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N5[C-]([H])C([H])([H])C([H])([H])[C@]5([H])C(=O)N(C([H])([H])[H])C([H])([H])C(=O)N(C([H])([H])[H])[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)O[C@@]4(C([H])([H])[H])[H])[H])c3nc-2c(C(=O)N([C@@]2([H])C(=O)N([H])[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N3C([H])([H])C([H])([H])C([H])([H])[C@@]3([H])C(=O)N(C([H])([H])[H])C([H])([H])C(=O)N(C([H])([H])[H])[C@@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)O[C@]2(C([H])([H])[H])[H])[H])c(N([H])[H])c1=O)([H])([H])[H]",
+          "input_formula": "C73H99N12O18-",
+          "output": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+          "output_formula": "C73H99N12O18-"
+        }
+      ]
+    },
+    {
+      "index": 1437,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C1/C(=C/C2=CC=CC(Cl)=[CH:43]2)CCC2=CC=C[CH]([Zn])C12",
+          "input_formula": "C17H14ClOZn",
+          "output": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]",
+          "output_formula": "C17H14ClOZn"
+        },
+        {
+          "input": "O=C1/C(=C(/c2c([H])c([H])c([H])c(Cl)[c:43]2[H])[H])C([H])([H])C([H])([H])C2=C([H])C([H])=C([H])[C]([Zn])([H])C12[H]",
+          "input_formula": "C17H14ClOZn",
+          "output": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]",
+          "output_formula": "C17H14ClOZn"
+        }
+      ]
+    },
+    {
+      "index": 1471,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O[C]1=[Fe]2[C](=CC=C1)CCC(NCCCC1=CC=CC=C1)[CH2]2",
+          "input_formula": "C18H23FeNO",
+          "output": "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]",
+          "output_formula": "C18H23FeNO"
+        },
+        {
+          "input": "O([C]1=[Fe]2[C](=C([H])C([H])=C1[H])C([H])([H])C([H])([H])C(N(C(C(C(c1c([H])c([H])c([H])c([H])c1[H])([H])[H])([H])[H])([H])[H])[H])([H])[C]2([H])[H])[H]",
+          "input_formula": "C18H23FeNO",
+          "output": "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]",
+          "output_formula": "C18H23FeNO"
+        }
+      ]
+    },
+    {
+      "index": 1497,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
+          "input_formula": "C12H15N5O3",
+          "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C",
+          "output_formula": "C12H15N5O3"
+        },
+        {
+          "input": "C(c1c([H])n2c(n1)nc1c(c2[O-])n(C([H])([H])[H])c([H])[n+]1C([200O]C(C(O[H])([H])[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C12H15N5O3",
+          "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C",
+          "output_formula": "C12H15N5O3"
+        }
+      ]
+    },
+    {
+      "index": 1577,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CCCCOC1=CC(C(=O)N[C@@H]2C(=O)N[C@H](C([CH2][Zn])C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)=C2N=C3C(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)=C(N)C(=O)C(C)=C3OC2=C1C",
+          "input_formula": "C66H93N12O17Zn",
+          "output": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C-]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+          "output_formula": "C66H93N12O17Zn"
+        },
+        {
+          "input": "C(C(C(C(Oc1c([H])c(C(=O)N([C@]2([H])C(=O)N([H])[C@@](C([C]([Zn])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N3C([H])([H])C([H])([H])C([H])([H])[C@]3([H])C(=O)N(C([H])([H])[H])C([H])([H])C(=O)N(C([H])([H])[H])[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)O[C@@]2(C([H])([H])[H])[H])[H])c2nc3c(C(=O)N([C@@]4([H])C(=O)N([H])[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N5C([H])([H])C([H])([H])C([H])([H])[C@@]5([H])C(=O)N(C([H])([H])[H])C([H])([H])C(=O)N(C([H])([H])[H])[C@@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)O[C@]4(C([H])([H])[H])[H])[H])c(N([H])[H])c(=O)c(C([H])([H])[H])c-3oc2c1C([H])([H])[H])([H])[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C66H93N12O17Zn",
+          "output": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C-]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+          "output_formula": "C66H93N12O17Zn"
+        }
+      ]
+    },
+    {
+      "index": 1630,
+      "matches": true,
+      "variants": [
+        {
+          "input": "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
+          "input_formula": "C12H12N5O3-",
+          "output": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](COCC[O-])cn3C",
+          "output_formula": "C12H12N5O3-"
+        },
+        {
+          "input": "O(C([C-](OC([n+]1c2nc3nc([C][H])c([H])n3c([O-])c2n(C([H])([H])[H])c1[H])([H])[H])[H])([H])[H])[H]",
+          "input_formula": "C12H12N5O3-",
+          "output": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](COCC[O-])cn3C",
+          "output_formula": "C12H12N5O3-"
+        }
+      ]
+    },
+    {
+      "index": 1664,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[KH].c1ccc(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)cc1",
+          "input_formula": "C19H23KO4Zn",
+          "output": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "output_formula": "C19H23KO4Zn"
+        },
+        {
+          "input": "[K][H].c1([H])c([H])c([H])c(C(Oc2c([H])c([H])c(OC(C(OC3([H])C([H])([H])[C]([H])([H])[Zn][C]([H])([H])O3)([H])[H])([H])[H])c([H])c2[H])([H])[H])c([H])c1[H]",
+          "input_formula": "C19H23KO4Zn",
+          "output": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "output_formula": "C19H23KO4Zn"
+        }
+      ]
+    },
+    {
+      "index": 1781,
+      "matches": true,
+      "variants": [
+        {
+          "input": "COC1=C(OC)[CH]=[Pt]2[NH]C(C3=CC=CC=N3)[N+]([O-])=C(C)[C]2=C1",
+          "input_formula": "C15H17N3O3Pt",
+          "output": "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+          "output_formula": "C15H17N3O3Pt"
+        },
+        {
+          "input": "C(OC1=C(OC([H])([H])[H])[C]([H])=[Pt]2[N]([H])C(c3c([H])c([H])c([H])c([H])n3)([H])[N+]([O-])=C(C([H])([H])[H])[C]2=C1[H])([H])([H])[H]",
+          "input_formula": "C15H17N3O3Pt",
+          "output": "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+          "output_formula": "C15H17N3O3Pt"
+        }
+      ]
+    },
+    {
+      "index": 1831,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CCCN(CCC)C1CCC2=C(C1)C([C](=O)[Zn])=CC=C2",
+          "input_formula": "C17H24NOZn",
+          "output": "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+          "output_formula": "C17H24NOZn"
+        },
+        {
+          "input": "C(C(C(N(C(C(C([H])([H])[H])([H])[H])([H])[H])C1([H])C([H])([H])C([H])([H])c2c(c([C](=O)[Zn])c([H])c([H])c2[H])C1([H])[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C17H24NOZn",
+          "output": "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+          "output_formula": "C17H24NOZn"
+        }
+      ]
+    },
+    {
+      "index": 1854,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C=CCN(C)[CH](C1=CC=CC=C1)[Zn]",
+          "input_formula": "C11H14NZn",
+          "output": "C=CCN(C)[CH-]c1ccccc1.[Zn+]",
+          "output_formula": "C11H14NZn"
+        },
+        {
+          "input": "C(=C(C(N(C([H])([H])[H])[C](c1c([H])c([H])c([H])c([H])c1[H])([Zn])[H])([H])[H])[H])([H])[H]",
+          "input_formula": "C11H14NZn",
+          "output": "C=CCN(C)[CH-]c1ccccc1.[Zn+]",
+          "output_formula": "C11H14NZn"
+        }
+      ]
+    },
+    {
+      "index": 1875,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
+          "input_formula": "C9H10ClNOPt",
+          "output": "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]",
+          "output_formula": "C9H10ClNOPt"
+        },
+        {
+          "input": "O=C1C([H])([H])[C]([Pt]2=[C]([H])C([H])=C(Cl)C([H])=[C]2[H])([H])C([H])([H])N1[H]",
+          "input_formula": "C9H10ClNOPt",
+          "output": "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]",
+          "output_formula": "C9H10ClNOPt"
+        }
+      ]
+    },
+    {
+      "index": 1878,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C(OCCCl)NNC([C@H]([CH-]c1ccccc1)NC(=O)C)=O",
+          "input_formula": "C14H17ClN3O4-",
+          "output": "[CH2-]C(=O)N[C@@H](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+          "output_formula": "C14H17ClN3O4-"
+        },
+        {
+          "input": "O=C(OC(C(Cl)([H])[H])([H])[H])N(N(C([C@]([C-](c1c([H])c([H])c([H])c([H])c1[H])[H])(N(C(=O)C([H])([H])[H])[H])[H])=O)[H])[H]",
+          "input_formula": "C14H17ClN3O4-",
+          "output": "[CH2-]C(=O)N[C@@H](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+          "output_formula": "C14H17ClN3O4-"
+        }
+      ]
+    },
+    {
+      "index": 1890,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C(C)Nc1ccc=cc1.O=c1c2n([CH2-])c(nc2n(c(n1C)=O)C)C",
+          "input_formula": "C17H18N5O3-",
+          "output": "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1",
+          "output_formula": "C17H18N5O3-"
+        },
+        {
+          "input": "O=C(C([H])([H])[H])N(C1=C([H])C([H])=C=C=C1[H])[H].O=c1c2n([C-]([H])[H])c(C([H])([H])[H])nc2n(C([H])([H])[H])c(=O)n1C([H])([H])[H]",
+          "input_formula": "C17H18N5O3-",
+          "output": "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1",
+          "output_formula": "C17H18N5O3-"
+        }
+      ]
+    },
+    {
+      "index": 2003,
+      "matches": true,
+      "variants": [
+        {
+          "input": "COC1=CC2=[C]([Zn]=[C]1OC)OC(OC)(C1=NCCN1)CO2.Cl",
+          "input_formula": "C13H18ClN2O5Zn",
+          "output": "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+          "output_formula": "C13H18ClN2O5Zn"
+        },
+        {
+          "input": "C(OC1=C([H])C2=[C]([Zn]=[C]1OC([H])([H])[H])OC(OC([H])([H])[H])(C1=NC([H])([H])C([H])([H])N1[H])C([H])([H])O2)([H])([H])[H].Cl[H]",
+          "input_formula": "C13H18ClN2O5Zn",
+          "output": "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+          "output_formula": "C13H18ClN2O5Zn"
+        }
+      ]
+    },
+    {
+      "index": 2025,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+          "input_formula": "C3H12FeN2NaO5P",
+          "output": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]",
+          "output_formula": "C3H12FeN2NaO5P"
+        },
+        {
+          "input": "[N]([Fe@@]([C](N(C(P(=O)(O[H])O[H])([H])[H])[H])([H])[H])([C](=[O:27])O[H])[H])([H])[H].[Na][H]",
+          "input_formula": "C3H12FeN2NaO5P",
+          "output": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]",
+          "output_formula": "C3H12FeN2NaO5P"
+        }
+      ]
+    },
+    {
+      "index": 2069,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CSCC[C@H](NC=O)[C](=O)[Pt][C@@H](CC(C)C)C(=O)O[C@@H](Cc1ccccc1)C(=O)NCc1ccccc1",
+          "input_formula": "C28H36N2O5PtS",
+          "output": "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+          "output_formula": "C28H36N2O5PtS"
+        },
+        {
+          "input": "C(SC(C([C@](N(C(=O)[H])[H])([C](=O)[Pt][C@@](C(C(C([H])([H])[H])(C([H])([H])[H])[H])([H])[H])(C(=O)O[C@@](C(c1c([H])c([H])c([H])c([H])c1[H])([H])[H])(C(=O)N(C(c1c([H])c([H])c([H])c([H])c1[H])([H])[H])[H])[H])[H])[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C28H36N2O5PtS",
+          "output": "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+          "output_formula": "C28H36N2O5PtS"
+        }
+      ]
+    },
+    {
+      "index": 2076,
+      "matches": true,
+      "variants": [
+        {
+          "input": "c1ccc(cc1)/C=C/[C-]1CCCN(C1)CCCC=C",
+          "input_formula": "C18H24N-",
+          "output": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1",
+          "output_formula": "C18H24N-"
+        },
+        {
+          "input": "c1([H])c([H])c([H])c(/C(=C(/[C-]2C([H])([H])C([H])([H])C([H])([H])N(C(C(C(C(=C([H])[H])[H])([H])[H])([H])[H])([H])[H])C2([H])[H])[H])[H])c([H])c1[H]",
+          "input_formula": "C18H24N-",
+          "output": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1",
+          "output_formula": "C18H24N-"
+        }
+      ]
+    },
+    {
+      "index": 2130,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=C([C]2=CC=C[C]3=CC=C[CH]=[Pt]32)N=C2C=CC(F)=CC2=C1C(=O)O",
+          "input_formula": "C20H14FNO2Pt",
+          "output": "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+          "output_formula": "C20H14FNO2Pt"
+        },
+        {
+          "input": "C(c1c([C]2=C([H])C([H])=C([H])[C]3=C([H])C([H])=C([H])[C]([H])=[Pt]23)nc2c([H])c([H])c(F)c([H])c2c1C(=O)O[H])([H])([H])[H]",
+          "input_formula": "C20H14FNO2Pt",
+          "output": "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+          "output_formula": "C20H14FNO2Pt"
+        }
+      ]
+    },
+    {
+      "index": 2178,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=NC(O)=C2C(=C1CCN1CCOCC1)C=C[C+3]1=[C]2[Zn:23]([CH3])[C](NC2=C(Cl)C=CC=C2Cl)=N1",
+          "input_formula": "C24H25Cl2N4O2Zn+3",
+          "output": "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+          "output_formula": "C24H25Cl2N4O2Zn+3"
+        },
+        {
+          "input": "C(c1nc(O[H])c2c(c1C(C(N1C([H])([H])C([H])([H])OC([H])([H])C1([H])[H])([H])[H])([H])[H])C([H])=C([H])[C+3]1=[C]2[Zn:23]([C]([H])([H])[H])[C](N(c2c(Cl)c([H])c([H])c([H])c2Cl)[H])=N1)([H])([H])[H]",
+          "input_formula": "C24H25Cl2N4O2Zn+3",
+          "output": "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+          "output_formula": "C24H25Cl2N4O2Zn+3"
+        }
+      ]
+    },
+    {
+      "index": 2203,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+          "input_formula": "C20H27NO5Pt",
+          "output": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]",
+          "output_formula": "C20H27NO5Pt"
+        },
+        {
+          "input": "C(C(O[C](=O)[Pt@]1([H])[C@@](O[H])([H])C([H])([H])C([H])([H])[C@]2([H])C([H])([H])N3C([H])([H])C([H])([H])c4c([H])c5c(c([H])c4[C@]3([H])C([H])([H])[C@]12[H])OC([H])([H])O5)([H])[H])([H])([H])[H]",
+          "input_formula": "C20H27NO5Pt",
+          "output": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]",
+          "output_formula": "C20H27NO5Pt"
+        }
+      ]
+    },
+    {
+      "index": 2576,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CN([C@@H](CC1=CC=[C](OS(=O)(=O)C2=C3C=CN=CC3=CC=C2)[Fe]=[CH]1)C(=O)N1CCN(C2=CC=CC(Cl)=C2)CC1)[S@](=O)(=O)C1=C2C=CN=CC2=CC=C1",
+          "input_formula": "C37H33ClFeN5O6S2",
+          "output": "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+          "output_formula": "C37H33ClFeN5O6S2"
+        },
+        {
+          "input": "C(N([C@@](C(C1=C([H])C([H])=[C](OS(=O)(=O)c2c3c([H])c([H])nc([H])c3c([H])c([H])c2[H])[Fe]=[C]1[H])([H])[H])(C(=O)N1C([H])([H])C([H])([H])N(c2c([H])c([H])c([H])c(Cl)c2[H])C([H])([H])C1([H])[H])[H])S(=O)(=O)c1c2c([H])c([H])nc([H])c2c([H])c([H])c1[H])([H])([H])[H]",
+          "input_formula": "C37H33ClFeN5O6S2",
+          "output": "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+          "output_formula": "C37H33ClFeN5O6S2"
+        }
+      ]
+    },
+    {
+      "index": 2598,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
+          "input_formula": "C21H14FFeNO2",
+          "output": "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+          "output_formula": "C21H14FFeNO2"
+        },
+        {
+          "input": "O=C(O[H])C1=[C]2C([H])=C(F)C([H])=[C]([H])[Fe]2=[N]C(c2c([H])c([H])c(-c3c([H])c([H])c([H])c([H])c3[H])c([H])c2[H])=C1[H]",
+          "input_formula": "C21H14FFeNO2",
+          "output": "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+          "output_formula": "C21H14FFeNO2"
+        }
+      ]
+    },
+    {
+      "index": 2602,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+          "input_formula": "C9H15FeNO4P",
+          "output": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+          "output_formula": "C9H15FeNO4P"
+        },
+        {
+          "input": "O=C(O[H])[C@@]1([H])C([H])([H])[C@](C(/C(=C(/[P](=O)(O[H])[Fe])[H])[H])([H])[H])([H])C([H])([H])C([H])([H])N1[H]",
+          "input_formula": "C9H15FeNO4P",
+          "output": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+          "output_formula": "C9H15FeNO4P"
+        }
+      ]
+    },
+    {
+      "index": 2677,
+      "matches": true,
+      "variants": [
+        {
+          "input": "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+          "input_formula": "C12H15N5O3",
+          "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+          "output_formula": "C12H15N5O3"
+        },
+        {
+          "input": "C(c1c([H])n2c([O-])c3c(nc2n1)[n+](C(OC(C(O[H])([H])[H])([H])[H])([H])[H])c([H])n3C([H])([H])[H])([H])([H])[H]",
+          "input_formula": "C12H15N5O3",
+          "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+          "output_formula": "C12H15N5O3"
+        }
+      ]
+    },
+    {
+      "index": 2787,
+      "matches": true,
+      "variants": [
+        {
+          "input": "COC1=CC2=[C](C=C1)[Zn]([CH3])[C](C(=O)NC1=NNN=N1)=C2OC(C)C",
+          "input_formula": "C15H18N5O3Zn",
+          "output": "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+          "output_formula": "C15H18N5O3Zn"
+        },
+        {
+          "input": "C(Oc1c([H])c2[c](c([H])c1[H])[Zn]([C]([H])([H])[H])[C](C(=O)N(c1nn([H])nn1)[H])=C2OC(C([H])([H])[H])(C([H])([H])[H])[H])([H])([H])[H]",
+          "input_formula": "C15H18N5O3Zn",
+          "output": "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+          "output_formula": "C15H18N5O3Zn"
+        }
+      ]
+    },
+    {
+      "index": 2855,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O=C1C2=CC=CC=[PH]2C(=O)N1CCCCN1CCN(C2=CC=CC(Cl)=C2)[CH]([Cu])C1",
+          "input_formula": "C21H24ClCuN3O2P",
+          "output": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "output_formula": "C21H24ClCuN3O2P"
+        },
+        {
+          "input": "O=C1C2=C([H])C([H])=C([H])C([H])=P2([H])C(=O)N1C(C(C(C(N1C([H])([H])C([H])([H])N(c2c([H])c([H])c([H])c(Cl)c2[H])[C]([Cu])([H])C1([H])[H])([H])[H])([H])[H])([H])[H])([H])[H]",
+          "input_formula": "C21H24ClCuN3O2P",
+          "output": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "output_formula": "C21H24ClCuN3O2P"
+        }
+      ]
+    },
+    {
+      "index": 2909,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[CH2-]CCCC1=CN(CCCC)C(=O)N1CC1=CN=C(C2=CC=CC=C2C2=NNN=N2)C=C1",
+          "input_formula": "C24H28N7O-",
+          "output": "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+          "output_formula": "C24H28N7O-"
+        },
+        {
+          "input": "[C-](C(C(C(c1c([H])n(C(C(C(C([H])([H])[H])([H])[H])([H])[H])([H])[H])c(=O)n1C(c1c([H])nc(-c2c([H])c([H])c([H])c([H])c2-c2nn([H])nn2)c([H])c1[H])([H])[H])([H])[H])([H])[H])([H])[H])([H])[H]",
+          "input_formula": "C24H28N7O-",
+          "output": "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+          "output_formula": "C24H28N7O-"
+        }
+      ]
+    },
+    {
+      "index": 3075,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CN1CCc2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu@@H]3[CH3]",
+          "input_formula": "C18H19CuN",
+          "output": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3",
+          "output_formula": "C18H19CuN"
+        },
+        {
+          "input": "C(N1C([H])([H])C([H])([H])c2c([H])c([H])[c]3c4c2[C@@]1([H])C([H])([H])c1c([H])c([H])c([H])[c](c1-4)[Cu@@]3([C]([H])([H])[H])[H])([H])([H])[H]",
+          "input_formula": "C18H19CuN",
+          "output": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3",
+          "output_formula": "C18H19CuN"
+        }
+      ]
+    },
+    {
+      "index": 3153,
+      "matches": true,
+      "variants": [
+        {
+          "input": "O1[C@H](C(N(C)[C@H]([C@H](OCOC)C[15C](=O)OC[C@@H](C1=O)C)[CH-]C1=CC=CC=C1)=O)C(C)C",
+          "input_formula": "C23H32NO7-",
+          "output": "COCO[C@@H]1C[15C](=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+          "output_formula": "C23H32NO7-"
+        },
+        {
+          "input": "O1[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N(C([H])([H])[H])[C@]([C-](c2c([H])c([H])c([H])c([H])c2[H])[H])([H])[C@@](OC(OC([H])([H])[H])([H])[H])([H])C([H])([H])[15C](=O)OC([H])([H])[C@@](C([H])([H])[H])([H])C1=O",
+          "input_formula": "C23H32NO7-",
+          "output": "COCO[C@@H]1C[15C](=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+          "output_formula": "C23H32NO7-"
+        }
+      ]
+    },
+    {
+      "index": 3154,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=C(CCOC2=CC=C(C[C]3([Zn])OC(=O)NC3=O)C=C2)N=C(C2=C[C+]=CO2)O1",
+          "input_formula": "C20H16N2O6Zn+",
+          "output": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+          "output_formula": "C20H16N2O6Zn+"
+        },
+        {
+          "input": "C(c1c(C(C(Oc2c([H])c([H])c(C([C]3([Zn])OC(=O)N([H])C3=O)([H])[H])c([H])c2[H])([H])[H])([H])[H])nc(C2=C([H])[C+]=C([H])O2)o1)([H])([H])[H]",
+          "input_formula": "C20H16N2O6Zn+",
+          "output": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+          "output_formula": "C20H16N2O6Zn+"
+        }
+      ]
+    },
+    {
+      "index": 3207,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1:c2[nH]cc(C[C@H](NC([C@@H]([NH][Zn](=[O])[C@H](NC(=O)C3(NC(=O)CCCC)Cc4c(cccc4CC3)Br)Cc3ccccc3)CCC[N+2]=C(N)N)=O)C(=O)NCC(N)=O)c2ccc:1",
+          "input_formula": "C43H55BrN10O6Zn+2",
+          "output": "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C@@H](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+          "output_formula": "C43H55BrN10O6Zn+2"
+        },
+        {
+          "input": "c1([H])c2n([H])c([H])c(C([C@](N(C([C@@]([N]([Zn](=[O])[C@](N(C(=O)C3(N(C(=O)C(C(C(C([H])([H])[H])([H])[H])([H])[H])([H])[H])[H])C([H])([H])c4c(Br)c([H])c([H])c([H])c4C([H])([H])C3([H])[H])[H])(C(c3c([H])c([H])c([H])c([H])c3[H])([H])[H])[H])[H])(C(C(C([N+2]=C(N([H])[H])N([H])[H])([H])[H])([H])[H])([H])[H])[H])=O)[H])(C(=O)N(C(C(N([H])[H])=O)([H])[H])[H])[H])([H])[H])c2c([H])c([H])c1[H]",
+          "input_formula": "C43H55BrN10O6Zn+2",
+          "output": "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C@@H](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+          "output_formula": "C43H55BrN10O6Zn+2"
+        }
+      ]
+    },
+    {
+      "index": 3369,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+          "input_formula": "C19H18FeNO",
+          "output": "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+          "output_formula": "C19H18FeNO"
+        },
+        {
+          "input": "C(=[C](c1c([H])c([H])c([H])c([H])c1OC(C(c1c([H])c([H])c([H])c([H])c1[H])([H])[H])([H])[H])[Fe]1[C]([H])=C([H])N=[C]1[H])([H])[H]",
+          "input_formula": "C19H18FeNO",
+          "output": "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+          "output_formula": "C19H18FeNO"
+        }
+      ]
+    },
+    {
+      "index": 3402,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+          "input_formula": "C28H42O10Zn",
+          "output": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]",
+          "output_formula": "C28H42O10Zn"
+        },
+        {
+          "input": "C(C(O[H])(C1([H])/C([H])=C([H])/C([H])=C(/[H])C(=O)O[C@]2([H])C([H])([H])[C@@]3([H])O[C@]4([H])C([H])([H])[C@](C([H])([H])[H])([H])[Zn@@]([O][H])([H])[C]([H])([H])[C@]4(C([H])([H])OC(=O)C(O[H])([H])C(C([H])([H])[H])([H])C([H])([H])C([H])([H])O1)[C@]2(C([H])([H])[H])C31C([H])([H])O1)[H])([H])([H])[H]",
+          "input_formula": "C28H42O10Zn",
+          "output": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]",
+          "output_formula": "C28H42O10Zn"
+        }
+      ]
+    },
+    {
+      "index": 3501,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CCN(CC)[CH2][Fe]1=[CH]C(NC2=C3C=CC(Cl)=CC3=NC=C2)=C(F)C(F)=[C]1O",
+          "input_formula": "C19H20ClF2FeN3O",
+          "output": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+          "output_formula": "C19H20ClF2FeN3O"
+        },
+        {
+          "input": "C(C(N(C(C([H])([H])[H])([H])[H])[C]([Fe]1=[C]([H])C(N(c2c3c([H])c([H])c(Cl)c([H])c3nc([H])c2[H])[H])=C(F)C(F)=[C]1O[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C19H20ClF2FeN3O",
+          "output": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+          "output_formula": "C19H20ClF2FeN3O"
+        }
+      ]
+    },
+    {
+      "index": 3504,
+      "matches": true,
+      "variants": [
+        {
+          "input": "COc1ccc2c(cc1=O)[C@@H](NC(C)=O)CCc1cc3c(c(O[CH2][Cu])c1-2)OC[O:12]3",
+          "input_formula": "C21H20CuNO6",
+          "output": "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]",
+          "output_formula": "C21H20CuNO6"
+        },
+        {
+          "input": "C(Oc1c([H])c([H])c2c(c([H])c1=O)[C@](N(C(C([H])([H])[H])=O)[H])([H])C([H])([H])C([H])([H])c1c([H])c3c(c(O[C]([Cu])([H])[H])c1-2)OC([H])([H])[O:12]3)([H])([H])[H]",
+          "input_formula": "C21H20CuNO6",
+          "output": "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]",
+          "output_formula": "C21H20CuNO6"
+        }
+      ]
+    },
+    {
+      "index": 3590,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC1=CC(CN2C3=C(C=C(O)C=C3)C(C)=C2[C]2=CC=C(O)[CH]=[Pt]2)=CC=C1",
+          "input_formula": "C22H20NO2Pt",
+          "output": "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+          "output_formula": "C22H20NO2Pt"
+        },
+        {
+          "input": "C(c1c([H])c(C(n2c3c(c([H])c(O[H])c([H])c3[H])c(C([H])([H])[H])c2[C]2=C([H])C([H])=C(O[H])[C]([H])=[Pt]2)([H])[H])c([H])c([H])c1[H])([H])([H])[H]",
+          "input_formula": "C22H20NO2Pt",
+          "output": "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+          "output_formula": "C22H20NO2Pt"
+        }
+      ]
+    },
+    {
+      "index": 3700,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC(=O)N[C]1=cC=C(CC2=NOC(C3=CC4=C(C=C3)NC=[C]4[Zn][CH2]N)=N2)C=C1",
+          "input_formula": "C20H19N5O2Zn",
+          "output": "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1",
+          "output_formula": "C20H19N5O2Zn"
+        },
+        {
+          "input": "C(C(=O)N(c1c([H])c([H])c(C(c2noc(-c3c([H])c4c(c([H])c3[H])n([H])c([H])[c]4[Zn][C](N([H])[H])([H])[H])n2)([H])[H])c([H])c1[H])[H])([H])([H])[H]",
+          "input_formula": "C20H19N5O2Zn",
+          "output": "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1",
+          "output_formula": "C20H19N5O2Zn"
+        }
+      ]
+    },
+    {
+      "index": 3720,
+      "matches": true,
+      "variants": [
+        {
+          "input": "CC[CH2][Fe][C](=O)NCCCCN1CCN(C2=CC=CC=C2OC)CC1",
+          "input_formula": "C19H31FeN3O2",
+          "output": "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+          "output_formula": "C19H31FeN3O2"
+        },
+        {
+          "input": "C(C([C]([Fe][C](=O)N(C(C(C(C(N1C([H])([H])C([H])([H])N(c2c([H])c([H])c([H])c([H])c2OC([H])([H])[H])C([H])([H])C1([H])[H])([H])[H])([H])[H])([H])[H])([H])[H])[H])([H])[H])([H])[H])([H])([H])[H]",
+          "input_formula": "C19H31FeN3O2",
+          "output": "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+          "output_formula": "C19H31FeN3O2"
+        }
+      ]
+    },
+    {
+      "index": 3849,
+      "matches": true,
+      "variants": [
+        {
+          "input": "c1cccc(c1)CN1CC[CH]([Cu]2([C](NC(=O)C[CH2]2)=O)[c]2ccccc2)CC1",
+          "input_formula": "C22H26CuN2O2",
+          "output": "C[CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+          "output_formula": "C22H26CuN2O2"
+        },
+        {
+          "input": "c1([H])c([H])c([H])c([H])c(C(N2C([H])([H])C([H])([H])[C]([Cu]3([c]4c([H])c([H])c([H])c([H])c4[H])[C](=O)N([H])C(=O)C([H])([H])[C]3([H])[H])([H])C([H])([H])C2([H])[H])([H])[H])c1[H]",
+          "input_formula": "C22H26CuN2O2",
+          "output": "C[CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+          "output_formula": "C22H26CuN2O2"
+        }
+      ]
+    },
+    {
+      "index": 3910,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1(C(C)=NOC=1NS(=O)(C1=C2[C](=cC=C1)[Cu](=[CH]C=C2)[C](OC)=O)=O)C",
+          "input_formula": "C16H16CuN2O5S",
+          "output": "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+          "output_formula": "C16H16CuN2O5S"
+        },
+        {
+          "input": "c1(C([H])([H])[H])c(C([H])([H])[H])noc1N(S(=O)(c1c2[c](c([H])c([H])c1[H])[Cu]([C](OC([H])([H])[H])=O)=[C]([H])C([H])=C2[H])=O)[H]",
+          "input_formula": "C16H16CuN2O5S",
+          "output": "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+          "output_formula": "C16H16CuN2O5S"
+        }
+      ]
+    },
+    {
+      "index": 4023,
+      "matches": true,
+      "variants": [
+        {
+          "input": "[CH2-][C@@H]1C(O[C@@H](C(C)C)C(=O)N([C@@H](CC2=CC=CC=C2)[C@@H](CC(OC1)=O)OCOC)C)=O",
+          "input_formula": "C23H32NO7-",
+          "output": "COCO[C@@H]1CC(=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+          "output_formula": "C23H32NO7-"
+        },
+        {
+          "input": "[C-]([C@]1([H])C(=O)O[C@](C(C([H])([H])[H])(C([H])([H])[H])[H])([H])C(=O)N(C([H])([H])[H])[C@](C(c2c([H])c([H])c([H])c([H])c2[H])([H])[H])([H])[C@@](OC(OC([H])([H])[H])([H])[H])([H])C([H])([H])C(=O)OC1([H])[H])([H])[H]",
+          "input_formula": "C23H32NO7-",
+          "output": "COCO[C@@H]1CC(=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+          "output_formula": "C23H32NO7-"
+        }
+      ]
+    },
+    {
+      "index": 4027,
+      "matches": true,
+      "variants": [
+        {
+          "input": "C1C(C1)[CH2][Fe]1[C](=O)C(CC)C(=O)N2C3C(=CC=CC=3)S[CH]21",
+          "input_formula": "C16H18FeNO2S",
+          "output": "CC[C-]([C]=O)C(=O)N1CSc2ccccc21.[CH2-]C1CC1.[Fe+2]",
+          "output_formula": "C16H18FeNO2S"
+        },
+        {
+          "input": "C1([H])([H])C([C]([Fe]2[C](=O)C(C(C([H])([H])[H])([H])[H])([H])C(=O)N3c4c(c([H])c([H])c([H])c4[H])S[C]23[H])([H])[H])([H])C1([H])[H]",
+          "input_formula": "C16H18FeNO2S",
+          "output": "CC[C-]([C]=O)C(=O)N1CSc2ccccc21.[CH2-]C1CC1.[Fe+2]",
+          "output_formula": "C16H18FeNO2S"
+        }
+      ]
+    }
+  ]
+}
