@@ -577,3 +577,12 @@ SHA-256 is `35e6bdf3a3c37e082c7d83d31414c37023b6c535687ceb28c997cc81c37a5b8d`.
 A development-only comparison is configured for the 225 round-two development
 records, plus a Linux reproduction of the exposed Prime stereo discrepancy.
 No round-two holdout conformer outcome has been inspected.
+
+The macOS arm64 Python 3.12 wheel from the same merge commit has SHA-256
+`b5c01642b5c545835071dedc808ad0d930865512444dd0f3b80e58c7d43b0201`.
+The [independent Linux stereo diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44937409465)
+reproduced the exposed Prime development mismatch at candidate index 43:
+the specified E double bond had a −0.49-degree dihedral (Z-like) after the
+MMFF stage, with nonconverged status 1. The same case was not reproduced in
+the earlier local macOS run. Whether the mismatch arose during embedding or
+MMFF minimization requires a separate raw-coordinate comparison.

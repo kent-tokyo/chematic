@@ -36,6 +36,16 @@ for index, (status, energy, coordinates) in enumerate(candidates):
         torsions.append({'bond': bond_index, 'expected': str(bond.GetStereo()), 'atoms': atom_indices,
                          'dihedral_degrees': rdMolTransforms.GetDihedralDeg(probe.GetConformer(), *atom_indices)})
     observations.append({'index': index, 'status': status, 'energy': energy, 'violations': violations, 'torsions': torsions})
-result = {'name': record['name'], 'rdkit': rdBase.rdkitVersion, 'count': len(candidates), 'observations': observations}
+raw = other.etkdg_embed_corrected(random_seed=42 * 44)
+raw_violations = stereo_violations(molecule, [raw])[0]
+raw_probe = Chem.Mol(molecule)
+raw_conf = Chem.Conformer(raw_probe.GetNumAtoms())
+for atom_index, xyz in enumerate(raw):
+    raw_conf.SetAtomPosition(atom_index, xyz)
+raw_probe.AddConformer(raw_conf)
+raw_torsion = rdMolTransforms.GetDihedralDeg(raw_probe.GetConformer(), 63, 65, 66, 67)
+result = {'name': record['name'], 'rdkit': rdBase.rdkitVersion, 'count': len(candidates),
+          'raw_seed': 42 * 44, 'raw_violations': raw_violations,
+          'raw_dihedral_degrees': raw_torsion, 'observations': observations}
 Path('prime-stereo-diagnostic.json').write_text(json.dumps(result, indent=2) + '\n')
 print(json.dumps(result))
