@@ -289,3 +289,23 @@ build and merge commit. Its SHA-256 is
 The Linux and macOS runs use the same molecules and are platform reproductions,
 not independent molecular samples. Report each platform separately. Neither
 source wheel is evidence for a published package.
+
+The revised Linux candidate's complete-Platinum fixed-count job processed all
+430 records without reported engine errors or stereo violations. Chematic
+recovered 189 and RDKit 191; the paired molecule 95% interval was −2.56 to
++1.63 points and the scaffold-cluster interval was −2.52 to +1.61 points.
+The prespecified −2-point noninferiority criterion was not met; the interval
+does not prove a difference in either direction. Converged matching recovery
+was 97 and 103. The raw fixed result SHA-256 is
+`01dda14cc25da574b9736363fb85f8c44e95a61aae136d78d7e951039ba756fc`, and
+its committed gzip SHA-256 is
+`e7392a2d6c55093457bfa40d684dcba28163991378e70e6aa2445de250781e13`.
+
+The time-budget step did not begin: its shell variable name collided with
+Bash's special `SECONDS` variable, causing the requested 0.2 seconds to be
+parsed as zero. The recovery run uses a different variable name, the exact
+same frozen wheel and source/SDF hashes, and the fixed-result artifact above.
+It applies the previously registered 0.2-second protocol without selecting
+or excluding any records based on the fixed-count outcome. Its host is a
+separate hosted runner, so the timing is an independent run on the same
+population, not a continuation of the original process.
