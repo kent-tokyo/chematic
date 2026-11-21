@@ -534,3 +534,36 @@ energy and gradients against RDKit for two synthetic examples and the exposed
 COD input. The rule is now included in the PR source with regression tests.
 The earlier frozen wheels and their COD holdout measurements predate it; a
 new candidate and a separate untouched validation set are required.
+
+
+## Second COD scaffold split for the silicon-corrected candidate
+
+After the first COD support audit exposed a holdout molecule, a second split
+was selected from the original sample without scoring conformer performance.
+Whole scaffold groups were ordered by SHA-256 of `round2:<partition>:` plus
+the scaffold hash, taking 200 development and 2,000 holdout groups from the
+previously unused partitions. The 2,486 previously selected development or
+holdout records and the known Platinum and Prime scaffolds remain excluded.
+The initial split has 225 development and 2,290 holdout records (uncompressed
+JSON SHA-256 `52b37893b77224a4dd187b3d3c13ecae2898a8f0c09af0bf3ceb5be6bf80c330`).
+The conservative invalid-input graph audit found two possible overlaps in
+the holdout and excluded their scaffold groups before scoring. The final
+split contains 225 development and 2,288 holdout records; its uncompressed
+JSON SHA-256 is `b12af9cb05683735ab8fad725dcf38e0f8e8f51bdef8e4aa3db22e87590109c3`.
+No scaffold occurs in more than one of the new development, new holdout,
+and previously evaluated partitions. Of the 12,000 sampled archive members,
+55 failed parsing and are outside these partitions. The selection and both
+invalid-input audits are retained under `validation/results/`; the selector
+is `scripts/validation/select_cod_scaffolds_round2.py`. These public COD
+structures may have been used elsewhere; independence from unknown prior
+training or tuning cannot be established. This additional dataset is a
+post-hoc follow-up, not a replacement of the original preregistered tests.
+
+The [100-candidate Prime development run](https://github.com/kent-tokyo/chematic/actions/runs/44933792400)
+completed 31 records using the earlier frozen Linux wheel. Recovery increased
+from 11 to 14 for chematic and 8 to 11 for RDKit. For both engines, the first
+20 RMSDs, statuses, stereo checks and geometry checks matched the earlier
+20-candidate run on every row, so this is a nested comparison. Among 3,100
+minimized candidates per engine, each engine had one specified double-bond
+stereo mismatch, on different structures. These results are exploratory and
+do not establish holdout performance or stereo safety for larger ensembles.
