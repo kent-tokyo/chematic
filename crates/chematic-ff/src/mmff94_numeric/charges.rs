@@ -45,8 +45,6 @@
 /// - O2CM/SM's phosphorus-neighbor (type 25, phosphate/phosphonate O),
 ///   thiosulfinate-sulfur-neighbor (type 73), and perchlorate-chlorine-
 ///   neighbor (type 77) branches.
-/// - Type 76 (N5M): formal charge shared across N5M nitrogens co-membered in
-///   a 5-ring (needs ring perception).
 /// - Types 55/56/81 (NIM+/N5A+/N5B+): formal charge averaged across a
 ///   conjugated cationic-nitrogen network reached via alternating type-57/80
 ///   carbons (needs BFS over a subset of the molecule graph).
@@ -205,8 +203,9 @@ fn o2cm_sm_formal_charge(view: &Molecule, types: &[u8], idx: AtomIdx) -> f64 {
 
 // RDKit 2026.09 defaults to relevant cycles, rather than its older
 // symmetrized SSSR, for the ring information used by MMFF. Only type 76
-// consults ring membership here. Cap enumeration to avoid unbounded work on
-// highly symmetric graphs; the pre-existing SSSR path remains the fallback.
+// consults ring membership here. Cycle ordering within equal lengths is not
+// proven identical to RingDecomposerLib. Cap enumeration to avoid unbounded
+// work on highly symmetric graphs; the pre-existing SSSR path is the fallback.
 fn mmff_charge_rings(mol: &Molecule, types: &[u8]) -> Vec<Vec<AtomIdx>> {
     if !types.contains(&76) {
         return Vec::new();
