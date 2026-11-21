@@ -3,6 +3,7 @@ name: Platinum holdout comparison
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, reopened]
     paths:
       - ".github/workflows/platinum-holdout.yml"
 
