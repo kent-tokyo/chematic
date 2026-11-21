@@ -325,3 +325,52 @@ rules, and retain a separate development partition. The archive is 510,146,560
 bytes and is downloaded only on the hosted runner. Any later result must be
 reported as an additional test initiated after the inconclusive 430-record
 result, not as if it were part of the original preregistration.
+
+The [Linux time recovery](https://github.com/kent-tokyo/chematic/actions/runs/44929831053)
+completed all 430 records with no reported per-row errors or specified-stereo
+violations. At 0.2 seconds chematic recovered 113 and RDKit 101; the paired
+molecule interval was +0.93 to +4.88 points and the scaffold-cluster interval
+was +0.91 to +4.82 points. Both exceed the preregistered −2-point lower-bound
+criterion. Converged matching recovery was 75 and 70, with scaffold-cluster
+interval −0.47 to +2.80 points. These do not change the fixed-candidate
+noninferiority outcome. The compressed row data SHA-256 is
+`31c751ad296878d0b3f5c35b31ec50760725d77d173d5af5b42303f53fff411d`.
+
+The revised macOS candidate's complete-Platinum fixed-count run also handled
+all 430 records with no reported engine errors or specified-stereo violations.
+Chematic recovered 191 and RDKit 192; the molecule interval was −2.33 to
++1.86 points and the scaffold-cluster interval was −2.40 to +2.02 points.
+The −2-point noninferiority criterion was not met. Requiring convergence
+produced 98 and 105 recoveries, with scaffold interval −3.03 to −0.45 points.
+The raw fixed-result SHA-256 is
+`4a85751faf74d9599a4a96d459bce43d270302a049cb8442f4da8a21d83996d1`; the
+committed gzip SHA-256 is
+`84c429ebe6c31087214506538868dff4cc453d0c6559539e2e046adf920e28a8`.
+Its time step hit the same shell-variable collision before scoring and is
+recovered separately from the exact fixed-result artifact and frozen macOS
+wheel, using the already-registered 0.2-second protocol.
+
+[Preparation run 44930127544](https://github.com/kent-tokyo/chematic/actions/runs/44930127544)
+identified the source archive SHA-256 as
+`e1d6191fd665dbcc8ce5a24731fefe6ecf6460e0d25f5e290e264646543a16a2` and
+the 12,000-record sample SDF SHA-256 as
+`6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74`.
+The full list of selected archive members is preserved in
+`validation/results/cod-reference-sample-manifest-2026-11-22.json.gz`.
+The sample contained 55 records that RDKit 2026.09.1 could not parse; they
+are reported separately and cannot be assigned scaffolds. Of the remaining
+records, 3,008 match known exposed scaffolds. Within the other records,
+200 development and 2,000 holdout scaffold groups were chosen by hashes of
+partition and scaffold, retaining every selected group's records. One holdout
+scaffold also matched the conservative invalid-exclusion graph audit and was
+removed. The final split contains 223 development records and 2,263 holdout
+records; the rest remain unused. The initial and final audit records and split
+are stored under `validation/results/cod-*2026-11-22.json*`.
+
+Run the 223 development records first. Measure MMFF and UFF support separately
+for each engine, so unsupported molecules and graph mismatches cannot be
+mistaken for equal successful coverage. Before evaluating the 2,263 holdout
+records, fix the scorer, eligible population, handling of one-sided support,
+comparison denominator, fixed and timed budgets, artifact hashes, and
+bootstrap/noninferiority rule. The earlier 430-record criterion remains unmet
+regardless of this additional assessment.

@@ -1,0 +1,46 @@
+name: COD development comparison
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cod-development.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch and verify frozen wheel and structural sample
+        run: |
+          test "$(git rev-parse HEAD:crates)" = '99a9d44e7ddbe3ba8a1d797c8bd3baa5938272c1'
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          gh run download 44927371343 --repo "$GITHUB_REPOSITORY" --name parity-candidate-ubuntu-latest-ac055be0c0262b32bfe52f7a9dd1cb3607cd1919 --dir candidate
+          gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="046fd444e4131fbc5fabc4c1d14f5c9fe64b6525f42158abc961496f741a7898"; assert hashlib.sha256(pathlib.Path("reference/cod-sample.sdf").read_bytes()).hexdigest()=="6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Audit development support separately
+        run: python scripts/validation/cod_support_probe.py reference/cod-sample.sdf validation/results/cod-scaffold-split-2026-11-22.json --partition development --output cod-support.json
+      - name: Compare development conformers
+        run: |
+          python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split validation/results/cod-scaffold-split-2026-11-22.json --output cod-development.json --limit 223 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py cod-development.json --output cod-development-summary.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: cod-development-${{ github.sha }}
+          path: |
+            cod-support.json
+            cod-development*.json
+          if-no-files-found: warn
