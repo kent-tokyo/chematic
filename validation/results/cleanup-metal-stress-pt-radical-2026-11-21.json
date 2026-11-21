@@ -1,0 +1,232 @@
+{
+  "candidate_commit": "a31af22040cb0885fdd00b46fb0b7d9adb1799d6",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "ce472df55b2f17d8c1efb0ded8649626522a95da590e2644adbe9d074c64aa4e",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "rdkit_version": "2026.09.1",
+  "installed_package_files_verified": 44,
+  "method": "metal element set follows cleanup; RDKit AddHs then reparse; compare exact cleanup outcomes and explicit/implicit hydrogen counts; charge changes reported separately",
+  "counts": {
+    "metal_rows": 575,
+    "compared": 575,
+    "both_refused": 6,
+    "hydrogen_not_conserved": 2,
+    "different_variants": 2
+  },
+  "exception_rows": [
+    {
+      "index": 457,
+      "input": "O->[Mg](<-O)(<-O)<-O",
+      "expanded": "[O](->[Mg](<-[O]([H])[H])(<-[O]([H])[H])<-[O]([H])[H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 1294,
+      "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+      "expanded": "C(/N=C(\\S[H])N(/N=C(/C(C([H])([H])[H])=[N]/[Sn](=[C](/N([H])[H])[H])[H])[H])[H])([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_metal_hydrogen"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_metal_hydrogen"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 1413,
+      "input": "[Na]12=[C](C=C(F)C=[CH]1)N(C1=C[C+]=C(C=C1)Cl)C1C(=[N]2)C(=O)N(C)C(=O)N=1",
+      "expanded": "[Na]12=[C](C([H])=C(F)C([H])=[C]1[H])N(C1=C([H])[C+]=C(Cl)C([H])=C1[H])C1=NC(=O)N(C([H])([H])[H])C(=O)C1=[N]2",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CN1C(=O)N=C(N(C2=C[C+]=C(Cl)C=C2)[C]2=[Na][CH]=CC(F)=C2)C(=N)C1=O",
+          "input_hydrogens": 9,
+          "output_hydrogens": 10,
+          "input_charge": 1,
+          "output_charge": 1
+        },
+        {
+          "outcome": "ok",
+          "output": "CN1C(=O)N=C(N(C2=C[C+]=C(Cl)C=C2)[C]2=[Na][CH]=CC(F)=C2)C(=N)C1=O",
+          "input_hydrogens": 9,
+          "output_hydrogens": 10,
+          "input_charge": 1,
+          "output_charge": 1
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": false
+    },
+    {
+      "index": 1556,
+      "input": "[Li][O]=C1CCC(c2cc[cH:19]cc2)(C2CCN(Cc3ccccc3)CC2)C(=O)N1",
+      "expanded": "[Li]<-[O]=C1C([H])([H])C([H])([H])C(c2c([H])c([H])[c:19]([H])c([H])c2[H])(C2([H])C([H])([H])C([H])([H])N(C(c3c([H])c([H])c([H])c([H])c3[H])([H])[H])C([H])([H])C2([H])[H])C(=O)N1[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 1756,
+      "input": "CC1C(=[O][Li])Oc2ccc(C(=O)c3ccccc3)cc21",
+      "expanded": "C(C1([H])C(=[O]->[Li])Oc2c([H])c([H])c(C(=O)c3c([H])c([H])c([H])c([H])c3[H])c([H])c21)([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 2289,
+      "input": "O=C(O)[C@@H]1([SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+      "expanded": "O=C(O[H])[C@]1(->[Sn][H])([H])C([H])([H])[C@](/C(=C(/C(P(=O)(O[H])O[H])([H])[H])[H])[H])([H])C([H])([H])C([H])([H])N1[H]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "O=C(O)[C@@H]1(->[SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "O=C(O)[C@H]1(->[SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": false,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 2796,
+      "input": "CCCCc1cccc([3CH](C)C)c1O.[K]",
+      "expanded": "C(C(C(C(c1c([H])c([H])c([H])c([3C](C([H])([H])[H])(C([H])([H])[H])[H])c1O[H])([H])[H])([H])[H])([H])[H])([H])([H])[H].[K]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CCCCc1cccc([3CH](C)C)c1[O-].[K+]",
+          "input_hydrogens": 20,
+          "output_hydrogens": 19,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "CCCCc1cccc([3CH](C)C)c1[O-].[K+]",
+          "input_hydrogens": 20,
+          "output_hydrogens": 19,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": false
+    },
+    {
+      "index": 3014,
+      "input": "CN(C)C1=[C]([Cu][C@@H](CC2=CC=C(NC(=O)C3=C(Cl)C=NC=C3Cl)C=C2)C(=O)O)C(=O)C1=O",
+      "expanded": "C(N(C([H])([H])[H])c1[c]([Cu][C@@](C(c2c([H])c([H])c(N(C(=O)c3c(Cl)c([H])nc([H])c3Cl)[H])c([H])c2[H])([H])[H])(C(=O)O[H])[H])c(=O)c1=O)([H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "ok",
+          "output": "CN(C)c1[c]([Cu+])c(=O)c1=O.O=C([O-])CCc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        },
+        {
+          "outcome": "ok",
+          "output": "CN(C)c1[c]c(=O)c1=O.O=C([O-])CCc1ccc(NC(=O)c2c(Cl)cncc2Cl)cc1.[Cu+]",
+          "input_hydrogens": 17,
+          "output_hydrogens": 17,
+          "input_charge": 0,
+          "output_charge": 0
+        }
+      ],
+      "same_outcome": false,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 3755,
+      "input": "C1(=C(C)OC(=N1)C1C=CC(=CC=1)[O]([Na])C)CCOC1=CC=C(CC2OC(NC2=O)=O)C=C1",
+      "expanded": "c1(C(C(Oc2c([H])c([H])c(C(C3([H])OC(=O)N([H])C3=O)([H])[H])c([H])c2[H])([H])[H])([H])[H])c(C([H])([H])[H])oc(-c2c([H])c([H])c([O](->[Na])C([H])([H])[H])c([H])c2[H])n1",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    },
+    {
+      "index": 3944,
+      "input": "C(C1C=CC=CC=1)[C@@H](C(N[C@@H](CC1N=CNC=1)C(=O)N[C@H](C(N[C@@H](CCCC)C(N[C@@H](CC(O)=O)C(=[O][Na])N)=O)=O)CC(C)C)=O)NC(=O)[C@@H](CCSC)NC(=O)[C@@H](N)CC1=CC=C(O)C=C1",
+      "expanded": "C(c1c([H])c([H])c([H])c([H])c1[H])([C@@](C(N([C@@](C(c1nc([H])n([H])c1[H])([H])[H])(C(=O)N([C@](C(N([C@@](C(C(C(C([H])([H])[H])([H])[H])([H])[H])([H])[H])(C(N([C@@](C(C(O[H])=O)([H])[H])(C(=[O]->[Na])N([H])[H])[H])[H])=O)[H])[H])=O)(C(C(C([H])([H])[H])(C([H])([H])[H])[H])([H])[H])[H])[H])[H])[H])=O)(N(C(=O)[C@@](C(C(SC([H])([H])[H])([H])[H])([H])[H])(N(C(=O)[C@@](N([H])[H])(C(c1c([H])c([H])c(O[H])c([H])c1[H])([H])[H])[H])[H])[H])[H])[H])([H])[H]",
+      "variants": [
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        },
+        {
+          "outcome": "refused",
+          "category": "ambiguous",
+          "code": "cleanup_unstable_metal"
+        }
+      ],
+      "same_outcome": true,
+      "hydrogen_conserved": true
+    }
+  ]
+}

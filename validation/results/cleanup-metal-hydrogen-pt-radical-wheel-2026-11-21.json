@@ -1,0 +1,847 @@
+{
+  "candidate_commit": "a31af22040cb0885fdd00b46fb0b7d9adb1799d6",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "rdkit_version": "2026.09.1",
+  "wheel_sha256": "ce472df55b2f17d8c1efb0ded8649626522a95da590e2644adbe9d074c64aa4e",
+  "installed_package_files_verified": 44,
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
+  "rows": [
+    {
+      "index": 65,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "reparsed_formula": "C7H7-",
+      "repeated_formula": "C7H7-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C7H7-",
+      "rdkit_output_formula": "C7H7-",
+      "output": "[C-]1=CC=CCC=C1"
+    },
+    {
+      "index": 83,
+      "input_formula": "C11H11-",
+      "output_formula": "C11H11-",
+      "reparsed_formula": "C11H11-",
+      "repeated_formula": "C11H11-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C11H11-",
+      "rdkit_output_formula": "C11H11-",
+      "output": "[C-]1=CC=CC=CC=CCC=C1"
+    },
+    {
+      "index": 101,
+      "input_formula": "C15H15-",
+      "output_formula": "C15H15-",
+      "reparsed_formula": "C15H15-",
+      "repeated_formula": "C15H15-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C15H15-",
+      "rdkit_output_formula": "C15H15-",
+      "output": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+    },
+    {
+      "index": 403,
+      "input_formula": "C10H10Fe",
+      "output_formula": "C10H10Fe",
+      "reparsed_formula": "C10H10Fe",
+      "repeated_formula": "C10H10Fe",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C10H10Fe",
+      "rdkit_output_formula": "C10H10Fe",
+      "output": "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]"
+    },
+    {
+      "index": 809,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "reparsed_formula": "C7H7-",
+      "repeated_formula": "C7H7-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C7H7-",
+      "rdkit_output_formula": "C7H7-",
+      "output": "[C-]1=CC=CCC=C1"
+    },
+    {
+      "index": 911,
+      "input_formula": "C19H19-",
+      "output_formula": "C19H19-",
+      "reparsed_formula": "C19H19-",
+      "repeated_formula": "C19H19-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C19H19-",
+      "rdkit_output_formula": "C19H19-",
+      "output": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+    },
+    {
+      "index": 1294,
+      "input_formula": "C6H13N5SSn",
+      "refused": {
+        "category": "ambiguous",
+        "code": "cleanup_metal_hydrogen"
+      }
+    },
+    {
+      "index": 1366,
+      "input_formula": "C23H29N2OPt",
+      "output_formula": "C23H29N2OPt",
+      "reparsed_formula": "C23H29N2OPt",
+      "repeated_formula": "C23H29N2OPt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C23H29N2OPt",
+      "rdkit_output_formula": "C23H29N2OPt",
+      "output": "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]"
+    },
+    {
+      "index": 1432,
+      "input_formula": "C73H99N12O18-",
+      "output_formula": "C73H99N12O18-",
+      "reparsed_formula": "C73H99N12O18-",
+      "repeated_formula": "C73H99N12O18-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C73H99N12O18-",
+      "rdkit_output_formula": "C73H99N12O18-",
+      "output": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O"
+    },
+    {
+      "index": 1437,
+      "input_formula": "C17H14ClOZn",
+      "output_formula": "C17H14ClOZn",
+      "reparsed_formula": "C17H14ClOZn",
+      "repeated_formula": "C17H14ClOZn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C17H14ClOZn",
+      "rdkit_output_formula": "C17H14ClOZn",
+      "output": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]"
+    },
+    {
+      "index": 1471,
+      "input_formula": "C18H23FeNO",
+      "output_formula": "C18H23FeNO",
+      "reparsed_formula": "C18H23FeNO",
+      "repeated_formula": "C18H23FeNO",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C18H23FeNO",
+      "rdkit_output_formula": "C18H23FeNO",
+      "output": "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]"
+    },
+    {
+      "index": 1497,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "reparsed_formula": "C12H15N5O3",
+      "repeated_formula": "C12H15N5O3",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C12H15N5O3",
+      "rdkit_output_formula": "C12H15N5O3",
+      "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C"
+    },
+    {
+      "index": 1577,
+      "input_formula": "C66H93N12O17Zn",
+      "output_formula": "C66H93N12O17Zn",
+      "reparsed_formula": "C66H93N12O17Zn",
+      "repeated_formula": "C66H93N12O17Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C66H93N12O17Zn",
+      "rdkit_output_formula": "C66H93N12O17Zn",
+      "output": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C-]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]"
+    },
+    {
+      "index": 1630,
+      "input_formula": "C12H12N5O3-",
+      "output_formula": "C12H12N5O3-",
+      "reparsed_formula": "C12H12N5O3-",
+      "repeated_formula": "C12H12N5O3-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C12H12N5O3-",
+      "rdkit_output_formula": "C12H12N5O3-",
+      "output": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](COCC[O-])cn3C"
+    },
+    {
+      "index": 1664,
+      "input_formula": "C19H23KO4Zn",
+      "output_formula": "C19H23KO4Zn",
+      "reparsed_formula": "C19H23KO4Zn",
+      "repeated_formula": "C19H23KO4Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C19H23KO4Zn",
+      "rdkit_output_formula": "C19H23KO4Zn",
+      "output": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+    },
+    {
+      "index": 1781,
+      "input_formula": "C15H17N3O3Pt",
+      "output_formula": "C15H17N3O3Pt",
+      "reparsed_formula": "C15H17N3O3Pt",
+      "repeated_formula": "C15H17N3O3Pt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C15H17N3O3Pt",
+      "rdkit_output_formula": "C15H17N3O3Pt",
+      "output": "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]"
+    },
+    {
+      "index": 1831,
+      "input_formula": "C17H24NOZn",
+      "output_formula": "C17H24NOZn",
+      "reparsed_formula": "C17H24NOZn",
+      "repeated_formula": "C17H24NOZn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C17H24NOZn",
+      "rdkit_output_formula": "C17H24NOZn",
+      "output": "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]"
+    },
+    {
+      "index": 1854,
+      "input_formula": "C11H14NZn",
+      "output_formula": "C11H14NZn",
+      "reparsed_formula": "C11H14NZn",
+      "repeated_formula": "C11H14NZn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C11H14NZn",
+      "rdkit_output_formula": "C11H14NZn",
+      "output": "C=CCN(C)[CH-]c1ccccc1.[Zn+]"
+    },
+    {
+      "index": 1875,
+      "input_formula": "C9H10ClNOPt",
+      "output_formula": "C9H10ClNOPt",
+      "reparsed_formula": "C9H10ClNOPt",
+      "repeated_formula": "C9H10ClNOPt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C9H10ClNOPt",
+      "rdkit_output_formula": "C9H10ClNOPt",
+      "output": "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]"
+    },
+    {
+      "index": 1878,
+      "input_formula": "C14H17ClN3O4-",
+      "output_formula": "C14H17ClN3O4-",
+      "reparsed_formula": "C14H17ClN3O4-",
+      "repeated_formula": "C14H17ClN3O4-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C14H17ClN3O4-",
+      "rdkit_output_formula": "C14H17ClN3O4-",
+      "output": "[CH2-]C(=O)N[C@@H](Cc1ccccc1)C(=O)NNC(=O)OCCCl"
+    },
+    {
+      "index": 1890,
+      "input_formula": "C17H18N5O3-",
+      "output_formula": "C17H18N5O3-",
+      "reparsed_formula": "C17H18N5O3-",
+      "repeated_formula": "C17H18N5O3-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C17H18N5O3-",
+      "rdkit_output_formula": "C17H18N5O3-",
+      "output": "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1"
+    },
+    {
+      "index": 2003,
+      "input_formula": "C13H18ClN2O5Zn",
+      "output_formula": "C13H18ClN2O5Zn",
+      "reparsed_formula": "C13H18ClN2O5Zn",
+      "repeated_formula": "C13H18ClN2O5Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C13H18ClN2O5Zn",
+      "rdkit_output_formula": "C13H18ClN2O5Zn",
+      "output": "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]"
+    },
+    {
+      "index": 2025,
+      "input_formula": "C3H12FeN2NaO5P",
+      "output_formula": "C3H12FeN2NaO5P",
+      "reparsed_formula": "C3H12FeN2NaO5P",
+      "repeated_formula": "C3H12FeN2NaO5P",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C3H12FeN2NaO5P",
+      "rdkit_output_formula": "C3H11FeN2NaO5P",
+      "output": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+    },
+    {
+      "index": 2069,
+      "input_formula": "C28H36N2O5PtS",
+      "output_formula": "C28H36N2O5PtS",
+      "reparsed_formula": "C28H36N2O5PtS",
+      "repeated_formula": "C28H36N2O5PtS",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C28H36N2O5PtS",
+      "rdkit_output_formula": "C28H36N2O5PtS",
+      "output": "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]"
+    },
+    {
+      "index": 2076,
+      "input_formula": "C18H24N-",
+      "output_formula": "C18H24N-",
+      "reparsed_formula": "C18H24N-",
+      "repeated_formula": "C18H24N-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C18H24N-",
+      "rdkit_output_formula": "C18H24N-",
+      "output": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+    },
+    {
+      "index": 2130,
+      "input_formula": "C20H14FNO2Pt",
+      "output_formula": "C20H14FNO2Pt",
+      "reparsed_formula": "C20H14FNO2Pt",
+      "repeated_formula": "C20H14FNO2Pt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C20H14FNO2Pt",
+      "rdkit_output_formula": "C20H14FNO2Pt",
+      "output": "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]"
+    },
+    {
+      "index": 2178,
+      "input_formula": "C24H25Cl2N4O2Zn+3",
+      "output_formula": "C24H25Cl2N4O2Zn+3",
+      "reparsed_formula": "C24H25Cl2N4O2Zn+3",
+      "repeated_formula": "C24H25Cl2N4O2Zn+3",
+      "formal_charges": [
+        3,
+        3,
+        3,
+        3
+      ],
+      "rdkit_input_formula": "C24H25Cl2N4O2Zn+3",
+      "rdkit_output_formula": "C24H25Cl2N4O2Zn+3",
+      "output": "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]"
+    },
+    {
+      "index": 2203,
+      "input_formula": "C20H27NO5Pt",
+      "output_formula": "C20H27NO5Pt",
+      "reparsed_formula": "C20H27NO5Pt",
+      "repeated_formula": "C20H27NO5Pt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C20H27NO5Pt",
+      "rdkit_output_formula": "C20H26NO5Pt",
+      "output": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+    },
+    {
+      "index": 2576,
+      "input_formula": "C37H33ClFeN5O6S2",
+      "output_formula": "C37H33ClFeN5O6S2",
+      "reparsed_formula": "C37H33ClFeN5O6S2",
+      "repeated_formula": "C37H33ClFeN5O6S2",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C37H33ClFeN5O6S2",
+      "rdkit_output_formula": "C37H33ClFeN5O6S2",
+      "output": "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]"
+    },
+    {
+      "index": 2598,
+      "input_formula": "C21H14FFeNO2",
+      "output_formula": "C21H14FFeNO2",
+      "reparsed_formula": "C21H14FFeNO2",
+      "repeated_formula": "C21H14FFeNO2",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C21H14FFeNO2",
+      "rdkit_output_formula": "C21H14FFeNO2",
+      "output": "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]"
+    },
+    {
+      "index": 2602,
+      "input_formula": "C9H15FeNO4P",
+      "output_formula": "C9H15FeNO4P",
+      "reparsed_formula": "C9H15FeNO4P",
+      "repeated_formula": "C9H15FeNO4P",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C9H15FeNO4P",
+      "rdkit_output_formula": "C9H15FeNO4P",
+      "output": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]"
+    },
+    {
+      "index": 2677,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "reparsed_formula": "C12H15N5O3",
+      "repeated_formula": "C12H15N5O3",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C12H15N5O3",
+      "rdkit_output_formula": "C12H15N5O3",
+      "output": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C"
+    },
+    {
+      "index": 2787,
+      "input_formula": "C15H18N5O3Zn",
+      "output_formula": "C15H18N5O3Zn",
+      "reparsed_formula": "C15H18N5O3Zn",
+      "repeated_formula": "C15H18N5O3Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C15H18N5O3Zn",
+      "rdkit_output_formula": "C15H18N5O3Zn",
+      "output": "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]"
+    },
+    {
+      "index": 2855,
+      "input_formula": "C21H24ClCuN3O2P",
+      "output_formula": "C21H24ClCuN3O2P",
+      "reparsed_formula": "C21H24ClCuN3O2P",
+      "repeated_formula": "C21H24ClCuN3O2P",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C21H24ClCuN3O2P",
+      "rdkit_output_formula": "C21H24ClCuN3O2P",
+      "output": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+    },
+    {
+      "index": 2909,
+      "input_formula": "C24H28N7O-",
+      "output_formula": "C24H28N7O-",
+      "reparsed_formula": "C24H28N7O-",
+      "repeated_formula": "C24H28N7O-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C24H28N7O-",
+      "rdkit_output_formula": "C24H28N7O-",
+      "output": "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
+    },
+    {
+      "index": 3075,
+      "input_formula": "C18H19CuN",
+      "output_formula": "C18H19CuN",
+      "reparsed_formula": "C18H19CuN",
+      "repeated_formula": "C18H19CuN",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C18H19CuN",
+      "rdkit_output_formula": "C18H18CuN",
+      "output": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+    },
+    {
+      "index": 3153,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "reparsed_formula": "C23H32NO7-",
+      "repeated_formula": "C23H32NO7-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C23H32NO7-",
+      "rdkit_output_formula": "C23H32NO7-",
+      "output": "COCO[C@@H]1C[15C](=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1"
+    },
+    {
+      "index": 3154,
+      "input_formula": "C20H16N2O6Zn+",
+      "output_formula": "C20H16N2O6Zn+",
+      "reparsed_formula": "C20H16N2O6Zn+",
+      "repeated_formula": "C20H16N2O6Zn+",
+      "formal_charges": [
+        1,
+        1,
+        1,
+        1
+      ],
+      "rdkit_input_formula": "C20H16N2O6Zn+",
+      "rdkit_output_formula": "C20H16N2O6Zn+",
+      "output": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]"
+    },
+    {
+      "index": 3207,
+      "input_formula": "C43H55BrN10O6Zn+2",
+      "output_formula": "C43H55BrN10O6Zn+2",
+      "reparsed_formula": "C43H55BrN10O6Zn+2",
+      "repeated_formula": "C43H55BrN10O6Zn+2",
+      "formal_charges": [
+        2,
+        2,
+        2,
+        2
+      ],
+      "rdkit_input_formula": "C43H55BrN10O6Zn+2",
+      "rdkit_output_formula": "C43H55BrN10O6Zn+2",
+      "output": "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C@@H](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]"
+    },
+    {
+      "index": 3369,
+      "input_formula": "C19H18FeNO",
+      "output_formula": "C19H18FeNO",
+      "reparsed_formula": "C19H18FeNO",
+      "repeated_formula": "C19H18FeNO",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C19H18FeNO",
+      "rdkit_output_formula": "C19H18FeNO",
+      "output": "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]"
+    },
+    {
+      "index": 3402,
+      "input_formula": "C28H42O10Zn",
+      "output_formula": "C28H42O10Zn",
+      "reparsed_formula": "C28H42O10Zn",
+      "repeated_formula": "C28H42O10Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C28H42O10Zn",
+      "rdkit_output_formula": "C28H41O10Zn",
+      "output": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+    },
+    {
+      "index": 3501,
+      "input_formula": "C19H20ClF2FeN3O",
+      "output_formula": "C19H20ClF2FeN3O",
+      "reparsed_formula": "C19H20ClF2FeN3O",
+      "repeated_formula": "C19H20ClF2FeN3O",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C19H20ClF2FeN3O",
+      "rdkit_output_formula": "C19H20ClF2FeN3O",
+      "output": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]"
+    },
+    {
+      "index": 3504,
+      "input_formula": "C21H20CuNO6",
+      "output_formula": "C21H20CuNO6",
+      "reparsed_formula": "C21H20CuNO6",
+      "repeated_formula": "C21H20CuNO6",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C21H20CuNO6",
+      "rdkit_output_formula": "C21H20CuNO6",
+      "output": "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]"
+    },
+    {
+      "index": 3590,
+      "input_formula": "C22H20NO2Pt",
+      "output_formula": "C22H20NO2Pt",
+      "reparsed_formula": "C22H20NO2Pt",
+      "repeated_formula": "C22H20NO2Pt",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C22H20NO2Pt",
+      "rdkit_output_formula": "C22H20NO2Pt",
+      "output": "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]"
+    },
+    {
+      "index": 3700,
+      "input_formula": "C20H19N5O2Zn",
+      "output_formula": "C20H19N5O2Zn",
+      "reparsed_formula": "C20H19N5O2Zn",
+      "repeated_formula": "C20H19N5O2Zn",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C20H19N5O2Zn",
+      "rdkit_output_formula": "C20H19N5O2Zn",
+      "output": "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1"
+    },
+    {
+      "index": 3720,
+      "input_formula": "C19H31FeN3O2",
+      "output_formula": "C19H31FeN3O2",
+      "reparsed_formula": "C19H31FeN3O2",
+      "repeated_formula": "C19H31FeN3O2",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C19H31FeN3O2",
+      "rdkit_output_formula": "C19H31FeN3O2",
+      "output": "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]"
+    },
+    {
+      "index": 3849,
+      "input_formula": "C22H26CuN2O2",
+      "output_formula": "C22H26CuN2O2",
+      "reparsed_formula": "C22H26CuN2O2",
+      "repeated_formula": "C22H26CuN2O2",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C22H26CuN2O2",
+      "rdkit_output_formula": "C22H26CuN2O2",
+      "output": "C[CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1"
+    },
+    {
+      "index": 3910,
+      "input_formula": "C16H16CuN2O5S",
+      "output_formula": "C16H16CuN2O5S",
+      "reparsed_formula": "C16H16CuN2O5S",
+      "repeated_formula": "C16H16CuN2O5S",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C16H16CuN2O5S",
+      "rdkit_output_formula": "C16H16CuN2O5S",
+      "output": "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C"
+    },
+    {
+      "index": 4023,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "reparsed_formula": "C23H32NO7-",
+      "repeated_formula": "C23H32NO7-",
+      "formal_charges": [
+        -1,
+        -1,
+        -1,
+        -1
+      ],
+      "rdkit_input_formula": "C23H32NO7-",
+      "rdkit_output_formula": "C23H32NO7-",
+      "output": "COCO[C@@H]1CC(=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1"
+    },
+    {
+      "index": 4027,
+      "input_formula": "C16H18FeNO2S",
+      "output_formula": "C16H18FeNO2S",
+      "reparsed_formula": "C16H18FeNO2S",
+      "repeated_formula": "C16H18FeNO2S",
+      "formal_charges": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "rdkit_input_formula": "C16H18FeNO2S",
+      "rdkit_output_formula": "C16H18FeNO2S",
+      "output": "CC[C-]([C]=O)C(=O)N1CSc2ccccc21.[CH2-]C1CC1.[Fe+2]"
+    }
+  ],
+  "explicit_hydrogen_spelling_pairs": [
+    {
+      "case": "ambiguous_tin",
+      "variants": [
+        {
+          "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "input_smiles": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "input_formula": "C6H13N5SSn",
+          "error": {
+            "category": "ambiguous",
+            "code": "cleanup_metal_hydrogen"
+          }
+        },
+        {
+          "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N",
+          "input_smiles": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "input_formula": "C6H13N5SSn",
+          "error": {
+            "category": "ambiguous",
+            "code": "cleanup_metal_hydrogen"
+          }
+        }
+      ]
+    },
+    {
+      "case": "resolved_platinum",
+      "variants": [
+        {
+          "input": "C[PtH]C",
+          "input_smiles": "[CH3][PtH][CH3]",
+          "input_formula": "C2H7Pt",
+          "output": "[CH3-].[CH3-].[PtH+2]",
+          "output_formula": "C2H7Pt"
+        },
+        {
+          "input": "C[Pt]([H])C",
+          "input_smiles": "[CH3][PtH][CH3]",
+          "input_formula": "C2H7Pt",
+          "output": "[CH3-].[CH3-].[PtH+2]",
+          "output_formula": "C2H7Pt"
+        }
+      ]
+    }
+  ]
+}

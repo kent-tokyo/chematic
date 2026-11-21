@@ -39,7 +39,7 @@ records classify each difference. The same source Reionize gate matches all
 The later source candidate preserves explicit metal hydrogens when their loss
 accounts for a molecular hydrogen deficit and rejects an unresolved hydrogen
 transfer or unstable detached metals. Its fixed-corpus comparison records
-4,004/4,069 exact stress strings, including six refusals, and 9,994/10,000
+4,003/4,069 exact stress strings, including six refusals, and 9,994/10,000
 broad strings, including two refusals. Some differences preserve hydrogens
 that earlier chematic and RDKit discarded or avoid introducing new ones.
 The [row audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md)
