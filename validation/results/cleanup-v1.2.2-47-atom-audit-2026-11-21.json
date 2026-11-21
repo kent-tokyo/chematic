@@ -1,0 +1,1451 @@
+{
+  "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
+  "chematic_version": "1.2.2",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "682c96b2c74b9f43c21efb11a8d8979e9760f7856d911af7c455238560464266",
+  "installed_package_files_verified": 44,
+  "rdkit_version": "2026.09.1",
+  "networkx_version": "3.6.1",
+  "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Stereo and radicals require separate review",
+  "counts": {
+    "chemical_difference": 31,
+    "requires_stereo_radical_review": 16
+  },
+  "rows": [
+    {
+      "index": 65,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 83,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 101,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 403,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 809,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 911,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 18,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1366,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        },
+        {
+          "atom": 12,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1432,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 30,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 70,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1437,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1471,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 13,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1497,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 10,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1577,
+      "recorded_category": "metal_charge_assignment",
+      "charge_or_h_differences": [
+        {
+          "atom": 15,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 66,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1630,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 5,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": false,
+      "rdkit_in_memory_radical_electrons": 2,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1664,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            3
+          ],
+          "rdkit_charge_h": [
+            -1,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1781,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 1831,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 1854,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 5,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1875,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1878,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 9,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 20,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1890,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 5,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 7,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2003,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2025,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 7,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "O",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2069,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2076,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 7,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 18,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2130,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2178,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 3,
+      "chematic_serialized_radical_electrons": 6,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2203,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 7,
+          "element": "O",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2576,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2598,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2602,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2677,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 5,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 11,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2787,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 2855,
+      "recorded_category": "metal_charge_assignment",
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2909,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3153,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3154,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        },
+        {
+          "atom": 11,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3207,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 9,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 21,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3369,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 3,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 3501,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 3504,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 13,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3590,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 3700,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 0,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 24,
+          "element": "N",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3720,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 3849,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            3
+          ],
+          "rdkit_charge_h": [
+            -1,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3910,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "requires_stereo_radical_review"
+    },
+    {
+      "index": 4023,
+      "recorded_category": "acid_base_reionization",
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 4027,
+      "recorded_category": "metal_disconnection_policy",
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 20,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "rdkit_serialization_reparseable": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    }
+  ]
+}
