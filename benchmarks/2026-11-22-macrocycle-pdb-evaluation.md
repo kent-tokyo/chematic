@@ -90,17 +90,37 @@ The run artifact retains the inputs, source license, citation and audit.
 Preparation does not establish MMFF support or conformer accuracy.
 
 An exploratory [development pilot](https://github.com/kent-tokyo/chematic/actions/runs/44960741979)
-is in progress with the frozen Linux wheel described in the Platinum holdout
+completed with the frozen Linux wheel described in the Platinum holdout
 protocol. It selects the first 32 development cases by SHA-256 of case name,
 uses 20 attempted candidates per engine, seed 42, 200 MMFF iterations and up
 to 400 retry iterations. Unsupported cases and errors remain in its output.
 This pilot neither scores the candidate holdout nor establishes an acceptance
 threshold. Larger structures may require a separate runtime protocol. A
 pilot run is bounded to 100 minutes and uploads its checkpoint and exit status
-even if it times out; a partial result is not a 32-case result. An earlier
+even if it times out; this run completed all 32. An earlier
 unbounded [pilot](https://github.com/kent-tokyo/chematic/actions/runs/44959489605)
 was cancelled before it produced results so the bounded run could retain
 partial evidence.
+
+RDKit reported MMFF parameter support for all 32 selected records; chematic
+reported no runtime error, though its zero-candidate case does not establish
+successful force-field construction. At the
+20-attempt budget, chematic and RDKit recovered 2 and 4 references under the
+1 Å heavy-atom RMSD, specified-stereo and geometry screen; lowest-energy
+recovery was 1 and 1. Across 603/607 returned candidates, neither engine had
+a specified-stereo violation. Chematic returned no candidate for one case;
+RDKit returned two for it. Another case produced 3/5 candidates. The paired
+molecule-bootstrap interval for the recovery difference was −15.63 to 0
+percentage points; this small development sample is not an independent
+noninferiority test. Protein-bound conformations are a distinct population,
+and these numbers do not imply that either engine reproduces solution-state
+conformer distributions.
+
+The uncompressed result SHA-256 is
+`4fedaddc479dd19ac55ac5008dff4d3b4d8119f8b55b03bfd8e21ca135686860`.
+The compressed per-record results are retained as
+`validation/results/macrocycle-pdb-linux-development-pilot-2026-11-22.json.gz`
+(SHA-256 `dadd3f2a8d91dcd037c7540c9ea023353771bf7de55a31591a8f79fc39675bd3`).
 
 Before scoring, report unsupported chemistry and preserve experimental coordinates.
 If a mismatch affects the candidate holdout, resolve the inclusion rule and

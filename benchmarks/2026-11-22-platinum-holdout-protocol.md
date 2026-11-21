@@ -536,6 +536,31 @@ The earlier frozen wheels and their COD holdout measurements predate it; a
 new candidate and a separate untouched validation set are required.
 
 
+The [original COD Linux run](https://github.com/kent-tokyo/chematic/actions/runs/44932574044)
+completed on the earlier frozen wheel, after its support audit had exposed a
+holdout input. On 2,093 common-MMFF inputs, fixed 20-attempt recovery was
+1,669/1,664 for chematic/RDKit; the paired molecule 95% interval for the
+difference was −0.38 to +0.86 percentage points and the scaffold-cluster
+interval was −0.38 to +0.87 points. At 0.2 seconds recovery was 1,333/1,269;
+the respective intervals were +2.10 to +4.06 and +2.07 to +4.06 points.
+These bounds exceed the prespecified −2-point threshold on this host, but do
+not establish overall parity: the fixed run returned 41,440/41,436 candidates
+with 75/67 specified-stereo violations, while the timed run had 22/15. The
+newer stereo changes are not included. This result cannot be considered a
+fully unexposed holdout after the earlier support investigation; the original
+macOS job remains separate.
+
+On shared RDKit-embedded coordinates, the same Linux artifact reports 2,071
+force-field comparisons and 22 row errors. Maximum absolute differences were
+57.67 kcal/mol for MMFF energy, 121.10 for MMFF gradient components and 75.12
+for UFF gradient components; maxima are not typical-case estimates. The
+corresponding raw fixed, timed and force-field JSON SHA-256 hashes are
+`8e15c8afc4e7a242184b1b82f10376836850e616a57493bbdaafa3bf02d57190`,
+`028cdc503828489ba632c3ce8a09c83ad0402215f9366c1d817bffb93b83652c`, and
+`886bde8880e77d3ed30455d04084a4ec65755d4326314f2452a1b4c100d4b075`.
+The artifact retains the raw records and summaries. Results are for the older
+wheel and do not predict the separately running updated-wheel assessment.
+
 ## Second COD scaffold split for the silicon-corrected candidate
 
 After the first COD support audit exposed a holdout molecule, a second split
@@ -677,6 +702,20 @@ RDKit reported a `Bad Conformer Id` error on the other three. The same eight
 inputs had zero chematic candidates in the previous wheel's development run.
 The zero-violation count is therefore conditional on returned candidates and
 must not hide those generation failures.
+
+For those eight already-exposed records, a separate
+[single-seed pipeline diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44962800236)
+using the same frozen wheel reported unsupported stereochemical coordination
+on all five records for which RDKit returned 20 candidates: two with
+tetrahedral P bearing a double-bonded ligand, two sulfoxide S centers and one
+square-planar S declaration. One sulfoxide record also had a separate
+tetrahedral violation in this diagnostic. This pipeline and seed are distinct
+from the corrected ensemble, so these observations explain an encountered
+limitation without proving the cause of every failed ensemble attempt.
+The result is retained in
+`validation/results/cod-zero-candidates-diagnostic-2026-11-22.json`.
+The subsequent phosphorus verifier change is a separate development
+candidate and is not part of the frozen-wheel holdout evaluation below.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.

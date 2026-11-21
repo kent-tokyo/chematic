@@ -1,0 +1,39 @@
+{
+  "rows": 2093,
+  "row_errors": 22,
+  "fields": {
+    "MMFF94": {
+      "evaluated": 2071,
+      "rdkit_supported": 2071,
+      "chematic_supported": 2071,
+      "comparable": 2071,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 57.67184107881623,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 121.0975826000352,
+      "finite_difference_absolute_error_max": 279.13269759282673
+    },
+    "MMFF94s": {
+      "evaluated": 2071,
+      "rdkit_supported": 2071,
+      "chematic_supported": 2071,
+      "comparable": 2071,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 57.67184107881623,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 121.0975826000352,
+      "finite_difference_absolute_error_max": 279.13269759282673
+    },
+    "UFF": {
+      "evaluated": 2071,
+      "rdkit_supported": 2071,
+      "chematic_supported": 2071,
+      "comparable": 2071,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 0.0,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 75.12053060688501,
+      "finite_difference_absolute_error_max": 48.963038438452664
+    }
+  }
+}

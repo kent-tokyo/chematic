@@ -1,7 +1,7 @@
 name: Phosphoryl stereo development regression
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/phosphoryl-stereo-development.yml'
 permissions:

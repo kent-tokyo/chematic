@@ -1,0 +1,181 @@
+{
+  "rdkit_version": "2026.09.2",
+  "method": "pipeline_v2, one seed; not the corrected ETKDG ensemble",
+  "results": [
+    {
+      "name": "OAHCBBGMELBAGN-UHFFFAOYSA-N",
+      "rdkit_count": 20,
+      "rdkit_error": null,
+      "pipeline_outcome": {
+        "kind": "stereo_unevaluable_under_strict_policy"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 5
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 1,
+        "n_satisfied": 0,
+        "n_violations": 0,
+        "n_unevaluable": 1,
+        "is_fully_satisfied": true
+      }
+    },
+    {
+      "name": "CQZADWMJRYROHH-HKTZSUIUSA-N",
+      "rdkit_count": null,
+      "rdkit_error": "ValueError('Bad Conformer Id')",
+      "pipeline_outcome": "no_strict_failure"
+    },
+    {
+      "name": "VJUNGNXBONODDR-UHFFFAOYSA-N",
+      "rdkit_count": 20,
+      "rdkit_error": null,
+      "pipeline_outcome": {
+        "kind": "stereo_unevaluable_under_strict_policy"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 7
+          },
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 19
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 2,
+        "n_satisfied": 0,
+        "n_violations": 0,
+        "n_unevaluable": 2,
+        "is_fully_satisfied": true
+      }
+    },
+    {
+      "name": "KMXHOJUSICZIJE-IUNOAQLMSA-N",
+      "rdkit_count": null,
+      "rdkit_error": "ValueError('Bad Conformer Id')",
+      "pipeline_outcome": {
+        "kind": "final_stereo_violation"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "satisfied",
+            "rejection_reason": null,
+            "atom": 4
+          },
+          {
+            "status": "violated",
+            "rejection_reason": null,
+            "atom": 5
+          },
+          {
+            "status": "violated",
+            "rejection_reason": null,
+            "atom": 22
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 3,
+        "n_satisfied": 1,
+        "n_violations": 2,
+        "n_unevaluable": 0,
+        "is_fully_satisfied": false
+      }
+    },
+    {
+      "name": "GLXXKJHHLMSUAD-NPTIBEEQSA-N",
+      "rdkit_count": null,
+      "rdkit_error": "ValueError('Bad Conformer Id')",
+      "pipeline_outcome": "no_strict_failure"
+    },
+    {
+      "name": "HRPUQROAFUIJQN-UHFFFAOYSA-N",
+      "rdkit_count": 20,
+      "rdkit_error": null,
+      "pipeline_outcome": {
+        "kind": "stereo_unevaluable_under_strict_policy"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 29
+          },
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 32
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 2,
+        "n_satisfied": 0,
+        "n_violations": 0,
+        "n_unevaluable": 2,
+        "is_fully_satisfied": true
+      }
+    },
+    {
+      "name": "KUBRNSPAYSVEPS-UUWRZZSWSA-N",
+      "rdkit_count": 20,
+      "rdkit_error": null,
+      "pipeline_outcome": {
+        "kind": "stereo_unevaluable_under_strict_policy"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 8
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 1,
+        "n_satisfied": 0,
+        "n_violations": 0,
+        "n_unevaluable": 1,
+        "is_fully_satisfied": true
+      }
+    },
+    {
+      "name": "SLXVYPHFSDYYON-GJSZZFLHSA-N",
+      "rdkit_count": 20,
+      "rdkit_error": null,
+      "pipeline_outcome": {
+        "kind": "final_stereo_violation"
+      },
+      "final_stereo": {
+        "tetrahedral": [
+          {
+            "status": "violated",
+            "rejection_reason": null,
+            "atom": 2
+          },
+          {
+            "status": "unevaluable",
+            "rejection_reason": "unsupported_coordination",
+            "atom": 37
+          }
+        ],
+        "double_bond": [],
+        "n_declared": 2,
+        "n_satisfied": 0,
+        "n_violations": 1,
+        "n_unevaluable": 1,
+        "is_fully_satisfied": false
+      }
+    }
+  ]
+}
