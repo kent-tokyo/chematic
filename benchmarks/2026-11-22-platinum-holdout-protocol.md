@@ -505,3 +505,12 @@ its compressed per-record data SHA-256 is
 `b286358190270d1d541c1bd2d1b4c5d05c6fbe42c525cada7010f37c252d4f8e`.
 The [atom-order regression run](https://github.com/kent-tokyo/chematic/actions/runs/44933256225)
 passed all 30 variants on both frozen Linux and macOS candidate wheels.
+
+To investigate the low Prime recovery without tuning on its exposed holdout,
+a separate development-only run generates up to 100 candidates for the same
+31 development records on the frozen Linux candidate and RDKit. Both-missed
+records in the 20-candidate development run numbered 19; simple RMSD-only
+and geometry-screened recovery counts were identical for both engines. The
+100-candidate run is exploratory: check whether the first 20 candidates
+actually match the prior run before interpreting a difference as a nested
+budget effect, and do not treat it as evidence on the Prime holdout.
