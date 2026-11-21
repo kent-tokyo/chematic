@@ -470,3 +470,18 @@ independently checked. This retrospective input audit did not change the
 registered eligibility or scoring rules. Its records are in
 `validation/results/cod-holdout-atom-identity-audit-2026-11-22.json.gz`
 (SHA-256 `9b8c17f2afbd8c3746f102014c3a2517117ec132c1305bd3a14a1e3da5c95010`).
+
+The [Prime Linux time recovery](https://github.com/kent-tokyo/chematic/actions/runs/44931816542)
+completed all 188 records without reported errors or specified-stereo
+violations. At the preregistered 2-second budget both engines recovered 59
+records. The molecule interval for their difference was −2.66 to +2.66 points
+and the scaffold-cluster interval was −3.61 to +3.26 points, so the
+preregistered −2-point noninferiority criterion was not met. Converged
+matching recovery was 40 for each engine. The gzip row data SHA-256 is
+`69a206dfdd6b08df49efec4f948da1763334d17da623f208b1284f930050f11d`.
+
+A separate regression fixture contains 30 deterministic atom-order variants
+of the ten already-exposed type-76 molecules, with per-atom RDKit 2026.09.2
+types and partial charges. It tests atom-order sensitivity on both frozen
+candidate wheels. It is development evidence and does not cover the untested
+case of equally short relevant rings with different type-76 membership.
