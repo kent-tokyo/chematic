@@ -131,7 +131,9 @@ jobs:
           python3 scripts/checks/check_trust_holdouts.py
           python3 scripts/checks/evidence/check_trust_holdout_v2_score.py
       - name: Current-source standardization evidence
-        run: python3 scripts/checks/evidence/check_standardization_source_evidence.py
+        run: |
+          python3 scripts/checks/evidence/check_standardization_source_evidence.py
+          python3 -m unittest scripts.tests.test_priority_cleanup_evidence -v
       - name: MMFF94 current-source same-coordinate evidence
         run: python3 scripts/checks/evidence/check_mmff94_current_energy_evidence.py
       - name: MMFF94 published-wheel quality evidence

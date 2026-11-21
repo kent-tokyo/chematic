@@ -17,10 +17,104 @@ TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-integrated-prs-10k-202
 REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
 SUMMARY = ROOT / "benchmarks/2026-10-22-rdkit-reionize-in-memory-stereo.json"
+PRIORITY_BASE = ROOT / "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json"
+PRIORITY_AUDIT = ROOT / "validation/results/cleanup-47-metal-ligand-stable-audit-2026-11-21.json"
+PRIORITY_BASE_AUDIT = ROOT / "validation/results/cleanup-v1.2.2-47-atom-audit-2026-11-21.json"
+PRIORITY_ROOTED = ROOT / "validation/results/cleanup-rooted-smiles-31-metal-ligand-stable-2026-11-21.json"
+PRIORITY_WHEEL = ROOT / "validation/results/cleanup-metal-hydrogen-metal-ligand-stable-2026-11-21.json"
 
 
 def digest(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def check_priority_audit(base: dict, current: dict, audit: dict, rooted: dict, wheel: dict,
+                         baseline_audit: dict) -> None:
+    """Cross-check the published rows, candidate source and candidate wheel."""
+    def require(condition: bool, message: str) -> None:
+        if not condition:
+            raise ValueError(message)
+
+    require(base["corpus_sha256"] == current["corpus_sha256"], "corpora differ")
+    require(all(record["rdkit_version"] == "2026.09.1" for record in (base, current, audit, rooted, wheel)),
+            "RDKit versions differ")
+    require(current["source_commit"] == audit["candidate_commit"] == rooted["candidate_commit"] == wheel["candidate_commit"],
+            "candidate commits differ")
+    require(audit["wheel_sha256"] == rooted["wheel_sha256"] == wheel["wheel_sha256"] and
+            audit["wheel"] == rooted["wheel"] == wheel["wheel"], "wheel identities differ")
+    require(re.fullmatch(r"[0-9a-f]{64}", wheel["wheel_sha256"]) is not None and
+            all(record["installed_package_files_verified"] > 0 for record in (audit, rooted, wheel)),
+            "wheel verification is incomplete")
+    require(wheel["corpus_sha256"] == base["corpus_sha256"], "wheel corpus differs")
+    require(audit["source_record"] == rooted["source_record"] == wheel["source_record"] == str(PRIORITY_BASE.relative_to(ROOT)),
+            "baseline source records differ")
+    original = {row["index"]: row for row in base["mismatches"]}
+    candidate = {row["index"]: row for row in current["mismatches"]}
+    reviewed = {row["index"]: row for row in audit["rows"]}
+    wheel_rows = {row["index"]: row for row in wheel["rows"]}
+    require(len(wheel_rows) == len(wheel["rows"]) == 50, "wheel audit rows differ")
+    require(len(original) == len(base["mismatches"]) == 47 and set(original) == set(reviewed),
+            "the prioritized 47 rows differ")
+    require(Counter(row["classification"] for row in original.values()) == {
+        "acid_base_reionization": 15, "metal_charge_assignment": 2, "metal_disconnection_policy": 30,
+    }, "original mismatch groups differ")
+    require(audit["counts"] == {"chemical_difference": 32, "representation_difference_after_sanitize": 15,
+                                "refusal": 0, "requires_stereo_radical_review": 0},
+            "priority classifications differ")
+    require(Counter(row["assessment"] for row in reviewed.values()) == {
+        "chemical_difference": 32, "representation_difference_after_sanitize": 15,
+    }, "priority row classifications differ")
+    changed = []
+    for index, row in reviewed.items():
+        require(index in candidate and candidate[index]["source_error"] is None,
+                f"candidate row {index} missing or refused")
+        require(original[index]["input"] == candidate[index]["input"], f"input changed at {index}")
+        require(index in wheel_rows and wheel_rows[index].get("output") == candidate[index]["chematic_cleanup"],
+                f"wheel/source output differs at {index}")
+        wheel_row = wheel_rows[index]
+        require(len({wheel_row[key] for key in ("input_formula", "output_formula", "reparsed_formula", "repeated_formula")}) == 1
+                and len(wheel_row["formal_charges"]) == 4 and len(set(wheel_row["formal_charges"])) == 1,
+                f"wheel formula or charge differs at {index}")
+        same = original[index]["chematic_cleanup"] == candidate[index]["chematic_cleanup"]
+        require(row["output_matches_published_record"] == same, f"wheel/source mismatch at {index}")
+        require(row["formula_preserved"] and row["chematic_second_cleanup_matches"],
+                f"formula or repeated Cleanup changed at {index}")
+        require(row["rdkit_second_cleanup_matches"] ==
+                (row["rdkit_six_cleanup_strings"][0] == row["rdkit_six_cleanup_strings"][1]),
+                f"RDKit repeat status inconsistent at {index}")
+        if not same:
+            changed.append(index)
+    require(sorted(changed) == [2025, 2203], "unexpected published-output changes")
+    baseline_rows = {row["index"]: row for row in baseline_audit["rows"]}
+    require(set(baseline_rows) == set(original) and baseline_audit["rdkit_version"] == "2026.09.1",
+            "published-wheel audit rows differ")
+    graph_indices = {index for index, row in baseline_rows.items() if
+                     not row["charge_h_connectivity_isomorphic"] or row["bond_isotope_graph_isomorphic"] is False}
+    current_graph_indices = {index for index, row in reviewed.items() if
+                             not row["charge_h_connectivity_isomorphic"] or row["bond_isotope_graph_isomorphic"] is False}
+    require(current_graph_indices == graph_indices | {2025}, "candidate graph-difference rows differ")
+    cases = {row["index"]: row for row in rooted["cases"]}
+    require(len(cases) == len(rooted["cases"]) == 31 and set(cases) == graph_indices,
+            "graph-difference rows differ")
+    root_dependent = repeat_dependent = 0
+    for index, case in cases.items():
+        variants = case["variants"]
+        require(not case["excluded"] and len(variants) == case["inputs"] and
+                len({row["input"] for row in variants}) == case["inputs"], f"excluded or duplicate rooted input at {index}")
+        chematic_outputs = {row["chematic"] for row in variants}
+        rdkit_outputs = {row["rdkit"] for row in variants}
+        require(chematic_outputs == {candidate[index]["chematic_cleanup"]} and
+                case["chematic_distinct_outputs"] == 1 and case["chematic_refusals"] == 0,
+                f"candidate rooted output differs at {index}")
+        require(None not in rdkit_outputs and len(rdkit_outputs) == case["rdkit_distinct_outputs"],
+                f"RDKit rooted count differs at {index}")
+        if len(rdkit_outputs) > 1:
+            root_dependent += 1
+        elif not reviewed[index]["rdkit_second_cleanup_matches"]:
+            repeat_dependent += 1
+        else:
+            raise ValueError(f"RDKit is stable under both checks at {index}")
+    require((root_dependent, repeat_dependent) == (24, 7), "RDKit instability counts differ")
 
 
 def check_lane(record: dict, prefix: str, exact_key: str) -> None:
@@ -125,6 +219,9 @@ def main() -> None:
     record = json.loads(RECORD.read_text())
     previous = json.loads(PREVIOUS_RECORD.read_text())
     check_current_record(record)
+    check_priority_audit(json.loads(PRIORITY_BASE.read_text()), record,
+                         json.loads(PRIORITY_AUDIT.read_text()), json.loads(PRIORITY_ROOTED.read_text()),
+                         json.loads(PRIORITY_WHEEL.read_text()), json.loads(PRIORITY_BASE_AUDIT.read_text()))
     # Rows 3075 and 3402 retain explicit metal H that the earlier source and
     # RDKit dropped. They are exact-string differences with conserved formula.
     check_comparison(
