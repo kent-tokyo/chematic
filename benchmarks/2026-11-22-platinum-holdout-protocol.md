@@ -632,8 +632,11 @@ used merge commit `9db581ac6d2cab75a9fb5809fae1a5ee60870054`, parents
 SHA-256 is `3db87234071e820b55c2acfce0b61d42f2edf870094f840d4d22ff9acd725957`;
 the macOS arm64 wheel SHA-256 is
 `438528ccacc94551233a35b3be3b7f914eb71f77f6e00ed0af9ad6c89d993037`.
-These are source-built candidates, not published packages. The Linux regression
-and final-candidate development comparison remain pending.
+These are source-built candidates, not published packages. The
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44950706502)
+passed the targeted Rust tests and the independent RDKit check of all 44
+generated Prime development candidates, with no specified-stereo mismatches.
+The final-candidate COD development comparison remains pending.
 
 No conformer outcome from the 2,288 round-two holdout records has been
 inspected. After the stereo regression passes, freeze and fingerprint new

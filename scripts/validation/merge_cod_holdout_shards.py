@@ -58,7 +58,12 @@ def merge(parent_bytes, pairs, kind):
         seen.update(indices)
     if seen != set(expected) or parts != set(range(count)):
         raise ValueError("merged holdout is incomplete")
-    template["results"] = sorted(combined, key=lambda r: r["index"])
+    if kind == "fixed":
+        template["results"] = sorted(combined, key=lambda r: r["index"])
+    else:
+        template["results"] = sorted(
+            combined, key=lambda r: (hashlib.sha256(r["name"].encode()).digest(), r["index"])
+        )
     template["platform"] = "multiple runners; see shard_provenance"
     if kind == "fixed":
         template["split_sha256"] = parent_sha
