@@ -353,3 +353,6 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+mod cell_index_tests;

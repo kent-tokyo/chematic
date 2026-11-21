@@ -48,7 +48,7 @@ fn cell_index_can_advance_past_u16_max() {
     let mut child = Command::new(std::env::current_exe().unwrap())
         .args([
             "--exact",
-            "native_cell_index_tests::cell_index_can_advance_past_u16_max",
+            "native::cell_index_tests::cell_index_can_advance_past_u16_max",
         ])
         .env(CHILD, "1")
         .spawn()
