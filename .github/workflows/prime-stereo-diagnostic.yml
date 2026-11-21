@@ -1,0 +1,36 @@
+name: Prime development stereo diagnostic
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/prime-stereo-diagnostic.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install frozen candidate
+        run: |
+          test "$(git rev-parse HEAD:crates)" = 'b08ecd24da790430dad6eb0ff3a509981f78f8bf'
+          gh run download 44936328481 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v2-ubuntu-latest-b4852cefede06d4a864cec87684d5fea7d316304 --dir candidate
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="35e6bdf3a3c37e082c7d83d31414c37023b6c535687ceb28c997cc81c37a5b8d"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Inspect exposed development candidate
+        run: python scripts/validation/prime_stereo_diagnostic.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: prime-stereo-diagnostic-${{ github.sha }}
+          path: prime-stereo-diagnostic.json
+          if-no-files-found: error
