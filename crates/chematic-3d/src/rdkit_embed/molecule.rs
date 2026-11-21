@@ -113,7 +113,9 @@ impl From<RdkitEmbedError> for RdkitEmbedMmffError {
 #[derive(Clone, Debug)]
 pub struct RdkitMmffConformer {
     pub coords: Vec<[f64; 3]>,
-    /// RDKit status: 0 converged, 1 iteration limit, negative on failure.
+    /// Status: 0 converged, 1 unfinished, negative on failure. The checked
+    /// profile also uses 1 when it falls back to the embedded coordinates
+    /// because optimization did not preserve evaluable declared stereo.
     pub status: i32,
     pub energy: f64,
 }

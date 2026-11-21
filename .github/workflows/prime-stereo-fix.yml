@@ -22,6 +22,7 @@ jobs:
       - name: Check Rust regression and existing checked-profile tests
         run: |
           cargo test --locked -p chematic-3d --lib corrected_ -- --nocapture
+          cargo test --locked -p chematic-3d --lib ez_near_linear_substituents_are_unevaluable_at_either_end -- --nocapture
           cargo test --locked -p chematic-3d --lib constraint_set_terminal_hydrogens_and_isotopes_match_rdkit -- --nocapture
           cargo test --locked -p chematic-3d --lib constraint_set_adjacent_marked_alkenes_match_rdkit -- --nocapture
           cargo test --locked -p chematic-3d --lib constraint_set_cod_adjacent_marker_development_corpus -- --nocapture
@@ -34,9 +35,13 @@ jobs:
         run: |
           python scripts/validation/prime_stereo_diagnostic.py
           python -c 'import json; x=json.load(open("prime-stereo-diagnostic.json")); assert x["count"]==44; assert not x["observations"]'
+          python scripts/validation/cod_charged_stereo_diagnostic.py
+          python -c 'import json; x=json.load(open("cod-charged-stereo-diagnostic.json")); assert len(x["chematic"])==20; assert all(not c["violations"]["atoms"] and not c["violations"]["bonds"] for c in x["chematic"]); assert any(c["violations"]["bonds"] for c in x["rdkit_optimized"])'
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         if: always()
         with:
           name: prime-stereo-fix-${{ github.sha }}
-          path: prime-stereo-diagnostic.json
+          path: |
+            prime-stereo-diagnostic.json
+            cod-charged-stereo-diagnostic.json
           if-no-files-found: warn

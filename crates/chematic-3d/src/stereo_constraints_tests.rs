@@ -412,6 +412,26 @@ mod tests {
     }
 
     #[test]
+    fn ez_near_linear_substituents_are_unevaluable_at_either_end() {
+        let m = mol("C/C=C/C");
+        for scale in [0.1, 1.0, 10.0] {
+            for atom in [0, 3] {
+                let mut c = Coords3D::new_zeroed(m.atom_count());
+                c.set(AtomIdx(0), Point3::new(-scale, 0.5 * scale, 0.0));
+                c.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+                c.set(AtomIdx(2), Point3::new(scale, 0.0, 0.0));
+                c.set(AtomIdx(3), Point3::new(2.0 * scale, -0.5 * scale, 0.0));
+                let x = if atom == 0 { -scale } else { 2.0 * scale };
+                c.set(AtomIdx(atom), Point3::new(x, 0.01 * scale, 0.0));
+                assert_eq!(
+                    verify_stereo(&m, &c).double_bond[0].status,
+                    StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry)
+                );
+            }
+        }
+    }
+
+    #[test]
     fn ez_declared_e_matches_trans_geometry() {
         let m = mol("C/C=C/C"); // but2ene_E
         let coords = trans_but2ene_coords(&m);

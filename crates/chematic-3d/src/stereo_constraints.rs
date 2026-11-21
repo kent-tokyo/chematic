@@ -827,6 +827,24 @@ fn verify_double_bond_constraint(
     coords: &Coords3D,
     constraint: &DoubleBondConstraint,
 ) -> StereoStatus {
+    // A dihedral is numerically defined for almost-collinear substituents but
+    // does not provide a reliable E/Z assignment. Reject either end within
+    // five degrees of the bond axis, independent of coordinate scale.
+    let end1 = coords.get(constraint.end1);
+    let end2 = coords.get(constraint.end2);
+    let axis = end2.sub(&end1);
+    let axis_norm = axis.norm();
+    let near_axis = |sub: Point3, end: Point3| {
+        let arm = sub.sub(&end);
+        let arm_norm = arm.norm();
+        axis_norm < 1e-10
+            || arm_norm < 1e-10
+            || arm.cross(&axis).norm() < axis_norm * arm_norm * 0.087_155_742_747_658_17
+    };
+    if near_axis(coords.get(constraint.sub1), end1) || near_axis(coords.get(constraint.sub2), end2)
+    {
+        return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+    }
     let Some(angle) = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
         coords.get(constraint.end2),
