@@ -58,7 +58,7 @@ jobs:
           # no matching CPython 3.9 wheel, so this job records chematic's
           # output and the compare job below evaluates it with pinned RDKit
           # on Linux CPython 3.12.
-          - os: ubuntu-latest
+          - os: ubuntu-24.04
             label: linux-x86_64-cp39
             python: "3.9"
           - os: macos-15
