@@ -8,6 +8,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- 2D depiction typesets bonded atom labels like isolated ones: charges as superscripts (O⁻, NH₃⁺, S²⁺), hydrogen counts as subscripts (NH₂) and isotopes as superscript prefixes (¹³C). A drawing no longer mixes `O-` with `Na⁺` (#1280).
+
 ## [1.2.2] - 2026-11-21
 
 ### Added
