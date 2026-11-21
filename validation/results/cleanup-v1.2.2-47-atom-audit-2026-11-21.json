@@ -51,6 +51,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -92,6 +93,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -133,6 +135,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -174,6 +177,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -215,6 +219,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -256,6 +261,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -297,6 +303,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -338,6 +345,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -379,6 +387,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -420,6 +429,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -461,6 +471,7 @@
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -502,6 +513,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -543,6 +555,7 @@
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 2,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -584,6 +597,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -600,6 +614,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -616,6 +631,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -657,6 +673,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -698,6 +715,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -739,6 +757,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -804,6 +823,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -820,6 +840,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -861,6 +882,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -877,6 +899,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -918,6 +941,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -934,6 +958,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -950,6 +975,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 3,
       "chematic_serialized_radical_electrons": 6,
       "assessment": "representation_difference_after_sanitize"
@@ -991,6 +1017,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -1007,6 +1034,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -1023,6 +1051,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -1039,6 +1068,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -1080,6 +1110,7 @@
       "rdkit_serialization_reparseable": false,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1096,6 +1127,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -1137,6 +1169,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1178,6 +1211,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1219,6 +1253,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1260,6 +1295,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -1301,6 +1337,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1317,6 +1354,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 3,
       "assessment": "representation_difference_after_sanitize"
@@ -1333,6 +1371,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -1374,6 +1413,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1390,6 +1430,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -1431,6 +1472,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1447,6 +1489,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "representation_difference_after_sanitize"
@@ -1488,6 +1531,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -1504,6 +1548,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "representation_difference_after_sanitize"
@@ -1545,6 +1590,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1586,6 +1632,7 @@
       "rdkit_serialization_reparseable": true,
       "chematic_second_cleanup_matches": true,
       "rdkit_second_cleanup_matches": false,
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"

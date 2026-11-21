@@ -125,6 +125,10 @@ def main():
                      "rdkit_serialization_reparseable": oracle_reparsed is not None,
                      "chematic_second_cleanup_matches": source_second == source.rdkit_smiles,
                      "rdkit_second_cleanup_matches": oracle_second == oracle_text,
+                     "rdkit_second_cleanup_matches_reparsed_chematic": (
+                         None if source_reparsed is None else
+                         oracle_second == Chem.MolToSmiles(source_reparsed, canonical=True, isomericSmiles=True)
+                     ),
                      "rdkit_in_memory_radical_electrons": sum(atom.GetNumRadicalElectrons() for atom in oracle_atoms),
                      "chematic_serialized_radical_electrons": None if source_reparsed is None else sum(
                          atom.GetNumRadicalElectrons() for atom in source_reparsed.GetAtoms()
