@@ -21,6 +21,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--wheel", required=True, type=Path)
     parser.add_argument("--candidate-commit", required=True)
+    parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if chematic.__version__ != "1.2.2" or rdBase.rdkitVersion != "2026.09.1":
         raise ValueError("expected chematic 1.2.2 and RDKit 2026.09.1")
@@ -62,14 +63,42 @@ def main():
                      "rdkit_input_formula": rdMolDescriptors.CalcMolFormula(rdkit_input),
                      "rdkit_output_formula": rdMolDescriptors.CalcMolFormula(rdkit_output),
                      "output": output})
+    spelling_pairs = []
+    for label, inputs, expect_error in (
+        ("ambiguous_tin", ("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+                           "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N"), True),
+        ("resolved_platinum", ("C[PtH]C", "C[Pt]([H])C"), False),
+    ):
+        variants = []
+        for text in inputs:
+            source = chematic.from_smiles(text)
+            entry = {"input": text, "input_smiles": source.rdkit_smiles,
+                     "input_formula": source.formula}
+            try:
+                cleaned = source.cleanup()
+                entry.update(output=cleaned.rdkit_smiles, output_formula=cleaned.formula)
+            except chematic.ChematicInputError as error:
+                entry["error"] = {"category": error.category, "code": error.code}
+            variants.append(entry)
+        if (len({row["input_smiles"] for row in variants}) != 1
+                or len({row["input_formula"] for row in variants}) != 1):
+            raise ValueError(f"inputs are not equivalent for {label}")
+        if expect_error:
+            if any(row.get("error") != {"category": "ambiguous", "code": "cleanup_metal_hydrogen"}
+                   for row in variants):
+                raise ValueError(f"inconsistent refusal for {label}")
+        elif (any("error" in row or row["output_formula"] != row["input_formula"] for row in variants)
+              or len({row["output"] for row in variants}) != 1):
+            raise ValueError(f"inconsistent accepted output for {label}")
+        spelling_pairs.append({"case": label, "variants": variants})
     report = {"candidate_commit": args.candidate_commit, "wheel": args.wheel.name,
               "rdkit_version": rdBase.rdkitVersion,
               "wheel_sha256": hashlib.sha256(args.wheel.read_bytes()).hexdigest(),
               "installed_package_files_verified": len(files),
               "corpus_sha256": hashlib.sha256(CORPUS.read_bytes()).hexdigest(),
-              "source_record": str(RECORD.relative_to(ROOT)), "rows": rows}
-    path = ROOT / "validation/results/cleanup-metal-hydrogen-checked-wheel-2026-11-21.json"
-    path.write_text(json.dumps(report, indent=2) + "\n")
+              "source_record": str(RECORD.relative_to(ROOT)), "rows": rows,
+              "explicit_hydrogen_spelling_pairs": spelling_pairs}
+    args.output.write_text(json.dumps(report, indent=2) + "\n")
     failures = [row["index"] for row in rows if "refused" not in row and (len({row["input_formula"], row["output_formula"],
                                                       row["reparsed_formula"], row["repeated_formula"]}) != 1
                 or len(set(row["formal_charges"])) != 1)]

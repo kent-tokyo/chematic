@@ -10,9 +10,9 @@ from collections import Counter
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-RECORD = ROOT / "validation/results/rdkit-cleanup-checked-stress-2026-11-21.json"
+RECORD = ROOT / "validation/results/rdkit-cleanup-explicit-h-stress-2026-11-21.json"
 PREVIOUS_RECORD = ROOT / "validation/results/rdkit-cleanup-integrated-prs-stress-2026-10-24.json"
-TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-checked-10k-2026-11-21.json"
+TEN_K_RECORD = ROOT / "validation/results/rdkit-cleanup-explicit-h-10k-2026-11-21.json"
 TEN_K_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-integrated-prs-10k-2026-10-24.json"
 REIONIZE_RECORD = ROOT / "validation/results/rdkit-reionize-in-memory-stereo-2026-10-22.json"
 REIONIZE_PREVIOUS = ROOT / "validation/results/rdkit-cleanup-ring-stereo-stress-2026-10-22.json"
