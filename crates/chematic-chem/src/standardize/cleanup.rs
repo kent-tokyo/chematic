@@ -80,57 +80,41 @@ pub fn cleanup_unchecked(mol: &Molecule) -> Molecule {
     restore_cut_metal_hydrogens(&without_h, &normalized, cleaned)
 }
 
-/// A Cleanup input whose metal-bound hydrogen cannot be accounted for safely.
+/// A Cleanup input whose metal hydrogen change cannot be accounted for safely.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CleanupError {
-    /// A metal--ligand bond was cut and an explicit metal hydrogen disappeared
-    /// while hydrogen counts elsewhere also changed.
+    /// A metal--ligand bond was cut and its hydrogen count changed while
+    /// hydrogen counts elsewhere also changed.
     AmbiguousMetalHydrogen,
 }
 
 impl std::fmt::Display for CleanupError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::AmbiguousMetalHydrogen => write!(
-                f,
-                "Cleanup cannot determine the destination of an explicit metal hydrogen"
-            ),
+            Self::AmbiguousMetalHydrogen => {
+                write!(f, "Cleanup cannot account for the metal hydrogen change")
+            }
         }
     }
 }
 
 impl std::error::Error for CleanupError {}
 
-/// Apply Cleanup and reject an unresolved explicit-metal-hydrogen change.
+/// Apply Cleanup and reject an unresolved metal hydrogen change.
 ///
 /// [`cleanup_unchecked`] retains the historical best-effort behavior.
 pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
     let cleaned = cleanup_unchecked(mol);
-    if !mol.atoms().any(|(idx, atom)| {
-        is_metal(atom.element)
-            && (atom.hydrogen_count.unwrap_or(0) > 0
-                || mol
-                    .neighbors(idx)
-                    .any(|(neighbor, _)| mol.atom(neighbor).element.atomic_number() == 1))
-    }) {
+    if !mol.atoms().any(|(_, atom)| is_metal(atom.element)) {
         return Ok(cleaned);
     }
     // Removing explicit hydrogen atoms can turn a metal--H bond into a
     // bracket hydrogen count. Check after that conversion so equivalent
     // `[SnH]` and `[Sn]([H])` inputs receive the same decision.
     let before = remove_hydrogens_for_cleanup(mol);
-    if !before
-        .atoms()
-        .any(|(_, atom)| is_metal(atom.element) && atom.hydrogen_count.unwrap_or(0) > 0)
-    {
-        return Ok(cleaned);
-    }
     for (idx, atom) in before.atoms() {
-        let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
-            continue;
-        };
         if is_metal(atom.element)
-            && cleaned.atom(idx).hydrogen_count.unwrap_or(0) < hydrogens
+            && implicit_hcount(&cleaned, idx) != implicit_hcount(&before, idx)
             && before
                 .neighbors(idx)
                 .any(|(neighbor, _)| cleaned.bond_between(idx, neighbor).is_none())
@@ -153,18 +137,15 @@ fn restore_cut_metal_hydrogens(
 ) -> Molecule {
     let mut changes = Vec::new();
     for (idx, atom) in before.atoms() {
-        let Some(hydrogens) = atom.hydrogen_count.filter(|&count| count > 0) else {
-            continue;
-        };
         if !is_metal(atom.element)
-            || cleaned.atom(idx).hydrogen_count.unwrap_or(0) >= hydrogens
+            || implicit_hcount(&cleaned, idx) == implicit_hcount(before, idx)
             || !before
                 .neighbors(idx)
                 .any(|(neighbor, _)| disconnected.bond_between(idx, neighbor).is_none())
         {
             continue;
         }
-        changes.push((idx, hydrogens));
+        changes.push((idx, implicit_hcount(before, idx)));
     }
     if changes.is_empty() {
         return cleaned;
@@ -179,21 +160,26 @@ fn restore_cut_metal_hydrogens(
             )
         })
     };
+    let removed: u32 = changes
+        .iter()
+        .map(|&(idx, _)| u32::from(implicit_hcount(&cleaned, idx)))
+        .sum();
     let restored: u32 = changes
         .iter()
-        .map(|&(idx, hydrogens)| {
-            u32::from(hydrogens - cleaned.atom(idx).hydrogen_count.unwrap_or(0))
-        })
+        .map(|&(_, hydrogens)| u32::from(hydrogens))
         .sum();
     let (before_total, before_nonmetal) = hydrogen_counts(before);
     let (cleaned_total, cleaned_nonmetal) = hydrogen_counts(&cleaned);
     if before_nonmetal != cleaned_nonmetal
-        || cleaned_total.checked_add(restored) != Some(before_total)
+        || cleaned_total
+            .checked_sub(removed)
+            .and_then(|count| count.checked_add(restored))
+            != Some(before_total)
     {
         return cleaned;
     }
     for (idx, hydrogens) in changes {
-        // Cutting another ligand does not remove a metal's explicit H.
+        // A metal--ligand cut neither creates nor removes a metal hydrogen.
         cleaned.set_hydrogen_count(idx, Some(hydrogens));
     }
     cleaned
@@ -1112,10 +1098,10 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_recomputes_hydrogens_on_disconnected_metals() {
+    fn cleanup_preserves_hydrogens_on_disconnected_metals() {
         for (input, expected) in [
-            ("O->[Mg](<-O)(<-O)<-O", "O.O.O.O.[MgH2]"),
-            ("C[N]([SnH])C", "C[N-]C.[SnH3+]"),
+            ("O->[Mg](<-O)(<-O)<-O", "O.O.O.O.[Mg]"),
+            ("C[N]([SnH])C", "C[N-]C.[SnH+]"),
         ] {
             let output = cleanup(&parse(input).unwrap());
             assert_eq!(
@@ -1263,7 +1249,7 @@ mod tests {
         let cleaned = cleanup(&parse("O->[Mg](<-O)(<-O)<-O").unwrap());
         assert_eq!(
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok("O.O.O.O.[MgH2]")
+            Ok("O.O.O.O.[Mg]")
         );
     }
 

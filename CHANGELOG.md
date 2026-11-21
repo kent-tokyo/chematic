@@ -10,9 +10,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
-- Preserve explicit metal hydrogens during Cleanup when their loss accounts for the molecule's hydrogen deficit after metal-bond disconnection.
+- Preserve metal hydrogen counts during Cleanup when correcting a gain or loss restores the molecule's hydrogen total without changing nonmetal hydrogen counts.
 - Preserve explicit ligand hydrogen counts during Cleanup when cutting metal bonds would otherwise invent hydrogens.
-- Return an explicit ambiguity error from Cleanup when a cut metal bond leaves an explicit metal hydrogen unaccounted for.
+- Return an explicit ambiguity error from Cleanup when a cut metal bond leaves a metal hydrogen change unaccounted for.
 
 ### Changed
 

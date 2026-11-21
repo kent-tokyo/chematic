@@ -1634,8 +1634,8 @@ class Mol:
         the supported ligand and coordination patterns.
 
         Raises:
-            ChematicInputError: If the destination of an explicit metal
-                hydrogen is ambiguous, with code ``cleanup_metal_hydrogen``.
+            ChematicInputError: If a metal hydrogen change cannot be accounted
+                for, with code ``cleanup_metal_hydrogen``.
         """
         ...
 

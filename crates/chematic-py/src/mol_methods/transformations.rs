@@ -64,7 +64,7 @@ impl Mol {
     /// formal charges, or select a fragment. Catalog-based proton transfers
     /// check the resulting acid before accepting a move.
     /// Raises ``ChematicInputError`` with code ``cleanup_metal_hydrogen``
-    /// when an explicit metal hydrogen has an ambiguous destination.
+    /// when a metal hydrogen change cannot be accounted for.
     fn cleanup(&self) -> PyResult<Mol> {
         let cleaned = chematic_chem::cleanup_checked(&self.inner).map_err(|error| {
             crate::errors::input_error(

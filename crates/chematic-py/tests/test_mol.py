@@ -255,7 +255,11 @@ def test_cleanup_preserves_neutral_acid_and_disconnects_gold_chloride():
 
 
 def test_cleanup_preserves_donor_valence_after_metal_disconnection():
-    assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[LiH]"
+    assert chematic.from_smiles("C(=[O][Li])O").cleanup().rdkit_smiles == "O=CO.[Li]"
+    for text in ("C(=[O][Li])O", "O->[Mg](<-O)(<-O)<-O", "C[N]([SnH])C"):
+        source = chematic.from_smiles(text)
+        assert source.cleanup().formula == source.formula
+        assert source.add_hydrogens().cleanup().formula == source.formula
 
 
 def test_cleanup_preserves_explicit_metal_hydrogens():

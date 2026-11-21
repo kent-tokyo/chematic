@@ -91,3 +91,28 @@ fn explicit_ligand_hydrogens_do_not_gain_hydrogen_after_metal_cut() {
         );
     }
 }
+
+#[test]
+fn metal_disconnection_does_not_create_hydrogen() {
+    for input in ["O->[Mg](<-O)(<-O)<-O", "C[N]([SnH])C", "C(=[O][Li])O"] {
+        let source = parse(input).unwrap();
+        let expanded = add_hydrogens(&source);
+        let compact = cleanup(&source).unwrap();
+        let explicit = cleanup(&expanded).unwrap();
+        assert_eq!(
+            calc_mol_formula(&compact),
+            calc_mol_formula(&source),
+            "{input}"
+        );
+        assert_eq!(
+            calc_mol_formula(&explicit),
+            calc_mol_formula(&source),
+            "{input}"
+        );
+        assert_eq!(
+            rdkit_cleanup_canonical_smiles(&compact),
+            rdkit_cleanup_canonical_smiles(&explicit),
+            "{input}"
+        );
+    }
+}
