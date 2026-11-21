@@ -9,6 +9,34 @@ mod tests {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e:?}"))
     }
 
+    #[test]
+    fn phosphoryl_tetrahedral_parity_matches_rdkit_coordinates() {
+        // RDKit 2026.09.2 ETKDGv3, seed 42, O=[P@](F)(Cl)Br; RDKit S.
+        let m = mol("O=[P@](F)(Cl)Br");
+        let opposite = mol("O=[P@@](F)(Cl)Br");
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        for (i, point) in [
+            [-0.281553, 0.721104, 1.413827],
+            [-0.039448, 0.154520, 0.041940],
+            [-0.108940, 1.353457, -1.124199],
+            [-1.489760, -1.310310, -0.263919],
+            [1.919700, -0.918771, -0.067649],
+        ]
+        .iter()
+        .enumerate()
+        {
+            coords.set(AtomIdx(i as u32), Point3::new(point[0], point[1], point[2]));
+        }
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+        assert_eq!(
+            verify_stereo(&opposite, &coords).tetrahedral[0].status,
+            StereoStatus::Violated
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Sign-convention empirical verification, against an EXTERNAL oracle (RDKit),
     // not internal hand-derived math.

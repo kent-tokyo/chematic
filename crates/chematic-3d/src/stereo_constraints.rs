@@ -137,8 +137,7 @@ const PHANTOM_BOND_LENGTH: f64 = 1.0;
 pub enum StereoRejectionReason {
     /// The atom's declared-neighbor-order shape isn't a plain 4-substituent
     /// tetrahedral center (wrong neighbor count, more than one implicit-H sentinel,
-    /// an inconsistent implicit-H count, or a non-single/up/down bond among its
-    /// neighbors -- e.g. an allene/axial-chirality atom, not a simple tetrahedral one).
+    /// an inconsistent implicit-H count, or an unsupported bond arrangement).
     UnsupportedCoordination,
     /// The signed volume (tetrahedral) or dihedral (E/Z) is within its epsilon of
     /// zero/undefined -- a coplanar or otherwise degenerate 3D arrangement.
@@ -569,7 +568,24 @@ fn tetrahedral_constraint_for(
             BondOrder::Single | BondOrder::Up | BondOrder::Down
         )
     });
-    if !all_single_ish {
+    // A tetrahedral P(V) center can have one formally double-bonded ligand,
+    // e.g. a phosphine oxide or thiophosphoryl group. Its four actual
+    // substituent positions still define a tetrahedral signed volume. Keep the
+    // ordinary single-bond-only rule for other elements and coordination.
+    let tetrahedral_pv = atom.element.atomic_number() == 15
+        && mol.neighbors(idx).count() == 4
+        && mol
+            .neighbors(idx)
+            .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
+            .count()
+            == 1
+        && mol.neighbors(idx).all(|(_, bidx)| {
+            matches!(
+                mol.bond(bidx).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
+            )
+        });
+    if !all_single_ish && !tetrahedral_pv {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
