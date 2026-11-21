@@ -1,0 +1,36 @@
+name: COD zero-candidate development diagnostic
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-zero-candidates-diagnostic.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install frozen development candidate
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/trees/ee9b76bb58dc793e2e7133ea5f0d389da6690650 --jq '.tree[] | select(.path == "crates") | .sha')" = 'c953928e32e912a94b5bd4462c9b49e31f5461c8'
+          gh run download 44958776980 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v4-ubuntu-latest-e4efaf29afd6bfa3689d1187dfc391343d7ceac0 --dir candidate
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="e0f95eb569e14a5f69df04b566acbe0e86b86832afa18da079eedff6a3e82a78"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Examine exposed COD development case
+        run: |
+          python scripts/validation/cod_zero_candidates_diagnostic.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-zero-candidates-diagnostic-${{ github.sha }}
+          path: |
+            cod-zero-candidates-diagnostic.json
+          if-no-files-found: error
