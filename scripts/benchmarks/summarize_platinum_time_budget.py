@@ -79,7 +79,7 @@ def main():
         "paired_bootstrap_95_percentile_interval": [samples[249], samples[9749]],
     }
     if all(
-        "statuses" in row.get(engine, {})
+        row.get("error") or "statuses" in row.get(engine, {})
         for row in rows
         for engine in ("chematic", "rdkit")
     ):
@@ -119,7 +119,7 @@ def main():
             "stereo_violations": sum(
                 bool(v["atoms"] or v["bonds"])
                 for record in records
-                for v in record["stereo"]
+                for v in record.get("stereo", [])
             ),
             "converged": (
                 sum(status == 0 for record in records for status in record["statuses"])
