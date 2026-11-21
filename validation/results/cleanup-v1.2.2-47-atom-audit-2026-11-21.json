@@ -6,10 +6,12 @@
   "installed_package_files_verified": 44,
   "rdkit_version": "2026.09.1",
   "networkx_version": "3.6.1",
-  "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Stereo and radicals require separate review",
+  "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Representation differences require matching canonical isomeric SMILES after RDKit sanitizes its in-memory Cleanup product and reparses the chematic output; the original unsanitized radical state is recorded separately.",
   "counts": {
     "chemical_difference": 31,
-    "requires_stereo_radical_review": 16
+    "representation_difference_after_sanitize": 16,
+    "refusal": 0,
+    "requires_stereo_radical_review": 0
   },
   "rows": [
     {
@@ -45,7 +47,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -83,7 +88,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -121,7 +129,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -159,7 +170,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -197,7 +211,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -235,7 +252,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -273,7 +293,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -311,7 +334,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -349,7 +375,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -387,7 +416,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -425,7 +457,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -463,7 +498,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -501,7 +539,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 2,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -539,7 +580,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -552,10 +596,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 1831,
@@ -565,10 +612,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 1854,
@@ -603,7 +653,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -641,7 +694,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
       "assessment": "chemical_difference"
@@ -679,7 +735,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -741,7 +800,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -754,10 +816,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2025,
@@ -792,10 +857,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2069,
@@ -805,10 +873,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2076,
@@ -843,7 +914,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -856,10 +930,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2178,
@@ -869,10 +946,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 3,
       "chematic_serialized_radical_electrons": 6,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2203,
@@ -907,7 +987,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -920,10 +1003,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2598,
@@ -933,10 +1019,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2602,
@@ -946,10 +1035,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2677,
@@ -984,7 +1076,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -997,10 +1092,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 2855,
@@ -1035,7 +1133,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1073,7 +1174,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1111,7 +1215,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1149,7 +1256,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -1187,7 +1297,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1200,10 +1313,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 3,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 3501,
@@ -1213,10 +1329,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 3504,
@@ -1251,7 +1370,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1264,10 +1386,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 3700,
@@ -1302,7 +1427,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1315,10 +1443,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 2,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 3849,
@@ -1353,7 +1484,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"
@@ -1366,10 +1500,13 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": true,
       "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
-      "assessment": "requires_stereo_radical_review"
+      "assessment": "representation_difference_after_sanitize"
     },
     {
       "index": 4023,
@@ -1404,7 +1541,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 0,
       "assessment": "chemical_difference"
@@ -1442,7 +1582,10 @@
       "rdkit_only_bonds": [],
       "charge_h_connectivity_isomorphic": false,
       "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
       "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
       "rdkit_in_memory_radical_electrons": 0,
       "chematic_serialized_radical_electrons": 1,
       "assessment": "chemical_difference"

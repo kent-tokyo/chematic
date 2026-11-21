@@ -77,6 +77,19 @@ def main():
         oracle_text = Chem.MolToSmiles(oracle, canonical=True, isomericSmiles=True)
         oracle_reparsed = Chem.MolFromSmiles(oracle_text)
         source_reparsed = Chem.MolFromSmiles(case["chematic_cleanup"])
+        source_second = source.cleanup().rdkit_smiles
+        oracle_second = Chem.MolToSmiles(rdMolStandardize.Cleanup(oracle), canonical=True, isomericSmiles=True)
+        sanitized_equal = None
+        if isomorphic and source_reparsed is not None:
+            sanitized_oracle = Chem.Mol(oracle)
+            try:
+                Chem.SanitizeMol(sanitized_oracle)
+                sanitized_equal = (
+                    Chem.MolToSmiles(sanitized_oracle, canonical=True, isomericSmiles=True)
+                    == Chem.MolToSmiles(source_reparsed, canonical=True, isomericSmiles=True)
+                )
+            except (ValueError, RuntimeError):
+                pass
         if isomorphic:
             # MOL conversion can lose stereo, so this check only compares the
             # molecular graph and leaves stereo and radical review separate.
@@ -108,18 +121,26 @@ def main():
                      "rdkit_only_bonds": sorted(oracle_edges - source_edges),
                      "charge_h_connectivity_isomorphic": isomorphic,
                      "bond_isotope_graph_isomorphic": bond_isomorphic,
+                     "same_after_rdkit_sanitize": sanitized_equal,
                      "rdkit_serialization_reparseable": oracle_reparsed is not None,
+                     "chematic_second_cleanup_matches": source_second == source.rdkit_smiles,
+                     "rdkit_second_cleanup_matches": oracle_second == oracle_text,
                      "rdkit_in_memory_radical_electrons": sum(atom.GetNumRadicalElectrons() for atom in oracle_atoms),
                      "chematic_serialized_radical_electrons": None if source_reparsed is None else sum(
                          atom.GetNumRadicalElectrons() for atom in source_reparsed.GetAtoms()
                      ),
-                     "assessment": "chemical_difference" if not isomorphic or bond_isomorphic is False else "requires_stereo_radical_review"})
+                     "assessment": ("chemical_difference" if not isomorphic or bond_isomorphic is False
+                                    else "representation_difference_after_sanitize" if sanitized_equal
+                                    else "requires_stereo_radical_review")})
+    counts = collections.Counter(row["assessment"] for row in rows)
+    for assessment in ("chemical_difference", "representation_difference_after_sanitize", "refusal", "requires_stereo_radical_review"):
+        counts.setdefault(assessment, 0)
     result = {"source_record": str(RECORD.relative_to(ROOT)), "chematic_version": chematic.__version__,
               "wheel": args.wheel.name, "wheel_sha256": hashlib.sha256(args.wheel.read_bytes()).hexdigest(),
               "installed_package_files_verified": len(files),
               "rdkit_version": rdBase.rdkitVersion, "networkx_version": nx.__version__,
-              "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Stereo and radicals require separate review",
-              "counts": dict(collections.Counter(row["assessment"] for row in rows)), "rows": rows}
+              "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Representation differences require matching canonical isomeric SMILES after RDKit sanitizes its in-memory Cleanup product and reparses the chematic output; the original unsanitized radical state is recorded separately.",
+              "counts": dict(counts), "rows": rows}
     output = ROOT / "validation/results/cleanup-v1.2.2-47-atom-audit-2026-11-21.json"
     output.write_text(json.dumps(result, indent=2) + "\n")
     print(result["counts"])
