@@ -933,22 +933,11 @@ pub fn atom_color_rgb(atomic_number: u8) -> [u8; 3] {
 // Atom labels
 // ---------------------------------------------------------------------------
 
-/// Format a formal charge as a suffix string.
-/// Centralised here so the character used for minus is consistent everywhere (B5, R3).
-fn format_charge(c: i8) -> String {
-    match c {
-        0 => String::new(),
-        1 => "+".to_string(),
-        -1 => "-".to_string(),
-        c if c > 1 => format!("{c}+"),
-        c => format!("{}-", -c), // e.g. "2-", "3-"
-    }
-}
-
 /// Compute the display label for an atom.
 ///
 /// Isolated atoms (single-atom molecule or degree-0 in a multi-atom molecule)
 /// use a typeset formula, with the element first for ions.
+/// Bonded atoms are typeset the same way, without hydrogens on carbon.
 /// Plain carbons in bonded multi-atom molecules return "" unless collinear.
 fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
     let atom = mol.atom(idx);
@@ -965,29 +954,28 @@ fn atom_label(mol: &Molecule, layout: &Layout, idx: AtomIdx) -> String {
         return String::new();
     }
 
-    let mut label = atom.element.symbol().to_string();
-
-    // Implicit H count for non-carbon atoms.
-    if !is_carbon {
-        let h = chematic_core::implicit_hcount(mol, idx);
-        if h == 1 {
-            label.push('H');
-        } else if h > 1 {
-            label.push('H');
-            label.push_str(&h.to_string());
-        }
-    }
-
-    // Charge (R3: use shared helper; B5: consistent ASCII minus).
-    if has_charge {
-        label.push_str(&format_charge(atom.charge));
-    }
-
-    label
+    // Implicit H count for non-carbon atoms only.
+    let h = if is_carbon {
+        0
+    } else {
+        chematic_core::implicit_hcount(mol, idx)
+    };
+    typeset_label(mol, idx, h, false)
 }
 
-/// Typeset the atom as a single SVG text run so PDF and browsers can render it.
+/// Label an atom with no bonds as a formula: hydrogens first for a neutral
+/// heteroatom (H₂O), element first for carbon and ions (CH₄, NH₄⁺).
 fn isolated_label(mol: &Molecule, idx: AtomIdx) -> String {
+    let atom = mol.atom(idx);
+    let hydrogen_first = atom.charge == 0 && atom.element.atomic_number() != 6;
+    let h = chematic_core::implicit_hcount(mol, idx);
+    typeset_label(mol, idx, h, hydrogen_first)
+}
+
+/// Typeset the atom as a single SVG text run so PDF and browsers can render it:
+/// isotope as a superscript prefix, `h` hydrogens with a subscript count, and the
+/// charge as a superscript suffix.
+fn typeset_label(mol: &Molecule, idx: AtomIdx, h: u8, hydrogen_first: bool) -> String {
     const SUBSCRIPT: [char; 10] = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
     const SUPERSCRIPT: [char; 10] = ['⁰', '¹', '²', '³', '⁴', '⁵', '⁶', '⁷', '⁸', '⁹'];
 
@@ -1006,7 +994,6 @@ fn isolated_label(mol: &Molecule, idx: AtomIdx) -> String {
     }
     element.push_str(atom.element.symbol());
 
-    let h = chematic_core::implicit_hcount(mol, idx);
     let mut hydrogen = String::new();
     if h > 0 {
         hydrogen.push('H');
@@ -1015,19 +1002,19 @@ fn isolated_label(mol: &Molecule, idx: AtomIdx) -> String {
         hydrogen.extend(digits(u16::from(h), &SUBSCRIPT));
     }
 
+    let mut label = if hydrogen_first {
+        hydrogen + &element
+    } else {
+        element + &hydrogen
+    };
     if atom.charge != 0 {
-        element.push_str(&hydrogen);
         let magnitude = atom.charge.unsigned_abs();
         if magnitude > 1 {
-            element.extend(digits(u16::from(magnitude), &SUPERSCRIPT));
+            label.extend(digits(u16::from(magnitude), &SUPERSCRIPT));
         }
-        element.push(if atom.charge > 0 { '⁺' } else { '⁻' });
-        element
-    } else if atom.element.atomic_number() == 6 {
-        element + &hydrogen
-    } else {
-        hydrogen + &element
+        label.push(if atom.charge > 0 { '⁺' } else { '⁻' });
     }
+    label
 }
 
 /// Position where H count should be displayed relative to the atom symbol.

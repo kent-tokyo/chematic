@@ -31,6 +31,23 @@ class SpeedFrontierTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 frontier.corpus_rows(data, offset, limit)
 
+    def test_five_arm_rotation_and_older_agreement_gate(self):
+        names = ("older", "baseline", "candidate", "rdkit", "cosmolkit")
+        orders = frontier.block_orders(names, 20)
+        for name in names:
+            for position in range(len(names)):
+                self.assertEqual(sum(order[position] == name for order in orders), 4)
+        checks = {"candidate_vs_older": {"passed": False}}
+        self.assertFalse(frontier.comparable(checks, "older"))
+        checks["candidate_vs_older"]["passed"] = True
+        self.assertTrue(frontier.comparable(checks, "older"))
+
+    def test_cosmolkit_property_fingerprint_bits(self):
+        class Bits:
+            on_bits = [8, 0, 7]
+
+        self.assertEqual(frontier.normal(Bits(), "cosmolkit", "morgan2_2048"), [0, 7, 8])
+
     def test_rdkit_comparison_uses_reference_directly_and_cosmolkit_needs_both_gates(self):
         checks = {"candidate_vs_baseline": {"passed": True},
                   "candidate_vs_rdkit": {"passed": True},

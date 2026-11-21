@@ -1,0 +1,285 @@
+{
+  "checked_at": "2026-11-21T09:40:28.515419+00:00",
+  "files": [
+    {
+      "name": "chematic-core",
+      "version": "1.2.2",
+      "sha256": "a2b07088fd55a2630b47787f1da3751150639691e1cabb78a49193561732caca",
+      "bytes": 125312,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-core"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-core",
+      "artifact": "https://static.crates.io/crates/chematic-core/chematic-core-1.2.2.crate"
+    },
+    {
+      "name": "chematic-perception",
+      "version": "1.2.2",
+      "sha256": "4a9e261e80c3129686967a04d9fabd06ed95fdc075daf6393ea4f7a94089c350",
+      "bytes": 230839,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-perception"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-perception",
+      "artifact": "https://static.crates.io/crates/chematic-perception/chematic-perception-1.2.2.crate"
+    },
+    {
+      "name": "chematic-cip",
+      "version": "1.2.2",
+      "sha256": "238ad077eb62741c010aa6759bcc4961d6c76dbb5ffe359b81aee209e720d0f6",
+      "bytes": 168717,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-cip"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-cip",
+      "artifact": "https://static.crates.io/crates/chematic-cip/chematic-cip-1.2.2.crate"
+    },
+    {
+      "name": "chematic-smarts",
+      "version": "1.2.2",
+      "sha256": "326c58ea3b1ce988be3a58e80d65852e8fd67afa165be7b91af1fc23a88ef05b",
+      "bytes": 143186,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-smarts"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-smarts",
+      "artifact": "https://static.crates.io/crates/chematic-smarts/chematic-smarts-1.2.2.crate"
+    },
+    {
+      "name": "chematic-smiles",
+      "version": "1.2.2",
+      "sha256": "01eb8733664eaa5139013ad58d0411fd7b45558798a393b4a729cb3a62cf9344",
+      "bytes": 499366,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-smiles"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-smiles",
+      "artifact": "https://static.crates.io/crates/chematic-smiles/chematic-smiles-1.2.2.crate"
+    },
+    {
+      "name": "chematic-rxn",
+      "version": "1.2.2",
+      "sha256": "ff9f5b014db96d97e473cbbd0fb81b1efbded7b951ddc99813cc0118347c3555",
+      "bytes": 181297,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-rxn"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-rxn",
+      "artifact": "https://static.crates.io/crates/chematic-rxn/chematic-rxn-1.2.2.crate"
+    },
+    {
+      "name": "chematic-fp",
+      "version": "1.2.2",
+      "sha256": "c982362789fa4991a2f9d4029ec055336aae08e7178f640679b842da7e77bb0f",
+      "bytes": 246043,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-fp"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-fp",
+      "artifact": "https://static.crates.io/crates/chematic-fp/chematic-fp-1.2.2.crate"
+    },
+    {
+      "name": "chematic-iupac",
+      "version": "1.2.2",
+      "sha256": "e1d03918c9f8bdeed0c937ad95129b7a0bc8f5647431b4700a5dd6f330076d24",
+      "bytes": 28524,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-iupac"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-iupac",
+      "artifact": "https://static.crates.io/crates/chematic-iupac/chematic-iupac-1.2.2.crate"
+    },
+    {
+      "name": "chematic-chem",
+      "version": "1.2.2",
+      "sha256": "063ad71fd4bd7cbfb775163da2b66d301b49c50bd5d4a63157031fe3e8fd6df3",
+      "bytes": 514508,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-chem"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-chem",
+      "artifact": "https://static.crates.io/crates/chematic-chem/chematic-chem-1.2.2.crate"
+    },
+    {
+      "name": "chematic-ff",
+      "version": "1.2.2",
+      "sha256": "3bd03ab11f7de0d014fd40fe1063d4df45ea99d9a18f955633ed0c8c82d349f7",
+      "bytes": 295844,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-ff"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-ff",
+      "artifact": "https://static.crates.io/crates/chematic-ff/chematic-ff-1.2.2.crate"
+    },
+    {
+      "name": "chematic-3d",
+      "version": "1.2.2",
+      "sha256": "eb8e1a00004c39d04f01c97e599c68809a08078be0f63368f07d5dcf2db10a22",
+      "bytes": 649422,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-3d"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-3d",
+      "artifact": "https://static.crates.io/crates/chematic-3d/chematic-3d-1.2.2.crate"
+    },
+    {
+      "name": "chematic-crystal",
+      "version": "1.2.2",
+      "sha256": "29c1a38249d43601addc83b0d143a0bec5b23faea3a6319751956dd502b58c32",
+      "bytes": 67963,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-crystal"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-crystal",
+      "artifact": "https://static.crates.io/crates/chematic-crystal/chematic-crystal-1.2.2.crate"
+    },
+    {
+      "name": "chematic-depict",
+      "version": "1.2.2",
+      "sha256": "8895a02d92049387da7736f215543eb1c8c56f2131c77860df4b0ac0396c05ad",
+      "bytes": 443082,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-depict"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-depict",
+      "artifact": "https://static.crates.io/crates/chematic-depict/chematic-depict-1.2.2.crate"
+    },
+    {
+      "name": "chematic-inchi",
+      "version": "1.2.2",
+      "sha256": "ad5ab3df3d66aa2ecb490dd90caa638e56096ca6c1694aeda64068f0d657480d",
+      "bytes": 1313829,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-inchi"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-inchi",
+      "artifact": "https://static.crates.io/crates/chematic-inchi/chematic-inchi-1.2.2.crate"
+    },
+    {
+      "name": "chematic-mol",
+      "version": "1.2.2",
+      "sha256": "30af7224adbde4f6ed520fc3c9a4017e5364c9c5ef9d58572160826d4dcdebd3",
+      "bytes": 876666,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-mol"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-mol",
+      "artifact": "https://static.crates.io/crates/chematic-mol/chematic-mol-1.2.2.crate"
+    },
+    {
+      "name": "chematic",
+      "version": "1.2.2",
+      "sha256": "728f25d56176f3f3af6ae0412038779b37a195d25c2649c8f3da7f8dad96e756",
+      "bytes": 10498,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic"
+      },
+      "index": "https://index.crates.io/ch/em/chematic",
+      "artifact": "https://static.crates.io/crates/chematic/chematic-1.2.2.crate"
+    },
+    {
+      "name": "chematic-cli",
+      "version": "1.2.2",
+      "sha256": "5ee898821f59ba2538495afe3204c618c888cdb0515ddee4c79dded611aa7d57",
+      "bytes": 39846,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-cli"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-cli",
+      "artifact": "https://static.crates.io/crates/chematic-cli/chematic-cli-1.2.2.crate"
+    },
+    {
+      "name": "chematic-ewald",
+      "version": "1.2.2",
+      "sha256": "b1b844976ecf6ddeb27702021c3bb417b2b364780dffe03cbb7a2e6a5d6d8476",
+      "bytes": 13000,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-ewald"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-ewald",
+      "artifact": "https://static.crates.io/crates/chematic-ewald/chematic-ewald-1.2.2.crate"
+    },
+    {
+      "name": "chematic-mcp",
+      "version": "1.2.2",
+      "sha256": "a50280f4bffd275fcf6676ecf5d545497e65fc9bc8786d4f0be1795339f65c82",
+      "bytes": 72175,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-mcp"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-mcp",
+      "artifact": "https://static.crates.io/crates/chematic-mcp/chematic-mcp-1.2.2.crate"
+    },
+    {
+      "name": "chematic-wasm",
+      "version": "1.2.2",
+      "sha256": "9bfaa63dcbe44d82c6c41fb4f54d6f49b7a845b79220743a8c057b2bce695291",
+      "bytes": 254291,
+      "vcs": {
+        "git": {
+          "sha1": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
+        },
+        "path_in_vcs": "crates/chematic-wasm"
+      },
+      "index": "https://index.crates.io/ch/em/chematic-wasm",
+      "artifact": "https://static.crates.io/crates/chematic-wasm/chematic-wasm-1.2.2.crate"
+    }
+  ]
+}

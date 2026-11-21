@@ -1,0 +1,2253 @@
+{
+  "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
+  "chematic_version": "1.2.2",
+  "candidate_commit": null,
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "682c96b2c74b9f43c21efb11a8d8979e9760f7856d911af7c455238560464266",
+  "installed_package_files_verified": 44,
+  "rdkit_version": "2026.09.1",
+  "networkx_version": "3.6.1",
+  "method": "compare element, formal charge, attached hydrogen and connectivity up to graph isomorphism; for matching graphs compare isotope and aromatic-normalized bond orders after MOL conversion. Representation differences require matching canonical isomeric SMILES after RDKit sanitizes its in-memory Cleanup product and reparses the chematic output; the original unsanitized radical state is recorded separately.",
+  "counts": {
+    "chemical_difference": 32,
+    "representation_difference_after_sanitize": 15,
+    "refusal": 0,
+    "requires_stereo_radical_review": 0
+  },
+  "rows": [
+    {
+      "index": 65,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 83,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C11H11-",
+      "output_formula": "C11H11-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[C-]1=CCC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 101,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C15H15-",
+      "output_formula": "C15H15-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+        "[C-]1=CCC=CC=CC=CC=CC=CC=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 403,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C10H10Fe",
+      "output_formula": "C10H10Fe",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
+        "C1=CCC=C1.[Fe+2].[c-]1cc[cH-]c1",
+        "C1=CCC=C1.[Fe+2].[c-]1cc[cH-]c1",
+        "C1=CCC=C1.[Fe+2].[c-]1cc[cH-]c1",
+        "C1=CCC=C1.[Fe+2].[c-]1cc[cH-]c1",
+        "C1=CCC=C1.[Fe+2].[c-]1cc[cH-]c1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 809,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C7H7-",
+      "output_formula": "C7H7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1",
+        "[C-]1=CCC=CC=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 911,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 18,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C19H19-",
+      "output_formula": "C19H19-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+        "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1366,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        },
+        {
+          "atom": 12,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H29N2OPt",
+      "output_formula": "C23H29N2OPt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COc1cccc2c1[CH-]CC[C@H]2CN(C)CCc1ccc2c(c1)CNC2.[Pt+]",
+        "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]",
+        "COc1cccc2c1[CH-]CC[C@H]2CN(C)CCc1ccc2c(c1)CNC2.[Pt+]",
+        "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]",
+        "COc1cccc2c1[CH-]CC[C@H]2CN(C)CCc1ccc2c(c1)CNC2.[Pt+]",
+        "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1432,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 30,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 70,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C73H99N12O18-",
+      "output_formula": "C73H99N12O18-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C-]4C(=O)NC(C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)NC4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C-]4C(=O)NC(C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)NC4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+        "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C-]4C(=O)NC(C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1437,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C17H14ClOZn",
+      "output_formula": "C17H14ClOZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "O=C1/C(=[C-]/c2cccc(Cl)[cH:43]2)CCC2=CC=CCC12.[Zn+]",
+        "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]",
+        "O=C1/C(=[C-]/c2cccc(Cl)[cH:43]2)CCC2=CC=CCC12.[Zn+]",
+        "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]",
+        "O=C1/C(=[C-]/c2cccc(Cl)[cH:43]2)CCC2=CC=CCC12.[Zn+]",
+        "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1471,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 13,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C18H23FeNO",
+      "output_formula": "C18H23FeNO",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC(CCC=CC=[C-][C-2]O)NCCCc1ccccc1.[Fe+3]",
+        "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]",
+        "CC(CC[C]=CC=[C-][C-2]O)NCCCc1ccccc1.[Fe+3]",
+        "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]",
+        "CC(CC[C]=CC=[C-][C-2]O)NCCCc1ccccc1.[Fe+3]",
+        "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1497,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 10,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "Cc1cn2c(=O)c3c(nc2n1)n(C[200O]CCO)cn3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(C[200O]CCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(C[200O]CCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(C[200O]CCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(C[200O]CCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(C[200O]CCO)CN3C"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1577,
+      "recorded_category": "metal_charge_assignment",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 15,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 66,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C66H93N12O17Zn",
+      "output_formula": "C66H93N12O17Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+        "CCCCOc1cc(C(=O)N[C-]2C(=O)NC(C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+        "CCCCOc1cc(C(=O)NC2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+        "CCCCOc1cc(C(=O)N[C-]2C(=O)NC(C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+        "CCCCOc1cc(C(=O)NC2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+        "CCCCOc1cc(C(=O)N[C-]2C(=O)NC(C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1630,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 5,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H12N5O3-",
+      "output_formula": "C12H12N5O3-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH]c1cn2c(=O)c3c(nc2n1)n(COCC[O-])cn3C",
+        "[CH]C1CN2C(=O)C3C(NC2N1)N(COCC[O-])CN3C",
+        "[CH]C1CN2C(=O)C3C(NC2N1)N(COCC[O-])CN3C",
+        "[CH]C1CN2C(=O)C3C(NC2N1)N(COCC[O-])CN3C",
+        "[CH]C1CN2C(=O)C3C(NC2N1)N(COCC[O-])CN3C",
+        "[CH]C1CN2C(=O)C3C(NC2N1)N(COCC[O-])CN3C"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 2,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1664,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            3
+          ],
+          "rdkit_charge_h": [
+            -1,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C19H23KO4Zn",
+      "output_formula": "C19H23KO4Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+        "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1781,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C15H17N3O3Pt",
+      "output_formula": "C15H17N3O3Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH-2]C(OC)=C(C=CC(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+        "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+        "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+        "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+        "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+        "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 1831,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C17H24NOZn",
+      "output_formula": "C17H24NOZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CCCN(CCC)C1CCc2cccc(C=O)c2C1.[Zn]",
+        "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+        "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+        "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+        "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+        "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 1854,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 5,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C11H14NZn",
+      "output_formula": "C11H14NZn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "C=[C-]CN(C)Cc1ccccc1.[Zn+]",
+        "C=CCN(C)[CH-]c1ccccc1.[Zn+]",
+        "C=[C-]CN(C)Cc1ccccc1.[Zn+]",
+        "C=CCN(C)[CH-]c1ccccc1.[Zn+]",
+        "C=[C-]CN(C)Cc1ccccc1.[Zn+]",
+        "C=CCN(C)[CH-]c1ccccc1.[Zn+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1875,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C9H10ClNOPt",
+      "output_formula": "C9H10ClNOPt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "O=C1CCCN1.[CH]=CC(Cl)=[C-][CH-2].[Pt+3]",
+        "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]",
+        "O=C1CCCN1.[CH]=CC(Cl)=[C-][CH-2].[Pt+3]",
+        "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]",
+        "O=C1CCCN1.[CH]=CC(Cl)=[C-][CH-2].[Pt+3]",
+        "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1878,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 9,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 20,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C14H17ClN3O4-",
+      "output_formula": "C14H17ClN3O4-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+        "[CH2-]C(=O)NC(Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+        "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+        "[CH2-]C(=O)NC(Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+        "CC(=O)N[C-](Cc1ccccc1)C(=O)NNC(=O)OCCCl",
+        "[CH2-]C(=O)NC(Cc1ccccc1)C(=O)NNC(=O)OCCCl"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 1890,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 2,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 5,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 7,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C17H18N5O3-",
+      "output_formula": "C17H18N5O3-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC(=O)NC1=[C-]C=C=C=C1.Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C",
+        "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1",
+        "CC(=O)NC1=[C-]C=C=C=C1.Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C",
+        "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1",
+        "CC(=O)NC1=[C-]C=C=C=C1.Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C",
+        "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2003,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C13H18ClN2O5Zn",
+      "output_formula": "C13H18ClN2O5Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CO[C-2]C(=CC1=COC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+        "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+        "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+        "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+        "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+        "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2025,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 7,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 8,
+          "element": "O",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C3H12FeN2NaO5P",
+      "output_formula": "C3H11FeN2NaO5P",
+      "formula_preserved": false,
+      "rdkit_formula_preserved": false,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+        "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]",
+        "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]",
+        "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]",
+        "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]",
+        "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2069,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C28H36N2O5PtS",
+      "output_formula": "C28H36N2O5PtS",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H](C=O)NC=O.[Pt+]",
+        "CC(C)C[CH-]C(=O)OC(Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+        "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+        "CC(C)C[CH-]C(=O)OC(Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+        "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+        "CC(C)C[CH-]C(=O)OC(Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2076,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 7,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 18,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C18H24N-",
+      "output_formula": "C18H24N-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+        "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2130,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C20H14FNO2Pt",
+      "output_formula": "C20H14FNO2Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH-2]C=CC=CC=CC=Cc1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+        "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+        "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+        "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+        "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+        "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2178,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C24H25Cl2N4O2Zn+3",
+      "output_formula": "C24H25Cl2N4O2Zn+3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=CNc1c(Cl)cccc1Cl)=C2.[Zn+:23]",
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+        "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 3,
+      "chematic_serialized_radical_electrons": 6,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2203,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 6,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 7,
+          "element": "O",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H27NO5Pt",
+      "output_formula": "C20H26NO5Pt",
+      "formula_preserved": false,
+      "rdkit_formula_preserved": false,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+        "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+        "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+        "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+        "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+        "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2576,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C37H33ClFeN5O6S2",
+      "output_formula": "C37H33ClFeN5O6S2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH-2]C(=CC=COS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+        "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+        "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+        "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+        "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+        "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2598,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C21H14FFeNO2",
+      "output_formula": "C21H14FFeNO2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH]=CC(F)=CC=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+        "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+        "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+        "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+        "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+        "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2602,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C9H15FeNO4P",
+      "output_formula": "C9H15FeNO4P",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]",
+        "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+        "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+        "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+        "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+        "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2677,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 5,
+          "element": "O",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        },
+        {
+          "atom": 11,
+          "element": "N",
+          "chematic_charge_h": [
+            1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C12H15N5O3",
+      "output_formula": "C12H15N5O3",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": false,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "Cc1cn2c(=O)c3c(nc2n1)n(COCCO)cn3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(COCCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(COCCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(COCCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(COCCO)CN3C",
+        "CC1CN2C(=O)C3C(NC2N1)N(COCCO)CN3C"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2787,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C15H18N5O3Zn",
+      "output_formula": "C15H18N5O3Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COc1cc[c]([Zn+])c(C(=CC(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+        "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+        "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+        "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+        "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+        "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 2855,
+      "recorded_category": "metal_charge_assignment",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C21H24ClCuN3O2P",
+      "output_formula": "C21H24ClCuN3O2P",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": true,
+      "rdkit_six_cleanup_strings": [
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+        "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 2909,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 14,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C24H28N7O-",
+      "output_formula": "C24H28N7O-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CCCCc1cn(CCCC)c(=O)n1[CH-]c1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+        "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+        "CCCCc1cn(CCCC)c(=O)n1[CH-]c1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+        "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+        "CCCCc1cn(CCCC)c(=O)n1[CH-]c1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+        "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3153,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        },
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1C[15C](=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)OC(C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1C[15C](=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)OC(C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1C[15C](=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3154,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        },
+        {
+          "atom": 11,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H16N2O6Zn+",
+      "output_formula": "C20H16N2O6Zn+",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "Cc1oc(C2=C[C+]=CO2)nc1[CH-]COc1ccc(CC2OC(=O)NC2=O)cc1.[Zn+]",
+        "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[C-]2OC(=O)NC2=O)cc1.[Zn+]",
+        "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+        "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+        "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+        "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3207,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 9,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 21,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C43H55BrN10O6Zn+2",
+      "output_formula": "C43H55BrN10O6Zn+2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CCCCC(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C-](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+        "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)C(N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+        "CCCCC(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C-](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+        "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)C(N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+        "CCCCC(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C-](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+        "CCC[CH-]C(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)C(N)CCC[N+2]=C(N)N.[O-2].[Zn+4]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3369,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H18FeNO",
+      "output_formula": "C19H18FeNO",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "C=Cc1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+        "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+        "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+        "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+        "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+        "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 3,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 3501,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H20ClF2FeN3O",
+      "output_formula": "C19H20ClF2FeN3O",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=CO.[CH2-]N(CC)CC.[Fe+3]",
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+        "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 3504,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 13,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C21H20CuNO6",
+      "output_formula": "C21H20CuNO6",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COc1c2c(cc3c1-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)C[CH-]3)[O:12]CO2.[Cu+]",
+        "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]",
+        "COc1c2c(cc3c1-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)C[CH-]3)[O:12]CO2.[Cu+]",
+        "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]",
+        "COc1c2c(cc3c1-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)C[CH-]3)[O:12]CO2.[Cu+]",
+        "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3590,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C22H20NO2Pt",
+      "output_formula": "C22H20NO2Pt",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH-2]C(O)=CC=Cc1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+        "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+        "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+        "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+        "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+        "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 3700,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 0,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 24,
+          "element": "N",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C20H19N5O2Zn",
+      "output_formula": "C20H19N5O2Zn",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1.C[NH-]",
+        "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1",
+        "CC(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1.C[NH-]",
+        "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1",
+        "CC(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1.C[NH-]",
+        "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3720,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C19H31FeN3O2",
+      "output_formula": "C19H31FeN3O2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COc1ccccc1N1CCN(CCCCNC=O)CC1.[CH2-]CC.[Fe+]",
+        "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+        "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+        "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+        "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+        "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 2,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 3849,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 16,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            1
+          ],
+          "rdkit_charge_h": [
+            0,
+            2
+          ]
+        },
+        {
+          "atom": 17,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            3
+          ],
+          "rdkit_charge_h": [
+            -1,
+            2
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C22H26CuN2O2",
+      "output_formula": "C22H26CuN2O2",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "[CH2-]CC(=O)NC=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+        "[CH2-][CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc(CN2CCCCC2)cc1",
+        "[CH2-]CC(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+        "[CH2-][CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc(CN2CCCCC2)cc1",
+        "[CH2-]CC(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+        "[CH2-][CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc(CN2CCCCC2)cc1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 3910,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": true,
+      "bond_isotope_graph_isomorphic": true,
+      "same_after_rdkit_sanitize": true,
+      "input_formula": "C16H16CuN2O5S",
+      "output_formula": "C16H16CuN2O5S",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COC=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+        "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+        "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+        "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+        "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+        "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": true,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "representation_difference_after_sanitize"
+    },
+    {
+      "index": 4023,
+      "recorded_category": "acid_base_reionization",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 1,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            1
+          ],
+          "rdkit_charge_h": [
+            -1,
+            0
+          ]
+        },
+        {
+          "atom": 4,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            0
+          ],
+          "rdkit_charge_h": [
+            0,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C23H32NO7-",
+      "output_formula": "C23H32NO7-",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1CC(=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)OC(C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1CC(=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)OC(C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+        "COCO[C@@H]1CC(=O)OCC(C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 0,
+      "assessment": "chemical_difference"
+    },
+    {
+      "index": 4027,
+      "recorded_category": "metal_disconnection_policy",
+      "output_matches_published_record": true,
+      "charge_or_h_differences": [
+        {
+          "atom": 3,
+          "element": "C",
+          "chematic_charge_h": [
+            -1,
+            2
+          ],
+          "rdkit_charge_h": [
+            0,
+            3
+          ]
+        },
+        {
+          "atom": 20,
+          "element": "C",
+          "chematic_charge_h": [
+            0,
+            2
+          ],
+          "rdkit_charge_h": [
+            -1,
+            1
+          ]
+        }
+      ],
+      "chematic_only_bonds": [],
+      "rdkit_only_bonds": [],
+      "charge_h_connectivity_isomorphic": false,
+      "bond_isotope_graph_isomorphic": null,
+      "same_after_rdkit_sanitize": null,
+      "input_formula": "C16H18FeNO2S",
+      "output_formula": "C16H18FeNO2S",
+      "formula_preserved": true,
+      "rdkit_formula_preserved": true,
+      "rdkit_serialization_reparseable": true,
+      "chematic_second_cleanup_matches": true,
+      "rdkit_second_cleanup_matches": false,
+      "rdkit_six_cleanup_strings": [
+        "CC1CC1.CC[C-](C=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+        "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+        "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+        "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+        "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+        "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]"
+      ],
+      "rdkit_second_cleanup_matches_reparsed_chematic": false,
+      "rdkit_in_memory_radical_electrons": 0,
+      "chematic_serialized_radical_electrons": 1,
+      "assessment": "chemical_difference"
+    }
+  ]
+}
