@@ -1,8 +1,8 @@
 {
-  "candidate_commit": "c92f5010af59193e8d3fcb1b4041e151be7b334b",
+  "candidate_commit": "e77e24fcb3f97175554bc9d323d1a6773679966d",
   "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
   "rdkit_version": "2026.09.1",
-  "wheel_sha256": "5f059b2afaf282754b3eeaa3980f4c6e921a02d4b04968fdb17ee367612a34ab",
+  "wheel_sha256": "2c05a7abb4f63a45e1f319a48a63dfd4bc1e91d8d9302dde11bc9c8b4988b323",
   "installed_package_files_verified": 44,
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
   "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
@@ -106,18 +106,10 @@
     {
       "index": 1294,
       "input_formula": "C6H13N5SSn",
-      "output_formula": "C6H13N5SSn",
-      "reparsed_formula": "C6H13N5SSn",
-      "repeated_formula": "C6H13N5SSn",
-      "formal_charges": [
-        0,
-        0,
-        0,
-        0
-      ],
-      "rdkit_input_formula": "C6H13N5SSn",
-      "rdkit_output_formula": "C6H12N5SSn",
-      "output": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]"
+      "refused": {
+        "category": "ambiguous",
+        "code": "cleanup_metal_hydrogen"
+      }
     },
     {
       "index": 1366,
