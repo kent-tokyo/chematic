@@ -170,6 +170,20 @@ fn write_eps_labels(
             point.y - 4.0,
             escape_ps(&label),
         ));
+        // The condensed label has no charge: raise it after the label in a smaller size,
+        // magnitude first ("2+"), then restore the label font.
+        if atom.charge != 0 {
+            let magnitude = atom.charge.unsigned_abs();
+            let sign = if atom.charge > 0 { '+' } else { '-' };
+            let charge = if magnitude > 1 {
+                format!("{magnitude}{sign}")
+            } else {
+                sign.to_string()
+            };
+            out.push_str("/Helvetica findfont 8 scalefont setfont\n");
+            out.push_str(&format!("0 5 rmoveto ({charge}) show\n"));
+            out.push_str("/Helvetica findfont 12 scalefont setfont\n");
+        }
     }
 }
 
@@ -497,5 +511,31 @@ mod tests {
         assert!(eps.contains("(C) show"));
         assert!(eps.contains("20.00 58.00 moveto 51.00 58.00 lineto"));
         assert!(eps.contains("69.00 58.00 moveto 100.00 58.00 lineto"));
+    }
+
+    #[test]
+    fn eps_charges_are_raised_after_the_label() {
+        for (smiles, label, charge) in [
+            ("CC(=O)[O-]", "(O) show", "(-) show"),
+            ("C[NH3+]", "(NH3) show", "(+) show"),
+            ("C[S+2]C", "(S) show", "(2+) show"),
+            ("[Na+].[Cl-]", "(Cl) show", "(-) show"),
+        ] {
+            let m = mol(smiles);
+            let eps = render_eps(&m, &compute_layout(&m));
+            let raised = format!(
+                "{label}\n/Helvetica findfont 8 scalefont setfont\n0 5 rmoveto {charge}\n\
+                 /Helvetica findfont 12 scalefont setfont\n"
+            );
+            assert!(eps.contains(&raised), "{smiles}: {eps}");
+        }
+    }
+
+    #[test]
+    fn eps_neutral_labels_are_unchanged() {
+        let m = mol("OCC");
+        let eps = render_eps(&m, &compute_layout(&m));
+        assert!(eps.contains("(OH) show\n"), "{eps}");
+        assert!(!eps.contains("rmoveto"), "{eps}");
     }
 }
