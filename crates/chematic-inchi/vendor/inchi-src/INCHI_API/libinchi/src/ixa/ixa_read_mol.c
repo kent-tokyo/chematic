@@ -151,7 +151,7 @@ void INCHI_DECL IXA_MOL_ReadMolfile(IXA_STATUS_HANDLE hStatus,
         {
             if (!err)
             {
-                STATUS_PushMessage( hStatus, IXA_STATUS_WARNING, error_string );
+                STATUS_PushMessage( hStatus, IXA_STATUS_WARNING, "%s", error_string );
             }
         }
     }
