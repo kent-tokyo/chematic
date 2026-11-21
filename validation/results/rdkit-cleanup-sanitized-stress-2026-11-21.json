@@ -1,7 +1,7 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
   "detail_scope": "all",
-  "source_commit": "5d6d830e8edd6166ee83588ee9226eb2e0ac8fde",
+  "source_commit": "ef8dc7702aa40773f317417d85790915641552d9",
   "source_sha256": {
     "crates/chematic-chem/src/standardize.rs": "7b55e01acda12d0b0e68b84a6e7a6dab1845f00a44de849369bf7b4e9590a2c8",
     "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
@@ -16,7 +16,7 @@
     "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
     "crates/chematic-smiles/src/rdkit/mod.rs": "5e83f8039e4384679e908c39b90c4c27899c9b9459d44ac922d0d048bd3da817",
     "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "ba475b91bbfbd5e7a59b88a76f97e354833a619e37e0616e1df0eb7563249ca3",
-    "scripts/rdkit_cleanup_source_gate.py": "e5fc8bc6da46b682c8d6838129be76ac5e9fd24d90610dc394ee6cf78090df05"
+    "scripts/rdkit_cleanup_source_gate.py": "feb13facdce55a4fcb753669d05e232ad37af0dedf21475949a7c6de30a01e96"
   },
   "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
   "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
@@ -35,6 +35,10 @@
     "acid_base_reionization": 15,
     "metal_charge_assignment": 2,
     "metal_disconnection_policy": 30
+  },
+  "semantic_classification_counts": {
+    "different_after_sanitization": 31,
+    "representation_after_sanitization": 16
   },
   "sanitized_equivalent_mismatches": 16,
   "sanitization_unavailable_mismatches": 0,
@@ -83,7 +87,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 83,
@@ -93,7 +98,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 101,
@@ -103,7 +109,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 403,
@@ -113,7 +120,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 809,
@@ -123,7 +131,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 911,
@@ -133,7 +142,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1366,
@@ -143,7 +153,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1432,
@@ -153,7 +164,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1437,
@@ -163,7 +175,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1471,
@@ -173,7 +186,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1497,
@@ -183,7 +197,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1577,
@@ -193,7 +208,8 @@
       "source_error": null,
       "classification": "metal_charge_assignment",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1630,
@@ -203,7 +219,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1664,
@@ -213,7 +230,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1781,
@@ -223,7 +241,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 1831,
@@ -233,7 +252,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 1854,
@@ -243,7 +263,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1875,
@@ -253,7 +274,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1878,
@@ -263,7 +285,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 1890,
@@ -273,7 +296,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 2003,
@@ -283,7 +307,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2025,
@@ -293,7 +318,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2069,
@@ -303,7 +329,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2076,
@@ -313,7 +340,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 2130,
@@ -323,7 +351,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2178,
@@ -333,7 +362,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2203,
@@ -343,7 +373,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 2576,
@@ -353,7 +384,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2598,
@@ -363,7 +395,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2602,
@@ -373,7 +406,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2677,
@@ -383,7 +417,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 2787,
@@ -393,7 +428,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 2855,
@@ -403,7 +439,8 @@
       "source_error": null,
       "classification": "metal_charge_assignment",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 2909,
@@ -413,7 +450,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3153,
@@ -423,7 +461,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3154,
@@ -433,7 +472,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3207,
@@ -443,7 +483,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3369,
@@ -453,7 +494,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 3501,
@@ -463,7 +505,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 3504,
@@ -473,7 +516,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3590,
@@ -483,7 +527,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 3700,
@@ -493,7 +538,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3720,
@@ -503,7 +549,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 3849,
@@ -513,7 +560,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 3910,
@@ -523,7 +571,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     },
     {
       "index": 4023,
@@ -533,7 +582,8 @@
       "source_error": null,
       "classification": "acid_base_reionization",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 4027,
@@ -543,7 +593,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     }
   ],
   "baseline_comparison": {

@@ -1,7 +1,7 @@
 {
   "profile": "source_cleanup_vs_rdkit_2026_09_1",
   "detail_scope": "all",
-  "source_commit": "5d6d830e8edd6166ee83588ee9226eb2e0ac8fde",
+  "source_commit": "ef8dc7702aa40773f317417d85790915641552d9",
   "source_sha256": {
     "crates/chematic-chem/src/standardize.rs": "7b55e01acda12d0b0e68b84a6e7a6dab1845f00a44de849369bf7b4e9590a2c8",
     "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
@@ -16,7 +16,7 @@
     "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
     "crates/chematic-smiles/src/rdkit/mod.rs": "5e83f8039e4384679e908c39b90c4c27899c9b9459d44ac922d0d048bd3da817",
     "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "ba475b91bbfbd5e7a59b88a76f97e354833a619e37e0616e1df0eb7563249ca3",
-    "scripts/rdkit_cleanup_source_gate.py": "e5fc8bc6da46b682c8d6838129be76ac5e9fd24d90610dc394ee6cf78090df05"
+    "scripts/rdkit_cleanup_source_gate.py": "feb13facdce55a4fcb753669d05e232ad37af0dedf21475949a7c6de30a01e96"
   },
   "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
   "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
@@ -34,6 +34,10 @@
   "classification_counts": {
     "canonical_representation": 1,
     "metal_disconnection_policy": 3
+  },
+  "semantic_classification_counts": {
+    "different_after_sanitization": 3,
+    "representation_after_sanitization": 1
   },
   "sanitized_equivalent_mismatches": 1,
   "sanitization_unavailable_mismatches": 0,
@@ -63,7 +67,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 7850,
@@ -73,7 +78,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 8341,
@@ -83,7 +89,8 @@
       "source_error": null,
       "classification": "metal_disconnection_policy",
       "support_status": "not_implemented",
-      "equivalent_after_sanitization": false
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
     },
     {
       "index": 8791,
@@ -93,7 +100,8 @@
       "source_error": null,
       "classification": "canonical_representation",
       "support_status": "representation_only",
-      "equivalent_after_sanitization": true
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
     }
   ],
   "baseline_comparison": {
