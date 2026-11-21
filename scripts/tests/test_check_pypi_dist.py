@@ -33,6 +33,27 @@ class DistributionTests(unittest.TestCase):
     def test_complete_matrix(self):
         check_layout(self.names, "1.2.3")
 
+    def test_complete_matrix_with_legacy_tag_first(self):
+        names = {
+            name.replace(
+                "manylinux_2_17_x86_64.manylinux2014_x86_64",
+                "manylinux2014_x86_64.manylinux_2_17_x86_64",
+            ).replace(
+                "manylinux_2_17_aarch64.manylinux2014_aarch64",
+                "manylinux2014_aarch64.manylinux_2_17_aarch64",
+            )
+            for name in self.names
+        }
+        check_layout(names, "1.2.3")
+
+    def test_mixed_linux_architectures_fail(self):
+        names = {
+            name.replace("manylinux2014_x86_64", "manylinux2014_aarch64")
+            for name in self.names
+        }
+        with self.assertRaisesRegex(ValueError, "unexpected wheel platform"):
+            check_layout(names, "1.2.3")
+
     def test_missing_wheel_fails(self):
         self.names.remove("chematic-1.2.3-cp39-cp39-win_amd64.whl")
         with self.assertRaisesRegex(ValueError, "missing"):
