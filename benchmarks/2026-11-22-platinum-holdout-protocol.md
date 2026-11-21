@@ -578,6 +578,36 @@ A development-only comparison is configured for the 225 round-two development
 records, plus a Linux reproduction of the exposed Prime stereo discrepancy.
 No round-two holdout conformer outcome has been inspected.
 
+The [Linux round-two development run](https://github.com/kent-tokyo/chematic/actions/runs/44936872973)
+completed all 225 selected records with the silicon-corrected, pre-stereo-fix
+wheel. Atomic-number, formal-charge and aromaticity identity matched on all
+225; no isotopic atoms occurred. Both engines constructed MMFF for 212 and
+neither did for 13. At 20 attempted candidates, with all 225 records in the
+denominator, chematic and RDKit recovered 161 and 163 references; the paired
+molecule bootstrap 95% interval for the difference was −4.00 to +2.22
+percentage points. This development result is not a holdout noninferiority
+claim. Lowest-energy recovery was 104 and 109. Of 4,180 minimized candidates
+per engine, the stereo checker reported violations for 40 chematic and 38
+RDKit candidates, all on the same two records and all with unfinished status.
+The two input formal charges were −51 and −2; these records are retained in
+the reported counts. The raw RDKit embedded candidates had no reported
+stereo violations; this profile did not collect raw chematic candidates.
+Source hashes of the uncompressed row, support and atom-identity files are
+`5b58fa73ade8a92ce14b0d0253e1dbfd11ba6f4e52f73cdd0a98b186dc08770f`,
+`53626b44dbcda1832f4744a42100fd92d59579f2b50d212d7cf43df1ea8e20c1`, and
+`8860ef9ceaada101a93eae60fe95493193bfccf4cae6bfb7f01b3ea79b3cc202`.
+Compressed evidence is retained as `validation/results/cod-linux-development-v2-*`.
+
+A retrospective SMILES-direction audit on those 225 development records
+identified 12 with an unspecified double bond adjacent to a directional bond
+already used by a different specified alkene. The unmodified stereo verifier
+reported an ambiguous direction for two inspected examples. A development
+regression fixture records all 12 structures and the number of specified E/Z
+bonds assigned by RDKit 2026.09.2; after the marker attribution change, the
+macOS Rust test matches those counts without unsupported entries. The fixture
+is development evidence, not an independent holdout or a complete stereo
+validation of the dataset.
+
 The macOS arm64 Python 3.12 wheel from the same merge commit has SHA-256
 `b5c01642b5c545835071dedc808ad0d930865512444dd0f3b80e58c7d43b0201`.
 The [independent Linux stereo diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44937409465)

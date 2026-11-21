@@ -1,0 +1,66 @@
+{
+  "rdkit_version": "2026.09.2",
+  "source": "COD round-two development only; exposed by retrospective marker audit",
+  "records": [
+    {
+      "name": "CMPQNZZRSNMSMH-KTKRTIGZSA-N",
+      "smiles": "COc1ccccc1N/C=C1/C=CC=C(O)C1=O",
+      "specified_ez": 1
+    },
+    {
+      "name": "ABKDXIYJQRMYNG-VYBSGOCRSA-N",
+      "smiles": "Cc1cc(C)c(/C=C2\\C=C[C@@H]3[C@H]2[C@@H]2C=C[C@H]3/C2=C\\c2c(C)cc(C)cc2C)c(C)c1",
+      "specified_ez": 2
+    },
+    {
+      "name": "UHBUBCWWLNJEEE-ZIAGYGMSSA-N",
+      "smiles": "O=C1ON=[N+](c2ccccc2)/C1=C(\\[O-])[C@H](Br)[C@H](Br)c1cccc(Br)c1",
+      "specified_ez": 1
+    },
+    {
+      "name": "MOQJHNIJINTAAG-BUHFOSPRSA-N",
+      "smiles": "COP(=O)(OC)O/C(=C1/C=C(Cl)c2ccccc2O1)P(=O)(OC)OC",
+      "specified_ez": 1
+    },
+    {
+      "name": "JPKSCJWNNGGDNT-HJWRWDBZSA-N",
+      "smiles": "O=C1C=CC(Br)=C/C1=C/Nc1ccccc1O",
+      "specified_ez": 1
+    },
+    {
+      "name": "XBCLPIZRCOLFQD-PHQQIBHTSA-L",
+      "smiles": "[C-3]O/[C-]=C(\\C(=O)C(=O)C(=O)N=C=C=C([C-3])c1nc([C-]=C=C=C2O[C@@]3([C-2]C(=O)C2=[C-2])O[C-](/C(=[C-]/C(=O)C(=[C-2])C(=O)C([C-3])=C=C([C-3])/C([C-3])=[C-]/[C-]=[C-]/C([C-3])=[C-]\\C#N)O[C-3])[C-](OP(=O)([O-])[O-])C3([C-3])[C-3])[c-]o1)N([C-3])[C-3]",
+      "specified_ez": 5
+    },
+    {
+      "name": "CCGODZVWUBQVFP-MFOYZWKCSA-O",
+      "smiles": "CCc1c(C)[nH]c(/C=C2\\[NH+]=C(c3ccc[nH]3)C=C2OC)c1C",
+      "specified_ez": 1
+    },
+    {
+      "name": "SQFOJKFNHSLNDZ-QBFSEMIESA-N",
+      "smiles": "C=CCC1=C/C(=C/Nc2ccccc2O)C(=O)C(OC)=C1",
+      "specified_ez": 1
+    },
+    {
+      "name": "ORSRONZWNRLSKD-LCYFTJDESA-O",
+      "smiles": "O/N=C(\\C1=[NH+]CCN1)c1ccccc1",
+      "specified_ez": 1
+    },
+    {
+      "name": "AHQHCBSSWHHYMC-UHFFFAOYSA-N",
+      "smiles": "CC1=C/C(=C2/C(=O)C([c-]3cc(C)c4cc(C(C)C)cc[c+](C)c43)=C2[O-])c2c(C)ccc(C(C)C)c[c+]21",
+      "specified_ez": 1
+    },
+    {
+      "name": "XMJHQAAGTACWAR-HJWRWDBZSA-N",
+      "smiles": "O=C1C=C(O)C=C/C1=C/Nc1cccc([N+](=O)[O-])c1",
+      "specified_ez": 1
+    },
+    {
+      "name": "BKZPUPCTBJPXJJ-HJWRWDBZSA-N",
+      "smiles": "COC1=C/C(=C/Nc2cc(Cl)ccc2O)C(=O)C=C1",
+      "specified_ez": 1
+    }
+  ]
+}

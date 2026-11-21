@@ -942,6 +942,26 @@ mod tests {
     }
 
     #[test]
+    fn constraint_set_cod_adjacent_marker_development_corpus() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/cod-adjacent-stereo-development.json"
+        ))
+        .unwrap();
+        assert_eq!(fixture["rdkit_version"], "2026.09.2");
+        let records = fixture["records"].as_array().unwrap();
+        assert_eq!(records.len(), 12);
+        for record in records {
+            let smiles = record["smiles"].as_str().unwrap();
+            let name = record["name"].as_str().unwrap();
+            let expected = record["specified_ez"].as_u64().unwrap() as usize;
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), expected, "{name}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{name}: {set:?}");
+        }
+    }
+
+    #[test]
     fn constraint_set_no_declared_stereo_is_empty_not_unsupported() {
         // Plain, fully unmarked molecule: must produce an empty set outright, not
         // a set full of `unsupported` entries -- "not declared" and "declared but
