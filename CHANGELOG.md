@@ -17,6 +17,7 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - Return an explicit ambiguity error from Cleanup when a cut metal bond leaves a metal hydrogen change unaccounted for.
 - Reject a detached neutral metal when another Cleanup would change its charge.
 - Reject metal-bound tetrahedral stereo with five declared ligands, which cannot be represented reliably by the current Cleanup writer.
+- EPS export draws formal charges, raised after the atom label (O⁻, NH₃⁺, S²⁺); they were left out before.
 
 ### Changed
 
