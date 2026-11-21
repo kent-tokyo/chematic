@@ -59,6 +59,19 @@ class PublishedMcsTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "installed file differs"):
                 bench.verify_wheel("v122", wheel_dir, installed.parent)
 
+    def test_verify_wheel_pins_the_requested_cosmolkit_version(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            installed = root / "cosmolkit"
+            installed.mkdir()
+            (installed / "__init__.py").write_bytes(b"new")
+            for version, content in (("0.6.2", b"old"), ("0.6.3", b"new")):
+                with zipfile.ZipFile(root / f"cosmolkit-{version}-test.whl", "w") as archive:
+                    archive.writestr("cosmolkit/__init__.py", content)
+            self.assertIn("0.6.3", bench.verify_wheel("cosmolkit", root, root, "0.6.3")["filename"])
+            with self.assertRaisesRegex(ValueError, "installed file differs"):
+                bench.verify_wheel("cosmolkit", root, root, "0.6.2")
+
 
 if __name__ == "__main__":
     unittest.main()

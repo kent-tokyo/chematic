@@ -32,8 +32,10 @@ VERSIONS = {"v120": ("chematic", "1.2.0"), "v121": ("chematic", "1.2.1"),
             "cosmolkit": ("cosmolkit", "0.6.2")}
 
 
-def verify_wheel(arm, wheel_dir, installed_root):
+def verify_wheel(arm, wheel_dir, installed_root, version_override=None):
     package, version = VERSIONS[arm]
+    if version_override is not None:
+        version = version_override
     wheels = list(wheel_dir.glob(f"{package}-{version}-*.whl"))
     if len(wheels) != 1:
         raise ValueError(f"expected one {package} {version} wheel, found {len(wheels)}")
@@ -137,6 +139,8 @@ def main():
     parser.add_argument("--wheel-dir", type=Path)
     parser.add_argument("--v122-smarts", action="store_true")
     parser.add_argument("--uniform-smarts", action="store_true")
+    parser.add_argument("--cosmolkit-path", type=Path, help="isolated installed COSMolKit package root")
+    parser.add_argument("--cosmolkit-version", default="0.6.2", help="wheel version for the COSMolKit arm")
     for arm in ARMS[:3]:
         parser.add_argument(f"--{arm}-path", type=Path)
     args = parser.parse_args()
@@ -157,14 +161,15 @@ def main():
             parser.error("wheel directory is required for measurement")
         verified = {}
         for arm in ARMS:
-            if arm.startswith("v"):
+            if arm.startswith("v") or (arm == "cosmolkit" and args.cosmolkit_path is not None):
                 root = getattr(args, f"{arm}_path")
             else:
                 spec = importlib.util.find_spec(arm)
                 if spec is None or spec.origin is None:
                     raise ValueError(f"cannot locate {arm}")
                 root = Path(spec.origin).parent.parent
-            verified[arm] = verify_wheel(arm, args.wheel_dir, root)
+            verified[arm] = verify_wheel(arm, args.wheel_dir, root,
+                                         args.cosmolkit_version if arm == "cosmolkit" else None)
         report["wheel_verification"] = verified
     for index in range(0 if args.validate_only else args.blocks):
         order = ARMS[index % len(ARMS):] + ARMS[:index % len(ARMS)]
@@ -183,6 +188,8 @@ def main():
             result = subprocess.run(command, env=env,
                                     text=True, capture_output=True, timeout=120, check=True)
             block[arm] = json.loads(result.stdout)
+            if arm == "cosmolkit" and block[arm]["version"] != args.cosmolkit_version:
+                raise ValueError("COSMolKit version differs from the verified wheel")
         report["blocks"].append(block)
         args.output.write_text(json.dumps(report, indent=2) + "\n")
         print(f"block {index + 1}/{args.blocks}", flush=True)
