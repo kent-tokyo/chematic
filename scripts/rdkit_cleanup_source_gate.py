@@ -210,6 +210,15 @@ def main() -> None:
             )
             cleanup_classes[classification] += 1
             cleanup_statuses[support_status] += 1
+            equivalent = equivalent_after_sanitization(oracle_cleanup, actual)
+            if source_error is not None:
+                semantic_classification = "source_error"
+            elif equivalent is True:
+                semantic_classification = "representation_after_sanitization"
+            elif equivalent is False:
+                semantic_classification = "different_after_sanitization"
+            else:
+                semantic_classification = "unclassified"
             mismatches.append({
                 "index": index,
                 "input": input_text,
@@ -218,7 +227,8 @@ def main() -> None:
                 "source_error": source_error,
                 "classification": classification,
                 "support_status": support_status,
-                "equivalent_after_sanitization": equivalent_after_sanitization(oracle_cleanup, actual),
+                "equivalent_after_sanitization": equivalent,
+                "semantic_classification": semantic_classification,
             })
         if index not in reionize_compatible:
             pass
@@ -350,6 +360,9 @@ def main() -> None:
         "normalize_mismatches": None if args.cleanup_only else normalize_mismatches,
         "exact_rows": len(exact),
         "classification_counts": dict(sorted(cleanup_classes.items())),
+        "semantic_classification_counts": dict(sorted(Counter(
+            row["semantic_classification"] for row in mismatches
+        ).items())),
         "sanitized_equivalent_mismatches": sum(
             row["equivalent_after_sanitization"] is True for row in mismatches
         ),

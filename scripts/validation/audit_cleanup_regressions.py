@@ -78,7 +78,12 @@ def main():
         oracle_reparsed = Chem.MolFromSmiles(oracle_text)
         source_reparsed = Chem.MolFromSmiles(case["chematic_cleanup"])
         source_second = source.cleanup().rdkit_smiles
-        oracle_second = Chem.MolToSmiles(rdMolStandardize.Cleanup(oracle), canonical=True, isomericSmiles=True)
+        oracle_iterations = [oracle_text]
+        current_oracle = oracle
+        for _ in range(5):
+            current_oracle = rdMolStandardize.Cleanup(current_oracle)
+            oracle_iterations.append(Chem.MolToSmiles(current_oracle, canonical=True, isomericSmiles=True))
+        oracle_second = oracle_iterations[1]
         sanitized_equal = None
         if isomorphic and source_reparsed is not None:
             sanitized_oracle = Chem.Mol(oracle)
@@ -125,6 +130,7 @@ def main():
                      "rdkit_serialization_reparseable": oracle_reparsed is not None,
                      "chematic_second_cleanup_matches": source_second == source.rdkit_smiles,
                      "rdkit_second_cleanup_matches": oracle_second == oracle_text,
+                     "rdkit_six_cleanup_strings": oracle_iterations,
                      "rdkit_second_cleanup_matches_reparsed_chematic": (
                          None if source_reparsed is None else
                          oracle_second == Chem.MolToSmiles(source_reparsed, canonical=True, isomericSmiles=True)
