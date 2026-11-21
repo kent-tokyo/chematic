@@ -665,9 +665,24 @@ SHA-256 is `e0f95eb569e14a5f69df04b566acbe0e86b86832afa18da079eedff6a3e82a78`,
 and the macOS arm64 wheel SHA-256 is
 `1a952db5bd458a4072df4b92f617b818d45373be2a000d6cfd9aafe7bf771001`.
 The [225-record development rerun](https://github.com/kent-tokyo/chematic/actions/runs/44959301502)
-is in progress; the second COD holdout is not enabled while its quality
-result remains unknown. These wheels are source-built candidates, not
-published packages.
+completed. Atom identity matched all 225 records; both engines had MMFF
+parameters for 212 and neither for 13. Chematic returned 4,080 candidates,
+with no RDKit-detected specified-stereo violations; RDKit returned 4,180, with
+38 violations. Both recovery counts remained 160/163 out of 225; lowest-energy
+recovery was 103/109. The molecule-bootstrap interval for the former
+difference was −4.44 to +1.78 percentage points, so this development result
+does not establish noninferiority. Chematic returned no candidates for eight
+of the 212 supported inputs, including five for which RDKit returned 20 each;
+RDKit reported a `Bad Conformer Id` error on the other three. The same eight
+inputs had zero chematic candidates in the previous wheel's development run.
+The zero-violation count is therefore conditional on returned candidates and
+must not hide those generation failures.
+
+The uncompressed result SHA-256 is
+`7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
+The retained compressed result, support, and identity evidence is
+`validation/results/cod-linux-{development,support,identity}-v4-2026-11-22.json.gz`.
+These wheels are source-built candidates, not published packages.
 
 No conformer outcome from the 2,288 round-two holdout records has been
 inspected. After the stereo regression passes, freeze and fingerprint new
