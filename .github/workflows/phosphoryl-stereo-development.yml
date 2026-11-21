@@ -38,6 +38,8 @@ jobs:
               stereo=item.get('final_stereo') or {}
               assert not any(t.get('status') == 'unevaluable' for t in stereo.get('tetrahedral',[])), item
           PY
+      - name: Check generated phosphorus candidates with RDKit
+        run: python scripts/validation/phosphoryl_candidate_diagnostic.py
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
@@ -45,4 +47,5 @@ jobs:
           path: |
             phosphoryl-source-commit.txt
             cod-zero-candidates-diagnostic.json
+            phosphoryl-candidate-diagnostic.json
           if-no-files-found: warn
