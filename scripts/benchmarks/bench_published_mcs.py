@@ -16,6 +16,9 @@ import sys
 import time
 import zipfile
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from bench_corpus import paired_median_ratio_ci
+
 CASES = [
     ["c1ccccc1", "Cc1ccccc1"],
     ["C1CC1", "CCC"],
@@ -181,6 +184,24 @@ def main():
                           "first_ns_median": statistics.median(b[arm]["first_ns"][index] for b in report["blocks"]),
                           "repeat_ns_median": statistics.median(b[arm]["repeated_ns"][index] for b in report["blocks"])})
         report["case_summary"][arm] = cases
+    report["paired_repeated_search"] = {}
+    for arm in ARMS:
+        if arm == "v122":
+            continue
+        comparisons = []
+        for index in range(len(CASES)):
+            comparable = (report["case_summary"][arm][index]["passes_all_blocks"]
+                          and report["case_summary"]["v122"][index]["passes_all_blocks"])
+            interval = None
+            if comparable:
+                interval = paired_median_ratio_ci(
+                    [block[arm]["repeated_ns"][index] for block in report["blocks"]],
+                    [block["v122"]["repeated_ns"][index] for block in report["blocks"]],
+                    seed=index,
+                )
+            comparisons.append({"case": index, "comparable_by_counts_and_input_matches": comparable,
+                                "competitor_over_v122": interval})
+        report["paired_repeated_search"][arm] = comparisons
     report["protocol"] = {
         "order": f"{args.blocks} rotating blocks of five fresh processes",
         "timeout_seconds": 2,

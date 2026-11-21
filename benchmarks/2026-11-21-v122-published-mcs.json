@@ -9838,5 +9838,227 @@
       "sha256": "dd21176dfb15db1f92cdefc57f057ff38f3aa95b0d05e3d863182214849d0740",
       "installed_package_files_verified": 4
     }
+  },
+  "paired_repeated_search": {
+    "v120": [
+      {
+        "case": 0,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 1.491,
+          "ci95": [
+            1.319,
+            1.565
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 1,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      },
+      {
+        "case": 2,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 0.38,
+          "ci95": [
+            0.366,
+            0.407
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 3,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      },
+      {
+        "case": 4,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      }
+    ],
+    "v121": [
+      {
+        "case": 0,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 14.914,
+          "ci95": [
+            13.071,
+            15.393
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 1,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 3.761,
+          "ci95": [
+            3.605,
+            3.822
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 2,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 2.238,
+          "ci95": [
+            2.173,
+            2.261
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 3,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 2.139,
+          "ci95": [
+            2.123,
+            2.157
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 4,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      }
+    ],
+    "rdkit": [
+      {
+        "case": 0,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 2.558,
+          "ci95": [
+            2.324,
+            2.694
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 1,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 3.285,
+          "ci95": [
+            3.178,
+            3.436
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 2,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 0.632,
+          "ci95": [
+            0.613,
+            0.645
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 3,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 0.613,
+          "ci95": [
+            0.612,
+            0.618
+          ],
+          "winning_blocks": 0,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 4,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      }
+    ],
+    "cosmolkit": [
+      {
+        "case": 0,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 1.557,
+          "ci95": [
+            1.456,
+            1.657
+          ],
+          "winning_blocks": 19,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 1,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 2.124,
+          "ci95": [
+            2.054,
+            2.216
+          ],
+          "winning_blocks": 20,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 2,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 0.427,
+          "ci95": [
+            0.398,
+            0.436
+          ],
+          "winning_blocks": 1,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 3,
+        "comparable_by_counts_and_input_matches": true,
+        "competitor_over_v122": {
+          "median": 0.513,
+          "ci95": [
+            0.508,
+            0.521
+          ],
+          "winning_blocks": 1,
+          "blocks": 20
+        }
+      },
+      {
+        "case": 4,
+        "comparable_by_counts_and_input_matches": false,
+        "competitor_over_v122": null
+      }
+    ]
   }
 }
