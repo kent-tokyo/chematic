@@ -1,0 +1,39 @@
+{
+  "rows": 1606,
+  "row_errors": 1,
+  "fields": {
+    "MMFF94": {
+      "evaluated": 1605,
+      "rdkit_supported": 1605,
+      "chematic_supported": 1605,
+      "comparable": 1605,
+      "energy_absolute_error_p95": 1.1368683772161603e-13,
+      "energy_absolute_error_max": 309.35947749152183,
+      "gradient_absolute_error_p95": 1.2079226507921703e-13,
+      "gradient_absolute_error_max": 22.36643113937714,
+      "finite_difference_absolute_error_max": 0.35632513603337657
+    },
+    "MMFF94s": {
+      "evaluated": 1605,
+      "rdkit_supported": 1605,
+      "chematic_supported": 1605,
+      "comparable": 1605,
+      "energy_absolute_error_p95": 1.1368683772161603e-13,
+      "energy_absolute_error_max": 309.35947749152183,
+      "gradient_absolute_error_p95": 1.2079226507921703e-13,
+      "gradient_absolute_error_max": 22.36643113937714,
+      "finite_difference_absolute_error_max": 0.44225991365779826
+    },
+    "UFF": {
+      "evaluated": 1605,
+      "rdkit_supported": 1605,
+      "chematic_supported": 1605,
+      "comparable": 1605,
+      "energy_absolute_error_p95": 1.7053025658242404e-13,
+      "energy_absolute_error_max": 6.707523425575346e-12,
+      "gradient_absolute_error_p95": 1.5498713423767185e-13,
+      "gradient_absolute_error_max": 0.006288727628998458,
+      "finite_difference_absolute_error_max": 0.280416270138403
+    }
+  }
+}

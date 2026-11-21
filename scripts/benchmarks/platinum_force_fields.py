@@ -77,7 +77,11 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--development", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--checkpoint-every", type=int, default=1)
     args = parser.parse_args()
+    if args.checkpoint_every < 1:
+        parser.error("checkpoint-every must be positive")
     source = json.loads(args.development.read_text())
     output = {
         "development_sha256": hashlib.sha256(args.development.read_bytes()).hexdigest(),
@@ -87,7 +91,17 @@ def main():
         "seed": 42,
         "results": [],
     }
-    for row in source["results"]:
+    if args.resume:
+        existing = json.loads(args.output.read_text())
+        for key in ("development_sha256", "rdkit_version", "chematic_version", "platform", "seed"):
+            if existing[key] != output[key]:
+                parser.error(f"resume metadata differs: {key}")
+        previous = existing["results"]
+        expected_indices = [r["index"] for r in source["results"][:len(previous)]]
+        if [r["index"] for r in previous] != expected_indices:
+            parser.error("resume checkpoint does not match the input prefix")
+        output["results"] = previous
+    for row in source["results"][len(output["results"]):]:
         result = {"name": row["name"], "index": row["index"], "fields": {}}
         try:
             if "smiles" not in row:
@@ -110,9 +124,10 @@ def main():
         except Exception as exc:
             result["error"] = repr(exc)
         output["results"].append(result)
-        checkpoint = args.output.with_suffix(args.output.suffix + ".tmp")
-        checkpoint.write_text(json.dumps(output, allow_nan=False) + "\n")
-        checkpoint.replace(args.output)
+        if len(output["results"]) % args.checkpoint_every == 0 or len(output["results"]) == len(source["results"]):
+            checkpoint = args.output.with_suffix(args.output.suffix + ".tmp")
+            checkpoint.write_text(json.dumps(output, allow_nan=False) + "\n")
+            checkpoint.replace(args.output)
         print(row["name"], result.get("error", "ok"), flush=True)
 
 

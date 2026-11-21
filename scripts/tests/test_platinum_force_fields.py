@@ -1,4 +1,7 @@
+import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -11,6 +14,23 @@ from platinum_force_fields import compare
 
 
 class ForceFieldComparisonTest(unittest.TestCase):
+    def test_checkpoint_resume_rejects_a_different_input_prefix(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.json"
+            output = Path(directory) / "output.json"
+            source.write_text(json.dumps({"results": [{"index": 1, "name": "ethanol", "smiles": "CCO"}]}), encoding="utf-8")
+            script = Path(__file__).resolve().parents[1] / "benchmarks" / "platinum_force_fields.py"
+            command = [sys.executable, str(script), "--development", str(source), "--output", str(output)]
+            subprocess.run(command, check=True, capture_output=True)
+            before = json.loads(output.read_text(encoding="utf-8"))
+            subprocess.run(command + ["--resume", "--checkpoint-every", "50"], check=True, capture_output=True)
+            self.assertEqual(before, json.loads(output.read_text(encoding="utf-8")))
+            before["results"][0]["index"] = 999
+            output.write_text(json.dumps(before), encoding="utf-8")
+            result = subprocess.run(command + ["--resume"], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"input prefix", result.stderr)
+
     def test_common_coordinates_and_finite_differences(self):
         mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))
         self.assertEqual(AllChem.EmbedMolecule(mol, randomSeed=42), 0)

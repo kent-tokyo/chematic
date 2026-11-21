@@ -87,3 +87,36 @@ them. The 400-iteration retry and corrected embedding are opt-in APIs; these
 results do not represent the default compatibility API. This source-built
 wheel is not the already-published 1.2.2 wheel. Linux and published-package
 holdout evidence remain separate requirements.
+
+## Common-coordinate force-field follow-up
+
+Using the same source wheel, the holdout molecules were separately embedded
+by RDKit with seed 42, and MMFF94, MMFF94s and UFF were evaluated on the
+same explicit-H coordinates. This follow-up uses molecules already selected
+for RDKit MMFF support, so it is not an independent estimate of general
+parameter coverage. Of 1,606 molecules, 1,605 produced coordinates and
+all three fields were constructed for both engines; the remaining molecule
+was `840_3I8P_A`, for which RDKit embedding failed. The 95th percentile of
+absolute energy error was at most `1.71e-13 kcal/mol`, and that of individual
+gradient-component error was at most `1.55e-13 kcal/mol/Å`.
+
+The maximum MMFF94 and MMFF94s energy error was **309.36 kcal/mol**, on
+`PP9_1Z53_A`; the maximum component gradient error was 22.37 kcal/mol/Å.
+The error came entirely from electrostatics. The numeric atom types and all
+other force-field terms matched in the diagnostic. RDKit assigned the two
+type-76 nitrogen formal charges independently on their respective five-member
+rings; the candidate shared the charge across a larger ring. Their MMFF
+partial-charge totals were −6 and −5 respectively, although the molecule's
+input formal charge is −4. Substituting RDKit's partial charges into the
+candidate reproduced the RDKit energy and gradient at the measured geometry;
+this is a diagnostic override, not a correction or a claim that RDKit's
+charge total is physically correct. A general, validated ring-order fix is
+still required. Because this input has now been inspected, it cannot be used
+as untouched holdout evidence for changes made in response to it.
+
+Maximum UFF energy and gradient-component errors were `6.71e-12 kcal/mol`
+and `0.00629 kcal/mol/Å`. The raw per-record follow-up is
+`validation/results/platinum-holdout-macos-force-fields-2026-11-22.json.gz`
+(SHA-256 `2eb33a5e5c908e86e4e2fde743b33ee687aaf8c1ac611a0edee18ff9ca3340f0`);
+the adjacent JSON summary includes sampled finite-difference errors. The
+run resumed from a validated prefix after a disk-space interruption.
