@@ -2,6 +2,8 @@
 
 The measured packages are chematic 1.2.0, 1.2.1 and 1.2.2, RDKit 2026.9.2, and COSMolKit 0.6.2 on macOS arm64 with Python 3.13. Their wheel hashes and individual measurements are retained in the adjacent JSON files. Each block ran all five packages in a rotating order in fresh processes. Medians below describe this host and the specified inputs.
 
+The [registry verification](../validation/results/published-benchmark-wheel-registry-verification-2026-11-21.json) checks the exact filename and SHA-256 of all five measured wheels against their PyPI JSON entries and both timing records. It also rechecks the complete 26-file v1.2.2 PyPI hash set against the release evidence. The dated record retains the registry URLs and response hashes; CI checks the retained records for consistency without making live registry requests.
+
 For 1,000 rows of the pinned RDKit.js corpus, all packages produced identical TPSA, ring-count and Morgan-2/2048 results under the comparison tolerance recorded in the raw data. Twenty blocks completed. A disk-full interruption followed block 15; package extension hashes and output values were checked again before the last five blocks. Load averages changed during the run.
 
 | Package | TPSA with parse, ms | TPSA on fresh molecules, ms | TPSA after preparation, ms | Process peak, MiB |

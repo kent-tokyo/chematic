@@ -2,6 +2,8 @@
 
 The fixed stress corpus, RDKit 2026.09.1 and v1.2.2 source dump reproduce 4,022 exact Cleanup strings among 4,069 compatible rows. The 47 previously exact rows have the following classification. The published macOS arm64 Python 3.13 wheel was checked against its archive before inspecting its in-memory results. The wheel output matches the source record on all 47 rows.
 
+The published v1.2.2 recovery run's [retained job results](../validation/results/pypi-v1.2.2-published-gates-2026-11-21.json) identify its publication job, three runtime jobs and eleven chemistry jobs individually. The release checks validate the retained job set and artifact identities offline; the record is a snapshot of the completed GitHub run.
+
 | Recorded group | Chemical difference | Same after sanitization | Refused |
 |---|---:|---:|---:|
 | Acid/base | 15 | 0 | 0 |

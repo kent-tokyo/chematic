@@ -125,7 +125,10 @@ jobs:
           python3 scripts/generators/generate_compatibility_dashboard.py --output /tmp/compatibility-dashboard.md
           diff -u docs/reference/compatibility-dashboard.md /tmp/compatibility-dashboard.md
       - name: Release channel verification record
-        run: python3 scripts/checks/evidence/check_release_channel_evidence.py
+        run: |
+          python3 scripts/checks/evidence/check_release_channel_evidence.py
+          python3 scripts/checks/evidence/check_v122_artifact_consistency.py
+          python3 -m unittest scripts.tests.test_v122_artifact_consistency -v
       - name: Frozen independent holdout contract
         run: |
           python3 scripts/checks/check_trust_holdouts.py
