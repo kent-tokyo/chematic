@@ -80,12 +80,24 @@ pub fn cleanup_unchecked(mol: &Molecule) -> Molecule {
     restore_cut_metal_hydrogens(&without_h, &normalized, cleaned)
 }
 
-/// A Cleanup input whose metal hydrogen change cannot be accounted for safely.
+/// A Cleanup input whose metal transformation cannot be performed safely.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CleanupError {
     /// A metal--ligand bond was cut and its hydrogen count changed while
     /// hydrogen counts elsewhere also changed.
     AmbiguousMetalHydrogen,
+    /// A detached neutral metal would be charged on a subsequent Cleanup.
+    UnstableMetalDisconnection,
+}
+
+impl CleanupError {
+    /// Stable machine-readable error code shared by language bindings.
+    pub fn code(self) -> &'static str {
+        match self {
+            Self::AmbiguousMetalHydrogen => "cleanup_metal_hydrogen",
+            Self::UnstableMetalDisconnection => "cleanup_unstable_metal",
+        }
+    }
 }
 
 impl std::fmt::Display for CleanupError {
@@ -94,13 +106,17 @@ impl std::fmt::Display for CleanupError {
             Self::AmbiguousMetalHydrogen => {
                 write!(f, "Cleanup cannot account for the metal hydrogen change")
             }
+            Self::UnstableMetalDisconnection => write!(
+                f,
+                "Cleanup would charge the detached metal on a subsequent call"
+            ),
         }
     }
 }
 
 impl std::error::Error for CleanupError {}
 
-/// Apply Cleanup and reject an unresolved metal hydrogen change.
+/// Apply Cleanup and reject unresolved or unstable metal transformations.
 ///
 /// [`cleanup_unchecked`] retains the historical best-effort behavior.
 pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
@@ -120,6 +136,14 @@ pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
                 .any(|(neighbor, _)| cleaned.bond_between(idx, neighbor).is_none())
         {
             return Err(CleanupError::AmbiguousMetalHydrogen);
+        }
+        if matches!(atom.element.atomic_number(), 3 | 11 | 12 | 19 | 20)
+            && before.degree(idx) > 0
+            && cleaned.degree(idx) == 0
+            && cleaned.atom(idx).charge == 0
+            && implicit_hcount(&cleaned, idx) == 0
+        {
+            return Err(CleanupError::UnstableMetalDisconnection);
         }
     }
     Ok(cleaned)

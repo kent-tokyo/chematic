@@ -94,7 +94,7 @@ fn explicit_ligand_hydrogens_do_not_gain_hydrogen_after_metal_cut() {
 
 #[test]
 fn metal_disconnection_does_not_create_hydrogen() {
-    for input in ["O->[Mg](<-O)(<-O)<-O", "C[N]([SnH])C", "C(=[O][Li])O"] {
+    for input in ["C[N]([SnH])C"] {
         let source = parse(input).unwrap();
         let expanded = add_hydrogens(&source);
         let compact = cleanup(&source).unwrap();
@@ -114,5 +114,21 @@ fn metal_disconnection_does_not_create_hydrogen() {
             rdkit_cleanup_canonical_smiles(&explicit),
             "{input}"
         );
+    }
+}
+
+#[test]
+fn refuses_detached_metals_that_would_change_on_repeat() {
+    for input in ["O->[Mg](<-O)(<-O)<-O", "C(=[O][Li])O"] {
+        let source = parse(input).unwrap();
+        for variant in [&source, &add_hydrogens(&source)] {
+            assert!(
+                matches!(
+                    cleanup(variant),
+                    Err(CleanupError::UnstableMetalDisconnection)
+                ),
+                "{input}"
+            );
+        }
     }
 }

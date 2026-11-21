@@ -9,9 +9,7 @@ const wasm = await import(moduleUrl);
 for (const input of [
   "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
   "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
-  "O->[Mg](<-O)(<-O)<-O",
   "C[N]([SnH])C",
-  "C(=[O][Li])O",
 ]) {
   const source = wasm.parse_smiles(input);
   const cleaned = wasm.cleanup_mol(source);
@@ -28,6 +26,19 @@ for (const input of [
   } finally {
     repeated.free();
     cleaned.free();
+    source.free();
+  }
+}
+
+for (const input of ["O->[Mg](<-O)(<-O)<-O", "C(=[O][Li])O"]) {
+  const source = wasm.parse_smiles(input);
+  const expanded = wasm.add_hydrogens(source);
+  try {
+    for (const variant of [source, expanded]) {
+      assert.throws(() => wasm.cleanup_mol(variant), /cleanup_unstable_metal/);
+    }
+  } finally {
+    expanded.free();
     source.free();
   }
 }

@@ -1635,7 +1635,8 @@ class Mol:
 
         Raises:
             ChematicInputError: If a metal hydrogen change cannot be accounted
-                for, with code ``cleanup_metal_hydrogen``.
+                for (``cleanup_metal_hydrogen``), or a detached metal would
+                change on repeat (``cleanup_unstable_metal``).
         """
         ...
 

@@ -20,7 +20,7 @@ fn main() {
                     Ok(cleanup_unchecked(&mol))
                 } else {
                     chematic_chem::cleanup(&mol)
-                        .map_err(|error| format!("cleanup_metal_hydrogen: {error}"))
+                        .map_err(|error| format!("{}: {error}", error.code()))
                 };
                 let cleanup_smiles = cleaned.and_then(|cleaned| {
                     chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned)
