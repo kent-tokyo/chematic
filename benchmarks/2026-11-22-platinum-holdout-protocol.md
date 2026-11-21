@@ -619,7 +619,8 @@ measured the same seed's embedded dihedral at −177.49 degrees before MMFF,
 confirming that the specified E bond flipped during the MMFF stage on that
 runner. The checked profile now attempts a stereo-valid embedded fallback,
 marks it unfinished, and omits a candidate when both geometries fail its
-stereo check. Linux regression and independent RDKit tests remain required.
+stereo check. The subsequent Linux regression and independent RDKit checks are
+recorded below.
 
 ## Prospective second COD holdout protocol after stereo changes
 
@@ -636,7 +637,37 @@ These are source-built candidates, not published packages. The
 [Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44950706502)
 passed the targeted Rust tests and the independent RDKit check of all 44
 generated Prime development candidates, with no specified-stereo mismatches.
-The final-candidate COD development comparison remains pending.
+The [COD development rerun](https://github.com/kent-tokyo/chematic/actions/runs/44952391922)
+then completed on this wheel. Chematic and RDKit recovered 160 and 163 of
+225 references, respectively; lowest-energy recovery was 103 and 109. Among
+4,180 candidates per engine, 20 chematic and 38 RDKit candidates were flagged
+by the RDKit stereo checker. The remaining chematic violations all came from
+one −2 charged development molecule; every flagged candidate was unfinished.
+These are development observations, not independent test results.
+
+The follow-up investigation found that the affected double bond approached
+linear geometry during optimization. A first five-degree guard also rejected
+an existing Prime development conformer, where another substituent was far
+from the axis. The revised guard keeps the marked substituent when another arm
+is usable, and treats an end as unevaluable when every arm is within five
+degrees of the axis. This angle is an implementation rule, not a demonstrated
+replication of RDKit's stereo-perception threshold. The
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44957585587)
+passed the Rust tests and an independent RDKit check of all 44 candidates for
+the exposed Prime case and all 20 candidates for the charged COD case. These
+two cases do not establish stereo correctness across the full development set.
+
+The [updated wheel build](https://github.com/kent-tokyo/chematic/actions/runs/44958776980)
+used merge commit `e4efaf29afd6bfa3689d1187dfc391343d7ceac0` and crates tree
+`c953928e32e912a94b5bd4462c9b49e31f5461c8`, with benchmark tree
+`00a8c3615c849288c7d31f718a502bbd40da4fdc`. The CPython 3.12 Linux wheel
+SHA-256 is `e0f95eb569e14a5f69df04b566acbe0e86b86832afa18da079eedff6a3e82a78`,
+and the macOS arm64 wheel SHA-256 is
+`1a952db5bd458a4072df4b92f617b818d45373be2a000d6cfd9aafe7bf771001`.
+The [225-record development rerun](https://github.com/kent-tokyo/chematic/actions/runs/44959301502)
+is in progress; the second COD holdout is not enabled while its quality
+result remains unknown. These wheels are source-built candidates, not
+published packages.
 
 No conformer outcome from the 2,288 round-two holdout records has been
 inspected. After the stereo regression passes, freeze and fingerprint new

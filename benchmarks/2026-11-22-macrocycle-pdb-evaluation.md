@@ -89,6 +89,16 @@ and the prepared split SHA-256 was
 The run artifact retains the inputs, source license, citation and audit.
 Preparation does not establish MMFF support or conformer accuracy.
 
+An exploratory [development pilot](https://github.com/kent-tokyo/chematic/actions/runs/44959489605)
+is in progress with the frozen Linux wheel described in the Platinum holdout
+protocol. It selects the first 32 development cases by SHA-256 of case name,
+uses 20 attempted candidates per engine, seed 42, 200 MMFF iterations and up
+to 400 retry iterations. Unsupported cases and errors remain in its output.
+This pilot neither scores the candidate holdout nor establishes an acceptance
+threshold. Larger structures may require a separate runtime protocol. A
+subsequent pilot run is bounded to 100 minutes and uploads its checkpoint and
+exit status even if it times out; a partial result is not a 32-case result.
+
 Before scoring, report unsupported chemistry and preserve experimental coordinates.
 If a mismatch affects the candidate holdout, resolve the inclusion rule and
 whether a fresh holdout is needed before viewing any conformer outcomes.
