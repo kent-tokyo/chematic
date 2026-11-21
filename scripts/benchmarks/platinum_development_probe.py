@@ -128,6 +128,7 @@ def score(reference, count, seed, profile, geometry, repair_iters):
         candidates = method(count, **kwargs)
         result["chematic_seconds"] = time.perf_counter() - start
         result["chematic_count"] = len(candidates)
+        result["chematic_statuses"] = [status for status, _, _ in candidates]
         result["chematic_converged"] = sum(status == 0 for status, _, _ in candidates)
         result["chematic_rmsd"] = rms_values(
             mol, heavy_ref, [coords for _, _, coords in candidates]
@@ -177,6 +178,7 @@ def score(reference, count, seed, profile, geometry, repair_iters):
             for cid in ids
         ]
         result["rdkit_count"] = len(ids)
+        result["rdkit_statuses"] = [status for status, _ in minimized]
         result["rdkit_converged"] = sum(status == 0 for status, _ in minimized)
         result["rdkit_rmsd"] = rms_values(mol, heavy_ref, coords)
         result["rdkit_stereo"] = stereo_violations(mol, coords)
