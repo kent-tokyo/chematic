@@ -281,3 +281,11 @@ each fixed-time comparison. Measurements are limited to the recorded host,
 retry settings and populations. The geometry checks are flags, not a proof
 of physical validity. Unknown historical exposure, unsupported chemistry,
 equal-length cycle order and the relevant-cycle cap remain boundaries.
+
+Before either new holdout result is opened, run the same two protocols on a
+separately frozen macOS arm64 CPython 3.12 source wheel from the same candidate
+build and merge commit. Its SHA-256 is
+`5e1f34dab867a41a97fe66ea42d01f27199fd88325c00ae36ddf229bb9406920`.
+The Linux and macOS runs use the same molecules and are platform reproductions,
+not independent molecular samples. Report each platform separately. Neither
+source wheel is evidence for a published package.
