@@ -2,6 +2,10 @@ use super::*;
 use crate::hash::mol_hash;
 use chematic_smiles::parse;
 
+fn cleanup(mol: &chematic_core::Molecule) -> chematic_core::Molecule {
+    super::cleanup(mol).unwrap()
+}
+
 #[test]
 fn cleanup_keeps_neutral_acid_and_amine_unchanged() {
     for text in ["CC(=O)O", "CN"] {

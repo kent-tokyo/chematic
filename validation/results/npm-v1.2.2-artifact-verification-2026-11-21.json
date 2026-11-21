@@ -1,0 +1,14 @@
+{
+  "checked_at": "2026-11-21T09:41:38.262166+00:00",
+  "name": "@kent-tokyo/chematic",
+  "version": "1.2.2",
+  "registry_git_head": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc",
+  "sha256": "f61cb09cc647b4f74bcf2fdcf70114d8fa09919de27041cb74994e90022596c8",
+  "registry_sha512_integrity": "sha512-4aadhJ9atBHlNECkDsf68zKyyzCyPwWcdevkHD1e8IVwaVMHG84rD976wRqpjI6UMysT23Yqe17+PO4KJzn5GA==",
+  "computed_integrity_matches": true,
+  "smoke": {
+    "command": "node scripts/release/smoke_npm_package.mjs extracted-package",
+    "formula": "C6H6",
+    "atoms": 6
+  }
+}

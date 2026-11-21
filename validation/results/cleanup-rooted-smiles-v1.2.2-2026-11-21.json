@@ -1,0 +1,580 @@
+{
+  "method": "one deterministic noncanonical SMILES rooted at each atom; duplicate strings removed",
+  "rdkit_version": "2026.09.1",
+  "chematic_version": "1.2.2",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "682c96b2c74b9f43c21efb11a8d8979e9760f7856d911af7c455238560464266",
+  "installed_package_files_verified": 44,
+  "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
+  "cases": [
+    {
+      "index": 65,
+      "inputs": 4,
+      "rdkit_distinct_outputs": 3,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C1=CC=CC=C[CH-]1",
+          "rdkit": "[C-]1=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=C[CH-]C=C1",
+          "rdkit": "[C-]1=CC=CCC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "C1=C[CH-]C=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "[CH-]1C=CC=CC=C1",
+          "rdkit": "[C-]1=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        }
+      ]
+    },
+    {
+      "index": 83,
+      "inputs": 6,
+      "rdkit_distinct_outputs": 5,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C1=CC=CC=CC=CC=C[CH-]1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=C[CH-]C=C1",
+          "rdkit": "[C-]1=CC=CCC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=C[CH-]C=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=C[CH-]C=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CCC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=C[CH-]C=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "[CH-]1C=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CCC=C1"
+        }
+      ]
+    },
+    {
+      "index": 101,
+      "inputs": 8,
+      "rdkit_distinct_outputs": 7,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C1=CC=CC=CC=CC=CC=CC=C[CH-]1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=CC=C[CH-]C=C1",
+          "rdkit": "[C-]1=CC=CCC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=C[CH-]C=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CCC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=C[CH-]C=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CCC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=CC=C[CH-]C=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=C[CH-]C=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CCC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "C1=C[CH-]C=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CC=CC1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        },
+        {
+          "input": "[CH-]1C=CC=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CC=CC=CC=CC=CC=CCC=C1"
+        }
+      ]
+    },
+    {
+      "index": 809,
+      "inputs": 4,
+      "rdkit_distinct_outputs": 3,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C1=CC=CC=C[CH-]1",
+          "rdkit": "[C-]1=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "C1=CC=C[CH-]C=C1",
+          "rdkit": "[C-]1=CC=CCC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "C1=C[CH-]C=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        },
+        {
+          "input": "[CH-]1C=CC=CC=C1",
+          "rdkit": "[C-]1=CCC=CC=C1",
+          "chematic": "[C-]1=CC=CCC=C1"
+        }
+      ]
+    },
+    {
+      "index": 911,
+      "inputs": 10,
+      "rdkit_distinct_outputs": 9,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C1=CC=CC=CC=CC=CC=CC=CC=CC=C[CH-]1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=CC=CC=CC=C[CH-]C=C1",
+          "rdkit": "[C-]1=CC=CCC=CC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=CC=CC=C[CH-]C=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CCC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=CC=C[CH-]C=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CCC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=CC=C[CH-]C=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CCC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=CC=C[CH-]C=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CCC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=CC=C[CH-]C=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CC=CCC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=CC=C[CH-]C=CC=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "C1=C[CH-]C=CC=CC=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CC=CC=CC=CC=CC=CC=CC=CC=CC1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        },
+        {
+          "input": "[CH-]1C=CC=CC=CC=CC=CC=CC=CC=CC=C1",
+          "rdkit": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1",
+          "chematic": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1"
+        }
+      ]
+    },
+    {
+      "index": 1664,
+      "inputs": 22,
+      "rdkit_distinct_outputs": 2,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "[KH].C(COc1ccc(OCc2ccccc2)cc1)OC1C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].C(Oc1ccc(OCc2ccccc2)cc1)COC1C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].C(c1ccccc1)Oc1ccc(OCCOC2C[CH2][Zn][CH2]O2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].C1(OCCOc2ccc(OCc3ccccc3)cc2)C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].C1C(OCCOc2ccc(OCc3ccccc3)cc2)O[CH2][Zn][CH2]1",
+          "rdkit": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].O(CCOc1ccc(OCc2ccccc2)cc1)C1C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].O(Cc1ccccc1)c1ccc(OCCOC2C[CH2][Zn][CH2]O2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].O(c1ccc(OCc2ccccc2)cc1)CCOC1C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].O1C(OCCOc2ccc(OCc3ccccc3)cc2)C[CH2][Zn][CH2]1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].[CH2]1CC(OCCOc2ccc(OCc3ccccc3)cc2)O[CH2][Zn]1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].[CH2]1[Zn][CH2]CC(OCCOc2ccc(OCc3ccccc3)cc2)O1",
+          "rdkit": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].[Zn]1[CH2]CC(OCCOc2ccc(OCc3ccccc3)cc2)O[CH2]1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)ccccc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1(OCCOC2C[CH2][Zn][CH2]O2)ccc(OCc2ccccc2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1(OCc2ccccc2)ccc(OCCOC2C[CH2][Zn][CH2]O2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1c(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)cccc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1c(OCCOC2C[CH2][Zn][CH2]O2)ccc(OCc2ccccc2)c1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1c(OCc2ccccc2)ccc(OCCOC2C[CH2][Zn][CH2]O2)c1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1cc(OCc2ccccc2)ccc1OCCOC1C[CH2][Zn][CH2]O1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1ccc(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1cccc(COc2ccc(OCCOC3C[CH2][Zn][CH2]O3)cc2)c1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        },
+        {
+          "input": "[KH].c1ccccc1COc1ccc(OCCOC2C[CH2][Zn][CH2]O2)cc1",
+          "rdkit": "[CH2-]OC(CC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]",
+          "chematic": "[CH2-]CC(OC)OCCOc1ccc(O[CH-]c2ccccc2)cc1.[KH].[Zn+2]"
+        }
+      ]
+    },
+    {
+      "index": 2076,
+      "inputs": 18,
+      "rdkit_distinct_outputs": 4,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C(/c1ccccc1)=C\\[C-]1CCCN(CCCC=C)C1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C(=C\\c1ccccc1)/[C-]1CCCN(CCCC=C)C1",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C(CCCN1CCC[C-](/C=C/c2ccccc2)C1)=C",
+          "rdkit": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C(CCN1CCC[C-](/C=C/c2ccccc2)C1)C=C",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C(CN1CCC[C-](/C=C/c2ccccc2)C1)CC=C",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C(N1CCC[C-](/C=C/c2ccccc2)C1)CCC=C",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C1CC[C-](/C=C/c2ccccc2)CN1CCCC=C",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C1C[C-](/C=C/c2ccccc2)CN(CCCC=C)C1",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C1[C-](/C=C/c2ccccc2)CCCN1CCCC=C",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C1[C-](/C=C/c2ccccc2)CN(CCCC=C)CC1",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "C=CCCCN1CCC[C-](/C=C/c2ccccc2)C1",
+          "rdkit": "C=[C-]CCCN1CCCC(/C=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "N1(CCCC=C)CCC[C-](/C=C/c2ccccc2)C1",
+          "rdkit": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "[C-]1(/C=C/c2ccccc2)CCCN(CCCC=C)C1",
+          "rdkit": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "c1(/C=C/[C-]2CCCN(CCCC=C)C2)ccccc1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "c1c(/C=C/[C-]2CCCN(CCCC=C)C2)cccc1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "c1ccc(/C=C/[C-]2CCCN(CCCC=C)C2)cc1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "c1cccc(/C=C/[C-]2CCCN(CCCC=C)C2)c1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        },
+        {
+          "input": "c1ccccc1/C=C/[C-]1CCCN(CCCC=C)C1",
+          "rdkit": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+          "chematic": "[CH-]=CCCCN1CCCC(/C=C/c2ccccc2)C1"
+        }
+      ]
+    },
+    {
+      "index": 2855,
+      "inputs": 29,
+      "rdkit_distinct_outputs": 3,
+      "chematic_distinct_outputs": 1,
+      "variants": [
+        {
+          "input": "C(CCCN1C(=O)C2=CC=CC=[PH]2C1=O)N1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C(CCN1C(=O)C2=CC=CC=[PH]2C1=O)CN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C(CN1C(=O)C2=CC=CC=[PH]2C1=O)CCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C(N1C(=O)C2=CC=CC=[PH]2C1=O)CCCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1(=O)C2=CC=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1(=O)[PH]2=CC=CC=C2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C12=CC=CC=[PH]1C(=O)N(CCCCN1CCN(c3cccc(Cl)c3)[CH]([Cu])C1)C2=O",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1=C2C(=O)N(CCCCN3CCN(c4cccc(Cl)c4)[CH]([Cu])C3)C(=O)[PH]2=CC=C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1=CC=C2C(=O)N(CCCCN3CCN(c4cccc(Cl)c4)[CH]([Cu])C3)C(=O)[PH]2=C1",
+          "rdkit": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1=CC=[PH]2C(=C1)C(=O)N(CCCCN1CCN(c3cccc(Cl)c3)[CH]([Cu])C1)C2=O",
+          "rdkit": "O=C1C2=CC=[C-]C=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1=[PH]2C(=CC=C1)C(=O)N(CCCCN1CCN(c3cccc(Cl)c3)[CH]([Cu])C1)C2=O",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1CN(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)C[CH]([Cu])N1c1cccc(Cl)c1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1N(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)CCN(c2cccc(Cl)c2)[CH]1[Cu]",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "C1N(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)C[CH]([Cu])N(c2cccc(Cl)c2)C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "Clc1cccc(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])c1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "N1(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "N1(CCCCN2CCN(c3cccc(Cl)c3)[CH]([Cu])C2)C(=O)C2=CC=CC=[PH]2C1=O",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "N1(c2cccc(Cl)c2)CCN(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)C[CH]1[Cu]",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "O=C1C2=CC=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "O=C1[PH]2=CC=CC=C2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)[CH]([Cu])C1",
+          "rdkit": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "[CH]1([Cu])N(c2cccc(Cl)c2)CCN(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "[Cu][CH]1N(c2cccc(Cl)c2)CCN(CCCCN2C(=O)C3=CC=CC=[PH]3C2=O)C1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "[PH]12=CC=CC=C1C(=O)N(CCCCN1CCN(c3cccc(Cl)c3)[CH]([Cu])C1)C2=O",
+          "rdkit": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1(Cl)cccc(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])c1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])cccc(Cl)c1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1c(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])cc(Cl)cc1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1c(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])cccc1Cl",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1cc(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])cc(Cl)c1",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        },
+        {
+          "input": "c1ccc(N2CCN(CCCCN3C(=O)C4=CC=CC=[PH]4C3=O)C[CH]2[Cu])cc1Cl",
+          "rdkit": "O=C1C2=[C-]C=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]",
+          "chematic": "O=C1C2=C[C-]=CC=[PH]2C(=O)N1CCCCN1CCN(c2cccc(Cl)c2)CC1.[Cu+]"
+        }
+      ]
+    }
+  ]
+}

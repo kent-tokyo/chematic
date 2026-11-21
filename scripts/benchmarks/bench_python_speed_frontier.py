@@ -65,15 +65,50 @@ def normal(value, engine: str, op: str):
             return bits
         if engine == "rdkit":
             return list(value.GetOnBits())
-        return sorted(i + int(op == "maccs") for i in value.on_bits())
+        on_bits = value.on_bits
+        bits = on_bits() if callable(on_bits) else on_bits
+        return sorted(i + int(op == "maccs") for i in bits)
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError(f"nonfinite {op} output")
     return value
 
 
 def worker(args) -> dict:
-    engine = "chematic" if args.worker in ("baseline", "candidate") else args.worker
-    parse, functions = table(engine)
+    engine = "chematic" if args.worker in ("baseline", "candidate", "older") else args.worker
+    if engine == "cosmolkit":
+        import cosmolkit as ck
+        if ck.__version__.startswith("0.6."):
+            parse = ck.Molecule.from_smiles
+            functions = {
+                "tpsa": lambda m: m.tpsa(),
+                "labute_asa": lambda m: m.labute_asa(),
+                "qed": lambda m: m.qed(),
+                "num_rings": lambda m: m.num_rings(),
+                "morgan2_2048": lambda m: m.fingerprint_morgan(radius=2, fp_size=2048),
+                "morgan2_chiral": lambda m: m.fingerprint_morgan(radius=2, fp_size=2048, include_chirality=True),
+                "morgan3_2048": lambda m: m.fingerprint_morgan(radius=3, fp_size=2048),
+                "maccs": lambda m: m.fingerprint_maccs(),
+                "rotatable_bonds": lambda m: m.num_rotatable_bonds(),
+                "mqn": lambda m: m.mqns(),
+                "hba": lambda m: m.num_hba(),
+                "hbd": lambda m: m.num_hbd(),
+                "formula": lambda m: m.molecular_formula(),
+                "mol_wt": lambda m: m.molecular_weight(),
+                "exact_mw": lambda m: m.exact_molecular_weight(),
+                "chi1v": lambda m: m.chi_1_v(),
+                "kappa2": lambda m: m.kappa_2(),
+                "logp": lambda m: m.crippen_descriptors().logp,
+                "slogp_vsa": lambda m: m.slogp_vsa(),
+                "fp_atom_pair": lambda m: m.fingerprint_atom_pair(),
+                "fp_torsion": lambda m: m.fingerprint_topological_torsion_legacy(),
+                "fp_pattern": lambda m: m.fingerprint_pattern(),
+                "fp_layered": lambda m: m.fingerprint_layered(),
+                "fp_rdkit": lambda m: m.fingerprint_topological(),
+            }
+        else:
+            parse, functions = table(engine)
+    else:
+        parse, functions = table(engine)
     data = args.corpus.read_bytes()
     rows = corpus_rows(data, args.offset, args.limit)
 
@@ -142,6 +177,8 @@ def agreement(reference: list, values: list, *, exact: bool) -> dict:
 
 
 def comparable(checks: dict, competitor: str) -> bool:
+    if competitor == "older":
+        return checks["candidate_vs_older"]["passed"]
     if competitor == "baseline":
         return checks["candidate_vs_baseline"]["passed"]
     if competitor == "rdkit":
@@ -153,7 +190,7 @@ def block_orders(names, blocks: int, balanced: bool = False):
     if balanced:
         permutations = list(itertools.permutations(names))
         if blocks % len(permutations):
-            raise ValueError("balanced permutation blocks must be a multiple of 24")
+            raise ValueError(f"balanced permutation blocks must be a multiple of {len(permutations)}")
         random.Random(20261019).shuffle(permutations)
         return [permutations[i % len(permutations)] for i in range(blocks)]
     return [names[i % len(names):] + names[:i % len(names)] for i in range(blocks)]
@@ -162,9 +199,11 @@ def block_orders(names, blocks: int, balanced: bool = False):
 def parent(args) -> None:
     if args.blocks < 20 or args.limit < 1:
         raise ValueError("at least 20 blocks and a positive limit required")
-    names = ("baseline", "candidate", "rdkit", "cosmolkit")
+    names = (("older",) if args.older_wheel else ()) + ("baseline", "candidate", "rdkit", "cosmolkit")
+    if (args.older_wheel is None) != (args.older_path is None):
+        raise ValueError("older wheel and installed path must be supplied together")
     orders = block_orders(names, args.blocks, args.balanced_permutations)
-    wheels = {name: getattr(args, name + "_wheel") for name in names[:2]}
+    wheels = {name: getattr(args, name + "_wheel") for name in names if name in ("older", "baseline", "candidate")}
     installed_extensions = {}
     for name, path in wheels.items():
         with zipfile.ZipFile(path) as archive:
@@ -184,7 +223,7 @@ def parent(args) -> None:
         "corpus": {"path": str(args.corpus), "sha256": sha(args.corpus.read_bytes()),
                    "offset": args.offset, "limit": args.limit},
         "protocol": {"blocks": args.blocks, "order": ("seeded full permutations (20261019), fresh-process sequential arms"
-                               if args.balanced_permutations else "four rotating fresh-process arms, sequential"),
+                               if args.balanced_permutations else f"{len(names)} rotating fresh-process arms, sequential"),
                      "timing": "native return objects retained; normalization outside timing",
                      "first_use": "fresh parsed molecules; eager/lazy perception differs",
                      "repeated_use": "one untimed operation on every fresh molecule",
@@ -257,12 +296,14 @@ def parent(args) -> None:
 
     for op in args.ops.split(","):
         checks = {"candidate_vs_baseline": agreement(expected["baseline"][op], expected["candidate"][op], exact=True)}
+        if "older" in names:
+            checks["candidate_vs_older"] = agreement(expected["older"][op], expected["candidate"][op], exact=True)
         checks.update({name + "_vs_rdkit": agreement(expected["rdkit"][op], expected[name][op], exact=False)
-                       for name in ("baseline", "candidate", "cosmolkit")})
+                       for name in tuple(name for name in names if name != "rdkit")})
         report["agreement"][op] = checks
         for mode in MODES:
             comparisons = {}
-            for index, name in enumerate(("baseline", "rdkit", "cosmolkit")):
+            for index, name in enumerate(name for name in names if name != "candidate"):
                 allowed = comparable(checks, name)
                 interval = paired_median_ratio_ci(
                     [b[name]["operations"][op][mode] for b in report["blocks"]],
@@ -278,7 +319,7 @@ def parent(args) -> None:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--worker", choices=("baseline", "candidate", "rdkit", "cosmolkit"))
+    parser.add_argument("--worker", choices=("older", "baseline", "candidate", "rdkit", "cosmolkit"))
     parser.add_argument("--corpus", type=Path, required=True)
     parser.add_argument("--limit", type=int, default=1000)
     parser.add_argument("--offset", type=int, default=0, help="zero-based nonempty SMILES row offset")
@@ -289,7 +330,7 @@ def main():
     parser.add_argument("--source-manifest", type=Path)
     parser.add_argument("--resume", action="store_true", help="verify and reuse saved raw blocks")
     parser.add_argument("--output", type=Path)
-    for name in ("baseline", "candidate"):
+    for name in ("older", "baseline", "candidate"):
         parser.add_argument("--" + name + "-wheel", type=Path)
         parser.add_argument("--" + name + "-path", type=Path)
     parser.add_argument("--rdkit-path", type=Path)

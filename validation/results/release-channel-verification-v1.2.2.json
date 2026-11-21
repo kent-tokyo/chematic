@@ -3,46 +3,52 @@
   "release": {
     "version": "1.2.2",
     "tag": "v1.2.2",
-    "commit": "pending-main-merge"
+    "commit": "d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc"
   },
-  "checked_at": "2026-11-20T21:44:56Z",
-  "release_ready": false,
+  "checked_at": "2026-11-21T09:43:38.044677+00:00",
+  "release_ready": true,
   "channels": [
     {
       "id": "github_release",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://github.com/kent-tokyo/chematic/releases/tag/v1.2.2",
-      "detail": "The v1.2.2 GitHub Release will be verified after the protected-main merge and annotated tag publication."
+      "detail": "Published non-draft release; annotated tag and release metadata asset identify d7962f9501da9ad2f2cdc5eaddf6d665d79d60bc. Asset SHA-256 4343d1636a43e4f437ccb9b4e5491d2fd93901ddcfbc6a746d81a8172117f33f matches GitHub.",
+      "observed_version": "1.2.2"
     },
     {
       "id": "npm",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://www.npmjs.com/package/@kent-tokyo/chematic/v/1.2.2",
-      "detail": "The npm package version, gitHead, integrity, and runtime smoke tests will be verified after publication."
+      "detail": "Registry gitHead matches tag; tarball SHA-256 f61cb09cc647b4f74bcf2fdcf70114d8fa09919de27041cb74994e90022596c8 and computed SHA-512 match registry integrity. Node WASM benzene smoke passed; see npm-v1.2.2-artifact-verification-2026-11-21.json.",
+      "observed_version": "1.2.2"
     },
     {
       "id": "pypi",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://pypi.org/project/chematic/1.2.2/",
-      "detail": "The sdist, expected wheel matrix, artifact hashes, runtime smoke tests, and chemistry gates will be verified after publication."
+      "detail": "Original workflow artifacts match PyPI hashes for 25 wheels and one sdist; all wheel stubs passed. Recovery run 44887442455 passed three runtime and eleven chemistry jobs; see pypi-v1.2.2-artifact-verification-2026-11-21.json.",
+      "observed_version": "1.2.2"
     },
     {
       "id": "crates_io",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://crates.io/crates/chematic/1.2.2",
-      "detail": "The complete crates.io publish graph will be verified after publication."
+      "detail": "20 published crates have checksums matching the crates.io index and .cargo_vcs_info.json identifying the tag commit; see crates-v1.2.2-artifact-verification-2026-11-21.json.",
+      "observed_version": "1.2.2"
     },
     {
       "id": "docs_rs",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://docs.rs/chematic/1.2.2/chematic/",
-      "detail": "The version-pinned docs.rs endpoint will be verified after crates.io publication."
+      "detail": "Version-pinned docs.rs page returned HTTP 200 and displayed chematic 1.2.2.",
+      "observed_version": "1.2.2"
     },
     {
       "id": "site",
-      "status": "not_measured",
+      "status": "verified",
       "url": "https://kent-tokyo.github.io/chematic/",
-      "detail": "The deployed site and displayed current version will be verified after the release publication workflow completes."
+      "detail": "Public site returned HTTP 200 and displayed current release v1.2.2.",
+      "observed_version": "1.2.2"
     }
   ]
 }

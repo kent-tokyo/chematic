@@ -1,0 +1,520 @@
+{
+  "profile": "source_cleanup_vs_rdkit_2026_09_1",
+  "detail_scope": "all",
+  "source_commit": "e3bbb16fe6916f744df325f494fd7bc64577ffa5",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "7b55e01acda12d0b0e68b84a6e7a6dab1845f00a44de849369bf7b4e9590a2c8",
+    "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
+    "crates/chematic-chem/src/standardize/reionize.rs": "8206cf61448859b527cb40424ef2c4fb5edc114965f30dd5f7ddc20d7bb960cb",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "eb2b0c77102a4da264be39e0199652c9894875a5d7cdad1cec4b0872d57e55b9",
+    "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "b3a560b04cd04f2c72db064e89b109b6966dd74ad60c52543f027c5c33daa0dd",
+    "crates/chematic-chem/src/hydrogen.rs": "aec88111ce1afff2d70a43dee2385adbb13d16eda76e2c81a6cd156da542c374",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
+    "crates/chematic-core/src/molecule/builder.rs": "428383c24b1c4e61896956cd148272b354c563bcd85133eef96dac6bf9bcc968",
+    "crates/chematic-core/src/molecule/metadata.rs": "20606bb414962cda8222913eeb17373c2d278d758c5202237ffa61acf5ddfbd0",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "2d122b54ae4dfba2514e2c134df1abbc1fbc0a5ddabe22c3adb7e6bbf0db90db",
+    "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "5e83f8039e4384679e908c39b90c4c27899c9b9459d44ac922d0d048bd3da817",
+    "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "ba475b91bbfbd5e7a59b88a76f97e354833a619e37e0616e1df0eb7563249ca3",
+    "scripts/rdkit_cleanup_source_gate.py": "0bb222ff559690d528db0c54bd0996f96fda1464a20e349e75eb599a72ea5755"
+  },
+  "corpus": "validation/cosmolkit_comparison/corpora/stress-v1.smi",
+  "corpus_sha256": "879166ab5481cac805ecd2d77f37d628383ec124085b90e2ee1659d55ce76277",
+  "source_dump_sha256": "c0d894d5421a3a4f3ba6df389ba71b705ddfe6ba462f4a61008934eb71025fe0",
+  "rdkit_version": "2026.09.1",
+  "source_rows": 4072,
+  "compatible_rows": 4069,
+  "normalize_compatible_rows": 4069,
+  "normalize_exact_rows": 4069,
+  "normalize_oracle_errors": [],
+  "normalize_classification_counts": {},
+  "normalize_support_status_counts": {},
+  "normalize_mismatches": [],
+  "exact_rows": 4022,
+  "classification_counts": {
+    "acid_base_reionization": 16,
+    "metal_charge_assignment": 2,
+    "metal_disconnection_policy": 29
+  },
+  "support_status_counts": {
+    "not_implemented": 47
+  },
+  "reionize_compatible_rows": 4069,
+  "reionize_exact_rows": 4069,
+  "reionize_all_rows_exact": 4072,
+  "reionize_all_rows_oracle_errors": [],
+  "reionize_oracle_errors": [],
+  "reionize_classification_counts": {},
+  "reionize_support_status_counts": {},
+  "reionize_mismatches": [],
+  "rdkit_changed_rows": 254,
+  "oracle_nonreparseable_indices": [
+    1497,
+    1630,
+    2677
+  ],
+  "source_nonreparseable_indices": [],
+  "excluded": [],
+  "oracle_errors": [
+    {
+      "index": 427,
+      "input": "[C-]#[O+]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[C-]#[O+]",
+      "oracle_error": "AtomValenceException: Explicit valence for atom # 1 O, 3, is greater than permitted"
+    },
+    {
+      "index": 975,
+      "input": "[O+]#[C-]->[Ni](<-[C-]#[O+])(<-[C-]#[O+])<-[O+]#[C-]",
+      "oracle_error": "AtomValenceException: Explicit valence for atom # 7 O, 3, is greater than permitted"
+    },
+    {
+      "index": 1326,
+      "input": "O=P(O)(O)CN[C@@H](CCC1=CC=CC=C1)C1=N[N+2]=NN1",
+      "oracle_error": "KekulizeException: Can't kekulize mol.  Unkekulized atoms: 15 16 18"
+    }
+  ],
+  "mismatches": [
+    {
+      "index": 65,
+      "input": "[cH-]1cccccc1",
+      "rdkit_cleanup": "[C-]1=CCC=CC=C1",
+      "chematic_cleanup": "[C-]1=CC=CC=CC1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 83,
+      "input": "[cH-]1cccccccccc1",
+      "rdkit_cleanup": "[C-]1=CCC=CC=CC=CC=C1",
+      "chematic_cleanup": "[C-]1=CC=CC=CC=CC=CC1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 101,
+      "input": "[cH-]1cccccccccccccc1",
+      "rdkit_cleanup": "[C-]1=CCC=CC=CC=CC=CC=CC=C1",
+      "chematic_cleanup": "[C-]1=CC=CC=CC=CC=CC=CC=CC1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 119,
+      "input": "[cH-]1cccccccccccccccccc1",
+      "rdkit_cleanup": "[C-]1=CCC=CC=CC=CC=CC=CC=CC=CC=C1",
+      "chematic_cleanup": "[C-]1=CC=CC=CC=CC=CC=CC=CC=CC=CC1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 403,
+      "input": "C1=CC=CC1[Fe]C1C=CC=C1",
+      "rdkit_cleanup": "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
+      "chematic_cleanup": "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 809,
+      "input": "C1=CC=CC=C[CH-]1",
+      "rdkit_cleanup": "[C-]1=CCC=CC=C1",
+      "chematic_cleanup": "[C-]1=CC=CC=CC1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 911,
+      "input": "C1C=CC=CC=CC=CC=CC=CC=C[CH-]C=CC=1",
+      "rdkit_cleanup": "[C-]1=CC=CC=CC=CC=CC=CC=CC=CCC=C1",
+      "chematic_cleanup": "[C-]1=CC=CCC=CC=CC=CC=CC=CC=CC=C1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1366,
+      "input": "COC1=C2[C@@H2]CC[C@@H](CN(C)C[CH]([Pt])C3=CC4=C(C=C3)CNC4)C2=CC=C1",
+      "rdkit_cleanup": "COc1cccc2c1[CH-]CC[C@H]2CN(C)CCc1ccc2c(c1)CNC2.[Pt+]",
+      "chematic_cleanup": "COc1cccc2c1CCC[C@H]2CN(C)C[CH-]c1ccc2c(c1)CNC2.[Pt+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1432,
+      "input": "CC1=C2OC3=C(C)C(OC(=O)C45CC6CC(CC(C6)C4)C5)=CC(C(=O)N[C@@H]4C(=O)N[C@H](C(C)C)C(=O)N5[CH-]CC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)=C3N=C2C(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)=C(N)C1=O",
+      "rdkit_cleanup": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C@@H]4C(=O)N[C-](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "chematic_cleanup": "Cc1c2oc3c(C)c(OC(=O)C45CC6CC(CC(C6)C4)C5)cc(C(=O)N[C-]4C(=O)N[C@H](C(C)C)C(=O)N5CCC[C@@H]5C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]4C)c3nc-2c(C(=O)N[C@H]2C(=O)N[C@@H](C(C)C)C(=O)N3CCC[C@H]3C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]2C)c(N)c1=O",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1437,
+      "input": "O=C1/C(=C/C2=CC=CC(Cl)=[CH:43]2)CCC2=CC=C[CH]([Zn])C12",
+      "rdkit_cleanup": "O=C1/C(=[C-]/c2cccc(Cl)[cH:43]2)CCC2=CC=CCC12.[Zn+]",
+      "chematic_cleanup": "O=C1/C(=C/c2cccc(Cl)[cH:43]2)CCC2=CC=CC[C-]12.[Zn+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1471,
+      "input": "O[C]1=[Fe]2[C](=CC=C1)CCC(NCCCC1=CC=CC=C1)[CH2]2",
+      "rdkit_cleanup": "CC(CCC=CC=[C-][C-2]O)NCCCc1ccccc1.[Fe+3]",
+      "chematic_cleanup": "CC(CC[C]=CC=C[C-2]O)NCC[CH-]c1ccccc1.[Fe+3]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1497,
+      "input": "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
+      "rdkit_cleanup": "Cc1cn2c(=O)c3c(nc2n1)n(C[200O]CCO)cn3C",
+      "chematic_cleanup": "Cc1cn2c([O-])c3c(nc2n1)[n+](C[200O]CCO)cn3C",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1577,
+      "input": "CCCCOC1=CC(C(=O)N[C@@H]2C(=O)N[C@H](C([CH2][Zn])C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)=C2N=C3C(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)=C(N)C(=O)C(C)=C3OC2=C1C",
+      "rdkit_cleanup": "CCCCOc1cc(C(=O)N[C@@H]2C(=O)N[C-](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+      "chematic_cleanup": "CCCCOc1cc(C(=O)N[C-]2C(=O)N[C@H](C(C)C)C(=O)N3CCC[C@@H]3C(=O)N(C)CC(=O)N(C)[C@@H](C(C)C)C(=O)O[C@@H]2C)c2nc3c(C(=O)N[C@H]4C(=O)N[C@@H](C(C)C)C(=O)N5CCC[C@H]5C(=O)N(C)CC(=O)N(C)[C@H](C(C)C)C(=O)O[C@H]4C)c(N)c(=O)c(C)c-3oc2c1C.[Zn+]",
+      "source_error": null,
+      "classification": "metal_charge_assignment",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1630,
+      "input": "OC[CH-]OC[n+]1c2nc3nc(cn3c([O-])c2n(C)c1)[CH]",
+      "rdkit_cleanup": "[CH]c1cn2c(=O)c3c(nc2n1)n(COCC[O-])cn3C",
+      "chematic_cleanup": "[CH]c1cn2c([O-])c3c(nc2n1)[n+](COCC[O-])cn3C",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1781,
+      "input": "COC1=C(OC)[CH]=[Pt]2[NH]C(C3=CC=CC=N3)[N+]([O-])=C(C)[C]2=C1",
+      "rdkit_cleanup": "[CH-2]C(OC)=C(C=CC(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+      "chematic_cleanup": "[CH-2]C(OC)=C(C=[C]C(C)=[N+]([O-])C([NH-])c1ccccn1)OC.[Pt+3]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1831,
+      "input": "CCCN(CCC)C1CCC2=C(C1)C([C](=O)[Zn])=CC=C2",
+      "rdkit_cleanup": "CCCN(CCC)C1CCc2cccc(C=O)c2C1.[Zn]",
+      "chematic_cleanup": "CCCN(CCC)C1CCc2cccc([C]=O)c2C1.[Zn]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1854,
+      "input": "C=CCN(C)[CH](C1=CC=CC=C1)[Zn]",
+      "rdkit_cleanup": "C=[C-]CN(C)Cc1ccccc1.[Zn+]",
+      "chematic_cleanup": "C=CCN(C)[CH-]c1ccccc1.[Zn+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1875,
+      "input": "O=C1C[CH]([Pt]2=[CH]C=C(Cl)C=[CH]2)CN1",
+      "rdkit_cleanup": "O=C1CCCN1.[CH]=CC(Cl)=[C-][CH-2].[Pt+3]",
+      "chematic_cleanup": "O=C1[CH-]CCN1.[CH]=CC(Cl)=C[CH-2].[Pt+3]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 1890,
+      "input": "O=C(C)Nc1ccc=cc1.O=c1c2n([CH2-])c(nc2n(c(n1C)=O)C)C",
+      "rdkit_cleanup": "CC(=O)NC1=[C-]C=C=C=C1.Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C",
+      "chematic_cleanup": "Cc1nc2c(c(=O)n(C)c(=O)n2C)n1C.[CH2-]C(=O)NC1=CC=C=C=C1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2003,
+      "input": "COC1=CC2=[C]([Zn]=[C]1OC)OC(OC)(C1=NCCN1)CO2.Cl",
+      "rdkit_cleanup": "CO[C-2]C(=CC1=COC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+      "chematic_cleanup": "CO[C-2]C(=CC1=[C]OC(OC)(C2=NCCN2)CO1)OC.Cl.[Zn+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2025,
+      "input": "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+      "rdkit_cleanup": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+      "chematic_cleanup": "CNCP(=O)([O-])O.O[C]=[O:27].[Fe+2].[NH2-].[NaH]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2069,
+      "input": "CSCC[C@H](NC=O)[C](=O)[Pt][C@@H](CC(C)C)C(=O)O[C@@H](Cc1ccccc1)C(=O)NCc1ccccc1",
+      "rdkit_cleanup": "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H](C=O)NC=O.[Pt+]",
+      "chematic_cleanup": "CC(C)CCC(=O)O[C-](Cc1ccccc1)C(=O)NCc1ccccc1.CSCC[C@@H]([C]=O)NC=O.[Pt+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2076,
+      "input": "c1ccc(cc1)/C=C/[C-]1CCCN(C1)CCCC=C",
+      "rdkit_cleanup": "C=CCCCN1CCCC(/[C-]=C/c2ccccc2)C1",
+      "chematic_cleanup": "C=CCCCN1CCCC(/C=[C-]/c2ccccc2)C1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2130,
+      "input": "CC1=C([C]2=CC=C[C]3=CC=C[CH]=[Pt]32)N=C2C=CC(F)=CC2=C1C(=O)O",
+      "rdkit_cleanup": "[CH-2]C=CC=CC=CC=Cc1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+      "chematic_cleanup": "[CH-2]C=CC=[C]C=CC=[C]c1nc2ccc(F)cc2c(C(=O)O)c1C.[Pt+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2178,
+      "input": "CC1=NC(O)=C2C(=C1CCN1CCOCC1)C=C[C+3]1=[C]2[Zn:23]([CH3])[C](NC2=C(Cl)C=CC=C2Cl)=N1",
+      "rdkit_cleanup": "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=CNc1c(Cl)cccc1Cl)=C2.[Zn+:23]",
+      "chematic_cleanup": "C.Cc1nc([O-])c2c(c1CCN1CCOCC1)C=C[C+3](N=[C]Nc1c(Cl)cccc1Cl)=[C]2.[Zn+:23]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2203,
+      "input": "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@@H]21)OCO5",
+      "rdkit_cleanup": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+      "chematic_cleanup": "CCO[C]=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2576,
+      "input": "CN([C@@H](CC1=CC=[C](OS(=O)(=O)C2=C3C=CN=CC3=CC=C2)[Fe]=[CH]1)C(=O)N1CCN(C2=CC=CC(Cl)=C2)CC1)[S@](=O)(=O)C1=C2C=CN=CC2=CC=C1",
+      "rdkit_cleanup": "[CH-2]C(=CC=COS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+      "chematic_cleanup": "[CH-2]C(=CC=[C]OS(=O)(=O)c1cccc2cnccc12)C[C@@H](C(=O)N1CCN(c2cccc(Cl)c2)CC1)N(C)S(=O)(=O)c1cccc2cnccc12.[Fe+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2598,
+      "input": "O=C(O)C1=[C]2C=C(F)C=[CH][Fe]2=[N]C(C2=CC=C(C3=CC=CC=C3)C=C2)=C1",
+      "rdkit_cleanup": "[CH]=CC(F)=CC=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+      "chematic_cleanup": "[CH]=CC(F)=C[C]=C(C=C([N-2])c1ccc(-c2ccccc2)cc1)C(=O)O.[Fe+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2602,
+      "input": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)(O)[Fe])CCN1",
+      "rdkit_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/P(=O)O)CCN1.[Fe]",
+      "chematic_cleanup": "O=C(O)[C@H]1C[C@@H](C/C=C/[P](=O)O)CCN1.[Fe]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2677,
+      "input": "Cc1:C:n2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+      "rdkit_cleanup": "Cc1cn2c(=O)c3c(nc2n1)n(COCCO)cn3C",
+      "chematic_cleanup": "Cc1cn2c([O-])c3c(nc2n1)[n+](COCCO)cn3C",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2787,
+      "input": "COC1=CC2=[C](C=C1)[Zn]([CH3])[C](C(=O)NC1=NNN=N1)=C2OC(C)C",
+      "rdkit_cleanup": "COc1cc[c]([Zn+])c(C(=CC(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+      "chematic_cleanup": "COc1cc[c]([Zn+])c(C(=[C]C(=O)Nc2nn[nH]n2)OC(C)C)c1.[CH3-]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2824,
+      "input": "[CH2-]CCCc1:C:n(-c2ccccc2C(C)(C)C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+      "rdkit_cleanup": "CCCCc1cn(-c2ccccc2C(C)(C)C)c(=O)n1[CH-]c1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+      "chematic_cleanup": "CCC[CH-]c1cn(-c2ccccc2C(C)(C)C)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 2909,
+      "input": "[CH2-]CCCC1=CN(CCCC)C(=O)N1CC1=CN=C(C2=CC=CC=C2C2=NNN=N2)C=C1",
+      "rdkit_cleanup": "CCCCc1cn(CCCC)c(=O)n1[CH-]c1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+      "chematic_cleanup": "CCC[CH-]c1cn(CCCC)c(=O)n1Cc1ccc(-c2ccccc2-c2nn[nH]n2)nc1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3075,
+      "input": "CN1CCc2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu@@H]3[CH3]",
+      "rdkit_cleanup": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+      "chematic_cleanup": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3153,
+      "input": "O1[C@H](C(N(C)[C@H]([C@H](OCOC)C[15C](=O)OC[C@@H](C1=O)C)[CH-]C1=CC=CC=C1)=O)C(C)C",
+      "rdkit_cleanup": "COCO[C@@H]1C[15C](=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_cleanup": "COCO[C@@H]1C[15C](=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3154,
+      "input": "CC1=C(CCOC2=CC=C(C[C]3([Zn])OC(=O)NC3=O)C=C2)N=C(C2=C[C+]=CO2)O1",
+      "rdkit_cleanup": "Cc1oc(C2=C[C+]=CO2)nc1[CH-]COc1ccc(CC2OC(=O)NC2=O)cc1.[Zn+]",
+      "chematic_cleanup": "Cc1oc(C2=C[C+]=CO2)nc1CCOc1ccc(C[c-]2oc(=O)[nH]c2=O)cc1.[Zn+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3207,
+      "input": "C1:c2[nH]cc(C[C@H](NC([C@@H]([NH][Zn](=[O])[C@H](NC(=O)C3(NC(=O)CCCC)Cc4c(cccc4CC3)Br)Cc3ccccc3)CCC[N+2]=C(N)N)=O)C(=O)NCC(N)=O)c2ccc:1",
+      "rdkit_cleanup": "CCCCC(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C@H](Cc1c[nH]c2ccccc12)NC(=O)[C-](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+      "chematic_cleanup": "CCCCC(=O)NC1(C(=O)NCCc2ccccc2)CCc2cccc(Br)c2C1.[NH-]C(=O)CNC(=O)[C-](Cc1c[nH]c2ccccc12)NC(=O)[C@@H](N)CCC[N+2]=C(N)N.[O-2].[Zn+4]",
+      "source_error": null,
+      "classification": "metal_charge_assignment",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3369,
+      "input": "C=[C](C1=CC=CC=C1OCCC1=CC=CC=C1)[Fe]1[CH]=CN=[CH]1",
+      "rdkit_cleanup": "C=Cc1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+      "chematic_cleanup": "C=[C]c1ccccc1OCCc1ccccc1.[CH]=CN=[CH].[Fe]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3501,
+      "input": "CCN(CC)[CH2][Fe]1=[CH]C(NC2=C3C=CC(Cl)=CC3=NC=C2)=C(F)C(F)=[C]1O",
+      "rdkit_cleanup": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=CO.[CH2-]N(CC)CC.[Fe+3]",
+      "chematic_cleanup": "[CH-2]C(Nc1ccnc2cc(Cl)ccc12)=C(F)C(F)=[C]O.[CH2-]N(CC)CC.[Fe+3]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3504,
+      "input": "COc1ccc2c(cc1=O)[C@@H](NC(C)=O)CCc1cc3c(c(O[CH2][Cu])c1-2)OC[O:12]3",
+      "rdkit_cleanup": "COc1c2c(cc3c1-c1ccc(OC)c(=O)cc1[C@@H](NC(C)=O)C[CH-]3)[O:12]CO2.[Cu+]",
+      "chematic_cleanup": "[CH2-]C(=O)N[C@H]1CCc2cc3c(c(OC)c2-c2ccc(OC)c(=O)cc21)OC[O:12]3.[Cu+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3590,
+      "input": "CC1=CC(CN2C3=C(C=C(O)C=C3)C(C)=C2[C]2=CC=C(O)[CH]=[Pt]2)=CC=C1",
+      "rdkit_cleanup": "[CH-2]C(O)=CC=Cc1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+      "chematic_cleanup": "[CH-2]C(O)=CC=[C]c1c(C)c2cc(O)ccc2n1Cc1cccc(C)c1.[Pt+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3700,
+      "input": "CC(=O)N[C]1=cC=C(CC2=NOC(C3=CC4=C(C=C3)NC=[C]4[Zn][CH2]N)=N2)C=C1",
+      "rdkit_cleanup": "CC(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1.C[NH-]",
+      "chematic_cleanup": "CN.[CH2-]C(=O)Nc1ccc(Cc2noc(-c3ccc4[nH]c[c]([Zn+])c4c3)n2)cc1",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3720,
+      "input": "CC[CH2][Fe][C](=O)NCCCCN1CCN(C2=CC=CC=C2OC)CC1",
+      "rdkit_cleanup": "COc1ccccc1N1CCN(CCCCNC=O)CC1.[CH2-]CC.[Fe+]",
+      "chematic_cleanup": "COc1ccccc1N1CCN(CCCCN[C]=O)CC1.[CH2-]CC.[Fe+]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3849,
+      "input": "c1cccc(c1)CN1CC[CH]([Cu]2([C](NC(=O)C[CH2]2)=O)[c]2ccccc2)CC1",
+      "rdkit_cleanup": "[CH2-]CC(=O)NC=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+      "chematic_cleanup": "C[CH-]C(=O)N[C]=O.[Cu+2][c]1ccccc1.c1ccc([CH-]N2CCCCC2)cc1",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 3910,
+      "input": "C1(C(C)=NOC=1NS(=O)(C1=C2[C](=cC=C1)[Cu](=[CH]C=C2)[C](OC)=O)=O)C",
+      "rdkit_cleanup": "COC=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+      "chematic_cleanup": "CO[C]=O.[CH-2]C=Cc1[c]([Cu+2])cccc1S(=O)(=O)Nc1onc(C)c1C",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 4023,
+      "input": "[CH2-][C@@H]1C(O[C@@H](C(C)C)C(=O)N([C@@H](CC2=CC=CC=C2)[C@@H](CC(OC1)=O)OCOC)C)=O",
+      "rdkit_cleanup": "COCO[C@@H]1CC(=O)OC[C-](C)C(=O)O[C@@H](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "chematic_cleanup": "COCO[C@@H]1CC(=O)OC[C@H](C)C(=O)O[C-](C(C)C)C(=O)N(C)[C@H]1Cc1ccccc1",
+      "source_error": null,
+      "classification": "acid_base_reionization",
+      "support_status": "not_implemented"
+    },
+    {
+      "index": 4027,
+      "input": "C1C(C1)[CH2][Fe]1[C](=O)C(CC)C(=O)N2C3C(=CC=CC=3)S[CH]21",
+      "rdkit_cleanup": "CC1CC1.CC[C-](C=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+      "chematic_cleanup": "CC1CC1.CC[C-]([C]=O)C(=O)N1[CH-]Sc2ccccc21.[Fe+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented"
+    }
+  ],
+  "baseline_comparison": {
+    "previous_source_commit": "e3bbb16fe6916f744df325f494fd7bc64577ffa5",
+    "previous_dump_sha256": "6f3ed8c48a13772278b56090f981b645ff2491c3ae91cf4825ab4d26737a6197",
+    "previous_exact": 4022,
+    "fixed_indices": [
+      1664,
+      1878,
+      2855
+    ],
+    "regressed_indices": [
+      119,
+      2824,
+      3075
+    ]
+  },
+  "limits": [
+    "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
+    "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
+    "RDKit agreement is not independent chemical truth"
+  ]
+}

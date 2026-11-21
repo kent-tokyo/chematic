@@ -11,7 +11,9 @@ Start with the [benchmark method](../docs/reference/benchmark.md). Use the
 
 | Question | Best entry | Boundary |
 |---|---|---|
-| Did the current public Python artifacts pass chemistry gates? | [v1.2.0 hosted chemistry run](https://github.com/kent-tokyo/chematic/actions/runs/39511354905) | Eleven hosted jobs; pass/fail evidence, not a speed result or retained row packet |
+| Did the current public Python artifacts pass chemistry gates? | [v1.2.2 recovery run](https://github.com/kent-tokyo/chematic/actions/runs/44887442455) | Eleven hosted chemistry jobs; pass/fail evidence, not a speed result or retained row packet |
+| How fast are the v1.2.2 published Python artifacts? | [five-package comparison](2026-11-21-v122-published-comparison.md) | One macOS arm64 host; matching outputs and limited MCS cases |
+| What changed in the 47 Cleanup rows? | [row audit](2026-11-21-cleanup-v122-regression-audit.md) | Released wheel and source candidates; not all chemical differences independently adjudicated |
 | What is the latest durable cross-platform wheel packet? | [v1.1.3 artifact packet](2026-10-14-v113-published-artifact-packet.md) | Four exact PyPI wheels; later hosted runs and npm are separate |
 | What is the broadest published RDKit speed packet? | [v1.0.42 comparison](2026-10-11-v1042-published-rdkit-packet.md) | Historical exact artifacts; do not transfer ratios to current releases |
 | What public-wheel descriptor result is reproducible? | [v1.1.8 Labute ASA](2026-10-19-v118-published-labute-asa-cosmolkit.md) | One macOS arm64 wheel, host, descriptor, and corpus |

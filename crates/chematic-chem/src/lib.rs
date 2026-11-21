@@ -164,13 +164,13 @@ pub use scaffold::{
     scaffold_network_with_counts, schuffenhauer_parents,
 };
 pub use standardize::{
-    FragmentDecision, FragmentPolicy, FragmentRecord, FragmentSnapshot, MoleculeSnapshot,
-    PipelineStatus, StandardizationPipeline, StandardizationReport, StandardizationStep,
-    StandardizationStepReport, StandardizationWarning, StandardizeOptions, TransformationRecord,
-    ZwitterionHandling, charge_parent, cleanup, fragment_parent, has_zwitterion, isotope_parent,
-    largest_fragment, neutralize_charges, normalize_groups, normalize_zwitterion, prefer_organic,
-    reionize, remove_isotopes, remove_stereo, select_fragment, standardize, stereo_parent,
-    uncharge,
+    CleanupError, FragmentDecision, FragmentPolicy, FragmentRecord, FragmentSnapshot,
+    MoleculeSnapshot, PipelineStatus, StandardizationPipeline, StandardizationReport,
+    StandardizationStep, StandardizationStepReport, StandardizationWarning, StandardizeOptions,
+    TransformationRecord, ZwitterionHandling, charge_parent, cleanup, cleanup_checked,
+    cleanup_unchecked, fragment_parent, has_zwitterion, isotope_parent, largest_fragment,
+    neutralize_charges, normalize_groups, normalize_zwitterion, prefer_organic, reionize,
+    remove_isotopes, remove_stereo, select_fragment, standardize, stereo_parent, uncharge,
 };
 pub use stereo::{assign_complete_stereochemistry, enumerate_stereoisomers, invert_stereocenter};
 pub use tautomer::{

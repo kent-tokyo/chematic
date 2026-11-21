@@ -1,0 +1,612 @@
+{
+  "method": "one deterministic noncanonical SMILES rooted at each atom; duplicate strings removed",
+  "rdkit_version": "2026.09.1",
+  "chematic_version": "1.2.2",
+  "wheel": "chematic-1.2.2-cp313-cp313-macosx_11_0_arm64.whl",
+  "wheel_sha256": "2c05a7abb4f63a45e1f319a48a63dfd4bc1e91d8d9302dde11bc9c8b4988b323",
+  "installed_package_files_verified": 44,
+  "candidate_commit": "e77e24fcb3f97175554bc9d323d1a6773679966d",
+  "source_record": "validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json",
+  "cases": [
+    {
+      "index": 1294,
+      "inputs": 13,
+      "excluded": [],
+      "rdkit_distinct_outputs": 1,
+      "chematic_distinct_outputs": 0,
+      "chematic_refusals": 13,
+      "variants": [
+        {
+          "input": "C(/C=N/N/C(=N/C)S)(C)=[N]\\[SnH]=[CH]\\N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "C(=N/C)(/S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "C(=N\\N/C(=N/C)S)/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "CC(/C=N/N/C(=N/C)S)=[N]\\[SnH]=[CH]\\N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "N(/C(=N/C)S)/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "N(/C)=C(/S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "N(\\N/C(=N/C)S)=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "N/[CH]=[SnH]/[N]=C(/C=N/N/C(=N/C)S)C",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "S/C(=N\\C)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "[CH](=[SnH]/[N]=C(/C=N/N/C(=N/C)S)C)\\N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "[N](=C(\\C=N\\N/C(=N/C)S)C)/[SnH]=[CH]/N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        },
+        {
+          "input": "[SnH](/[N]=C(/C=N/N/C(=N/C)S)C)=[CH]\\N",
+          "rdkit": "C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]",
+          "chematic": null
+        }
+      ]
+    },
+    {
+      "index": 2025,
+      "inputs": 11,
+      "excluded": [],
+      "rdkit_distinct_outputs": 1,
+      "chematic_distinct_outputs": 1,
+      "chematic_refusals": 0,
+      "variants": [
+        {
+          "input": "C(N[CH2][Fe@H]([NH2])[C](=[O:27])O)P(=O)(O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "N([CH2][Fe@H]([NH2])[C](=[O:27])O)CP(=O)(O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "O=P(CN[CH2][Fe@H]([NH2])[C](=[O:27])O)(O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "OP(CN[CH2][Fe@H]([NH2])[C](=[O:27])O)(=O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "O[C]([Fe@@H]([NH2])[CH2]NCP(=O)(O)O)=[O:27].[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "P(CN[CH2][Fe@H]([NH2])[C](=[O:27])O)(=O)(O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "[CH2]([Fe@H]([NH2])[C](=[O:27])O)NCP(=O)(O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "[C]([Fe@@H]([NH2])[CH2]NCP(=O)(O)O)(=[O:27])O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "[Fe@H]([NH2])([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "[NH2][Fe@@H]([CH2]NCP(=O)(O)O)[C](=[O:27])O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        },
+        {
+          "input": "[O:27]=[C]([Fe@@H]([NH2])[CH2]NCP(=O)(O)O)O.[NaH]",
+          "rdkit": "CNCP(=O)([O-])O.OC=[O:27].[Fe+2].[NH2-].[NaH]",
+          "chematic": "CNCP(=O)([O-])O.O[C]=[O:27].[FeH+2].[NH2-].[NaH]"
+        }
+      ]
+    },
+    {
+      "index": 2203,
+      "inputs": 27,
+      "excluded": [],
+      "rdkit_distinct_outputs": 2,
+      "chematic_distinct_outputs": 1,
+      "chematic_refusals": 0,
+      "variants": [
+        {
+          "input": "C(C)O[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1CN2C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C[C@H]2c2c1cc1c(c2)OCO1",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1C[C@@H](O)[Pt@@H]([C](OCC)=O)[C@@H]2[C@H]1CN1CCc3cc4c(cc3[C@@H]1C2)OCO4",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1N2C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C[C@H]2c2c(cc3c(c2)OCO3)C1",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1Oc2c(cc3c(c2)[C@H]2N(C[C@H]4CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]4C2)CC3)O1",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1[C@@H](O)[Pt@@H]([C](OCC)=O)[C@@H]2[C@H](C1)CN1CCc3cc4c(cc3[C@@H]1C2)OCO4",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1[C@@H]2N(C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]31)CCc1cc3c(cc12)OCO3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "C1[C@H]2CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]2C[C@@H]2N1CCc1cc3c(cc12)OCO3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "CCO[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "N12C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C[C@H]1c1c(cc3c(c1)OCO3)CC2",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "O(CC)[C](=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "O1c2c(cc3c(c2)[C@H]2N(C[C@H]4CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]4C2)CC3)OC1",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "O1c2cc3c(cc2OC1)[C@H]1N(C[C@H]2CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]2C1)CC3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "O=[C](OCC)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "O[C@H]1[Pt@@H]([C](OCC)=O)[C@@H]2[C@H](CC1)CN1CCc3cc4c(cc3[C@@H]1C2)OCO4",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[C@@H]12[Pt@H]([C](OCC)=O)[C@H](O)CC[C@@H]1CN1CCc3cc4c(cc3[C@@H]1C2)OCO4",
+          "rdkit": "CCOC=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[C@H]1(O)[Pt@@H]([C](OCC)=O)[C@@H]2[C@H](CC1)CN1CCc3cc4c(cc3[C@@H]1C2)OCO4",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[C@H]12CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]1C[C@@H]1N(C2)CCc2cc3c(cc21)OCO3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[C@H]12N(C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C1)CCc1cc3c(cc12)OCO3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[C](OCC)(=O)[Pt@@H]1[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "[Pt@@H]1([C](OCC)=O)[C@H](O)CC[C@@H]2CN3CCc4cc5c(cc4[C@@H]3C[C@H]12)OCO5",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c12c(cc3c(c1)OCO3)CCN1C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C[C@H]12",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c12c(cc3c(c1)[C@H]1N(C[C@H]4CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]4C1)CC3)OCO2",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c12cc3c(cc1OCO2)[C@H]1N(C[C@H]2CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]2C1)CC3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c12cc3c(cc1[C@H]1N(C[C@H]4CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]4C1)CC2)OCO3",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c1c2c(cc3c1OCO3)[C@H]1N(C[C@H]3CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]3C1)CC2",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        },
+        {
+          "input": "c1c2c(cc3c1[C@H]1N(C[C@H]4CC[C@@H](O)[Pt@@H]([C](OCC)=O)[C@H]4C1)CC3)OCO2",
+          "rdkit": "CCOC=O.[O-]CCC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[Pt+2]",
+          "chematic": "CCO[C]=O.O[CH-]CC[C@H]1CC[C@H]2c3cc4c(cc3[CH-]CN2C1)OCO4.[PtH+2]"
+        }
+      ]
+    },
+    {
+      "index": 3075,
+      "inputs": 20,
+      "excluded": [],
+      "rdkit_distinct_outputs": 2,
+      "chematic_distinct_outputs": 1,
+      "chematic_refusals": 0,
+      "variants": [
+        {
+          "input": "C1CN(C)[C@H]2c3c1cc[c]1c3-c3c(ccc[c]3[Cu@@H]1[CH3])C2",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "C1N(C)[C@H]2c3c(cc[c]4c3-c3c(ccc[c]3[Cu@@H]4[CH3])C2)C1",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "C1[C@H]2N(C)CCc3cc[c]4c(c32)-c2c1ccc[c]2[Cu@@H]4[CH3]",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "CN1CCc2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu@@H]3[CH3]",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "N1(C)CCc2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu@@H]3[CH3]",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "[C@H]12N(C)CCc3cc[c]4c(c31)-c1c(ccc[c]1[Cu@@H]4[CH3])C2",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "[CH3][Cu@@H]1[c]2ccc3c4c2-c2c(ccc[c]21)C[C@H]4N(C)CC3",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "[Cu@@H]1([CH3])[c]2ccc3c4c2-c2c(ccc[c]21)C[C@H]4N(C)CC3",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "[c]12ccc3c4c1-c1c(ccc[c]1[Cu@@H]2[CH3])C[C@H]4N(C)CC3",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "[c]12cccc3c1-c1[c](ccc4c1[C@H](N(C)CC4)C3)[Cu@H]2[CH3]",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c12[c]3ccc4c1[C@H](N(C)CC4)Cc1ccc[c](c1-2)[Cu@@H]3[CH3]",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c12c3cc[c]4c1-c1c(ccc[c]1[Cu@@H]4[CH3])C[C@H]2N(C)CC3",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c12c3ccc[c]1[Cu@H]([CH3])[c]1ccc4c(c1-2)[C@H](N(C)CC4)C3",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c12cc[c]3c4c1[C@H](N(C)CC2)Cc1ccc[c](c1-4)[Cu@@H]3[CH3]",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c12ccc[c]3c1-c1[c](ccc4c1[C@H](N(C)CC4)C2)[Cu@H]3[CH3]",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c1c2c3[c](cc1)[Cu@H]([CH3])[c]1ccc4c(c1-3)[C@H](N(C)CC4)C2",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c1c2c3c4[c](c1)[Cu@@H]([CH3])[c]1cccc(c1-4)C[C@H]3N(C)CC2",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c1cc2c3[c](c1)[Cu@H]([CH3])[c]1ccc4c(c1-3)[C@H](N(C)CC4)C2",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c1cc2c3c4[c]1[Cu@@H]([CH3])[c]1cccc(c1-4)C[C@H]3N(C)CC2",
+          "rdkit": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        },
+        {
+          "input": "c1ccc2c3[c]1[Cu@H]([CH3])[c]1ccc4c(c1-3)[C@H](N(C)CC4)C2",
+          "rdkit": "C.CN1C[CH-]c2cc[c]3c4c2[C@H]1Cc1ccc[c](c1-4)[Cu+]3",
+          "chematic": "C.CN1CCc2cc[c]3c4c2[C@H]1[CH-]c1ccc[c](c1-4)[CuH+]3"
+        }
+      ]
+    },
+    {
+      "index": 3402,
+      "inputs": 39,
+      "excluded": [],
+      "rdkit_distinct_outputs": 1,
+      "chematic_distinct_outputs": 1,
+      "chematic_refusals": 0,
+      "variants": [
+        {
+          "input": "C(C)(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](O1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C1O)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1(C(C)O)/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCC1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC1C)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C12([C@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]5([C@H](O3)C[C@@H](C)[Zn@H]([OH])[CH2]5)[C@@]41C)CO2",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1=C/C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)\\C=C/1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCOC/1C(C)O)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCOC(C(C)O)/C=C/1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC/1=O)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1C(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OC1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1C2([C@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]5([C@H](O3)C[C@@H](C)[Zn@H]([OH])[CH2]5)[C@@]42C)O1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1CC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)O1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1[C@H]2OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]34[C@H](O[C@H]1C1([C@]23C)CO1)C[C@@H](C)[Zn@H]([OH])[CH2]4",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]2([CH2][Zn@@H]([OH])[C@@H]1C)[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C1[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)O1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "CC(O)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "CC1C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCC1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C[C@@H]1C[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]2([CH2][Zn@H]1[OH])[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "C[C@@]12[C@@H]3OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]14[C@H](O[C@H](C3)C21CO1)C[C@@H](C)[Zn@H]([OH])[CH2]4",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O1C(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H]1[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O1C(C(C)O)/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CC1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O1C2([C@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]5([C@H](O3)C[C@@H](C)[Zn@H]([OH])[CH2]5)[C@@]42C)C1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O1C[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C1=O)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O1[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]4([C@H]1C[C@@H](C)[Zn@H]([OH])[CH2]4)[C@]3(C)C21CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O=C1/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](O1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "O=C1OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C1O)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "OC(C)C1/C=C/C=C\\C(=O)O[C@@H]2C[C@H]3O[C@@H]4C[C@@H](C)[Zn@H]([OH])[CH2][C@]4(COC(=O)C(O)C(C)CCO1)[C@]2(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "OC1C(=O)OC[C@]23[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC1C)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@@H]1(C)C[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]2([CH2][Zn@H]1[OH])[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@@H]12OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]34[C@H](O[C@H](C1)C1([C@]23C)CO1)C[C@@H](C)[Zn@H]([OH])[CH2]4",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@@]12(C)[C@@H]3OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]14[C@H](O[C@H](C3)C21CO1)C[C@@H](C)[Zn@H]([OH])[CH2]4",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@H]12C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@]4([C@H](O1)C[C@@H](C)[Zn@H]([OH])[CH2]4)[C@]3(C)C21CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@H]12O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]1([CH2][Zn@@H]([OH])[C@H](C)C2)[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[C@]123[C@H](O[C@@H]4C[C@@H](OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC1)[C@@]2(C)C41CO1)C[C@@H](C)[Zn@H]([OH])[CH2]3",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[CH2]1[Zn@@H]([OH])[C@H](C)C[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]21[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[OH][Zn@H]1[C@H](C)C[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]2([CH2]1)[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        },
+        {
+          "input": "[Zn@H]1([OH])[C@H](C)C[C@H]2O[C@@H]3C[C@H]4OC(=O)/C=C\\C=C\\C(C(C)O)OCCC(C)C(O)C(=O)OC[C@@]2([CH2]1)[C@]4(C)C31CO1",
+          "rdkit": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[Zn+3]",
+          "chematic": "CCC[C@H]1O[C@@H]2C[C@H]3OC(=O)/C=C\\C=C\\C(C(C)[O-])OCCC(C)C([O-])C(=O)OC[C@@]1(C)[C@]3(C)C21CO1.[OH-].[ZnH+3]"
+        }
+      ]
+    }
+  ]
+}
