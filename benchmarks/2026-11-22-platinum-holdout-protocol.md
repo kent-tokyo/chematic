@@ -179,3 +179,24 @@ limits and acceptance criteria before opening the holdout. The smaller
 holdout may be insufficient to establish a 2-point noninferiority margin; a
 wide interval is an inconclusive result. The existing Platinum holdout has
 already been inspected and is development evidence for the revised code.
+
+## Additional Platinum structures for the revised candidate
+
+The [complete Platinum 2017 dataset](https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-dataset-2017-01-sdf.zip)
+contains 4,548 structures, including the previously evaluated Diverse subset.
+The ZIP SHA-256 is `4370821a41ac452145dc97ec20e442b6d3ea838d4f923607aec00c94e47030ee`;
+the extracted SDF SHA-256 is
+`715fa18108340f31f09c68f62a9484970b49c78653cbf950dbc411e3ab1b53d8`.
+Its recorded split excludes scaffolds in the entire Diverse and Prime inputs
+and the other known development manifests. It contains 129 development,
+430 holdout and 3,989 excluded records. The conservative audit of the eight
+invalid exclusion graphs found no candidate overlap. Both Prime and this
+split remain bounded by the known exposure list and cannot rule out other
+historical exposure. The two new candidate sets are scaffold-disjoint because
+the complete-Platinum split excludes every Prime scaffold.
+
+As with Prime, run the development records first. Freeze the revised source,
+wheels, evaluation, error handling and acceptance criteria before scoring the
+holdout. Confirm the number of scorable records and interpret uncertainty in
+view of the 430-record denominator; a wide interval cannot establish the
+2-point margin. The published-package checks remain a separate step.

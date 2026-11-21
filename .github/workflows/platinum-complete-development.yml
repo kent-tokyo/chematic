@@ -1,0 +1,51 @@
+name: Platinum complete development comparison
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/platinum-complete-development.yml'
+      - 'crates/chematic-ff/src/mmff94_numeric/**'
+      - 'scripts/benchmarks/platinum_development_probe.py'
+      - 'validation/results/platinum-complete-scaffold-split-2026-11-22.json'
+
+permissions:
+  contents: read
+
+jobs:
+  platinum-complete-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install tools
+        run: python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+      - name: Build and identify source wheel
+        run: |
+          git rev-parse HEAD > complete-source-commit.txt
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/complete-wheel
+          python -m pip install --force-reinstall --no-deps dist/complete-wheel/chematic-*.whl
+          sha256sum dist/complete-wheel/chematic-*.whl > complete-wheel.sha256
+      - name: Fetch published reference data
+        run: |
+          curl --fail --location --retry 3 --max-time 120 --output complete.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-dataset-2017-01-sdf.zip
+          echo '4370821a41ac452145dc97ec20e442b6d3ea838d4f923607aec00c94e47030ee  complete.zip' | sha256sum --check
+          unzip -p complete.zip platinum_dataset_2017_01.sdf > complete.sdf
+          echo '715fa18108340f31f09c68f62a9484970b49c78653cbf950dbc411e3ab1b53d8  complete.sdf' | sha256sum --check
+      - name: Measure development structures
+        run: |
+          python scripts/benchmarks/platinum_development_probe.py --sdf complete.sdf --split validation/results/platinum-complete-scaffold-split-2026-11-22.json --output complete-development.json --limit 129 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py complete-development.json --output complete-development-summary.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: platinum-complete-development-${{ github.sha }}
+          path: |
+            complete-source-commit.txt
+            complete-wheel.sha256
+            complete-development*.json
+          if-no-files-found: warn

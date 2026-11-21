@@ -3,6 +3,7 @@ name: Macrocycle development comparison
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/prime-development.yml'
       - 'crates/chematic-ff/src/mmff94_numeric/**'
