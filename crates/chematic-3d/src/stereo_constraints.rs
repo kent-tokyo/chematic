@@ -697,6 +697,38 @@ fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -
         && first.isotope == second.isotope)
 }
 
+/// A single directional bond can describe the adjacent double bond instead of
+/// the bond currently being inspected. Only attribute it elsewhere when every
+/// marker at this end connects to another doubly marked, evaluable alkene.
+fn markers_belong_to_adjacent_alkene(mol: &Molecule, end: AtomIdx, other: AtomIdx) -> bool {
+    let mut found = false;
+    for (neighbor, marker) in mol.neighbors(end) {
+        if neighbor == other
+            || !matches!(
+                mol.bond_direction(marker).unwrap_or(mol.bond(marker).order),
+                BondOrder::Up | BondOrder::Down
+            )
+        {
+            continue;
+        }
+        found = true;
+        let belongs_elsewhere = mol.neighbors(neighbor).any(|(next, double)| {
+            next != end
+                && mol.bond(double).order == BondOrder::Double
+                && has_real_substituent(mol, neighbor, next)
+                && has_real_substituent(mol, next, neighbor)
+                && !is_cumulated(mol, neighbor, double)
+                && !is_cumulated(mol, next, double)
+                && marked_substituent(mol, neighbor, next).is_some()
+                && marked_substituent(mol, next, neighbor).is_some()
+        });
+        if !belongs_elsewhere {
+            return false;
+        }
+    }
+    found
+}
+
 /// Declared-parity-only prefix of double-bond verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
 /// dihedral check inline (kept behavior-identical on purpose: this is a pure
@@ -741,8 +773,16 @@ fn double_bond_constraint_for(
         return None;
     }
 
-    if !has_any_direction_marker(mol, a1, a2) && !has_any_direction_marker(mol, a2, a1) {
+    let first_marked = has_any_direction_marker(mol, a1, a2);
+    let second_marked = has_any_direction_marker(mol, a2, a1);
+    if !first_marked && !second_marked {
         return None; // no declared E/Z on this double bond
+    }
+
+    if (first_marked && !second_marked && markers_belong_to_adjacent_alkene(mol, a1, a2))
+        || (second_marked && !first_marked && markers_belong_to_adjacent_alkene(mol, a2, a1))
+    {
+        return None;
     }
 
     if is_cumulated(mol, a1, bond_idx) || is_cumulated(mol, a2, bond_idx) {

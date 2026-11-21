@@ -23,6 +23,7 @@ jobs:
         run: |
           cargo test --locked -p chematic-3d corrected_ -- --nocapture
           cargo test --locked -p chematic-3d constraint_set_terminal_hydrogens_and_isotopes_match_rdkit -- --nocapture
+          cargo test --locked -p chematic-3d constraint_set_adjacent_marked_alkenes_match_rdkit -- --nocapture
       - name: Build Python candidate
         run: |
           python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'

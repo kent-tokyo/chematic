@@ -926,6 +926,22 @@ mod tests {
     }
 
     #[test]
+    fn constraint_set_adjacent_marked_alkenes_match_rdkit() {
+        // In each exposed COD development example, RDKit 2026.09.2 reports
+        // one specified alkene. A marker on that bond is also adjacent to an
+        // unspecified double bond and must not make the latter unsupported.
+        for smiles in [
+            "COc1ccccc1N/C=C1/C=CC=C(O)C1=O",
+            "O=C1C=CC(Br)=C/C1=C/Nc1ccccc1O",
+        ] {
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), 1, "{smiles}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{smiles}: {set:?}");
+        }
+    }
+
+    #[test]
     fn constraint_set_no_declared_stereo_is_empty_not_unsupported() {
         // Plain, fully unmarked molecule: must produce an empty set outright, not
         // a set full of `unsupported` entries -- "not declared" and "declared but
