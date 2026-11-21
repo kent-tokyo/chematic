@@ -1,0 +1,56 @@
+name: Silicon candidate COD development comparison
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/cod-development-v2.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch and verify frozen wheel and structural sample
+        run: |
+          test "$(git rev-parse HEAD:crates)" = 'b08ecd24da790430dad6eb0ff3a509981f78f8bf'
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          gh run download 44936328481 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v2-ubuntu-latest-b4852cefede06d4a864cec87684d5fea7d316304 --dir candidate
+          gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="35e6bdf3a3c37e082c7d83d31414c37023b6c535687ceb28c997cc81c37a5b8d"; assert hashlib.sha256(pathlib.Path("reference/cod-sample.sdf").read_bytes()).hexdigest()=="6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Unpack pinned scaffold split
+        run: gzip -dc validation/results/cod-round2-scaffold-split-2026-11-22.json.gz > cod-split.json
+      - name: Verify split identity
+        run: echo 'b12af9cb05683735ab8fad725dcf38e0f8e8f51bdef8e4aa3db22e87590109c3  cod-split.json' | sha256sum --check
+      - name: Audit development support separately
+        run: python scripts/validation/cod_support_probe.py reference/cod-sample.sdf cod-split.json --partition development --output cod-support.json
+      - name: Audit development atom identity
+        run: python scripts/validation/cod_atom_identity_audit.py reference/cod-sample.sdf cod-split.json --partition development --output cod-identity.json
+      - name: Diagnose exposed Prime stereo mismatch on Linux
+        run: python scripts/validation/prime_stereo_diagnostic.py
+      - name: Compare development conformers
+        run: |
+          python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split cod-split.json --output cod-development.json --limit 225 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py cod-development.json --output cod-development-summary.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: cod-development-v2-${{ github.sha }}
+          path: |
+            cod-support.json
+            cod-identity.json
+            prime-stereo-diagnostic.json
+            cod-development*.json
+          if-no-files-found: warn

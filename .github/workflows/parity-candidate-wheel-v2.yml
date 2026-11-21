@@ -3,6 +3,7 @@ name: Freeze silicon-corrected candidate wheels
 on:
   workflow_dispatch:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-candidate-wheel-v2.yml'
       - 'crates/chematic-ff/src/mmff94_numeric/**'

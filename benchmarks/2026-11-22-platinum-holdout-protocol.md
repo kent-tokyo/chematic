@@ -567,3 +567,13 @@ from 11 to 14 for chematic and 8 to 11 for RDKit. For both engines, the first
 minimized candidates per engine, each engine had one specified double-bond
 stereo mismatch, on different structures. These results are exploratory and
 do not establish holdout performance or stereo safety for larger ensembles.
+
+The [silicon-corrected Linux candidate build](https://github.com/kent-tokyo/chematic/actions/runs/44936328481)
+uses PR merge commit `b4852cefede06d4a864cec87684d5fea7d316304` with parents
+`f97aa95253f2dc38b0d98a58fde1f646febe8aca` and
+`567bf5e43eaa3d073c7be389dc2032940407e335`; its crates tree is
+`b08ecd24da790430dad6eb0ff3a509981f78f8bf`. Its Python 3.12 Linux wheel
+SHA-256 is `35e6bdf3a3c37e082c7d83d31414c37023b6c535687ceb28c997cc81c37a5b8d`.
+A development-only comparison is configured for the 225 round-two development
+records, plus a Linux reproduction of the exposed Prime stereo discrepancy.
+No round-two holdout conformer outcome has been inspected.
