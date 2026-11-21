@@ -1723,9 +1723,10 @@ Node CellGetMinNode( Partition *p, Cell *W, Node v, CANON_DATA *pCD )
 #endif /* } USE_AUX_RANKING */
 
     {
-        for (i = W->first; i < W->next; i++)
+        int cell_index;
+        for (cell_index = W->first; cell_index < W->next; cell_index++)
         {
-            uCurAtNumb = p->AtNumber[(int) i];
+            uCurAtNumb = p->AtNumber[cell_index];
             if (uCurAtNumb >= v && !( p->Rank[(int) uCurAtNumb] & rank_mark_bit ) && uCurAtNumb < uMinAtNumb)
             {
                 uMinAtNumb = uCurAtNumb;
