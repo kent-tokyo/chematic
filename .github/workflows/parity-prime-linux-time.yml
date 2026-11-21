@@ -2,6 +2,7 @@ name: Revised Prime holdout Linux time recovery
 
 on:
   pull_request:
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-prime-linux-time.yml'
 

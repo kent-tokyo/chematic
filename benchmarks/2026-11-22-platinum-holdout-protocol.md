@@ -405,3 +405,54 @@ the macOS raw SHA-256 is
 Their time steps also stopped before scoring due to the `SECONDS` collision.
 Separate recovery jobs use the corresponding frozen wheel, fixed-result hash
 and the preregistered 2-second protocol on the same 188 records.
+
+The [Linux COD development run](https://github.com/kent-tokyo/chematic/actions/runs/44931051201)
+used the frozen revised Linux wheel. Of 223 records, both engines constructed
+MMFF for 210, neither constructed it for 12, and only chematic constructed it
+for one. UFF construction succeeded on both for 222 records and on chematic
+alone for one. All 223 molecular graphs matched. These are constructor checks
+with synthetic coordinates, not proof that every assigned parameter is
+chemically correct. On the common MMFF domain, the screened fixed-candidate
+recovery was 171/210 for chematic and 173/210 for RDKit; the paired
+molecule-bootstrap 95% interval was −2.38 to 0 points. No specified-stereo
+violations were detected among the 4,184 recorded minimized conformers per
+engine. The 223-record full-denominator summary is also retained, but it must
+not be interpreted as equal successful coverage for the 13 RDKit-unsupported
+records. Raw development result gzip SHA-256 is
+`4eb69617a5598e63126d374196bb98007ee8fd5632920bd6fff39fbe11499285`.
+
+### Preregistered additional COD holdout protocol
+
+Before scoring any of the 2,263 selected COD holdout records, freeze the
+Linux and macOS candidate wheels and the sample hash above. First run the
+same support probe on all 2,263 records, independently recording each engine's
+MMFF and UFF construction result, graph mismatches and errors. Publish all
+support counts and asymmetric cases. The conformer-recovery denominator is
+the subset for which both engines construct MMFF and the molecular graphs
+match; unsupported, one-sided or mismatched cases are excluded from that
+performance denominator but remain in the separately reported full support
+population. No reference geometry or generated conformer outcome influences
+this eligibility filter. `scripts/validation/cod_eligible_split.py` verifies
+the support record identity and derives a subset of the previously clean
+exclusion audit without introducing any records.
+
+On the common domain, use the same 20-candidate, seed-42, MMFF94 iteration
+and stereo/geometry-screen protocol as the earlier holdouts. Also use the
+same 0.2-second per-engine budget and maximum 20 attempts. For each platform
+and each budget, report molecule and scaffold-cluster paired bootstrap 95%
+intervals, candidate failures and convergence-required recovery. A lower
+bound above −2 percentage points under both resampling methods is the
+prespecified noninferiority criterion. Report both platforms separately; they
+are repeated measurements of the same molecules. Compare MMFF94, MMFF94s and
+UFF energies and gradients on common generated coordinates, reporting
+construction failures and numerical outliers rather than only percentiles.
+The maximum 10,000 relevant-cycle enumeration fallback and equal-size ring
+ordering remain unproven boundaries. This additional COD assessment was
+initiated after the inconclusive 430-record test and cannot retroactively
+make that original criterion pass.
+The support-probe SHA-256 is
+`606d5d3f8b2a8cb17a3fe5534f9a1b9f09257eb4e8a9ae16c32e41fc7d474dcc`; the
+common-domain selector SHA-256 is
+`d2825bd9951a939333bf5f8ad926883f2801318f1b66ba68b28c68634d757d15`.
+The decompressed split SHA-256 is
+`138fff6f10426bf4041faae25fc07717e436eb7f965e2df65c5983cde65e3449`.

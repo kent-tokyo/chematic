@@ -1,0 +1,49 @@
+{
+  "rows": 223,
+  "statuses": {
+    "ok": 210,
+    "rdkit_mmff_unsupported": 13
+  },
+  "bootstrap_seed": 42,
+  "bootstrap_samples": 10000,
+  "stages": {
+    "minimized": {
+      "chematic_recovered": 171,
+      "rdkit_recovered": 173,
+      "difference": -0.008968609865470852,
+      "paired_bootstrap_95_percentile_interval": [
+        -0.02242152466367713,
+        0.0
+      ]
+    },
+    "minimized_lowest_energy": {
+      "chematic_recovered": 113,
+      "rdkit_recovered": 106,
+      "difference": 0.03139013452914798,
+      "paired_bootstrap_95_percentile_interval": [
+        0.0,
+        0.06726457399103139
+      ]
+    }
+  },
+  "chematic": {
+    "raw": {
+      "conformers_checked": 0,
+      "stereo_violations": 0
+    },
+    "minimized": {
+      "conformers_checked": 4184,
+      "stereo_violations": 0
+    }
+  },
+  "rdkit": {
+    "raw": {
+      "conformers_checked": 4184,
+      "stereo_violations": 0
+    },
+    "minimized": {
+      "conformers_checked": 4184,
+      "stereo_violations": 0
+    }
+  }
+}
