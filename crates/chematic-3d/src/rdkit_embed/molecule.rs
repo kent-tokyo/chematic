@@ -469,13 +469,41 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected(
 /// Generate a corrected ETKDG/MMFF94 ensemble and check its final gradients.
 /// A status of zero requires finite coordinates and energy, and every
 /// gradient component to have magnitude at most 0.01 kcal/mol/angstrom.
+/// If minimization violates declared stereo, retain the original embedded
+/// coordinates with unfinished status when they satisfy all declared stereo;
+/// otherwise omit that candidate. Retained fallback energy is evaluated using
+/// the same prepared field as the minimization.
 pub fn etkdg_embed_multiple_confs_mmff_corrected_checked(
     mh: &Molecule,
     num_confs: usize,
     o: &RdkitEmbedOptions,
     max_iters: u32,
 ) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
-    let mut conformers = etkdg_embed_multiple_confs_mmff_corrected(mh, num_confs, o, max_iters)?;
+    let embedded = etkdg_embed_multiple_confs_corrected(mh, num_confs, o)?;
+    let Some(first) = embedded.first() else {
+        return Ok(Vec::new());
+    };
+    let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
+        .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
+    let optimized = optimize_mmff_conformers(&field, embedded.clone(), max_iters);
+    let mut conformers = Vec::with_capacity(optimized.len());
+    for (mut candidate, original) in optimized.into_iter().zip(embedded) {
+        if !stereo_safe_retry(mh, &candidate.coords) {
+            if !stereo_safe_retry(mh, &original) {
+                continue;
+            }
+            let energy = field.energy(original.as_flattened());
+            if !energy.is_finite() {
+                continue;
+            }
+            candidate = RdkitMmffConformer {
+                coords: original,
+                status: 1,
+                energy,
+            };
+        }
+        conformers.push(candidate);
+    }
     for conformer in &mut conformers {
         if conformer.status != 0 {
             continue;

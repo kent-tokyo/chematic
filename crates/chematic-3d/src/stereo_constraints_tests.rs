@@ -902,6 +902,30 @@ mod tests {
     }
 
     #[test]
+    fn constraint_set_terminal_hydrogens_and_isotopes_match_rdkit() {
+        // RDKit 2026.09.2 reports only the second double bond as E here. The
+        // terminal CH2 must remain unspecified after explicit H expansion.
+        let m = chematic_chem::add_hydrogens(&mol("C=C/C=C/C"));
+        let set = build_stereo_constraints(&m);
+        assert_eq!(set.double_bond.len(), 1);
+        assert_eq!(set.double_bond[0].bond, BondIdx(2));
+        assert!(set.unsupported.is_empty(), "{:?}", set.unsupported);
+
+        // RDKit recognizes E/Z when H and 2H differ, and also distinguishes
+        // an unspecified H from explicitly labelled 1H.
+        for smiles in [
+            r"[2H]/C([H])=C(/F)Cl",
+            r"[2H]/C([H])=C(\F)Cl",
+            r"[1H]/C([H])=C(/F)Cl",
+        ] {
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), 1, "{smiles}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{smiles}: {set:?}");
+        }
+    }
+
+    #[test]
     fn constraint_set_no_declared_stereo_is_empty_not_unsupported() {
         // Plain, fully unmarked molecule: must produce an empty set outright, not
         // a set full of `unsupported` entries -- "not declared" and "declared but

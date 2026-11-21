@@ -356,6 +356,39 @@ fn corrected_checked_ensemble_verifies_the_returned_gradient() {
     );
 }
 
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[test]
+fn corrected_checked_ensemble_preserves_macrocycle_double_bond_stereo() {
+    // Exposed Prime development case: candidate 43 crosses an E double bond
+    // during unconstrained MMFF optimization on the Linux reference runner.
+    let smiles = "CO[C@H]1C[C@H](CC[C@@H](C)[C@H](O)[C@H](C)[C@H]2OC(=O)/C=C/C(C)=C/C[C@H](O)C[C@@H]3C=CC[C@@H](C[C@H](OC)[C@@H](C)[C@@H](O)C[C@@H](O)[C@H](C)[C@@H]([C@@H](C)[C@@H](O)[C@@H](C)CC[C@H]4C[C@H](OC)C[C@H](C)O4)OC(=O)/C=C/C(C)=C\\C[C@@H](O)C[C@@H]4C=CC[C@@H](C[C@H](OC)[C@@H](C)[C@@H](O)C[C@@H](O)[C@@H]2C)O4)O3)O[C@@H](C)C1";
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+    let options = RdkitEmbedOptions::default();
+    let embedded = etkdg_embed_multiple_confs_corrected(&molecule, 44, &options).unwrap();
+    let unchecked =
+        etkdg_embed_multiple_confs_mmff_corrected(&molecule, 44, &options, 200).unwrap();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 44, &options, 200).unwrap();
+    assert_eq!(embedded.len(), 44);
+    assert_eq!(unchecked.len(), 44);
+    assert_eq!(checked.len(), 44);
+    assert!(stereo_safe_retry(&molecule, &embedded[43]));
+    assert!(!stereo_safe_retry(&molecule, &unchecked[43].coords));
+    assert_eq!(checked[43].coords, embedded[43]);
+    assert_eq!(checked[43].status, 1);
+    assert!(
+        checked
+            .iter()
+            .all(|candidate| stereo_safe_retry(&molecule, &candidate.coords))
+    );
+    let field =
+        chematic_ff::rdkit_mmff::RdkitMmffField::new(&molecule, &embedded[0], 100.0, true).unwrap();
+    assert_eq!(
+        checked[43].energy,
+        field.energy(embedded[43].as_flattened())
+    );
+}
+
 #[test]
 fn corrected_repair_is_bounded_and_stereo_safe() {
     let molecule = chematic_chem::add_hydrogens(

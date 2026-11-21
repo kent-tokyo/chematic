@@ -323,6 +323,9 @@ impl Mol {
     /// MMFF94 minimizations without the extra batches in the quality profile.
     /// Status 0 additionally requires a finite final gradient whose largest
     /// absolute component is at most 0.01 kcal/mol/angstrom.
+    /// If minimization violates declared stereo, the embedded coordinates are
+    /// returned with status 1 when their stereo is evaluable and correct.
+    /// Candidates whose embedded and optimized stereo both fail are omitted.
     /// `repair_mmff_iters` enables a bounded retry for near-linear nitrogen.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         max_mmff_iters = 200, repair_mmff_iters = 0))]

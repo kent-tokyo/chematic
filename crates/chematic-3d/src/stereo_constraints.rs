@@ -676,11 +676,25 @@ fn has_any_direction_marker(mol: &Molecule, alkene_end: AtomIdx, other_end: Atom
     })
 }
 
-/// `true` when `atom_idx` has at least one heavy-atom neighbor other than
-/// `other_end` -- i.e. it's a genuine, non-terminal alkene end that could plausibly
-/// carry its own substituent-direction marker.
+/// Reject a terminal alkene end with no substituents or two identical explicit
+/// hydrogen isotopes. Hydrogen isotopes with distinct labels must remain
+/// distinguishable, including an unspecified H versus explicitly labelled 1H.
 fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -> bool {
-    mol.neighbors(atom_idx).any(|(nb, _)| nb != other_end)
+    let mut neighbors = mol.neighbors(atom_idx).filter(|(nb, _)| *nb != other_end);
+    let Some((first, _)) = neighbors.next() else {
+        return false;
+    };
+    let Some((second, _)) = neighbors.next() else {
+        return true;
+    };
+    if neighbors.next().is_some() {
+        return true;
+    }
+    let first = mol.atom(first);
+    let second = mol.atom(second);
+    !(first.element.atomic_number() == 1
+        && second.element.atomic_number() == 1
+        && first.isotope == second.isotope)
 }
 
 /// Declared-parity-only prefix of double-bond verification, needing no geometry --
