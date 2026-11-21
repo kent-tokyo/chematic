@@ -88,6 +88,8 @@ pub enum CleanupError {
     AmbiguousMetalHydrogen,
     /// A detached neutral metal would be charged on a subsequent Cleanup.
     UnstableMetalDisconnection,
+    /// A tetrahedral center has five declared ligands including a metal.
+    UnstableMetalStereo,
 }
 
 impl CleanupError {
@@ -96,6 +98,7 @@ impl CleanupError {
         match self {
             Self::AmbiguousMetalHydrogen => "cleanup_metal_hydrogen",
             Self::UnstableMetalDisconnection => "cleanup_unstable_metal",
+            Self::UnstableMetalStereo => "cleanup_metal_stereo",
         }
     }
 }
@@ -110,6 +113,10 @@ impl std::fmt::Display for CleanupError {
                 f,
                 "Cleanup would charge the detached metal on a subsequent call"
             ),
+            Self::UnstableMetalStereo => write!(
+                f,
+                "Cleanup cannot reliably represent a tetrahedral center with five ligands including a metal"
+            ),
         }
     }
 }
@@ -120,6 +127,17 @@ impl std::error::Error for CleanupError {}
 ///
 /// [`cleanup_unchecked`] retains the historical best-effort behavior.
 pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
+    if mol.atoms().any(|(idx, atom)| {
+        matches!(
+            atom.chirality,
+            Chirality::Clockwise | Chirality::CounterClockwise
+        ) && mol.degree(idx) + usize::from(implicit_hcount(mol, idx)) > 4
+            && mol
+                .neighbors(idx)
+                .any(|(neighbor, _)| is_metal(mol.atom(neighbor).element))
+    }) {
+        return Err(CleanupError::UnstableMetalStereo);
+    }
     let cleaned = cleanup_unchecked(mol);
     if !mol.atoms().any(|(_, atom)| is_metal(atom.element)) {
         return Ok(cleaned);
@@ -571,8 +589,12 @@ fn metal_aromatic_exclusions(
     bond_order: BondOrder,
     aromaticity: Option<&chematic_perception::AromaticityModel>,
 ) -> (bool, bool) {
+    // Copper-bound aromatic carbon can lose the perception flag when the
+    // source uses aromatic bond tokens. Honor that source annotation as well
+    // so Kekule and aromatic spellings retain the same coordination bond.
     let aromatic_carbon = ligand_z == 6
-        && aromaticity.is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)));
+        && (aromaticity.is_some_and(|model| model.is_atom_aromatic(AtomIdx(ligand as u32)))
+            || (metal_z == 29 && mol.atom(AtomIdx(ligand as u32)).aromatic));
     let zinc_fused_aromatic_edge = metal_z == 30
         && ligand_z == 6
         && bond_order == BondOrder::Double
@@ -767,13 +789,6 @@ fn assign_valence_aware_metal_charge(
             (-ligand_charge - lone_electrons).max(0)
         };
         atoms[ligand].charge = i8::try_from(ligand_charge).unwrap_or(original.charge);
-        if ligand_atom.element.atomic_number() == 7
-            && ligand_charge == 0
-            && radical_before == 0
-            && ligand_atom.hydrogen_count == Some(0)
-        {
-            atoms[ligand].hydrogen_count = None;
-        }
         atoms[metal].charge = atoms[metal]
             .charge
             .saturating_add(i8::try_from(metal_gain).unwrap_or(0));
@@ -1192,7 +1207,7 @@ mod tests {
     }
 
     #[test]
-    fn cleanup_does_not_add_hydrogen_when_total_is_already_conserved() {
+    fn cleanup_preserves_tin_and_imine_hydrogens() {
         let input = "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N";
         let molecule = parse(input).unwrap();
         let cleaned = cleanup(&molecule);
@@ -1202,7 +1217,7 @@ mod tests {
         );
         assert_eq!(
             chematic_smiles::rdkit_cleanup_canonical_smiles(&cleaned).as_deref(),
-            Ok("C/N=C(\\S)N/N=C/C(C)=N.N[CH]=[Sn]")
+            Ok("C/N=C(\\S)N/N=C/C(C)=[N].N[CH]=[SnH]")
         );
     }
 

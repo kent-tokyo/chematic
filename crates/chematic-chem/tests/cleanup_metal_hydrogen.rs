@@ -19,29 +19,36 @@ fn preserves_copper_hydrogen_without_changing_the_selected_organic_site() {
 }
 
 #[test]
-fn checked_cleanup_refuses_unresolved_hydrogen_and_keeps_the_input() {
+fn checked_cleanup_preserves_tin_hydrogen_and_keeps_the_input() {
+    let mut previous = None;
     for input in [
         "C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
         "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N",
     ] {
         let molecule = parse(input).unwrap();
         let before = chematic_smiles::canonical_smiles(&molecule);
-        assert!(
-            matches!(
-                cleanup(&molecule),
-                Err(CleanupError::AmbiguousMetalHydrogen)
-            ),
-            "{input}"
+        let result = cleanup(&molecule).unwrap();
+        let smiles = rdkit_cleanup_canonical_smiles(&result).unwrap();
+        assert_eq!(calc_mol_formula(&result), calc_mol_formula(&molecule));
+        assert_eq!(
+            rdkit_cleanup_canonical_smiles(&cleanup_checked(&result).unwrap()).unwrap(),
+            smiles
         );
-        assert!(
-            matches!(
-                cleanup_checked(&molecule),
-                Err(CleanupError::AmbiguousMetalHydrogen)
-            ),
-            "{input}"
-        );
+        if let Some(first) = &previous {
+            assert_eq!(first, &smiles);
+        }
+        previous = Some(smiles);
         assert_eq!(chematic_smiles::canonical_smiles(&molecule), before);
     }
+}
+
+#[test]
+fn checked_cleanup_refuses_unresolved_metal_hydrogen() {
+    let molecule = parse("[Na]N=[N+]=[N-]").unwrap();
+    assert!(matches!(
+        cleanup(&molecule),
+        Err(CleanupError::AmbiguousMetalHydrogen)
+    ));
 }
 
 #[test]
@@ -94,27 +101,17 @@ fn explicit_ligand_hydrogens_do_not_gain_hydrogen_after_metal_cut() {
 
 #[test]
 fn metal_disconnection_does_not_create_hydrogen() {
-    for input in ["C[N]([SnH])C"] {
-        let source = parse(input).unwrap();
-        let expanded = add_hydrogens(&source);
-        let compact = cleanup(&source).unwrap();
-        let explicit = cleanup(&expanded).unwrap();
-        assert_eq!(
-            calc_mol_formula(&compact),
-            calc_mol_formula(&source),
-            "{input}"
-        );
-        assert_eq!(
-            calc_mol_formula(&explicit),
-            calc_mol_formula(&source),
-            "{input}"
-        );
-        assert_eq!(
-            rdkit_cleanup_canonical_smiles(&compact),
-            rdkit_cleanup_canonical_smiles(&explicit),
-            "{input}"
-        );
-    }
+    let input = "C[N]([SnH])C";
+    let source = parse(input).unwrap();
+    let expanded = add_hydrogens(&source);
+    let compact = cleanup(&source).unwrap();
+    let explicit = cleanup(&expanded).unwrap();
+    assert_eq!(calc_mol_formula(&compact), calc_mol_formula(&source));
+    assert_eq!(calc_mol_formula(&explicit), calc_mol_formula(&source));
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&compact),
+        rdkit_cleanup_canonical_smiles(&explicit)
+    );
 }
 
 #[test]
@@ -149,4 +146,57 @@ fn platinum_aromatic_cut_preserves_the_ligand_radical_and_formula() {
         rdkit_cleanup_canonical_smiles(&a),
         rdkit_cleanup_canonical_smiles(&cleanup(&a).unwrap())
     );
+}
+
+#[test]
+fn copper_aromatic_ligand_is_independent_of_kekule_and_explicit_hydrogens() {
+    let original =
+        parse("CN(C)C1=[C]([Cu][C@@H](CC2=CC=C(NC(=O)C3=C(Cl)C=NC=C3Cl)C=C2)C(=O)O)C(=O)C1=O")
+            .unwrap();
+    let explicit = parse("C(N(C([H])([H])[H])c1[c]([Cu][C@@](C(c2c([H])c([H])c(N(C(=O)c3c(Cl)c([H])nc([H])c3Cl)[H])c([H])c2[H])([H])[H])(C(=O)O[H])[H])c(=O)c1=O)([H])([H])[H]").unwrap();
+    let a = cleanup(&original).unwrap();
+    let b = cleanup(&explicit).unwrap();
+    assert_eq!(calc_mol_formula(&a), calc_mol_formula(&original));
+    assert_eq!(calc_mol_formula(&b), calc_mol_formula(&original));
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&a),
+        rdkit_cleanup_canonical_smiles(&b)
+    );
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&a),
+        rdkit_cleanup_canonical_smiles(&cleanup(&a).unwrap())
+    );
+}
+
+#[test]
+fn metal_disconnection_does_not_invent_an_imine_hydrogen() {
+    let source =
+        parse("[Na]12=[C](C=C(F)C=[CH]1)N(C1=C[C+]=C(C=C1)Cl)C1C(=[N]2)C(=O)N(C)C(=O)N=1").unwrap();
+    let expanded = add_hydrogens(&source);
+    let compact = cleanup(&source).unwrap();
+    let explicit = cleanup(&expanded).unwrap();
+    assert_eq!(calc_mol_formula(&compact), calc_mol_formula(&source));
+    assert_eq!(calc_mol_formula(&explicit), calc_mol_formula(&source));
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&compact),
+        rdkit_cleanup_canonical_smiles(&explicit)
+    );
+    assert_eq!(
+        rdkit_cleanup_canonical_smiles(&compact),
+        rdkit_cleanup_canonical_smiles(&cleanup(&compact).unwrap())
+    );
+}
+
+#[test]
+fn refuses_unrepresentable_metal_tetrahedral_stereo_for_both_spellings() {
+    for input in [
+        "O=C(O)[C@@H]1([SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+        "O=C(O[H])[C@]1(->[Sn][H])([H])C([H])([H])[C@](/C(=C(/C(P(=O)(O[H])O[H])([H])[H])[H])[H])([H])C([H])([H])C([H])([H])N1[H]",
+    ] {
+        let source = parse(input).unwrap();
+        assert!(
+            matches!(cleanup(&source), Err(CleanupError::UnstableMetalStereo)),
+            "{input}"
+        );
+    }
 }

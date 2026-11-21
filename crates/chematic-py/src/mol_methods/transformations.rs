@@ -65,7 +65,8 @@ impl Mol {
     /// check the resulting acid before accepting a move.
     /// Raises ``ChematicInputError`` with code ``cleanup_metal_hydrogen``
     /// when a metal hydrogen change cannot be accounted for, or
-    /// ``cleanup_unstable_metal`` when a detached metal would change on repeat.
+    /// ``cleanup_unstable_metal`` when a detached metal would change on repeat,
+    /// or ``cleanup_metal_stereo`` for unsupported five-ligand tetrahedral stereo.
     fn cleanup(&self) -> PyResult<Mol> {
         let cleaned = chematic_chem::cleanup_checked(&self.inner).map_err(|error| {
             crate::errors::input_error("ambiguous", error.code(), "cleanup", error.to_string())

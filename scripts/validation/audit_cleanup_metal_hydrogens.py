@@ -45,7 +45,7 @@ def main():
         try:
             cleaned = source.cleanup()
         except chematic.ChematicInputError as error:
-            if error.category != "ambiguous" or error.code not in ("cleanup_metal_hydrogen", "cleanup_unstable_metal"):
+            if error.category != "ambiguous" or error.code not in ("cleanup_metal_hydrogen", "cleanup_unstable_metal", "cleanup_metal_stereo"):
                 raise
             rows.append({"index": index, "input_formula": source.formula,
                          "refused": {"category": error.category, "code": error.code}})
@@ -65,8 +65,8 @@ def main():
                      "output": output})
     spelling_pairs = []
     for label, inputs, expect_error in (
-        ("ambiguous_tin", ("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
-                           "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N"), True),
+        ("resolved_tin", ("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
+                          "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N"), False),
         ("resolved_platinum", ("C[PtH]C", "C[Pt]([H])C"), False),
     ):
         variants = []

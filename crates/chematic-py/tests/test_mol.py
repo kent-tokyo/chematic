@@ -278,15 +278,24 @@ def test_cleanup_preserves_explicit_metal_hydrogens():
         assert cleaned.cleanup().formula == source.formula
 
 
-def test_cleanup_refuses_unresolved_metal_hydrogen():
+def test_cleanup_preserves_tin_hydrogen_across_spellings():
+    outputs = []
     for smiles in ("C/N=C(\\S)N/N=C/C(C)=[N]/[SnH]=[CH]/N",
                    "C/N=C(\\S)N/N=C/C(C)=[N]/[Sn]([H])=[CH]/N"):
         source = chematic.from_smiles(smiles)
-        with pytest.raises(chematic.ChematicInputError) as captured:
-            source.cleanup()
-        assert captured.value.category == "ambiguous"
-        assert captured.value.code == "cleanup_metal_hydrogen"
-        assert captured.value.format == "cleanup"
+        result = source.cleanup()
+        assert result.formula == source.formula
+        assert result.cleanup().rdkit_smiles == result.rdkit_smiles
+        outputs.append(result.rdkit_smiles)
+    assert outputs[0] == outputs[1]
+
+
+def test_cleanup_refuses_unresolved_metal_hydrogen():
+    with pytest.raises(chematic.ChematicInputError) as captured:
+        chematic.from_smiles("[Na]N=[N+]=[N-]").cleanup()
+    assert captured.value.category == "ambiguous"
+    assert captured.value.code == "cleanup_metal_hydrogen"
+    assert captured.value.format == "cleanup"
 
 
 def test_cleanup_explicit_ligand_hydrogens_keep_formula_after_metal_cut():
@@ -312,6 +321,40 @@ def test_cleanup_platinum_aromatic_cut_preserves_input_hydrogens():
     assert inputs[0].formula == inputs[1].formula
     assert all(result.formula == inputs[0].formula for result in outputs)
     assert outputs[0].rdkit_smiles == outputs[1].rdkit_smiles
+
+
+def test_cleanup_copper_aromatic_ligand_preserves_kekule_result():
+    variants = (
+        "CN(C)C1=[C]([Cu][C@@H](CC2=CC=C(NC(=O)C3=C(Cl)C=NC=C3Cl)C=C2)C(=O)O)C(=O)C1=O",
+        "C(N(C([H])([H])[H])c1[c]([Cu][C@@](C(c2c([H])c([H])c(N(C(=O)c3c(Cl)c([H])nc([H])c3Cl)[H])c([H])c2[H])([H])[H])(C(=O)O[H])[H])c(=O)c1=O)([H])([H])[H]",
+    )
+    inputs = [chematic.from_smiles(text) for text in variants]
+    outputs = [source.cleanup() for source in inputs]
+    assert inputs[0].formula == inputs[1].formula
+    assert all(result.formula == inputs[0].formula for result in outputs)
+    assert outputs[0].rdkit_smiles == outputs[1].rdkit_smiles
+    assert outputs[0].cleanup().rdkit_smiles == outputs[0].rdkit_smiles
+
+
+def test_cleanup_metal_cut_preserves_imine_hydrogen_count():
+    source = chematic.from_smiles("[Na]12=[C](C=C(F)C=[CH]1)N(C1=C[C+]=C(C=C1)Cl)C1C(=[N]2)C(=O)N(C)C(=O)N=1")
+    expanded = source.add_hydrogens()
+    compact_result = source.cleanup()
+    explicit_result = expanded.cleanup()
+    assert compact_result.formula == source.formula
+    assert explicit_result.formula == source.formula
+    assert compact_result.rdkit_smiles == explicit_result.rdkit_smiles
+    assert compact_result.cleanup().rdkit_smiles == compact_result.rdkit_smiles
+
+
+def test_cleanup_refuses_overcoordinated_tetrahedral_metal_stereo():
+    for text in (
+        "O=C(O)[C@@H]1([SnH])C[C@@H](/C=C/CP(=O)(O)O)CCN1",
+        "O=C(O[H])[C@]1(->[Sn][H])([H])C([H])([H])[C@](/C(=C(/C(P(=O)(O[H])O[H])([H])[H])[H])[H])([H])C([H])([H])C([H])([H])N1[H]",
+    ):
+        with pytest.raises(chematic.ChematicInputError) as captured:
+            chematic.from_smiles(text).cleanup()
+        assert captured.value.code == "cleanup_metal_stereo"
 
 
 def test_cleanup_rdkit_smiles_preserves_in_memory_metal_stereo():

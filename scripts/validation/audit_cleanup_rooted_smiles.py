@@ -73,7 +73,7 @@ def main():
             try:
                 output = parsed.cleanup().rdkit_smiles
             except chematic.ChematicInputError as error:
-                if error.category != "ambiguous" or error.code not in ("cleanup_metal_hydrogen", "cleanup_unstable_metal"):
+                if error.category != "ambiguous" or error.code not in ("cleanup_metal_hydrogen", "cleanup_unstable_metal", "cleanup_metal_stereo"):
                     raise
                 output = None
             variants.append({"input": form,

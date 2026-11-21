@@ -1636,7 +1636,8 @@ class Mol:
         Raises:
             ChematicInputError: If a metal hydrogen change cannot be accounted
                 for (``cleanup_metal_hydrogen``), or a detached metal would
-                change on repeat (``cleanup_unstable_metal``).
+                change on repeat (``cleanup_unstable_metal``), or a metal-bound
+                tetrahedral center has five ligands (``cleanup_metal_stereo``).
         """
         ...
 

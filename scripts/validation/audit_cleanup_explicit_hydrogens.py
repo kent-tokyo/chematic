@@ -61,7 +61,7 @@ def main():
         accepted = all("error" not in x for x in variants)
         refused = (variants[0].get("error") == variants[1].get("error")
                    and variants[0].get("error", {}).get("category") == "ambiguous"
-                   and variants[0]["error"].get("code") in ("cleanup_metal_hydrogen", "cleanup_unstable_metal"))
+                   and variants[0]["error"].get("code") in ("cleanup_metal_hydrogen", "cleanup_unstable_metal", "cleanup_metal_stereo"))
         matches = (variants[0]["input_formula"] == variants[1]["input_formula"] and
                    ((accepted and variants[0]["output"] == variants[1]["output"] and
                      all(x["output_formula"] == x["input_formula"] for x in variants)) or refused))
