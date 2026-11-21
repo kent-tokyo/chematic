@@ -57,7 +57,8 @@ unsanitized structures, ignoring bond orders. It found no possible overlap
 among 1,032 eligible scaffold groups; the audit is
 `validation/results/macrocycle-pdb-invalid-exclusion-audit-2026-11-22.json`
 (SHA-256 `1293b264be555e2802edb0a1067ec5e35fcfb5cc979935fdc2cf51ca9902c855`).
-The audit applies to index graphs, not yet to the individual SDF files.
+The same conservative exclusion audit was repeated after preparing the SDF
+graphs and again found no possible overlaps among 1,032 eligible scaffolds.
 For an input-preparation pilot only, the first development case,
 `8ebk__Ligand_phospholipids_THR_B_4`, was fetched from the pinned commit.
 Its source SDF Git blob is `a5d104cb80fac9bcd4220ef9b13c8274d26b0e55`
@@ -75,10 +76,20 @@ to these local installations and is not a cross-platform RDKit claim.
 
 ## Required checks before performance scoring
 
-Fetch the remaining reference SDFs from the pinned commit on a host with enough
-space. Verify each file's case identity, atom and bond graph, formal charges,
-isotopes and declared stereochemistry against the indexed SMILES; preserve the
-experimental coordinates and report parse failures and unsupported chemistry.
+The [preparation run](https://github.com/kent-tokyo/chematic/actions/runs/44955399937)
+checked all 1,861 source SDF records against the index, including formal
+charges, isotopes and declared stereochemistry. It found no input failures and
+retained 363 development, 1,243 holdout-candidate and 255 excluded records.
+The source archive SHA-256 was
+`91e39f1a90f81982bf5781c54e7899952120f25a72a4d296a90bb709331fefcb`;
+the prepared SDF SHA-256 was
+`71bf05a54cd402146e8892acd88969ec52fd45d2a02c4194b7aa905fe900222d`,
+and the prepared split SHA-256 was
+`ffb256b0a9dbc779a5c6b3dd2ac96deec6174dc25408dc1d0691efcef8c4c4ff`.
+The run artifact retains the inputs, source license, citation and audit.
+Preparation does not establish MMFF support or conformer accuracy.
+
+Before scoring, report unsupported chemistry and preserve experimental coordinates.
 If a mismatch affects the candidate holdout, resolve the inclusion rule and
 whether a fresh holdout is needed before viewing any conformer outcomes.
 Record source and prepared-data hashes, wheel identities, error handling,
