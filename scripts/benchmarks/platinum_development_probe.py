@@ -193,6 +193,8 @@ def main():
     parser.add_argument("--sdf", type=Path, required=True)
     parser.add_argument("--split", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--partition", choices=("development", "holdout"), default="development")
+    parser.add_argument("--invalid-exclusion-audit", type=Path)
     parser.add_argument("--count", type=int, default=20)
     parser.add_argument("--limit", type=int, default=20)
     parser.add_argument("--seed", type=int, default=42)
@@ -208,7 +210,16 @@ def main():
         parser.error("repair-iters requires the corrected profile")
     split = json.loads(args.split.read_text())
     assert hashlib.sha256(args.sdf.read_bytes()).hexdigest() == split["source_sha256"]
-    rows = [r for r in split["rows"] if r.get("split") == "development"]
+    if args.partition == "holdout":
+        if args.invalid_exclusion_audit is None:
+            parser.error("holdout requires an invalid-exclusion graph audit")
+        audit = json.loads(args.invalid_exclusion_audit.read_text())
+        if (audit["split_sha256"] != hashlib.sha256(args.split.read_bytes()).hexdigest()
+            or audit["source_sha256"] != split["source_sha256"]
+            or audit["invalid_exclusion_count"] != len(split["invalid_exclusions"])
+            or audit["overlaps"]):
+            parser.error("invalid-exclusion audit does not establish a clean split")
+    rows = [r for r in split["rows"] if r.get("split") == args.partition]
     rows.sort(key=lambda r: hashlib.sha256(r["name"].encode()).digest())
     selected = {r["index"]: r for r in rows[: args.limit]}
     supplier = Chem.SDMolSupplier(str(args.sdf), removeHs=False)
@@ -225,7 +236,7 @@ def main():
         "candidate_limit": args.count,
         "mmff_iterations": 200,
         "seed": args.seed,
-        "selection": "development only sorted by SHA256(name)",
+        "selection": f"{args.partition} only sorted by SHA256(name)",
         "results": [],
     }
     for index in sorted(selected):

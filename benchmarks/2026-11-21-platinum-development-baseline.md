@@ -197,3 +197,12 @@ RDKit 2026.09.2 on this host raises `RuntimeError: bad any cast` for
 `MurckoScaffoldSmiles(smiles="Cc1ccccc1")` even in a fresh environment.
 The split therefore uses RDKit 2026.09.1. No scaffold operation occurs in
 the 2026.09.2 conformer measurements.
+
+A conservative graph audit of the eight unsanitizable exclusions is recorded
+in `validation/results/platinum-invalid-exclusion-graph-audit-2026-11-22.json`.
+Each eligible scaffold was searched as an atom-number subgraph of the
+unsanitized exclusion structures with every bond order relaxed. No candidate
+scaffold matched. This treats any potential match as an exclusion and does not
+assert that the invalid inputs have chemically meaningful sanitized structures.
+The audit covers the recorded exclusion datasets; it cannot establish that no
+other historical data or methodological choices exposed a holdout molecule.
