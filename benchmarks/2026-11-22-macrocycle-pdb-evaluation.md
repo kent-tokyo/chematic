@@ -386,3 +386,19 @@ and `validation/results/macrocycle-raw-corrected-v11-macos-2026-11-22.json`
 The earlier diagnostic run did not validate the candidate source tree against
 the wheel, and the next run masked a compiler failure behind a shell pipe;
 neither provides results. The linked run fixed both problems.
+
+An opt-in fallback API now retries the compatibility gradient only when the
+corrected, stereo-checked ensemble returns no usable candidates. It applies the
+same internal stereo gate to that retry; the existing corrected API is
+unchanged. The [Linux source-built candidate regression](https://github.com/kent-tokyo/chematic/actions/runs/44992673854)
+returned zero corrected candidates and two fallback candidates for this case.
+Both were unfinished; the independent strict verifier found no contradicted or
+unevaluable declarations. The result is
+`validation/results/macrocycle-fallback-development-linux-2026-11-22.json`,
+SHA-256 `25ced86eeb64345f34ebb7c7ba4ce982c97c6b22667e17807d79d7f504398322`.
+The wheel SHA-256 was
+`deaa345879874ef2d6b935c39d512807c175cbeaa2e203025f35993b65c51d38`,
+built from merge commit `f8c48c8b44321e14f4648b94ec03035ad5ae099d`.
+This is one exposed development case; a 32-record development repeat is
+scheduled. The previously sealed holdout protocol does not describe this
+fallback profile and remains unscored.
