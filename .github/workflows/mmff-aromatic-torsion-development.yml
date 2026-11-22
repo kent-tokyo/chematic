@@ -47,5 +47,5 @@ jobs:
           path: |
             aromatic-torsion-source-commit.txt
             aromatic-torsion-wheel.sha256
-            relevant-*-fields*.json
+            aromatic-torsion-*-fields*.json
           if-no-files-found: warn

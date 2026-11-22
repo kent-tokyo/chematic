@@ -1261,3 +1261,18 @@ finite-difference errors also remain large and require investigation. The
 complete runner outputs are retained in
 `validation/results/cod-first-fields-relevant-development-2026-11-22.json.gz`
 and `validation/results/cod-second-fields-relevant-development-2026-11-22.json.gz`.
+
+RDKit's UFF builder assigns SP2D, SP3D and SP3D2 hybridization from
+non-tetrahedral stereo tags. The UFF port now accounts for these tags when
+selecting labels and angular terms. The [Linux UFF regression](https://github.com/kent-tokyo/chematic/actions/runs/44983432313)
+passed the library suite, 11 fixed-coordinate cases and the two previously
+exposed phosphorus UFF comparisons. The tested merge commit was
+`17958cde22c1ce6ec1a44d006b0f1a857401a9e4`; Linux wheel SHA-256 was
+`1558a13111912671ebbc0b7a9a5ca408b3c9373059277eba5a801bf05b7a0c8c`.
+The job checked both selected field sets, but its artifact glob omitted the
+JSON outputs; the passing targeted assertions remain in the job log. A later
+workflow corrects the artifact path. Local exploratory checks also found the
+MMFF torsion builder incorrectly included SP2D central atoms, and that the
+empirical torsion rule used MMFFProp aromatic flags instead of the separate
+MMFFArom type set. Both changes have fixed-coordinate tests; wheel and broader
+regression results are pending. These exposed checks do not establish parity.
