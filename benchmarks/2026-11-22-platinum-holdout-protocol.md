@@ -2443,3 +2443,20 @@ embedding took 505.74 seconds in chematic and 527.21 seconds in RDKit.
 The chematic result contained no conformer, and RDKit returned -1; neither
 engine entered the MMFF phase. These are single exposed-case diagnostics,
 not a general speed comparison or proof of the precise underlying cause.
+
+For the post-fix Linux isolated timed follow-up (run 45063387990),
+all eight completed shards were checked against the plan and summarized
+in memory pending the CI merge. Of 3,579 molecules, recovery was 1,951
+for chematic and 1,927 for RDKit; the paired scaffold-bootstrap 95%
+interval for the difference was -0.33 to +1.70 percentage points.
+Accepted conformers had complete stereo, RMSD, geometry and status scoring.
+There were 240 chematic generation-stage exceptions, all MMFF type-assignment
+failures: 191 cited boron and 49 selenium. RDKit accepted at least one
+conformer for 221 of those 240 molecules; every accepted RDKit conformer
+in those 221 records had optimizer status -1, and 114 records recovered
+the reference under the non-convergence recovery definition. This is a
+workflow difference involving unavailable MMFF parameters, not evidence
+that RDKit successfully optimized those molecules. This population was
+previously exposed to common-coordinate force-field evaluation; the timed
+outcomes were assessed prospectively, and earlier exposure remains unknown.
+The official CI merge and the macOS run remain pending.
