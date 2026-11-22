@@ -59,14 +59,17 @@ fn repeated_absolute_collection_lines_merge_and_deduplicate_members() {
 #[test]
 fn malformed_rgroup_lists_are_reported() {
     let input = with_collection("MDLV30/STEABS ATOMS=(1 1)");
-    for (property, expected) in [("RGROUPS=(x 7)", "RGROUPS property lacks a valid count")] {
-        let molecule = input.replace(
-            "M  V30 1 C 0 0 0 0\n",
-            &format!("M  V30 1 C 0 0 0 0 {property}\n"),
-        );
-        let error = read_mol_v3000_with_diagnostics(&molecule)
-            .err()
-            .expect("invalid RGROUPS");
-        assert!(error.to_string().contains(expected), "{property}: {error}");
-    }
+    let property = "RGROUPS=(x 7)";
+    let molecule = input.replace(
+        "M  V30 1 C 0 0 0 0\n",
+        &format!("M  V30 1 C 0 0 0 0 {property}\n"),
+    );
+    let error = read_mol_v3000_with_diagnostics(&molecule)
+        .err()
+        .expect("invalid RGROUPS");
+    assert!(
+        error
+            .to_string()
+            .contains("RGROUPS property lacks a valid count")
+    );
 }
