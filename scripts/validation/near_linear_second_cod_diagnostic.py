@@ -39,5 +39,8 @@ for variant in ('MMFF94','UFF'):
     out['fields'][variant] = {'chematic_gradient': gradients[9][1],
                               'rdkit_gradient': reference.CalcGrad()[28],
                               'finite_difference': numeric}
+    if variant == 'MMFF94':
+        ours.set_positions_(coords)
+        out['fields'][variant]['consistent_plane_gradient'] = ours.gradient_with_consistent_planes()[9][1]
 Path('near-linear-second-cod.json').write_text(json.dumps(out,indent=2,allow_nan=False)+'\n')
 print(json.dumps(out))
