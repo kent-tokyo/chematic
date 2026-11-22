@@ -1867,6 +1867,22 @@ not change this candidate or the evaluation settings after holdout scoring
 begins. The separately prepared PDB holdout contains 1,243 records; both
 populations and platforms are reported separately.
 
+Before scoring, the independent input audits completed on Linux and macOS
+in GitHub Actions run 45026013999. The two platforms produced byte-identical
+identity and support audit files for each dataset. All 2,102 COD and 1,243
+macrocycle records matched the atom identity audit. On COD, both engines had
+MMFF support for 1,919 records; both lacked it for 176, and chematic alone
+had it for seven. Both engines supported all 1,243 macrocycle records. These
+are input and parameter-support checks, not conformer recovery or energy
+accuracy results. Compressed audit records are retained as
+`validation/results/fresh-{cod,macrocycle}-holdout-{identity,support}-audit-2026-11-22.json.gz`.
+The uncompressed SHA-256 values, in COD identity, COD support, macrocycle
+identity and macrocycle support order, are
+`8470d618d3f6800e147032fdba7e966dfeaf7bb29c70aedec9198c94a270ec0c`,
+`4e502aae31553aa4ddceef32dabc64d27946ed62b95499f3d51a1aeb85475f18`,
+`65a7f4b25c56a2a5e15c7bcafb49860289823a080fd731c5ba04a1110a78fbbb`, and
+`105bd9299633d65bf309badd7067287f3e187e501952d955460a4a9788e69cf1`.
+
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
 (SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).
