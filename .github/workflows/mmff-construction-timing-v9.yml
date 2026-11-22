@@ -1,7 +1,7 @@
 name: MMFF construction timing v8 and v9
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/mmff-construction-timing-v9.yml'
 permissions:
