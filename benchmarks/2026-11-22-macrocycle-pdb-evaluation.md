@@ -557,3 +557,20 @@ not a holdout result. The raw result is
 `validation/results/macrocycle-pdb-linux-development-mixed-32-2026-11-22.json.gz`,
 uncompressed SHA-256
 `6e0705f1bcac16e3abf2e86b9dd5efb7620f828f88beabc027776af3d594ad77`.
+
+Both 20-attempt mixed-profile runs on the remaining 331 macOS development
+records have now completed. With seed 42, chematic / RDKit recovered 42 / 48;
+with seed 43 they recovered 45 / 44. Compared with seed 42, chematic seed 43
+gained 13 recoveries and lost 10. All 6,243 and 6,255 returned chematic
+conformers respectively had consistent and evaluable declared stereo; eight
+and seven records respectively returned no chematic conformers. The paired
+results are descriptive development evidence: different seeds also changed
+RDKit's recoveries, and this comparison does not establish that seed 43 is
+generally superior. The fixed independent holdout candidate remains seed 42.
+Raw files are
+`validation/results/macrocycle-pdb-macos-development-mixed-seed42-331-2026-11-22.json.gz`
+and
+`validation/results/macrocycle-pdb-macos-development-mixed-seed43-331-2026-11-22.json.gz`,
+with uncompressed SHA-256 values
+`4772f121a76bc31a239a781c807741b2c7e04ea9babda57f10d2768d8d026ec2` and
+`4a3b94b5edeb01017ee6282b5be6d53c59e71a09be898efdbd93bfd1903e4ff3`.
