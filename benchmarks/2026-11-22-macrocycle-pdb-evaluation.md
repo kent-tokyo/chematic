@@ -574,3 +574,11 @@ and
 with uncompressed SHA-256 values
 `4772f121a76bc31a239a781c807741b2c7e04ea9babda57f10d2768d8d026ec2` and
 `4a3b94b5edeb01017ee6282b5be6d53c59e71a09be898efdbd93bfd1903e4ff3`.
+These historical outputs contain five and six RDKit `Bad Conformer Id`
+errors respectively. The scorer previously called MMFF optimization even
+when RDKit returned no conformers; the scorer now skips that call and
+records an empty ensemble explicitly. The archived errors have not been
+retroactively classified because their original embedding counts were not
+recorded. A genuine empty ensemble counted as no recovery both before and
+after this reporting fix. The ongoing holdout uses the previously frozen
+scorer, so its original error records must also be retained as reported.

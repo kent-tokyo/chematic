@@ -158,8 +158,9 @@ def score(reference, count, seed, profile, geometry, repair_iters):
             ]
             for cid in ids
         ]
-        minimized = AllChem.MMFFOptimizeMoleculeConfs(
-            generated, numThreads=1, maxIters=200
+        minimized = (
+            AllChem.MMFFOptimizeMoleculeConfs(generated, numThreads=1, maxIters=200)
+            if ids else []
         )
         result["rdkit_seconds"] = time.perf_counter() - start
         result["rdkit_raw_seconds"] = raw_time
