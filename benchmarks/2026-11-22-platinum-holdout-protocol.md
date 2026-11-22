@@ -1842,3 +1842,21 @@ Raw output is
 `validation/results/cod-fresh-development-macos-corrected-2026-11-22.json.gz`,
 uncompressed SHA-256
 `60868500327dba35da537c411a460749f216438e45f90a69d15cf95a0d123f4a`.
+
+### Candidate fixed before holdout scoring
+
+The candidate for both independent holdouts is the experimental mixed
+gradient profile at source commit
+`29e37e169668903d6b01490c565b2f4a2cf63e5e`, using seed 42 and the
+settings above. Its Linux wheel SHA-256 is
+`da93ee39d81727e3566a65b352657f745ed3ed91aa7fffd8a4dcbd784d8e8edb`;
+its macOS wheel SHA-256 is
+`416a8fe0ffce006259c74106f2f4d90849f472bacb94377dd779103c60c64693`.
+Both wheels and the fixed and timed shard pipelines passed their preparation
+smoke tests in GitHub Actions run 45024603212. The candidate is selected for
+evaluation, not declared superior: mixed gained and lost cases compared with
+corrected on development data, including one net loss on the fresh 213-record
+development set. Further development experiments, including other seeds, do
+not change this candidate or the evaluation settings after holdout scoring
+begins. The separately prepared PDB holdout contains 1,243 records; both
+populations and platforms are reported separately.

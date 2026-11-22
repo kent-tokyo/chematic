@@ -533,3 +533,18 @@ This exposed sample does not establish macrocycle noninferiority. Raw data are
 `validation/results/macrocycle-pdb-macos-development-mixed-checked-32-2026-11-22.json.gz`,
 uncompressed SHA-256
 `0694f6ea4747e5044bd71eafa14b3ec78b2aa072fd3c89dcb2c7a225e683b3ff`.
+
+With seed 43 and otherwise identical mixed-profile settings on the same 32
+macOS records, chematic / RDKit recovered 4 / 6. Relative to chematic seed
+42, two recoveries were gained and one lost; all 605 chematic candidates
+had consistent and evaluable declared stereo. This selected sample cannot
+establish that seed 43 improves macrocycle sampling. The remaining 331
+development records were selected without inspecting their outcomes to test
+both seeds with the same 20-attempt budget. The seed-43 32-record data are
+`validation/results/macrocycle-pdb-macos-development-mixed-seed43-32-2026-11-22.json.gz`,
+uncompressed SHA-256
+`18f4ee07ea329fc088914df373389e54cb42491fab5ea0bb85d80d679f871140`.
+The remaining-development split is
+`validation/results/macrocycle-development-remaining331-split-2026-11-22.json.gz`,
+uncompressed SHA-256
+`7d82fc45028f1220d120a12947babdf7903a11350b7673a9adce5e95ad152caa`.
