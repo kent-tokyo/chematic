@@ -792,9 +792,16 @@ uses merge commit `acc79a611d5c3bac571a7b1a6f274700b20f534e`, crates tree
 SHA-256 is `e113e7f74b6e5018a03913836824c203d2366e34189264c0d85291fbd663b7b3`;
 its macOS arm64 wheel SHA-256 is
 `402918d1553f4760d87eb5e3f1602f91bc3c37c164c8b01ac7cb048f4deeb464`.
-The v5 development comparisons remain in progress. A v6 wheel including the
-terminal-carbon fix is being frozen separately before inspecting any
-second-COD holdout conformer scores, and requires its own development rerun.
+The v5 development comparison remains in progress. The
+[v6 build](https://github.com/kent-tokyo/chematic/actions/runs/44967752750)
+includes the terminal-carbon fix and uses merge commit
+`76a6d3c8ef9642155821d6810a1a0d28c6bfb146`, crates tree
+`c23b1b1353602e84e5923d7b507f0aafacd05cfa`; its Linux and macOS CPython
+3.12 wheel SHA-256 hashes are
+`c5f0941fa318d22b280d172585c944052c6aafa74bdab995ca29d35ef04a5aea` and
+`08179d1a33f4af6296c064831eecbd85de66c16529b63309b3d539a98587e23a`.
+It was fixed before inspecting any second-COD holdout conformer scores and
+requires its own development rerun.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
