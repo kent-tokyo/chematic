@@ -1,7 +1,7 @@
 name: COD exposed phosphorus sulfur verifier follow-up
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-exposed-ps-followup.yml'
 permissions:
