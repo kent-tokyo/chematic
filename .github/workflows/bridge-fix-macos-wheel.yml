@@ -23,7 +23,7 @@ jobs:
       - name: Verify fixed source and build
         run: |
           test "$(git rev-parse HEAD:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
-          python -m pip install 'maturin==1.13.3'
+          python -m pip install 'maturin==1.13.3' 'numpy<3'
           maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out candidate
           python -m pip install --force-reinstall --no-deps candidate/*.whl
       - name: Verify bridge fixtures and record identity
