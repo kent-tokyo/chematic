@@ -1,15 +1,10 @@
 # Migrate from RDKit
 
-chematic is not a drop-in RDKit replacement. Choose a declared operation
-profile, preserve unsupported inputs, and compare results on your own data
-before changing a production workflow. The current release line is **v1.2.2**. Its exact artifact results are determined by the tag workflow. Retained v1.2.0 wheels passed the hosted three-platform runtime smoke and 11-job chemistry workflow. The latest durable checked-in cross-platform packet
-is **v1.1.3**, while the broadest published-package RDKit performance packet
-remains **v1.0.42**. These records answer different questions.
-
-For runnable calls, see the [RDKit cheat sheet](rdkit_cheatsheet.md). For
-operation-level measurement and unsupported states, see the
-[compatibility dashboard](compatibility-dashboard.md),
-[validation report](validation.md), and [compatibility scope](compatibility-scope.md).
+Choose a documented operation profile and compare outputs and refusals on your
+own data before migrating. Use the [cheat sheet](rdkit_cheatsheet.md) for runnable
+calls, the [compatibility scope](compatibility-scope.md) for supported options,
+and the [validation report](validation.md) for versioned results. To upgrade
+code that already uses chematic Cleanup, see [Cleanup migration](cleanup-migration.md).
 
 ## API map
 

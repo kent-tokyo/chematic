@@ -3,7 +3,7 @@ use crate::hash::mol_hash;
 use chematic_smiles::parse;
 
 fn cleanup(mol: &chematic_core::Molecule) -> chematic_core::Molecule {
-    super::cleanup(mol).unwrap()
+    super::cleanup_checked(mol).unwrap()
 }
 
 #[test]

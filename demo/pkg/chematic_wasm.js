@@ -3067,7 +3067,10 @@ export function cip_unresolved_json(mol) {
 export function cleanup_mol(mol) {
     _assertClass(mol, MolHandle);
     const ret = wasm.cleanup_mol(mol.__wbg_ptr);
-    return MolHandle.__wrap(ret);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return MolHandle.__wrap(ret[0]);
 }
 
 /**

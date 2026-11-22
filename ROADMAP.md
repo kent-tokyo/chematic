@@ -1,6 +1,6 @@
 # chematic roadmap
 
-> Updated 2026-11-21. Release line: **v1.2.2**. Package claims require verification of the exact published artifacts.
+> Release line: **v1.2.3**. The checked Cleanup API reports ambiguous metal transformations.
 
 chematic shares one Rust chemistry core across Rust, Python, Node and WASM. The priorities are correctness, explicit limits and reproducible evidence.
 

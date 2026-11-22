@@ -27,11 +27,9 @@ npm install @kent-tokyo/chematic
 
 Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
 
-### v1.2.2 范围
+### v1.2.3 范围
 
-当前版本为 **v1.2.2**。版本变化见 [CHANGELOG](CHANGELOG.md)。精度和性能声明
-仅适用于[验证报告](docs/reference/validation.md)与[基准索引](benchmarks/README.md)
-中明确列出的构件、语料和运行环境。
+当前版本为 **v1.2.3**。参见[更新记录](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.3)和[发布验证](docs/reference/validation.md)。下一版本的变更见[未发布条目](CHANGELOG.md#unreleased)。
 
 ## 适合选择 chematic 的场景
 

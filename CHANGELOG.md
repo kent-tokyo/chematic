@@ -8,20 +8,24 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.2.3] - 2026-11-22
+
+### Compatibility
+
+- Rust `cleanup(&Molecule)` retains its best-effort return type. The new
+  `cleanup_checked` reports metal transformation errors. Python and WASM
+  use the checked path. See [Cleanup migration](docs/reference/cleanup-migration.md).
+
 ### Fixed
 
-- 2D depiction typesets bonded atom labels like isolated ones: charges as superscripts (O⁻, NH₃⁺, S²⁺), hydrogen counts as subscripts (NH₂) and isotopes as superscript prefixes (¹³C). A drawing no longer mixes `O-` with `Na⁺` (#1280).
-- Preserve metal hydrogen counts during Cleanup when correcting a gain or loss restores the molecule's hydrogen total without changing nonmetal hydrogen counts.
-- Preserve explicit ligand hydrogen counts during Cleanup when cutting metal bonds would otherwise invent hydrogens.
-- Preserve aromatic copper coordination across Kekule and aromatic input spellings, and retain explicit zero hydrogen on an imine after metal disconnection.
-- Return an explicit ambiguity error from Cleanup when a cut metal bond leaves a metal hydrogen change unaccounted for.
-- Reject a detached neutral metal when another Cleanup would change its charge.
-- Reject metal-bound tetrahedral stereo with five declared ligands, which cannot be represented reliably by the current Cleanup writer.
-- EPS export draws formal charges, raised after the atom label (O⁻, NH₃⁺, S²⁺); they were left out before.
+- Cleanup preserves metal and ligand hydrogen counts in supported cases, retains selected aromatic copper coordination across input spellings, and preserves explicit zero hydrogen on a disconnected imine. It reports unresolved metal hydrogen changes, unstable detached metals and unsupported five-ligand tetrahedral centers.
+- Bonded atom labels render charge, hydrogen count and isotope consistently in the shared SVG depiction path (#1281). EPS renders formal charges on atom labels (#1283).
+- Corrected diagnostic format strings and widened traversal arithmetic in the bundled native InChI backend (#1273–#1277, #1279).
 
-### Changed
+### Release checks
 
-- Rust `cleanup` now returns `Result<Molecule, CleanupError>`; `cleanup_unchecked` retains the earlier best-effort behavior for callers that explicitly need it. This is a Rust API breaking change.
+- Accept either order of compatible manylinux wheel tags and run the published Python 3.9 chemistry gate on Ubuntu 24.04.
+- Keep the [v1.2.2 artifact verification](validation/results/release-channel-verification-v1.2.2.json) and [published comparison](benchmarks/2026-11-21-v122-published-comparison.md) as the baseline for release review.
 
 ## [1.2.2] - 2026-11-21
 

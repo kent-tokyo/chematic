@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.2.2</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.2.3</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -83,14 +83,12 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 | A reproducible research workflow | [Researcher guide](reference/researchers.md) |
 | A migration from RDKit | [RDKit migration guide](reference/rdkit-migration.md) |
 
-## Current evidence boundary
+## Release verification
 
-The dated package, source and benchmark records in the [validation report](reference/validation.md) retain their original versions. The v1.2.2 tag workflow determines exact artifact and platform results. Typed refusals remain in each denominator and are not matches.
-
-Use [validation](reference/validation.md) for current denominators,
-[benchmark method](reference/benchmark.md) for timing rules, and
-[compatibility scope](reference/compatibility-scope.md) for unsupported or
-bounded chemistry.
+The [validation report](reference/validation.md) links v1.2.2 registry checks,
+wheel tests, and benchmarks. See the [compatibility scope](reference/compatibility-scope.md)
+for supported inputs and the [Cleanup migration note](reference/cleanup-migration.md)
+for checked Cleanup error handling.
 
 ## Stable and bounded areas
 

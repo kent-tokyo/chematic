@@ -92,6 +92,7 @@ nav:
     - Language Bindings: reference/language-bindings.md
     - Reaction CXSMILES Atom Groups: reference/reaction-cxsmiles.md
     - Compatibility Scope: reference/compatibility-scope.md
+    - Cleanup Migration: reference/cleanup-migration.md
     - Errors & Limits: reference/error-and-limits.md
     - MCP Protocol: reference/mcp-protocol-reference.md
   - Evidence:

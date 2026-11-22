@@ -1,0 +1,155 @@
+{
+  "profile": "source_cleanup_vs_rdkit_2026_09_1",
+  "detail_scope": "all",
+  "source_commit": "fc48ba17ab1c21243dbfa82fc26ed266cbcfe5c3",
+  "source_sha256": {
+    "crates/chematic-chem/src/standardize.rs": "e6e1f0d975863c9d2313b21ee0767dc90457226ed0d04cd94f64bbfc3ed868c4",
+    "crates/chematic-chem/src/standardize/pipeline.rs": "91861d6334500c017a1f4ce8c6dcf99ce29b549b07141296dafdbcc49d91fd9f",
+    "crates/chematic-chem/src/standardize/reionize.rs": "8206cf61448859b527cb40424ef2c4fb5edc114965f30dd5f7ddc20d7bb960cb",
+    "crates/chematic-chem/src/standardize/cleanup.rs": "357b6971ed2fc967efa5a569cebcff99982aa4756fda9c2d1354d99a50fae194",
+    "crates/chematic-chem/src/standardize/cleanup/acid_base.rs": "b3a560b04cd04f2c72db064e89b109b6966dd74ad60c52543f027c5c33daa0dd",
+    "crates/chematic-chem/src/hydrogen.rs": "aec88111ce1afff2d70a43dee2385adbb13d16eda76e2c81a6cd156da542c374",
+    "crates/chematic-chem/src/standardize/groups.rs": "4e9cb9df29ba89f5fac99f3f2102cd90129ee391bda6ad37b783118ec3011a53",
+    "crates/chematic-core/src/molecule/builder.rs": "428383c24b1c4e61896956cd148272b354c563bcd85133eef96dac6bf9bcc968",
+    "crates/chematic-core/src/molecule/metadata.rs": "20606bb414962cda8222913eeb17373c2d278d758c5202237ffa61acf5ddfbd0",
+    "crates/chematic-chem/examples/cleanup_rdkit_dump.rs": "8194ab3a575fa95e6ceaa53ff9ea52f9c91c8c3e0641bbb4d58662157e1d3032",
+    "crates/chematic-smiles/src/lib.rs": "765f36aafac65fd0e5ca216b63e49069f129823559b12693f3329e6fe4857643",
+    "crates/chematic-smiles/src/rdkit/mod.rs": "5e83f8039e4384679e908c39b90c4c27899c9b9459d44ac922d0d048bd3da817",
+    "crates/chematic-smiles/src/rdkit/cleanup_write.rs": "ba475b91bbfbd5e7a59b88a76f97e354833a619e37e0616e1df0eb7563249ca3",
+    "scripts/rdkit_cleanup_source_gate.py": "feb13facdce55a4fcb753669d05e232ad37af0dedf21475949a7c6de30a01e96"
+  },
+  "corpus": "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi",
+  "corpus_sha256": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+  "source_dump_sha256": "54379efc60f3a7f5943bc8458eccf0828b709135a39d9308475835e60dab7b18",
+  "rdkit_version": "2026.09.1",
+  "source_rows": 10000,
+  "compatible_rows": 10000,
+  "normalize_compatible_rows": 10000,
+  "normalize_exact_rows": 10000,
+  "normalize_oracle_errors": [],
+  "normalize_classification_counts": {},
+  "normalize_support_status_counts": {},
+  "normalize_mismatches": [],
+  "exact_rows": 9994,
+  "classification_counts": {
+    "canonical_representation": 1,
+    "metal_disconnection_policy": 3,
+    "operation_error": 2
+  },
+  "semantic_classification_counts": {
+    "different_after_sanitization": 3,
+    "representation_after_sanitization": 1,
+    "source_error": 2
+  },
+  "sanitized_equivalent_mismatches": 1,
+  "sanitization_unavailable_mismatches": 2,
+  "support_status_counts": {
+    "not_implemented": 3,
+    "representation_only": 1,
+    "unsupported_or_invalid_output": 2
+  },
+  "reionize_compatible_rows": 10000,
+  "reionize_exact_rows": 10000,
+  "reionize_all_rows_exact": 10000,
+  "reionize_all_rows_oracle_errors": [],
+  "reionize_oracle_errors": [],
+  "reionize_classification_counts": {},
+  "reionize_support_status_counts": {},
+  "reionize_mismatches": [],
+  "rdkit_changed_rows": 148,
+  "oracle_nonreparseable_indices": [],
+  "source_nonreparseable_indices": [],
+  "excluded": [],
+  "oracle_errors": [],
+  "mismatches": [
+    {
+      "index": 6991,
+      "input": "C12C3=C4C5=C1[Fe]23456789C%10C6=C7C8=C9%10",
+      "rdkit_cleanup": "C1=CCC=C1.[C-]1=C[CH-]C=C1.[Fe+2]",
+      "chematic_cleanup": "C1=C[CH-]C=C1.C1=C[CH-]C=C1.[Fe+2]",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented",
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
+    },
+    {
+      "index": 7850,
+      "input": "SC#N.Cl[Co++]12(NCCN1)(NCCN2)[SH+]C#N",
+      "rdkit_cleanup": "N#C[S-].N#C[S-].NCCN.[Cl-].[Co+7].[NH-]CC[NH-]",
+      "chematic_cleanup": "N#C[S-].N#C[S-].[Cl-].[Co+7].[NH-]CCN.[NH-]CCN",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented",
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
+    },
+    {
+      "index": 7998,
+      "input": "[Na]N=[N+]=[N-]",
+      "rdkit_cleanup": "[N-]=[N+]=N.[NaH]",
+      "chematic_cleanup": null,
+      "source_error": "cleanup_metal_hydrogen: Cleanup cannot account for the metal hydrogen change",
+      "classification": "operation_error",
+      "support_status": "unsupported_or_invalid_output",
+      "equivalent_after_sanitization": null,
+      "semantic_classification": "source_error"
+    },
+    {
+      "index": 8341,
+      "input": "CN(C)C[C-]12C3=C4C5=C1[Fe++]23456789[C-]%10C6=C7C8=C9%10",
+      "rdkit_cleanup": "CN(C)CC1C=[C-]C=C1.[C-2]1C=CC=C1.[Fe+4]",
+      "chematic_cleanup": "CN(C)C[c-]1cccc1.[Fe+2].c1cc[cH-]c1",
+      "source_error": null,
+      "classification": "metal_disconnection_policy",
+      "support_status": "not_implemented",
+      "equivalent_after_sanitization": false,
+      "semantic_classification": "different_after_sanitization"
+    },
+    {
+      "index": 8791,
+      "input": "S1C2=C(C=CC=C2)N3C1=[S+][Cu]34[S+]=C5SC6=C(C=CC=C6)N45",
+      "rdkit_cleanup": "S=C1[N-]c2ccccc2S1.S=C1[N-]c2ccccc2S1.[Cu+2]",
+      "chematic_cleanup": "S=c1[n-]c2ccccc2s1.S=c1[n-]c2ccccc2s1.[Cu+2]",
+      "source_error": null,
+      "classification": "canonical_representation",
+      "support_status": "representation_only",
+      "equivalent_after_sanitization": true,
+      "semantic_classification": "representation_after_sanitization"
+    },
+    {
+      "index": 9504,
+      "input": "CC1=[O+][Mg]2([O+]=C(C)C1)[O+]=C(C)CC(=[O+]2)C",
+      "rdkit_cleanup": "CC(=O)CC(C)=O.CC(=O)CC(C)=O.[MgH2]",
+      "chematic_cleanup": null,
+      "source_error": "cleanup_unstable_metal: Cleanup would charge the detached metal on a subsequent call",
+      "classification": "operation_error",
+      "support_status": "unsupported_or_invalid_output",
+      "equivalent_after_sanitization": null,
+      "semantic_classification": "source_error"
+    }
+  ],
+  "baseline_comparison": {
+    "previous_source_commit": "87b1192147ccd2ee74cf98b1b59c4f5da42e0128",
+    "previous_report_sha256": "903c3a993800ff5142d0f4a1ec1aabea4842b8be84c7384826a277c46377ef86",
+    "previous_exact": 9998,
+    "fixed_indices": [],
+    "regressed_indices": [
+      6991,
+      7850,
+      7998,
+      9504
+    ],
+    "newly_excluded_indices": [],
+    "newly_compatible_indices": [],
+    "previous_reionize_exact": 10000,
+    "reionize_fixed_indices": [],
+    "reionize_regressed_indices": []
+  },
+  "limits": [
+    "shared compatible metrics require the same parsed input and a successful Cleanup oracle",
+    "raw all-row Reionize count includes rows where Cleanup fails or input interpretations differ",
+    "sanitized equivalence applies after sanitizing a copy of the RDKit product and reparsing the chematic output; it does not establish equality of the original in-memory states",
+    "RDKit agreement is not independent chemical truth"
+  ]
+}

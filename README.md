@@ -25,12 +25,9 @@ npm install @kent-tokyo/chematic
 
 Python wheels need no C/C++ compiler. All bindings share the Rust core.
 
-### v1.2.2 release boundary
+### v1.2.3 release boundary
 
-The current release is **v1.2.2**. See the [CHANGELOG](CHANGELOG.md) for release
-details. Accuracy and performance claims remain tied to the exact artifacts,
-corpora, and hosts named in [validation](docs/reference/validation.md) and the
-[benchmark index](benchmarks/README.md).
+The current release is **v1.2.3**. See [release notes](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.3) and [artifact verification](docs/reference/validation.md). Upcoming changes are listed under [Unreleased](CHANGELOG.md#unreleased).
 
 ## Choose chematic when
 

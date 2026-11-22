@@ -19,7 +19,7 @@ fn main() {
                 let cleaned = if legacy {
                     Ok(cleanup_unchecked(&mol))
                 } else {
-                    chematic_chem::cleanup(&mol)
+                    chematic_chem::cleanup_checked(&mol)
                         .map_err(|error| format!("{}: {error}", error.code()))
                 };
                 let cleanup_smiles = cleaned.and_then(|cleaned| {

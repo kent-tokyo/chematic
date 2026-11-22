@@ -4,9 +4,10 @@ WebAssembly bindings for [chematic](https://github.com/kent-tokyo/chematic), a p
 
 Published to npm as [`@kent-tokyo/chematic`](https://www.npmjs.com/package/@kent-tokyo/chematic).
 
-The current workspace line is 1.2.2. The binding keeps bounded parsing,
-typed failures, and opt-in `embed_pipeline_v2_json`; 3D/MMFF94 behavior remains
-Experimental and is not a claim of full RDKit parity.
+Use the [binding guide](../../docs/reference/language-bindings.md) for
+data and error conventions and the [format matrix](../../docs/reference/format-capabilities.md)
+for supported readers and writers. See [Cleanup migration](../../docs/reference/cleanup-migration.md)
+for refusal codes in the unreleased source.
 
 ## Installation
 
@@ -16,52 +17,13 @@ npm install @kent-tokyo/chematic
 
 ## Features
 
-- Parse SMILES strings into molecule handles
-- Molecular descriptors: MW, TPSA, LogP, Fsp3, QED, exact mass, rotatable bonds, HBD/HBA, aromatic ring count, Labute ASA
-- Drug-likeness filters: Lipinski, Veber, Egan, REOS, Ghose, PAINS, and Brenk
-- EState indices (Hall & Kier 1991): per-atom values, sum/max/min
-- Gasteiger-Marsili PEOE partial charges: per-heavy-atom charges
-- VSA descriptors: SlogP_VSA (×12), SMR_VSA (×10), PEOE_VSA (×14)
-- SA score: synthetic accessibility estimate [1, 10]
-- Functional group identification (Ertl 2017 IFG)
-- Canonical SMILES generation
-- Separately named RDKit 2026.03.1 compatibility bindings for SMARTS/PDB,
-  format readers, Murcko/stereo/hash/Morgan inspection, bounded alignment,
-  seeded ETKDG, and distance bounds
-- ECFP4/6, AtomPair, Torsion, path, and RDKit-compatible RDK fingerprints
-  with Tanimoto similarity
-- BRICS fragment count
-- SDF/MOL block parsing, including bounded resumable `sdf_records_batch_json`,
-  `xyz_frames_batch_json`, and `extxyz_frames_batch_json` manifests with
-  deterministic input indices and partial/complete status; bounded malformed
-  XYZ frames are grouped inline as rejected records when a later count-line
-  boundary is recoverable (core file-backed readers remain fail-stop)
-- Bounded topology parsing for CML (`mol_from_cml_strict` provides the opt-in
-  non-empty, balanced, single-root boundary), ChemicalJSON (`mol_from_cjson`), MolJSON,
-  CDXML, MOL2, and PDB/mmCIF
-- Index-aligned wildcard/R-group inspection with
-  `MolHandle.atom_pseudo_labels_json()` and immutable edits through
-  `mol_with_atom_pseudo_label`; labels are bounded to `*`, `R`, and
-  `R1..R9999`
-- Label-stable R-group decomposition through
-  `rgroup_decompose_columns_json(smilesJson, coreSmarts)`. The returned JSON
-  contains input-aligned `Core`, `R1`, `R2`, ... columns and uses `null` for
-  unmatched molecules or substituents absent from a matched row. The legacy
-  `rgroup_decompose_json` row API is unchanged.
-- PDBx/mmCIF, PQR, QCSchema JSON, ORCA input/output, Gaussian Cube, OpenDX,
-  and LAMMPS data/dump I/O (JSON-based bindings; see `format_io.rs`)
-- Topological descriptors: Wiener index, Hall-Kier κ, χ connectivity indices, Bertz CT
-- Shape descriptors (with 3D coordinates): PMI, NPR, radius of gyration, asphericity
-- 2D SVG depiction with CPK colors and atom/bond highlighting
-- SVG grid layout for multiple molecules
-- Reaction SMILES/SMIRKS parsing and transform
-  (`run_reactants_checked` includes typed native and RDKit-profile rejection
-  diagnostics without returning rejected products as successes)
-- Add/remove explicit hydrogens
-- `embed_pipeline_v2_json`: torsion-knowledge-aware 3D embedding + stereo
-  verification/repair + policy-gated force field, mirroring the Python
-  `Mol.embed_pipeline_v2()` binding — opt-in, not a default 3D API
-  ([usage](#3d-embedding-embed_pipeline_v2_json))
+- Parse SMILES and common molecule files, calculate descriptors and
+  fingerprints, search substructures, and draw SVG.
+- Process documented SDF, XYZ and Extended XYZ batches with indexed results and
+  explicit partial status.
+- Run bounded reaction, R-group and RDKit-compatible workflows.
+- Use the opt-in [3D pipeline](#3d-embedding-embed_pipeline_v2_json) with
+  per-stage diagnostics.
 
 ## Usage
 
@@ -168,30 +130,6 @@ await init({ module_or_path: wasm });
 const mol = parse_smiles('c1ccccc1');
 console.log(mol.formula()); // C6H6
 mol.free();
-```
-
-```js
-// Sprint Q: New descriptors (v0.1.15)
-console.log(mol.sa_score());                     // synthetic accessibility [1,10]
-console.log(mol.labute_asa());                   // Labute approx. surface area (Å²)
-
-// Gasteiger partial charges (per heavy atom)
-const charges = JSON.parse(gasteiger_charges_json(mol));
-console.log(charges); // [-0.08, 0.12, -0.43, ...]
-
-// Explicit RDKit-compatibility descriptor profile (kept separate from the
-// historical native get_descriptors_json() profile)
-const rdkitDescriptors = JSON.parse(get_rdkit_descriptors_json(mol));
-console.log(rdkitDescriptors.aromatic_ring_count);
-
-// VSA descriptor bins
-const slogpVsa = JSON.parse(slogp_vsa_json(mol));
-const smrVsa   = JSON.parse(smr_vsa_json(mol));
-const peoeVsa  = JSON.parse(peoe_vsa_json(mol));
-
-// Functional group identification
-const ifg = JSON.parse(identify_functional_groups(mol));
-console.log(ifg); // [{"atoms":[1,2,3],"types":"OC=O"}, ...]
 ```
 
 ### 3D embedding (`embed_pipeline_v2_json`)

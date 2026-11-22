@@ -41,7 +41,7 @@ export const chemdraw_block_report_json: (a: number, b: number, c: number, d: nu
 export const cip_assignments_accurate_json: (a: number) => [number, number];
 export const cip_assignments_json: (a: number) => [number, number];
 export const cip_unresolved_json: (a: number) => [number, number];
-export const cleanup_mol: (a: number) => number;
+export const cleanup_mol: (a: number) => [number, number, number];
 export const compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const compare_molecules_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
 export const compute_canonical_transform_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];

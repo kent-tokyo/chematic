@@ -134,12 +134,20 @@ def check_lane(record: dict, prefix: str, exact_key: str) -> None:
 def check_current_record(record: dict) -> None:
     assert record["profile"] == "source_cleanup_vs_rdkit_2026_09_1"
     assert record["rdkit_version"] == "2026.09.1"
-    # The measured commit may be absent from a PR checkout after a squash merge.
-    # Current-source hashes below still fail closed on any source drift.
     assert re.fullmatch(r"[0-9a-f]{40}", record["source_commit"])
-    for relative, expected in record["source_sha256"].items():
+    # The original candidate remains historical evidence. A separately measured
+    # v1.2.3 candidate validates current source and identical mismatch rows.
+    corpus = record["corpus"]
+    suffix = "stress" if corpus.endswith("stress-v1.smi") else "10k"
+    current_path = ROOT / "validation" / "results" / f"rdkit-cleanup-v1.2.3-candidate-{suffix}.json"
+    current = json.loads(current_path.read_text())
+    assert current["corpus"] == corpus
+    assert current["corpus_sha256"] == record["corpus_sha256"]
+    assert current["rdkit_version"] == record["rdkit_version"]
+    assert current["mismatches"] == record["mismatches"]
+    for relative, expected in current["source_sha256"].items():
         assert digest(ROOT / relative) == expected, relative
-    assert digest(ROOT / record["corpus"]) == record["corpus_sha256"]
+    assert digest(ROOT / corpus) == record["corpus_sha256"]
 
     # Cleanup retains its historical field names for compatibility.
     cleanup = dict(record)

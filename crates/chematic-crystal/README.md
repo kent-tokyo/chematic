@@ -8,10 +8,8 @@ diagonal supercells, and POSCAR/CONTCAR (VASP structure file format)
 read/write. Pure Rust, `#![forbid(unsafe_code)]`, WASM-compatible, one
 required dependency (`chematic-core`, for `Element`).
 
-`v0.1` is a structural/geometric foundation, not a symmetry or materials-
-property library -- see "Out of scope" below and
-`docs/crystal_scope.md` in the workspace root for the public scope and
-limitations.
+See the [crystal scope](../../docs/reference/crystal_scope.md) for the geometry and
+format contracts.
 
 ## What this crate is not: `Molecule`
 
@@ -180,68 +178,20 @@ than dropping data. No per-atom labels (VASP has no field for one beyond
 the species symbol). Full format-fidelity decision list:
 `crates/chematic-crystal/src/poscar.rs`'s module docs.
 
-## Out of scope (v0.1)
+## Scope limits
 
-No space-group determination, symmetry-operation search, Wyckoff
-positions, primitive/conventional cell conversion, Niggli reduction, or
-spglib (or any) FFI. No CIF parser rewrite (`chematic_mol::cif` is
-untouched; see `docs/crystal_scope.md` for the supported migration path).
-No VASP INCAR/KPOINTS/POTCAR parsing (POSCAR/CONTCAR structure I/O
-is in scope, see above). No XRD, crystal fingerprinting, oxidation-state
-inference, coordination-geometry classification, DFT, formation-energy or
-phase-diagram computation, band structure, phonons, defect generation, or
-surface/slab construction. No materials-ML models and **no prediction of
-stability or synthesizability** -- this crate stores and computes pure
-geometry. No WASM/MCP bindings (Python bindings for `Lattice`/
-`PeriodicStructure`/`Site` shipped in v0.17.0 via `chematic-py`, see
-`CHANGELOG.md`). No arbitrary 3x3 integer supercell
-transform (diagonal `[nx, ny, nz]` only). No spatial-partitioning neighbor-
-search optimization -- the baseline is an exact bounded enumeration, not
-necessarily the fastest possible one.
-
-`PeriodicStructure::identity_bytes()` provides a versioned, deterministic
-exact-identity byte representation for cache keys and content-addressed
-storage. It preserves lattice bits, site/species order, occupancy bits, and
-labels; the version byte is
-`PeriodicStructure::IDENTITY_SERIALIZATION_VERSION`.
-
-`mikiwame` (explainable materials diagnostics) and `gugen` (materials
-synthesis/process planning) are separate downstream projects layered on top
-of this crate; neither is implemented here. Full list:
-`docs/crystal_scope.md`.
+The crate covers periodic geometry. Symmetry, materials properties,
+stability prediction and arbitrary integer supercell matrices are outside
+its scope. Use diagonal repeats `[nx, ny, nz]` for supercells.
+`PeriodicStructure::identity_bytes()` supplies a versioned exact key for
+lattice bits, site and species order, occupancy and labels.
 
 ## Benchmarks
 
-Baseline measurements only -- `v0.1` prioritizes correctness over
-performance (see "no spatial-partitioning optimization" above). Method:
-`criterion` (`cargo bench -p chematic-crystal`), except the ~10000-site
-neighbor search, which is a single wall-clock timing (see
-`benches/crystal_bench.rs`'s module doc for why: the naive O(n^2 *
-search-box) baseline takes long enough per call at that size that
-criterion's minimum sampling would make the benchmark run impractically
-slow, for a number this PR isn't claiming is fast).
-
-CPU: Apple M4. rustc 1.97.0. Commit: `fa63822` (chematic-crystal Phase 4).
-
-| Operation | Cell shape | Sites | Cutoff | Neighbors found | Method | Time |
-|---|---|---|---|---|---|---|
-| `frac_to_cart` (1000 points, 1 lattice) | triclinic | -- | -- | -- | criterion | 2.14 us total (~2.1 ns/point) |
-| `cart_to_frac` (1000 points, 1 lattice) | triclinic | -- | -- | -- | criterion | 4.81 us total (~4.8 ns/point) |
-| `neighbors_within` | cubic | 125 (~100) | 6.5 A | 4000 | criterion | 10.09 ms |
-| `neighbors_within` | triclinic | 125 (~100) | 6.5 A | 7500 | criterion | 9.02 ms |
-| `neighbors_within` | cubic | 1000 | 6.5 A | 32000 | criterion | 499.4 ms |
-| `neighbors_within` | triclinic | 1000 | 6.5 A | 60000 | criterion | 585.3 ms |
-| `neighbors_within` | cubic | 10648 (~10000) | 6.5 A | 340736 | single-run wall clock | ~54.3 s |
-| `neighbors_within` | triclinic | 10648 (~10000) | 6.5 A | 638880 | single-run wall clock | ~47.2 s |
-| `make_supercell([2,2,2])` | cubic | 125 -> 1000 | -- | -- | criterion | 101.4 us |
-
-The O(n^2) scaling is expected and visible above (125 -> 1000 sites, an 8x
-increase, is roughly a 50-65x slowdown -- cubic 49.5x, triclinic 64.9x --
-bracketing the 64x pair-count increase (8^2) expected from O(n^2) scaling
-at this fixed cutoff/density ratio); a spatial-partitioning neighbor list
-(cell lists / Verlet lists) is
-the natural next step if this becomes a bottleneck for a real workload, but
-is explicitly deferred past v0.1.
+Run `cargo bench -p chematic-crystal` for local results. The neighbor search
+enumerates site pairs, so its cost grows quadratically at fixed search
+bounds. The [historical Apple M4 results](https://github.com/kent-tokyo/chematic/blob/5799c2ba9186d413c41ade9b40aa622314584e49/crates/chematic-crystal/README.md#benchmarks)
+include the larger single-run timings and measurement conditions.
 
 ## Testing
 
