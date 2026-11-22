@@ -1203,3 +1203,19 @@ with uncompressed SHA-256
 `621de9dcf4aa71ed90418e4d2cbe0072d65cdfa883e39f0b6ddea6f43f45123e` and
 `f0b533f09ae2c65378641bcd10f437f553541e1413d691a224eec6f283751437`;
 the fixed and stereo summaries are alongside them.
+
+The [Linux local-angle regression](https://github.com/kent-tokyo/chematic/actions/runs/44981578055)
+subsequently passed the core and force-field library tests, the chorded-cycle
+classification and the prior cage and macrocycle regressions. On shared ETKDG
+coordinates the two exposed cage structures again had zero observed MMFF94
+energy and gradient-component difference. In the 56 successfully embedded
+cases of the same 57-record development follow-up, the counts above the
+previous thresholds remained MMFF 9 energy / 8 gradient and UFF 2 / 2; one
+RDKit embedding failed. An A-B-B-A warm-construction microbenchmark on 212
+exposed development inputs measured median local-angle/v9 ratio 0.906 and p95
+0.940; sums of per-molecule medians were 63.33 ms / 70.52 ms. This short
+single-runner microbenchmark does not establish end-to-end speed. The tested
+merge commit was `55c5db999467dff3e30619b7a9e0467f55cc87bb`, with Linux wheel
+SHA-256 `55c448bc30cea6ebffdd930125730f61c8da094d24fd60033b4bad7437139c52`.
+Raw timing and field outputs are retained in
+`validation/results/mmff-local-angle-development-2026-11-22.json.gz`.
