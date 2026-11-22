@@ -2460,3 +2460,23 @@ that RDKit successfully optimized those molecules. This population was
 previously exposed to common-coordinate force-field evaluation; the timed
 outcomes were assessed prospectively, and earlier exposure remains unknown.
 The official CI merge and the macOS run remain pending.
+
+The post-hoc macOS COD timed rerun (45063672297), after independent
+engine error isolation, completed all four scoring shards. Independent
+in-memory merging of 2,102 molecules yielded 1,075 chematic and 1,030
+RDKit recoveries, with paired scaffold-bootstrap 95% interval +0.57 to
++3.66 percentage points. All accepted candidates were scored for stereo,
+RMSD, geometry and optimizer status. The 175 chematic generation-stage
+exceptions were all MMFF type assignment failures: 132 boron and 43
+selenium. RDKit accepted candidates on 161 of these molecules; all such
+candidates had optimizer status -1, and 88 recovered the reference
+without requiring convergence. This does not show successful optimization.
+
+The macOS macrocycle timed rerun (45064528178), also previously exposed,
+completed four shards. Independent in-memory merging of 1,243 molecules
+yielded 83 chematic and 76 RDKit recoveries, with paired scaffold-bootstrap
+95% interval -0.16 to +1.32 percentage points. All accepted candidates had
+complete scoring; neither engine had generation or scoring errors.
+Both summaries follow sorted molecule indices, 10,000 resamples and seed 42;
+the CI merges remain pending. The 0.2-second budget is cooperative and
+does not interrupt an ongoing attempt. Neither rerun is an unused holdout.
