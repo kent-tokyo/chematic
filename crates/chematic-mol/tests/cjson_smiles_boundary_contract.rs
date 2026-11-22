@@ -54,3 +54,17 @@ fn cjson_smiles_projection_respects_atom_and_output_limits() {
         Err(ConversionError::ResourceLimit("output bytes"))
     ));
 }
+
+#[test]
+fn aromatic_cjson_to_mol2_discloses_unverified_chemical_aromaticity() {
+    let source = r#"{"atoms":{"elements":{"number":[6,6]}},"bonds":{"connections":{"index":[0,1]},"order":[1.5]}}"#;
+    let report = convert_with_report(source, "cjson", "mol2", ConversionPolicy::AllowLoss).unwrap();
+    assert!(
+        report
+            .observations
+            .iter()
+            .any(|o| o.field == "aromaticity_interpretation"
+                && o.status == PreservationStatus::Unverified
+                && o.stage == "projection")
+    );
+}
