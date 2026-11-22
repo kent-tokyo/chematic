@@ -2,7 +2,7 @@ name: Freeze directional bond candidate wheels
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-candidate-wheel-v8.yml'
 
