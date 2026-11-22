@@ -2436,4 +2436,10 @@ checkpoints completed phases. This is not an exact replay of the checked mixed
 profile: stereo checks, final-gradient screening and nitrogen repair are not
 included. The diagnostic cannot establish a performance claim or a hard
 deadline. The job has a 45-minute CI limit and preserves any completed phase
-if cancelled. Its outcome is pending.
+if cancelled.
+
+Run 45066213209 completed on Linux with artifact 14772843299. Compatible
+embedding took 505.74 seconds in chematic and 527.21 seconds in RDKit.
+The chematic result contained no conformer, and RDKit returned -1; neither
+engine entered the MMFF phase. These are single exposed-case diagnostics,
+not a general speed comparison or proof of the precise underlying cause.
