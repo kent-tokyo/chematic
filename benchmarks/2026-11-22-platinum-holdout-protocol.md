@@ -1860,3 +1860,14 @@ development set. Further development experiments, including other seeds, do
 not change this candidate or the evaluation settings after holdout scoring
 begins. The separately prepared PDB holdout contains 1,243 records; both
 populations and platforms are reported separately.
+
+The previously exposed 225-record development comparison completed on Linux
+using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
+(SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).
+Chematic and RDKit recovered 161 and 163 records respectively; 13 records
+were unsupported by RDKit MMFF. All 4,160 returned chematic conformers had
+consistent and evaluable declared stereo. This exposed development set is
+not independent holdout evidence. The raw result is
+`validation/results/cod-development-linux-mixed-225-2026-11-22.json.gz`,
+uncompressed SHA-256
+`8b9812be41262d74b14859463456d86ec1c4bff2b2b7497646f316cdaf9e2d90`.
