@@ -649,6 +649,15 @@ regressions also passed. Evidence is
 `validation/results/mmff-directional-nitrone-development-2026-11-22.json`.
 This is another targeted development fix and is not included in v7 or the
 running v4 holdout.
+The [v8 51-case recheck](https://github.com/kent-tokyo/chematic/actions/runs/44972185553)
+left five inputs with MMFF94 energy error above 1e−4 kcal/mol, down from seven
+in v7; the maximum remained 32.94 kcal/mol and the maximum gradient-component
+difference was 101.80 kcal/mol/Å. UFF energies and analytic gradients matched
+RDKit on all 51, with the same 6.09 kcal/mol/Å maximum sampled finite-difference
+discrepancy. This selected set remains development evidence. Per-record output
+is `validation/results/cod-first-fields-v8-development-2026-11-22.json.gz`
+(uncompressed SHA-256
+`e45dbb23a0ccb87f00467ae9b6eaffa5734a115184c2b1fff2e4c49000e6593f`).
 
 The largest sampled v5 finite-difference discrepancy occurred on an exposed
 structure with a 179.998-degree bond angle. In the separate
@@ -870,7 +879,13 @@ macOS CPython 3.12 wheel SHA-256 values are
 `accff6f48fa6567e94197dab8793e0e0e94325f12d22e628344b27fa992fba7d`.
 The directional-bond fix was likewise selected from already-exposed inputs,
 before inspecting any second-COD holdout conformer results, and a further
-candidate including it is being frozen separately.
+candidate including it was [frozen separately](https://github.com/kent-tokyo/chematic/actions/runs/44971533548).
+Its merge commit is `98a270e4ba39c7f7db61a0e1980bfa29fd55f615`, crates tree
+`46563b2448e2176184d826187ac4b570ad51d52d`, and Linux and macOS CPython 3.12
+wheel SHA-256 values are
+`8305fd27765c4d10670fa2a0900f3b86b286d35a711f3f2eecb5c412f96613ac` and
+`b37bfac64e9ce9550eea1e36eb0e7554294b71f7e9efb22be470da44a5ef9608`.
+The 225-record v8 development evaluation remains in progress.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
