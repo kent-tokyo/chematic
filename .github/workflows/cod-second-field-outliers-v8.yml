@@ -1,7 +1,7 @@
 name: COD second exposed force-field outliers on v8
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-second-field-outliers-v8.yml'
 permissions:
