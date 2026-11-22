@@ -21,8 +21,19 @@ class CoverageTest(unittest.TestCase):
         self.assertEqual(3, s['engines']['rdkit']['unscored_accepted_conformers'])
         self.assertEqual(2, s['engines']['rdkit']['records_with_unscored_accepted'])
         self.assertEqual(1, s['engines']['rdkit']['scoring_errors'])
+        self.assertEqual(5, s['engines']['rdkit']['unscored_recovery_conformers'])
         self.assertEqual(1, s['engines']['chematic']['generation_errors'])
         self.assertEqual(2, s['engines']['chematic']['missing_engine_records'])
+
+    def test_geometry_and_rmsd_coverage_are_required(self):
+        data = {'geometry_checked': True, 'results': [
+            {'rdkit': {'accepted': 2, 'stereo': [{}, {}], 'rmsd': [0.5, 0.6], 'geometry': [{}]}}
+        ]}
+        s = summarize(data)['engines']['rdkit']
+        self.assertEqual(0, s['unscored_accepted_conformers'])
+        self.assertEqual(1, s['unscored_recovery_conformers'])
+        self.assertEqual(1, s['records_with_unscored_recovery'])
+        self.assertEqual(2, s['unscored_converged_conformers'])
 
     def test_reject_more_scores_than_accepted(self):
         with self.assertRaises(ValueError):

@@ -2411,3 +2411,8 @@ The same audit of the Linux macrocycle timed result found no accepted unscored
 conformers for either engine. For the revised evaluation, zero reported stereo
 violations alone is insufficient if any accepted chematic conformers were
 unscored; report scoring coverage and engine failures explicitly.
+The coverage audit also checks RMSD, geometry and optimizer-status lengths
+against the accepted-conformer count. The historical Linux COD and macrocycle
+coverage files were regenerated with those additional counters; their prior
+stereo-coverage conclusions are unchanged. Future acceptance checks must
+inspect the recovery and converged-scoring coverage as well as stereo coverage.

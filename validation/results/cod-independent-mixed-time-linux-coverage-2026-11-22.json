@@ -10,7 +10,12 @@
       "accepted_conformers": 9718,
       "stereo_scored_conformers": 9718,
       "unscored_accepted_conformers": 0,
-      "records_with_unscored_accepted": 0
+      "records_with_unscored_accepted": 0,
+      "recovery_scored_conformers": 9718,
+      "unscored_recovery_conformers": 0,
+      "records_with_unscored_recovery": 0,
+      "converged_scored_conformers": 9718,
+      "unscored_converged_conformers": 0
     },
     "rdkit": {
       "engine_records": 2002,
@@ -21,7 +26,12 @@
       "accepted_conformers": 7961,
       "stereo_scored_conformers": 7405,
       "unscored_accepted_conformers": 556,
-      "records_with_unscored_accepted": 72
+      "records_with_unscored_accepted": 72,
+      "recovery_scored_conformers": 7405,
+      "unscored_recovery_conformers": 556,
+      "records_with_unscored_recovery": 72,
+      "converged_scored_conformers": 7405,
+      "unscored_converged_conformers": 556
     }
   }
 }

@@ -12,7 +12,10 @@ def summarize(data):
         count = {'engine_records': 0, 'missing_engine_records': 0,
                  'row_errors': 0, 'generation_errors': 0, 'scoring_errors': 0,
                  'accepted_conformers': 0, 'stereo_scored_conformers': 0,
-                 'unscored_accepted_conformers': 0, 'records_with_unscored_accepted': 0}
+                 'unscored_accepted_conformers': 0, 'records_with_unscored_accepted': 0,
+                 'recovery_scored_conformers': 0, 'unscored_recovery_conformers': 0,
+                 'records_with_unscored_recovery': 0,
+                 'converged_scored_conformers': 0, 'unscored_converged_conformers': 0}
         for row in rows:
             if row.get('error'):
                 count['row_errors'] += 1
@@ -34,6 +37,23 @@ def summarize(data):
             if not isinstance(stereo, list) or len(stereo) > accepted:
                 raise ValueError('invalid stereo score count')
             unscored = accepted - len(stereo)
+            rmsd = record.get('rmsd', [])
+            geometry = record.get('geometry', []) if data.get('geometry_checked', False) else [None] * accepted
+            if (not isinstance(rmsd, list) or not isinstance(geometry, list)
+                    or len(rmsd) > accepted or len(geometry) > accepted):
+                raise ValueError('invalid recovery score count')
+            # Scores correspond by candidate index; only complete triples are usable.
+            recovery_scored = min(len(rmsd), len(stereo), len(geometry))
+            statuses = record.get('statuses', [])
+            if not isinstance(statuses, list) or len(statuses) > accepted:
+                raise ValueError('invalid optimizer status count')
+            converged_scored = min(recovery_scored, len(statuses))
+            count['converged_scored_conformers'] += converged_scored
+            count['unscored_converged_conformers'] += accepted - converged_scored
+            recovery_unscored = accepted - recovery_scored
+            count['recovery_scored_conformers'] += recovery_scored
+            count['unscored_recovery_conformers'] += recovery_unscored
+            count['records_with_unscored_recovery'] += bool(recovery_unscored)
             count['accepted_conformers'] += accepted
             count['stereo_scored_conformers'] += len(stereo)
             count['unscored_accepted_conformers'] += unscored
