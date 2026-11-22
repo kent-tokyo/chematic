@@ -3335,3 +3335,61 @@ fn smirks_boundary_contracts_cover_grouping_queries_and_stereo() {
     assert_eq!(permutation_parity(&[1, 2], &[1]), None);
     assert_eq!(permutation_parity(&[1, 2], &[1, 3]), None);
 }
+
+#[test]
+fn stereo_filter_fails_closed_when_tetrahedral_mapping_lacks_evidence() {
+    use chematic_core::MoleculeBuilder;
+    let template = parse("F[C@](Cl)(Br)I").unwrap();
+    let reactant = parse("F[C@](Cl)(Br)I").unwrap();
+    let full: FxHashMap<usize, AtomIdx> = (0..template.atom_count())
+        .map(|i| (i, AtomIdx(i as u32)))
+        .collect();
+    assert!(smirks_chirality_ok(&template, &reactant, &full));
+    let mut missing_center = full.clone();
+    missing_center.remove(&1);
+    assert!(!smirks_chirality_ok(&template, &reactant, &missing_center));
+    let mut missing_ligand = full.clone();
+    missing_ligand.remove(&2);
+    assert!(!smirks_chirality_ok(&template, &reactant, &missing_ligand));
+    let unspecified = parse("FC(Cl)(Br)I").unwrap();
+    assert!(!smirks_chirality_ok(&template, &unspecified, &full));
+    let mut builder = MoleculeBuilder::new();
+    for (_, atom) in reactant.atoms() {
+        builder.add_atom(atom.clone());
+    }
+    for (_, bond) in reactant.bonds() {
+        builder
+            .add_bond(bond.atom1, bond.atom2, bond.order)
+            .unwrap();
+    }
+    let no_frame = builder.build();
+    assert!(no_frame.stereo_neighbor_order(AtomIdx(1)).is_none());
+    assert!(!smirks_chirality_ok(&template, &no_frame, &full));
+    assert!(!smirks_chirality_ok(&no_frame, &reactant, &full));
+}
+
+#[test]
+fn non_tetrahedral_filter_compares_tags_when_reactant_frame_is_missing() {
+    use chematic_core::{MoleculeBuilder, SquarePlanarPermutation};
+    let template = parse("[Pt@SP1](F)(Cl)(Br)I").unwrap();
+    let full: FxHashMap<usize, AtomIdx> = (0..template.atom_count())
+        .map(|i| (i, AtomIdx(i as u32)))
+        .collect();
+    let mut builder = MoleculeBuilder::new();
+    for (_, atom) in template.atoms() {
+        builder.add_atom(atom.clone());
+    }
+    for (_, bond) in template.bonds() {
+        builder
+            .add_bond(bond.atom1, bond.atom2, bond.order)
+            .unwrap();
+    }
+    let mut no_frame = builder.build();
+    assert!(no_frame.stereo_neighbor_order(AtomIdx(0)).is_none());
+    assert!(smirks_chirality_ok(&template, &no_frame, &full));
+    no_frame.set_chirality(
+        AtomIdx(0),
+        Chirality::SquarePlanar(SquarePlanarPermutation::SP2),
+    );
+    assert!(!smirks_chirality_ok(&template, &no_frame, &full));
+}

@@ -104,3 +104,54 @@ fn mol2_reader_reports_truncated_query_and_index_failures() {
         "unspecified",
     );
 }
+
+#[test]
+fn pdb_conect_repetitions_encode_bond_order_in_either_direction() {
+    use chematic_core::BondOrder;
+    let atoms = [
+        pdb_atom(1, "C1", "LIG", ' ', "0.000", "C"),
+        pdb_atom(2, "C2", "LIG", ' ', "1.300", "C"),
+    ]
+    .join("\n");
+    for (multiplicity, expected) in [
+        (1, BondOrder::Single),
+        (2, BondOrder::Double),
+        (3, BondOrder::Triple),
+        (4, BondOrder::Quadruple),
+    ] {
+        for reversed in [false, true] {
+            let (src, dst) = if reversed { (2, 1) } else { (1, 2) };
+            let forward = format!("CONECT{src:>5}{}", format!("{dst:>5}").repeat(multiplicity));
+            let reverse = format!("CONECT{dst:>5}{}", format!("{src:>5}").repeat(multiplicity));
+            let text = format!("{atoms}\n{forward}\n{reverse}\nEND\n");
+            let parsed = rdkit_mol_from_pdb_block(&text, false, false, 0, false)
+                .unwrap()
+                .unwrap();
+            assert_eq!(parsed.molecule.bond_count(), 1);
+            assert_eq!(
+                parsed.molecule.bonds().next().unwrap().1.order,
+                expected,
+                "{text}"
+            );
+        }
+    }
+}
+
+#[test]
+fn mol2_unity_atom_attributes_apply_formal_charge_and_validate_values() {
+    use chematic_core::AtomIdx;
+    let prefix = "@<TRIPOS>MOLECULE\nfixture\n1 0 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n1 C 0 0 0 C.3 1 RES 0\n@<TRIPOS>UNITY_ATOM_ATTR\n";
+    let valid = format!("{prefix}1 1\nAtomExpr -1\n");
+    let result = rdkit_mol_from_mol2_block(&valid, false, false, false).unwrap();
+    assert_eq!(result.molecule.atom(AtomIdx(0)).charge, -1);
+    for (record, message) in [
+        ("1 1\nAtomExpr invalid\n", "formal charge"),
+        ("2 1\nAtomExpr -1\n", "atom index out of range"),
+        ("x 1\nAtomExpr -1\n", "UnityAtomAttr"),
+    ] {
+        assert_reader_error(
+            rdkit_mol_from_mol2_block(&format!("{prefix}{record}"), false, false, false),
+            message,
+        );
+    }
+}

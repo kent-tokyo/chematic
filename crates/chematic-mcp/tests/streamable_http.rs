@@ -751,3 +751,37 @@ fn direct_http_boundary_matrix_rejects_ambiguous_or_malformed_metadata() {
         assert!(read_request(&mut reader).is_err());
     }
 }
+
+#[test]
+fn malformed_http_text_and_missing_mirrored_method_are_rejected() {
+    for (input, expected) in [
+        (
+            b"POST /\xff HTTP/1.1\r\n\r\n".as_slice(),
+            "request line is not UTF-8",
+        ),
+        (
+            b"POST /mcp HTTP/1.1\r\nX-Test: \xff\r\n\r\n".as_slice(),
+            "header is not UTF-8",
+        ),
+    ] {
+        let error = read_request(&mut std::io::Cursor::new(input)).unwrap_err();
+        assert_eq!(error.status, 400);
+        let json: Value = serde_json::from_slice(&error.body).unwrap();
+        assert_eq!(json["error"]["message"], expected);
+    }
+    let request = HttpRequest {
+        method: "POST".into(),
+        path: "/mcp".into(),
+        headers: vec![
+            ("host".into(), "localhost".into()),
+            ("content-type".into(), "application/json".into()),
+            ("accept".into(), "application/json".into()),
+            ("mcp-protocol-version".into(), "2026-07-28".into()),
+        ],
+        body: body(1, "tools/list", json!({})).into_bytes(),
+    };
+    let response = handle_http_request(&request, &HttpConfig::default());
+    let json: Value = serde_json::from_slice(&response.body).unwrap();
+    assert_eq!(json["error"]["code"], -32020);
+    assert_eq!(json["error"]["message"], "missing Mcp-Method header");
+}

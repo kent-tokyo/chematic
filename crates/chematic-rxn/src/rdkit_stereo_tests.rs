@@ -143,3 +143,33 @@ fn inversion_flags_cover_retain_invert_remove_create_and_unmapped_atoms() {
     let removed = ReactionStereo::new("[C@@H:1](F)(Cl)Br", "[C:1](F)(Cl)Br").unwrap();
     assert_eq!(removed.flags[0][0], Some(3));
 }
+
+#[test]
+fn parser_cleanup_applies_nitro_charge_and_bond_edits_without_mutating_input() {
+    use chematic_core::{AtomIdx, BondIdx, BondOrder};
+    let original = chematic_smiles::parse("CN(=O)=O").unwrap();
+    let cleanup = rdkit_parse_cleanup(&original);
+    let result = cleanup.as_ref().as_ref().expect("nitro requires cleanup");
+    assert_eq!(result.atom(AtomIdx(1)).charge, 1);
+    assert_eq!(result.atom(AtomIdx(2)).charge, -1);
+    assert_eq!(result.bond(BondIdx(1)).order, BondOrder::Single);
+    assert_eq!(original.atom(AtomIdx(1)).charge, 0);
+    assert_eq!(original.atom(AtomIdx(2)).charge, 0);
+    assert_eq!(original.bond(BondIdx(1)).order, BondOrder::Double);
+}
+
+#[test]
+fn parser_cleanup_preserves_dative_donor_when_normalizing_coordination() {
+    use chematic_core::{AtomIdx, BondIdx, BondOrder};
+    let original = chematic_smiles::parse("[NH3][Cu+2]").unwrap();
+    let cleanup = rdkit_parse_cleanup(&original);
+    let result = cleanup
+        .as_ref()
+        .as_ref()
+        .expect("coordination requires cleanup");
+    let bond = result.bond(BondIdx(0));
+    assert_eq!(bond.order, BondOrder::Dative);
+    assert_eq!(bond.atom1, AtomIdx(0));
+    assert_eq!(bond.atom2, AtomIdx(1));
+    assert_eq!(original.bond(BondIdx(0)).order, BondOrder::Single);
+}

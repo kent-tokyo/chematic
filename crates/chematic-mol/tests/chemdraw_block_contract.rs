@@ -392,3 +392,55 @@ fn groups_empty_documents_required_fields_and_text_omissions() {
         .is_err()
     );
 }
+
+#[test]
+fn cdx_rejects_invalid_point_width_and_zero_atom_reference() {
+    let input = simple(&[], &[]);
+    let point = prop(0x0200, &[0; 8]);
+    let offset = input.windows(point.len()).position(|w| w == point).unwrap();
+    let mut bad_point = input.clone();
+    bad_point.splice(offset..offset + point.len(), prop(0x0200, &[0; 4]));
+    assert!(matches!(
+        read(&bad_point, Format::Cdx, &ChemDrawOptions::default()),
+        Err(ChemDrawError::Invalid {
+            detail: "2D point width",
+            ..
+        })
+    ));
+    let reference = prop(0x0604, &10u32.to_le_bytes());
+    let offset = input
+        .windows(reference.len())
+        .position(|w| w == reference)
+        .unwrap();
+    let mut zero_reference = input;
+    zero_reference.splice(
+        offset..offset + reference.len(),
+        prop(0x0604, &0u32.to_le_bytes()),
+    );
+    assert!(matches!(
+        read(&zero_reference, Format::Cdx, &ChemDrawOptions::default()),
+        Err(ChemDrawError::Invalid {
+            detail: "zero atom reference",
+            ..
+        })
+    ));
+}
+
+#[test]
+fn cdx_zero_bond_displays_preserve_single_bond() {
+    let bond = [
+        prop(0x0601, &0u16.to_le_bytes()),
+        prop(0x0602, &0u16.to_le_bytes()),
+    ]
+    .concat();
+    let parsed = read(
+        &simple(&[], &bond),
+        Format::Cdx,
+        &ChemDrawOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        parsed.molecules[0].0.bonds().next().unwrap().1.order,
+        BondOrder::Single
+    );
+}

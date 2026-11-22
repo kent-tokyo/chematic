@@ -134,3 +134,29 @@ fn stereo_group_operation_errors_have_stable_messages() {
         assert!(!error.to_string().is_empty());
     }
 }
+
+#[test]
+fn cleanup_errors_have_stable_codes_and_explain_refusal() {
+    use chematic_chem::CleanupError;
+    let cases = [
+        (
+            CleanupError::AmbiguousMetalHydrogen,
+            "cleanup_metal_hydrogen",
+            "metal hydrogen change",
+        ),
+        (
+            CleanupError::UnstableMetalDisconnection,
+            "cleanup_unstable_metal",
+            "detached metal",
+        ),
+        (
+            CleanupError::UnstableMetalStereo,
+            "cleanup_metal_stereo",
+            "five ligands",
+        ),
+    ];
+    for (error, code, message) in cases {
+        assert_eq!(error.code(), code);
+        assert!(error.to_string().contains(message));
+    }
+}

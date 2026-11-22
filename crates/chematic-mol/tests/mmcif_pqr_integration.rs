@@ -167,3 +167,23 @@ fn shared_tokenizer_behavior_agrees_with_small_molecule_cif_reader_on_esd_and_qu
     let mmcif_result = parse_mmcif(mmcif_with_esd).unwrap();
     assert!((mmcif_result.cell.unwrap().a - 5.64).abs() < 1e-9);
 }
+
+#[test]
+fn mmcif_quotes_names_and_space_group_containing_apostrophes() {
+    let mut parsed = parse_mmcif(MULTI_CHAIN_MODEL_ALTLOC_MMCIF).unwrap();
+    parsed.atoms[0].atom_name = "C'1".into();
+    let written = write_mmcif(&parsed.atoms, parsed.cell.as_ref(), Some("P 1'"), "MULTI");
+    let roundtrip = parse_mmcif(&written).unwrap();
+    assert_eq!(roundtrip.atoms[0].atom_name, "C'1");
+    assert_eq!(roundtrip.space_group.as_deref(), Some("P 1'"));
+}
+
+#[test]
+fn mmcif_rejects_invalid_postfix_charge() {
+    for charge in ["x+", "x-"] {
+        let input = format!(
+            "data_bad\nloop_\n_atom_site.type_symbol\n_atom_site.pdbx_formal_charge\nC {charge}\n"
+        );
+        assert!(parse_mmcif(&input).is_err(), "{charge}");
+    }
+}

@@ -88,3 +88,26 @@ fn budgets_and_invalid_profiles_refuse_partial_results() {
     let big = chematic_smiles::parse(&"C".repeat(257)).unwrap();
     assert!(set.invariants(&big, 100_000).is_err());
 }
+
+#[test]
+fn feature_pattern_errors_explain_the_limit_to_the_caller() {
+    let error = FeaturePatternSet::new(["O"; 33])
+        .err()
+        .expect("pattern cap");
+    assert_eq!(
+        error.to_string(),
+        "at most 32 feature patterns are supported"
+    );
+    let set = FeaturePatternSet::new(["CC"]).unwrap();
+    let mol = chematic_smiles::parse("CCCC").unwrap();
+    assert_eq!(
+        set.invariants(&mol, 0).unwrap_err().to_string(),
+        "max_visits must be 1 to 1000000 per pattern"
+    );
+    assert!(
+        set.invariants(&mol, 1)
+            .unwrap_err()
+            .to_string()
+            .contains("exhausted visit budget")
+    );
+}

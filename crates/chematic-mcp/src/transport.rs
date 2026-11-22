@@ -243,6 +243,29 @@ mod tests {
     use super::*;
 
     #[test]
+    fn response_size_limit_preserves_boundary_and_request_id() {
+        let id = json!(42);
+        let empty = json!({"jsonrpc": "2.0", "id": id, "result": ""});
+        let overhead = serde_json::to_vec(&empty).unwrap().len();
+        let at_limit = json!({"jsonrpc": "2.0", "id": id, "result": "x".repeat(protocol::MAX_RESPONSE_BYTES - overhead)});
+        assert_eq!(
+            serde_json::to_vec(&at_limit).unwrap().len(),
+            protocol::MAX_RESPONSE_BYTES
+        );
+        assert_eq!(bound_response(&id, at_limit.clone()), at_limit);
+        let above_limit = json!({"jsonrpc": "2.0", "id": id, "result": "x".repeat(protocol::MAX_RESPONSE_BYTES - overhead + 1)});
+        let rejected = bound_response(&id, above_limit);
+        assert_eq!(rejected["id"], id);
+        assert_eq!(rejected["error"]["code"], protocol::INTERNAL_ERROR);
+        assert!(
+            rejected["error"]["message"]
+                .as_str()
+                .unwrap()
+                .contains("response exceeds maximum size")
+        );
+    }
+
+    #[test]
     fn bounded_reader_preserves_frames_across_small_buffers_and_eof() {
         use std::io::{BufReader, Cursor};
         for capacity in [1, 2, 7, 64] {

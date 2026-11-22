@@ -51,3 +51,43 @@ fn rdkit_morgan_errors_preserve_the_failed_boundary() {
         assert!(!error.to_string().is_empty());
     }
 }
+
+#[test]
+fn rdk_config_errors_explain_the_failed_contract() {
+    use chematic_fp::RdkitRdkConfigError as E;
+    let cases = [
+        (E::PathRange, "RDK path range"),
+        (E::FingerprintSize, "RDK nbits"),
+        (E::CountBounds, "RDK count bounds"),
+        (E::AtomIndices, "RDK root or ignored atom"),
+        (E::AtomInvariants, "RDK atom invariants"),
+        (E::Graph, "RDK requires a simple graph"),
+        (E::Budget, "RDK visit and path limits"),
+        (E::VisitLimit, "RDK search visit limit reached"),
+        (E::PathLimit, "RDK selected path limit reached"),
+        (E::IndexedView, "RDK sanitization changed input"),
+        (
+            E::Sanitization("bad valence".into()),
+            "RDK sanitization: bad valence",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert!(error.to_string().contains(expected), "{error:?}");
+    }
+}
+
+#[test]
+fn torsion_configuration_errors_explain_the_failed_limit() {
+    use chematic_fp::RdkitTorsionError as E;
+    let cases = [
+        (E::InvalidAtomCount { maximum: 5 }, "between 1 and 5"),
+        (E::InvalidBitWidth, "bit width must be between"),
+        (
+            E::InvalidCountBounds,
+            "count simulation needs nonempty bounds",
+        ),
+    ];
+    for (error, expected) in cases {
+        assert!(error.to_string().contains(expected));
+    }
+}
