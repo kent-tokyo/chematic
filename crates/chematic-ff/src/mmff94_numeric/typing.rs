@@ -69,12 +69,15 @@ pub fn assign_mmff94_numeric_types_with_view(
     // fused rings become resolved. `compute_mmff94_aromatic_view` restores
     // the compatibility-specific processing order without changing the
     // general perception API's canonical ring ordering.
-    // RDKit's own ring list (its symmetrized SSSR, in its order) where the
-    // port has it; RDKit types from that `RingInfo` throughout.
-    let rings = chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
-        chematic_perception::find_symmetrized_sssr(mol)
-            .rings()
-            .to_vec()
+    // RDKit 2026.09 consumes relevant cycles. Their order also affects its
+    // MMFF aromaticity pass; our enumeration is not an exact port of
+    // RingDecomposerLib's order. Preserve the previous bounded fallback.
+    let rings = chematic_perception::relevant_cycles(mol, 10_000).unwrap_or_else(|_| {
+        chematic_perception::rdkit_sssr_ring_order(mol).unwrap_or_else(|| {
+            chematic_perception::find_symmetrized_sssr(mol)
+                .rings()
+                .to_vec()
+        })
     });
     // MMFF94 has its own, stricter, Kekule-based aromaticity perception
     // (RDKit's `setMMFFAromaticity`), distinct from chematic's own general
