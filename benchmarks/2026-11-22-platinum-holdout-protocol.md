@@ -1536,7 +1536,13 @@ square-planar, trigonal-bipyramidal or degenerate double-bond stereo. The raw
 result is `validation/results/cod-exposed-ps-linux-fallback-strict-2026-11-22.json.gz`,
 uncompressed SHA-256
 `62db0ce8ca010e418182005c7640cdf9bb7da97335ee70cd201fdfe3bf9ad4ff`;
-summary files are alongside it. This selected, exposed sample is not a
-noninferiority result. The two-double-bond support has since been narrowed to
+summary files are alongside it. The corrected profile returned exactly the
+same 52 chematic candidate counts and RMSD arrays as fallback; its raw result
+is `validation/results/cod-exposed-ps-linux-corrected-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`10ed9a5782c7cada7f222d653412dad4e6171bd1dddfc668c9a8361210531c68`.
+All 37 oracle geometries also passed the native checks for every declared
+stereo element, not solely the phosphorus or sulfur center. This selected,
+exposed sample is not a noninferiority result. The two-double-bond support has since been narrowed to
 the exact tested S(=N)(=O) and P(-)(=N)(=S) topologies and requires a further
 repeat on the final candidate.
