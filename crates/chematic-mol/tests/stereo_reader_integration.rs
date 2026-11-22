@@ -756,3 +756,20 @@ fn contradictory_wedge_from_mol_yields_no_chirality_and_a_diagnostic() {
     // stereocenter must never fail the entire parse.
     assert_eq!(report.mol.atom_count(), 5);
 }
+
+#[test]
+fn openbabel_0d_single_alkene_marker_does_not_invent_ez_stereo() {
+    for block in [
+        OPENBABEL_0D_ALKENE.replace("  3  4  1  6  0", "  3  4  1  0  0"),
+        OPENBABEL_0D_ALKENE.replace("  1  2  1  1  0", "  1  2  1  0  0"),
+    ] {
+        let read = read_mol_with_diagnostics(&block).unwrap();
+        let actual = chematic_smiles::rdkit_smiles(&read.mol, &Default::default()).unwrap();
+        let expected = chematic_smiles::rdkit_smiles(
+            &chematic_smiles::parse("FC=CF").unwrap(),
+            &Default::default(),
+        )
+        .unwrap();
+        assert_eq!(actual, expected);
+    }
+}
