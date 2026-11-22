@@ -615,3 +615,13 @@ with companion `-summary-2026-11-22.json` and `-stereo-2026-11-22.json`
 outputs. This local merge is pending comparison against the CI merge, which
 waits for the other fixed-count shards. Unknown historical exposures remain
 outside the recorded scaffold-exclusion guarantee.
+
+The original mixed-profile workflow could not begin its timed stage because the
+separate Linux COD fixed-count shard was cancelled. The independent Linux
+macrocycle timed-recovery workflow reconstructs the fixed-count baseline from
+all four successful original shards and checks its SHA-256 against the locally
+verified merged result (`87ec819a42895c45da757475966c27b98d75db8b3dc179a6529c8e0c83ba1ff9`).
+It uses the original fixed manifest, wheel and scorer fingerprints and the
+prespecified 0.2-second cooperative deadline. The deadline does not interrupt
+an in-progress call. Its timed results remain pending until all four shards are
+sealed, merged and summarized.
