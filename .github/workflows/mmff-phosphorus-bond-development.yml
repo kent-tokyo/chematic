@@ -1,7 +1,7 @@
 name: MMFF phosphorus bond development regression
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/mmff-phosphorus-bond-development.yml'
 permissions:
