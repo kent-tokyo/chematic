@@ -174,3 +174,18 @@ completed attempt counts and errors; report Linux and macOS separately. The
 support audit and candidate/time budgets are proposed here before observing
 any holdout conformer outcomes; this paragraph does not itself report a test
 result or claim acceptance.
+
+Before any holdout conformer scoring, the
+[v11 Linux chemistry audit](https://github.com/kent-tokyo/chematic/actions/runs/44985669374)
+checked all 1,243 holdout records against the prepared input and canonical
+explicit-H graph. All 1,243 graphs matched and both implementations
+constructed MMFF fields for all 1,243. Comparing the equivalent
+`UFFHasAllMoleculeParams`-style checks, 1,242 records had all UFF atom
+parameters in both engines and one had missing parameters in both. The missing
+label is `S_5+4`; successful construction of a UFF field alone does not imply
+all parameters are present. These are support checks, not conformer outcomes.
+The per-record inputs and results are retained in
+`validation/results/macrocycle-holdout-support-v11-2026-11-22.json.gz` and
+`validation/results/macrocycle-uff-support-v11-2026-11-22.json.gz`. The audit
+used the Linux v11 wheel and pinned structural files; macOS support has not
+been separately established.
