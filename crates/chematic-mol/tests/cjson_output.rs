@@ -200,4 +200,38 @@ fn refused_cjson_values_report_actionable_indices_and_values() {
         error.to_string(),
         "CJSON: nonfinite coordinate at atom 1, axis 1"
     );
+    let mut tagged = pair(B::Single);
+    tagged.set_tag(AtomIdx(1), Some(7));
+    assert_eq!(
+        write_cjson_checked(&tagged, &[]).unwrap_err().to_string(),
+        "CJSON: cannot preserve atom tag at atom 1"
+    );
+    let mut directional = pair(B::Aromatic);
+    directional.set_bond_direction(BondIdx(0), B::Up);
+    assert_eq!(
+        write_cjson_checked(&directional, &[])
+            .unwrap_err()
+            .to_string(),
+        "CJSON: cannot preserve stereo direction at bond 0"
+    );
+    directional.clear_bond_direction(BondIdx(0));
+    directional.set_stereo_groups(vec![StereoGroup::new(
+        StereoGroupKind::Or(1),
+        vec![AtomIdx(0)],
+    )]);
+    assert_eq!(
+        write_cjson_checked(&directional, &[])
+            .unwrap_err()
+            .to_string(),
+        "CJSON: cannot preserve enhanced stereo groups"
+    );
+    let mut builder = MoleculeBuilder::new();
+    let atom = builder.add_atom(Atom::new(Element::C));
+    builder.add_bond(atom, atom, B::Single).unwrap();
+    assert_eq!(
+        write_cjson_checked(&builder.build(), &[])
+            .unwrap_err()
+            .to_string(),
+        "CJSON: self bond 0 at atom 0 is outside the reader profile"
+    );
 }
