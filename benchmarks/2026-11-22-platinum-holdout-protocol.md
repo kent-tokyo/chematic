@@ -2248,3 +2248,39 @@ planner runs. The 2,102 records remain in their original four fixed-shard
 memberships, with the prespecified cooperative 0.2-second deadline and frozen
 wheel. This workflow was prepared after fixed-count outcomes became available;
 its timing outcomes remain unobserved until it runs and completes.
+
+### Independent Linux COD timed result
+
+All four shards and the merge of [run 45057702904](https://github.com/kent-tokyo/chematic/actions/runs/45057702904)
+succeeded. The complete raw merge, paired scaffold summary and strict-stereo
+summary are byte-identical to the independently reconstructed local files. In
+2,102 records, the 0.2-second acceptance-deadline comparison recovered 1,049
+references for chematic and 973 for RDKit. The paired difference was +3.62
+percentage points; the seed-42, 10,000-resample scaffold-cluster 95% interval
+was +2.62 to +4.63 percentage points across 2,000 groups. The lower bound
+exceeds the prespecified −2-point margin. Converged-only recovery was 769 and
+721, with interval +1.42 to +3.16 percentage points. This is Linux, this
+holdout and the frozen pre-bridging-hydrogen-fix wheel only.
+
+The scorer recorded a top-level MMFF assignment error on 175 records; all
+175 were among the fixed run's RDKit-MMFF-unsupported records. On 75, RDKit
+had already produced an engine record before the chematic error; on 100 it
+had not. The recovery summarizer treats a top-level error as no recovery for
+both engines, including those 75, and retains all records in the denominator.
+Thus this comparison does not measure RDKit's potential independent success
+on those error rows. No contradicted or unevaluable declared stereo was found
+among 9,718 accepted chematic conformers; RDKit had 5 flagged among 7,405.
+No-conformer record counts were 340 and 399 respectively.
+
+The 0.2-second deadline governs acceptance, not interruption. Median measured
+elapsed times were 0.223/0.227 seconds for chematic/RDKit and 95th percentiles
+0.365/0.373 seconds, over 1,927/2,002 engine records respectively. Maxima
+were 617.197/646.877 seconds. Those tail values and missing engine records
+preclude a hard wall-time guarantee. Median attempts were 4 for each engine;
+95th-percentile attempts were 18/14. No-conformer and error counts must be
+read alongside these timings.
+
+The uncompressed raw result SHA-256 is
+`eac89872d9d0eacd95eb87eb47d66cdf86938b1f5d3085378e1b6ad6773b550c`, stored as
+`validation/results/cod-independent-mixed-time-linux-2026-11-22.json.gz`.
+Recovery, strict-stereo and timing-distribution summaries accompany it.
