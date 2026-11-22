@@ -6,13 +6,20 @@ use chematic_core::AtomIdx;
 
 #[test]
 fn aromatic_substituents_and_rings() {
-    for smiles in ["Cc1ccccc1", "Oc1ccccc1", "c1ccccc1"] {
+    for smiles in [
+        "Cc1ccccc1",
+        "c1ccccc1C",
+        "Oc1ccccc1",
+        "c1ccccc1O",
+        "c1ccccc1",
+    ] {
         let heavy = chematic_smiles::parse(smiles).unwrap();
         let explicit = chematic_chem::add_hydrogens(&heavy);
         let explicit_coords = generate_coords(&explicit);
         let (added, added_coords) =
             add_hydrogens_with_coords(&heavy, &generate_coords(&heavy)).unwrap();
         for (mol, coords) in [(&explicit, &explicit_coords), (&added, &added_coords)] {
+            let mut checked = 0;
             for i in 0..mol.atom_count() {
                 let center = AtomIdx(i as u32);
                 if !mol.atom(center).aromatic {
@@ -30,6 +37,7 @@ fn aromatic_substituents_and_rings() {
                     .filter(|n| !mol.atom(*n).aromatic)
                     .collect();
                 if ring.len() == 2 && outside.len() == 1 {
+                    checked += 1;
                     let p = coords.get(center);
                     let u = coords.get(ring[0]).sub(&p);
                     let v = coords.get(ring[1]).sub(&p);
@@ -42,6 +50,7 @@ fn aromatic_substituents_and_rings() {
                     }
                 }
             }
+            assert_eq!(checked, 6, "{smiles}: aromatic centers checked");
         }
     }
 }
