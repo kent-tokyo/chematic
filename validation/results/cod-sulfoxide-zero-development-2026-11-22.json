@@ -1,0 +1,180 @@
+{
+  "classification": "exposed second-COD holdout; development only",
+  "selection": "Linux v4 zero chematic candidates, RDKit candidates, specified 3-coordinate neutral S(=O) stereocenter",
+  "results": [
+    {
+      "name": "BBXLNVDQRGFGPP-JXFKEZNVSA-N",
+      "smiles": "O=C1CC[S@](=O)[C@@H](c2ccccc2)N1c1ccccc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "XOPQHCWXXHDOCI-QFIPXVFZSA-N",
+      "smiles": "Cc1cc2oc(C)c([S@@](=O)c3ccc(F)cc3)c2c(C)c1C",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "VOJNEXMTMAHTTG-KBXCAEBGSA-N",
+      "smiles": "O=[S@](c1ccc(Cl)cc1)[C@H](Br)Cc1ccccc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "VRMDSKTXUGFKSR-JRPXNJEYSA-N",
+      "smiles": "Cc1ccc([S@](=O)c2ccccc2[C@H](C#N)NCc2ccc(C(F)(F)F)cc2)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "NJDUHVKDVAXBKO-QFIPXVFZSA-N",
+      "smiles": "O=[S@@](Cc1c(F)c(F)c(F)c(F)c1F)c1ccc(Cl)cc1Cl",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "QYQQHGIMEABPGX-FGHSDJDKSA-N",
+      "smiles": "CCOC(=O)O[C@@H]1CCN(C(=O)OCC)[C@H]1C1([S@](=O)c2ccc(C)cc2)CC1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "JXOGHLPPGRTUJZ-JOCHJYFZSA-N",
+      "smiles": "Cc1cc2oc(C)c([S@](=O)c3ccc(F)cc3)c2c(C)c1Br",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "FCZNNHHXCFARDY-RRJWCGLDSA-N",
+      "smiles": "CC1(C)[C@H](C(=O)O)N2C(=O)[C@@H](NC(=O)Cc3ccccc3)[C@H]2[S@]1=O",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "MGNWTWSJRXZZBN-QFIPXVFZSA-N",
+      "smiles": "Cc1ccccc1[S@](=O)c1c(C)oc2cc(C)c(Br)c(C)c12",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "RFLZBBOYVLPLNN-PKFRYEAVSA-N",
+      "smiles": "CO[S@](=O)[C@H]([C@H]1[C@@H](C(=O)OCc2cccc(Oc3ccccc3)c2)C1(C)C)[C@@H](C(=O)OC(C)(C)C)S(=O)(=O)C(C)(C)C",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "XPCSXKFDLAYIPL-FQEVSTJZSA-N",
+      "smiles": "Cc1ccc([S@](=O)c2c(C)oc3ccc(Br)cc23)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "KNDXZNGMMMXABR-HSCGORNLSA-N",
+      "smiles": "CCOC(=O)[C@H](OC(=O)OC(C)(C)C)[C@@H]1CN1[S@](=O)C(C)(C)C",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "MJYBNVLNPKRLHZ-NRFANRHFSA-N",
+      "smiles": "Cc1oc2c(C)cc(Cl)cc2c1[S@@](=O)c1ccc(Br)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "PJIPPZQFBNVNNS-FPTDNZKUSA-N",
+      "smiles": "CC(C)(C)[S@](=O)N[C@@H](C#CN1CCOC1=O)c1ccccc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "UMAZNGCQCXNGPU-WYRIXSBYSA-N",
+      "smiles": "COc1cc2c(cc1OC)[C@H]1CCO[S@](=O)N1CC2",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "RSDSDGPGROLUMI-QFIPXVFZSA-N",
+      "smiles": "Cc1cc(C)c2c([S@@](=O)c3cccc(Cl)c3)c(C)oc2c1C",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "VYXDNJBXAKULFE-OAQYLSRUSA-N",
+      "smiles": "Cc1cc(C)c2oc(C)c([S@](=O)c3cccc(F)c3)c2c1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "ZGQWAYYHSXOBLT-FQEVSTJZSA-N",
+      "smiles": "Cc1cccc([S@](=O)c2c(C)oc3ccc(Br)cc23)c1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "HRINCRDICRUHJX-IBGZPJMESA-N",
+      "smiles": "Cc1oc2ccc(-c3ccccc3)cc2c1[S@](C)=O",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "BUBDUKZJMKWNJO-YACUFSJGSA-N",
+      "smiles": "Cc1cc(C)c([Si](Cl)(c2c(C)cc(C)cc2C)[Si](O[S@@](=O)c2ccccc2)(c2c(C)cc(C)cc2C)c2c(C)cc(C)cc2C)c(C)c1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "OHCBXXLHWRALFL-MRXNPFEDSA-N",
+      "smiles": "O=[S@](Cc1ccccc1)c1ccccc1O",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "SLLHFKCVMYAALT-ACJLOTCBSA-N",
+      "smiles": "CC(C)(C)[S@](=O)N1CCC[C@@H]1c1ccc(Br)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "AXLASOPVPMFPOS-KBXCAEBGSA-N",
+      "smiles": "O=[S@](c1ccc(Cl)cc1)[C@H](Cl)Cc1ccccc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "HSXHNWQDPQUASC-AREMUKBSSA-N",
+      "smiles": "CC[S@@](=O)c1c(-c2cccc(F)c2)oc2ccc(C3CCCCC3)cc12",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "NZQMIUFCUFNZNO-YPMLDQLKSA-N",
+      "smiles": "C[C@@H](c1ccc(F)cc1)[S@](=O)c1ccc(F)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "ZXMKGJDQRHLYLG-JOCHJYFZSA-N",
+      "smiles": "Cc1ccc([S@@](=O)c2c(C)oc3cc(C)c(Br)c(C)c23)cc1",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "FVYKEOWKBXNENQ-DEOSSOPVSA-N",
+      "smiles": "CC[S@](=O)c1c(-c2ccc(I)cc2)oc2ccc3ccccc3c12",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "SHMORCPZUFUBTH-JJPXPPDRSA-N",
+      "smiles": "COC(=O)c1ccccc1[S@@](=O)O[C@@H]1C[C@H](C)CC[C@H]1C(C)C",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    },
+    {
+      "name": "POYOKULFLHJQQC-SFKWHYAKSA-N",
+      "smiles": "CCOC(=O)C[C@H]1C/C(=N\\[S@](=O)C(C)(C)C)c2ccccc21",
+      "v4_chematic_count": 0,
+      "v4_rdkit_count": 20
+    }
+  ]
+}

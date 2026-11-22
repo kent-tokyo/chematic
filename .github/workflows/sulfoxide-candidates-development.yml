@@ -1,0 +1,34 @@
+name: Sulfoxide candidate development probe
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/sulfoxide-candidates-development.yml'
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+      - name: Build development candidate
+        run: |
+          python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+          git rev-parse HEAD > sulfoxide-source-commit.txt
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/sulfoxide
+          python -m pip install --force-reinstall --no-deps dist/sulfoxide/*.whl
+      - name: Check exposed zero-candidate structures
+        run: python scripts/validation/cod_sulfoxide_candidates.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: sulfoxide-candidates-development-${{ github.sha }}
+          path: |
+            sulfoxide-source-commit.txt
+            cod-sulfoxide-candidates.json
+          if-no-files-found: warn
