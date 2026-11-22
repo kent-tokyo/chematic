@@ -2358,3 +2358,34 @@ parse errors and exercised the plan, but it is not evaluation evidence or the
 pinned RDKit environment. Synthetic tests verified complete population,
 sealing, merging and rejection of an altered identity. No outcome from this
 revised timed experiment is available before the run.
+
+### Independent macOS COD fixed-count result
+
+All four macOS COD fixed-count shards in
+[run 45026013999](https://github.com/kent-tokyo/chematic/actions/runs/45026013999)
+succeeded. The original workflow's matrix-wide merge did not start because a
+separate Linux COD shard was cancelled. The four macOS artifacts were locally
+merged with the original sealed manifest; the merger verified each shard's
+record identities, wheel, audit, scorer and stereo fingerprints. This is a
+local reconstruction, not a completed CI merge. The recorded platform is
+`macOS-26.7.2-arm64-arm-64bit`, and the wheel predates the bridging-H fix.
+
+On all 2,102 holdout records, 1,919 were `ok` and 183 RDKit-MMFF-unsupported.
+Reference recovery at 1 Å was 1,510 for chematic and 1,508 for RDKit. The
+paired difference was +0.095 percentage points, and the seed-42,
+10,000-resample scaffold-cluster 95% interval was −0.565 to +0.717 percentage
+points over 2,000 groups. The lower bound exceeds the prespecified −2-point
+margin for this platform and population. Converged-only recovery was 979 and
+987; the scaffold interval was −1.049 to +0.286 percentage points. No
+contradicted or unevaluable declared stereo was found in 37,719 chematic
+conformers. RDKit had 61 flagged among 37,759. No-conformer record counts
+were 209 and 207, and the frozen scorer recorded 24 RDKit `Bad Conformer Id`
+errors; those historical outcomes are retained. This does not establish a
+time-budget or published-package result.
+
+The compressed raw result is
+`validation/results/cod-independent-mixed-fixed-macos-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`7200e610500e0cd51c65a13faeb5229fa29e6a32461195cb1ace6b1203703be2`.
+The paired recovery and strict-stereo summaries are alongside it. The merge
+was written directly to compressed output to avoid a second uncompressed copy.
