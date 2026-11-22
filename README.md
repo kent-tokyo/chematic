@@ -10,8 +10,8 @@
 [![License](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-Pure-Rust cheminformatics for Python, Rust, and the browser when molecular data
-must stay local and unsupported chemistry must fail explicitly.
+chematic is a pure-Rust cheminformatics library for searching, analyzing, and drawing molecular structures.
+Python, Rust, Node.js, and browser applications share the same Rust core.
 
 [日本語](README_ja.md) · [中文](README_zh.md) · [Documentation](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -23,23 +23,23 @@ cargo add chematic --features "smiles,perception,chem,3d,fp"
 npm install @kent-tokyo/chematic
 ```
 
-Python wheels need no C/C++ compiler. All bindings share the Rust core.
+The Python wheels install without a C/C++ compiler. In the browser, WebAssembly processes molecules on the user's device.
 
 ### v1.2.3 release boundary
 
 The current release is **v1.2.3**. See [release notes](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.3) and [artifact verification](docs/reference/validation.md). Upcoming changes are listed under [Unreleased](CHANGELOG.md#unreleased).
 
-## Choose chematic when
+## Molecular search and analysis
 
-- chemistry must run locally in a browser or inside a Rust application;
-- Python, Rust, Node, and WebAssembly should share one implementation;
-- rejected inputs, resource limits, and lossy conversions must stay visible;
-- adoption claims must point to versioned validation and benchmark records.
+- Read molecules from SMILES or SDF and calculate molecular weight, LogP, and topological polar surface area (TPSA).
+- Search for a substructure with SMARTS, or find similar molecules using Morgan fingerprints and Tanimoto similarity.
+- Find the maximum common substructure (MCS) of a set of molecules.
+- Draw molecular structures as SVG for web pages and reports.
 
-Choose RDKit for maximum ecosystem and chemistry breadth, and Open Babel for
-broad command-line format conversion. Compare pure-Rust alternatives on your
-own corpus and exact operation. See [When to choose chematic](docs/reference/choosing-chematic.md)
-for the decision guide and current limits.
+In a comparison of the published Python packages on the same 1,000 molecules,
+chematic 1.2.2 and RDKit 2026.9.2 agreed on ring counts and Morgan fingerprints
+(radius 2, 2,048 bits) for every molecule. All TPSA values agreed within the
+specified tolerance. [Comparison methods and results](benchmarks/2026-11-21-v122-published-comparison.md)
 
 ## Use it
 
