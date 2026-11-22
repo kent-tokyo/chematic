@@ -358,3 +358,18 @@ audit is `validation/results/macrocycle-development-declared-stereo-audit-linux-
 uncompressed SHA-256
 `27aa5575e410eee2dfa38043d5f935a51f527e4705b60d974945104dfdf13b8f`.
 These remain exposed development results.
+
+The exposed 208-atom `5vk0__Ligand_phospholipids_ALA_L_4` case was
+examined with the frozen v11 wheels in a separate [stage diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44991392140).
+On both hosts, compatibility embedding produced two candidates and both
+remained after MMFF; RDKit also produced two. The corrected profile returned
+zero on Linux and one on macOS. All returned optimized candidates had
+unfinished status, and no returned geometry contradicted or made declared
+stereo unevaluable according to the strict external verifier. This does not
+identify whether the Linux corrected embedding returned no raw candidate or
+the subsequent internal stereo screen removed it; the additional diagnostic
+is intended to distinguish those cases. Results are recorded in
+`validation/results/macrocycle-stage-diagnostic-v11-linux-2026-11-22.json`
+(SHA-256 `61baeacf39df21d9e3b4523bbfdb4e805f10b1e503d3b1d36e110cf5910e7575`)
+and `validation/results/macrocycle-stage-diagnostic-v11-macos-2026-11-22.json`
+(SHA-256 `a23f0333e923421b4b44a1d65d17d38ca633951a07a98a4f5a9d4531a7e804`).

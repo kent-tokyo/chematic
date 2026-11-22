@@ -1415,7 +1415,9 @@ audit of all 225 development inputs is
 `validation/results/cod-development-declared-stereo-audit-linux-2026-11-22.json.gz`,
 uncompressed SHA-256
 `4f3390c46d4e89023f5d4f1959a38e9265c844e7ea451b48276446052ed6ce7b`.
-The macOS corrected-profile arm also recovered 161 / 163. Among 4,160
+The macOS corrected-profile arm also recovered 161 / 163; all 225 per-record
+RMSD arrays and convergence-status arrays matched the earlier macOS v11 run.
+Among 4,160
 chematic candidates there were zero contradicted or unevaluable declarations;
 among 4,180 RDKit candidates, 19 were contradicted, 57 unevaluable and 59
 had either. Seventeen / sixteen records returned no candidate, including 13
