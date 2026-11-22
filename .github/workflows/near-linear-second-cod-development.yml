@@ -1,7 +1,7 @@
 name: Near-linear second COD force-field diagnostic
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/near-linear-second-cod-development.yml'
 permissions:
