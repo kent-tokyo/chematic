@@ -35,4 +35,12 @@ fn minimize_with_no_terms_leaves_coordinates_unchanged() {
     assert_eq!(field.minimize(&mut coords, 100, 1e-4), 0);
     assert_eq!(coords, original);
     assert_eq!(field.energy(&coords), 0.);
+    let detailed = field.optimize_detailed(&mut coords, 100);
+    assert_eq!(detailed.status, 0);
+    assert_eq!(detailed.energy, 0.);
+    assert_eq!(detailed.iterations, 0);
+    assert_eq!(detailed.final_gradient_test, Some(0.));
+    assert_eq!(coords, original);
+    assert_eq!(field.optimize(&mut coords, 100), (0, 0.));
+    assert_eq!(coords, original);
 }
