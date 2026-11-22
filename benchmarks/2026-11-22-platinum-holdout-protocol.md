@@ -1017,3 +1017,12 @@ summaries have `cod-second-holdout-{linux,macos}-fields` prefixes under
 `validation/results/`; uncompressed raw SHA-256 values are
 `325606dfb7a7e9b43de49507ae58e99cced799f52d54bc1c7aace54d6f198939`
 and `163543e8cba0ef5ae41d9d23f129e04369cce79143426110d1ca3d88de690d9e`.
+
+The ring-order investigation is pinned to the actual RDKit 2026.09.2 build:
+[its RingFamilies CMake configuration](https://github.com/rdkit/rdkit/blob/Release_2026_09_2/External/RingFamilies/CMakeLists.txt)
+selects RingDecomposerLib `v1.1.3_rdkit` (archive MD5
+`e9a0bcdda8b921a35e812b9888a9a874`) and replaces `qsort` with a stable
+sort in `RDLcycleFams.c` and `RDLdimacs.c`. A compatible port must account for
+that stable ordering as well as the biconnected-component, ring-family and
+cycle iteration order. This source identification does not itself fix or
+validate the MMFF discrepancies.
