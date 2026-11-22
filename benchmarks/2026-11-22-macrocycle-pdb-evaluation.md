@@ -625,3 +625,36 @@ It uses the original fixed manifest, wheel and scorer fingerprints and the
 prespecified 0.2-second cooperative deadline. The deadline does not interrupt
 an in-progress call. Its timed results remain pending until all four shards are
 sealed, merged and summarized.
+
+### Independent Linux timed result
+
+All four shards of [run 45055839414](https://github.com/kent-tokyo/chematic/actions/runs/45055839414)
+completed and were locally merged with the frozen timed manifest. The CI merge
+was still queued when this result was recorded. Across all 1,243 records,
+within the 0.2-second acceptance deadline chematic recovered 87 references and
+RDKit 81. The paired difference was +0.48 percentage points; the 10,000-draw,
+seed-42 scaffold-cluster 95% interval was −0.26 to +1.27 percentage points
+across 802 groups. The lower endpoint exceeds the prespecified −2-point
+margin. Converged-only recovery was 54 and 51, with interval −0.47 to +0.91
+percentage points. These low absolute recovery counts limit the result.
+
+No contradicted or unevaluable declared stereo was found among 641 chematic
+or 465 RDKit accepted conformers. The no-conformer record counts were 953 and
+995, respectively, and no top-level row errors were recorded. The Linux
+source-built wheel predates the bridging-hydrogen fix; macOS and COD timing
+remain separate pending evaluations.
+
+The deadline controls acceptance but does not interrupt a running attempt.
+All 1,243 records exceeded 0.2 seconds of measured elapsed work per engine.
+For chematic/RDKit, median elapsed time was 0.477/0.561 seconds, 95th
+percentile 3.203/3.076 seconds, and maximum 9.367/12.001 seconds. Median
+attempt count was 1 for each; 95th-percentile counts were 4/3. No record
+reached the 20-attempt cap. Thus this is not a hard execution-time guarantee.
+
+The raw merged result is
+`validation/results/macrocycle-pdb-independent-mixed-time-linux-2026-11-22.json.gz`
+with uncompressed SHA-256
+`815f4b9fcf379ee3d857c426aef544dfa8a11d03381e16ee0960fcbe1d3417df`.
+Scaffold-bootstrap, strict-stereo and timing-distribution summaries accompany
+it. Each shard's wheel, baseline, scoring protocol and record identities were
+verified by the timed merger.
