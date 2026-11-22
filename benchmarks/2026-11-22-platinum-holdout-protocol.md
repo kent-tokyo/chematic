@@ -1939,6 +1939,24 @@ The raw uncompressed SHA-256 is
 `df97eb4e1ec9a59cdd8f73427c73c985f3d6ede4b691211c7762fb39fe010b49`.
 The wheel predates the bridging-H+ fix; other OS results remain in progress.
 
+The macOS COD field shards have completed and were verified against their
+manifest. Of 2,102 records, 34 failed RDKit reference embedding; 1,886 were
+comparable for both MMFF variants and 2,068 for UFF. For MMFF94 and MMFF94s,
+one molecule exceeded the energy diagnostic threshold and two exceeded the
+gradient threshold; the largest differences were 2.6248 kcal/mol and
+50.839 kcal/mol/angstrom. For UFF, one molecule exceeded both thresholds,
+with energy difference `4.29436e7` kcal/mol and maximum gradient-component
+difference `6.79360e8` kcal/mol/angstrom. This is the same bridging-H+
+outlier identified on Linux, using separately generated coordinates. The
+MMFF energy outlier is also the same on both platforms. Sampled maximum
+finite-difference discrepancies were 0.01593 for either MMFF variant and
+0.1961 for UFF. The wheel was fixed before the bridging-H+ correction.
+Raw results and summary are
+`validation/results/fresh-cod-holdout-macos-fields-2026-11-22.json.gz` and
+`validation/results/fresh-cod-holdout-macos-fields-summary-2026-11-22.json`;
+the uncompressed result SHA-256 is
+`cfcc6515976be51d48f67871693a75c95042f79a6d4dca1aed9786b253075444`.
+
 The exposed UFF outlier was reproduced on separately generated macOS
 coordinates: RDKit energy was 401.4506 kcal/mol and the prior chematic energy
 was 42,943,972.7872 kcal/mol. The gradient difference was concentrated on
