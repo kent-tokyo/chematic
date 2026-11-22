@@ -12,8 +12,8 @@
 [![许可证](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-适用于分子数据必须保留在本地、且不支持的化学表达必须明确失败的场景。
-支持 Python、Rust、Node 和浏览器，并共享同一 Rust 内核。
+chematic 是用 Rust 编写的化学信息学库，可用于分子结构的搜索、分析和绘制。
+Python、Rust、Node.js 和浏览器应用共用同一个 Rust 内核。
 
 [官方网站](https://chematic.io/) · [文档](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -25,22 +25,21 @@ cargo add chematic --features "smiles,perception,chem,3d,fp"
 npm install @kent-tokyo/chematic
 ```
 
-Python wheel 无需 C/C++ 编译器；各绑定共享同一 Rust 内核。
+安装 Python wheel 无需 C/C++ 编译器。在浏览器中，WebAssembly 可直接在用户设备上处理分子数据。
 
 ### v1.2.3 范围
 
 当前版本为 **v1.2.3**。参见[更新记录](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.3)和[发布验证](docs/reference/validation.md)。下一版本的变更见[未发布条目](CHANGELOG.md#unreleased)。
 
-## 适合选择 chematic 的场景
+## 分子搜索与分析
 
-- 化学处理必须在浏览器或 Rust 应用中本地完成
-- Python、Rust、Node 和 WebAssembly 需要共享同一实现
-- 拒绝的输入、资源限制和有损转换必须可追踪
-- 采用前需要查看版本化验证与基准记录
+- 从 SMILES 或 SDF 读取分子，计算分子量、LogP 和拓扑极性表面积（TPSA）。
+- 用 SMARTS 搜索指定的子结构，或用 Morgan 指纹和 Tanimoto 系数查找结构相似的分子。
+- 求出多个分子的最大公共子结构（MCS）。
+- 将分子结构绘制为 SVG，用于网页和报告。
 
-如果优先考虑最广的化学功能和生态系统，请先评估 RDKit；如果优先考虑广泛的命令行
-格式转换，请先评估 Open Babel。详细选择条件见
-[选择指南](docs/reference/choosing-chematic.md)。
+使用已发布的 Python 包对同一组 1,000 个分子进行比较时，chematic 1.2.2 与 RDKit 2026.9.2
+对每个分子给出的环数和 Morgan 指纹（半径 2，2,048 位）均一致，所有 TPSA 值的差异也都在指定的容差范围内。[比较方法与结果](benchmarks/2026-11-21-v122-published-comparison.md)
 
 ## 使用
 

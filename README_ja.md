@@ -12,9 +12,8 @@
 [![ライセンス](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue)](LICENSE-MIT)
 [![Ask DeepWiki](docs/assets/ask-deepwiki.svg)](https://deepwiki.com/kent-tokyo/chematic)
 
-分子データを外部へ送らず、未対応の化学表現を曖昧に処理したくない場面に向けた、
-Rust製のケモインフォマティクスライブラリです。Python、Rust、Node、ブラウザから
-同じコアを利用できます。
+chematicは、分子構造の検索・解析・描画に使えるRust製のケモインフォマティクスライブラリです。
+Python、Rust、Node.js、ブラウザから同じRustコアを利用できます。
 
 [公式サイト](https://chematic.io/) · [ドキュメント](https://kent-tokyo.github.io/chematic/) · [Playground](https://kent-tokyo.github.io/chematic/playground/)
 
@@ -26,22 +25,21 @@ cargo add chematic --features "smiles,perception,chem,3d,fp"
 npm install @kent-tokyo/chematic
 ```
 
-Python wheelはC/C++コンパイラを必要とせず、各バインディングは同じRustコアを使います。
+Python wheelはC/C++コンパイラを必要とせず、ブラウザではWebAssemblyを使って端末内で分子を処理できます。
 
 ### v1.2.3 の対応範囲
 
 現在のリリースは **v1.2.3** です。[変更履歴](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.3)と[検証結果](docs/reference/validation.md)を確認できます。次版の変更は[未公開の項目](CHANGELOG.md#unreleased)にまとめています。
 
-## chematicが向いている場面
+## 分子の検索と解析
 
-- ブラウザ内またはRustアプリ内で化学処理を完結させたい
-- Python・Rust・Node・WebAssemblyで同じ実装を使いたい
-- 入力拒否、リソース上限、変換時の情報損失を結果として扱いたい
-- バージョン付きの検証結果を確認してから採用したい
+- SMILESやSDFから分子を読み込み、分子量、LogP、トポロジカル極性表面積（TPSA）を計算する。
+- SMARTSで指定した部分構造を探す。構造が似た分子を探すには、MorganフィンガープリントとTanimoto係数を使う。
+- 複数の分子から最大共通部分構造（MCS）を求める。
+- 分子構造をSVGで描画し、ブラウザやレポートに表示する。
 
-機能範囲とエコシステムの広さを優先するならRDKit、幅広いコマンドライン形式変換を
-優先するならOpen Babelが第一候補です。選定条件と未対応範囲は
-[選定ガイド](docs/reference/choosing-chematic.md)にまとめています。
+chematic 1.2.2とRDKit 2026.9.2の公開Pythonパッケージで、同じ1,000分子を比較しました。
+全件で環数とMorganフィンガープリント（半径2、2,048ビット）が一致し、TPSAもすべて所定の許容誤差内でした。[比較条件と測定結果](benchmarks/2026-11-21-v122-published-comparison.md)
 
 ## 使い方
 
