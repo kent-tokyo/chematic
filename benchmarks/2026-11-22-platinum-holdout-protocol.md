@@ -2416,3 +2416,14 @@ against the accepted-conformer count. The historical Linux COD and macrocycle
 coverage files were regenerated with those additional counters; their prior
 stereo-coverage conclusions are unchanged. Future acceptance checks must
 inspect the recovery and converged-scoring coverage as well as stereo coverage.
+
+A post-hoc tail inspection of the frozen Linux COD timed data found that the
+five records with the greatest elapsed time were the same for both engines:
+indices 3425, 1248, 6117, 6945 and 1663. Each engine made one attempt on
+each. Recorded elapsed times were 617.20/646.88, 145.26/148.81,
+124.58/137.77, 94.44/102.60 and 91.96/98.92 seconds (chematic/RDKit,
+respectively). These molecules are now exposed diagnostic cases. Shared tail
+membership does not establish a common cause, and these measurements do not
+separate embedding from minimization. Any profiling or optimization based on
+these cases is development work and requires a new unused cohort for a
+subsequent performance claim.
