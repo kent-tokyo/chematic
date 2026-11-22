@@ -117,3 +117,38 @@ fn mcs_smarts_refuses_more_than_99_ring_closures() {
         chematic_smarts::McsSmartsError::TooManyRingClosures
     );
 }
+
+#[test]
+fn mcs_smarts_rejects_unrepresentable_bonds_and_atom_maps() {
+    use chematic_smarts::McsSmartsError;
+    for bond in [B::Ring, B::DativeForward, B::Up] {
+        let mut graph = QueryMolecule::new();
+        let a = graph.add_atom(atom(6));
+        let b = graph.add_atom(atom(6));
+        graph.add_bond(a, b, BondQuery::Primitive(bond));
+        assert_eq!(
+            mcs_query_to_smarts(&graph).unwrap_err(),
+            McsSmartsError::UnsupportedBondQuery
+        );
+    }
+    let mut graph = QueryMolecule::new();
+    let a = graph.add_atom(atom(6));
+    graph.atoms[a].atom_map = Some(1);
+    assert_eq!(
+        mcs_query_to_smarts(&graph).unwrap_err(),
+        McsSmartsError::UnsupportedAtomQuery
+    );
+}
+
+#[test]
+fn mcs_smarts_rejects_malformed_query_adjacency() {
+    let mut graph = QueryMolecule::new();
+    let a = graph.add_atom(atom(6));
+    let b = graph.add_atom(atom(8));
+    graph.add_bond(a, b, BondQuery::Primitive(B::Single));
+    graph.adj[a].clear();
+    assert_eq!(
+        mcs_query_to_smarts(&graph).unwrap_err(),
+        chematic_smarts::McsSmartsError::InvalidGraph
+    );
+}
