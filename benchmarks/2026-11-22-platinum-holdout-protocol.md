@@ -895,7 +895,17 @@ Its merge commit is `98a270e4ba39c7f7db61a0e1980bfa29fd55f615`, crates tree
 wheel SHA-256 values are
 `8305fd27765c4d10670fa2a0900f3b86b286d35a711f3f2eecb5c412f96613ac` and
 `b37bfac64e9ce9550eea1e36eb0e7554294b71f7e9efb22be470da44a5ef9608`.
-The 225-record v8 development evaluation remains in progress.
+The [225-record v8 Linux development evaluation](https://github.com/kent-tokyo/chematic/actions/runs/44972185356)
+completed: identity matched for all 225, both MMFF implementations supported
+212 and neither supported 13. Reference recovery was 161 / 163
+(chematic / RDKit; denominator 225; paired molecule 95% interval −4.00 to
++2.22 pp). The engines returned 4,120 / 4,180 minimized candidates with
+0 / 38 detected stereo violations. Six supported records had no chematic
+candidates; three of those had no RDKit candidate count because RDKit
+encountered an error. This remains development evidence. Compressed raw
+files are `validation/results/cod-linux-{development,identity,support}-v8-2026-11-22.json.gz`;
+uncompressed development SHA-256 is
+`3f9503d09caf42ccbdfde3706f96cb343d37a03ab58f538181225b64d45c5522`.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
