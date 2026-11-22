@@ -951,3 +951,39 @@ Linux time rows identically and retained the 385-scaffold recovery difference
 of +2.79 percentage points. These are tests of the merge procedure using old
 results, not new holdout measurements. Synthetic tests also verify rejection
 of missing, duplicated, misassigned or differently configured shards.
+
+### Second COD holdout: v4 fixed-count and timed results
+
+The [v4 evaluation](https://github.com/kent-tokyo/chematic/actions/runs/44962477871)
+completed both platforms' scoring and aggregation before its force-field jobs.
+Of 2,288 scaffold-separated holdout records, 2,098 were MMFF-supported by both
+engines, 181 by neither, and nine by chematic only. All 2,288 passed the identity
+checks on both platforms. The following recovery denominators are the 2,098
+common-supported records, not the entire holdout; none were dropped for a
+missing conformer. These results are from the v4 wheels, before the subsequent
+P, UFF, terminal-carbon, phosphorus-bond and directional-bond fixes.
+
+| Platform and budget | chematic / RDKit recovered | Paired molecule 95% interval | Paired scaffold 95% interval |
+| --- | ---: | ---: | ---: |
+| Linux, 20 candidates | 1,582 / 1,633 | −3.38 to −1.48 pp | −3.53 to −1.40 pp |
+| macOS, 20 candidates | 1,586 / 1,625 | −2.81 to −0.91 pp | −3.00 to −0.81 pp |
+| Linux, 0.2 s per engine | 1,195 / 1,148 | +1.19 to +3.29 pp | +1.10 to +3.36 pp |
+| macOS, 0.2 s per engine | 1,162 / 1,067 | +3.29 to +5.72 pp | +3.27 to +5.76 pp |
+
+Thus the preregistered −2 pp lower-bound criterion failed on both platforms
+for fixed count and passed on both for the timed condition. The fixed run
+returned no candidates for 63 chematic and 11 RDKit inputs on each platform.
+Linux checked 40,532 / 41,551 chematic / RDKit minimized candidates and found
+0 / 65 stereo violations; macOS checked 40,538 / 41,548 and found 0 / 70.
+Only 18,829 / 19,535 of these Linux candidates and 18,781 / 19,563 of the
+macOS candidates respectively reported convergence. Timed chematic candidates
+had zero detected stereo violations on each OS; RDKit had seven on each. These
+checks do not prove stereochemistry for cases the verifier cannot evaluate.
+Common-coordinate force-field comparisons are still running. Raw fixed and
+timed artifacts and summaries are preserved under `validation/results/` with
+`cod-second-holdout-` prefixes; uncompressed fixed SHA-256 values are
+`912be2665293e6ce76e7b349ff720cc3127158c6610cc7c60faf51d2b70e9f8c`
+(Linux) and `19506c7988bfdbd901936f1c5cbd0c7400985725fdff0817da4b0d49dc7e51e5`
+(macOS). The v8 candidate was frozen before these results were inspected, but
+any comparison on this same holdout is a related follow-up, not a fresh
+independent test. This was itself a post-hoc follow-up after first-COD exposure.
