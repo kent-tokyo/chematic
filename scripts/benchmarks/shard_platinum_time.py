@@ -73,6 +73,7 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
                           'stereo_policy': 'rdkit-declared-stereo-strict-v1',
                           'max_candidates': 20, 'repair_iters': 400,
                           'geometry_checked': True,
+                          'engine_error_policy': 'independent generation and scoring per engine',
                           'seed_schedule': '42 * (attempt + 1)'},
              'selection': 'fixed-count shard membership; SHA256(name) order within each shard',
              'fingerprints': fingerprints_now, 'shards': []}
@@ -136,7 +137,8 @@ def merge(manifest_path, shard_paths, output_path):
         raise ValueError('duplicate baseline hash')
     keys = ('rdkit', 'chematic', 'script_sha256', 'source_sha256', 'seconds',
             'stereo_policy', 'stereo_verifier_sha256', 'stereo_wrapper_sha256',
-            'max_candidates', 'repair_iters', 'geometry_checked', 'seed_schedule', 'timing')
+            'max_candidates', 'repair_iters', 'geometry_checked', 'engine_error_policy',
+            'seed_schedule', 'timing')
     if manifest.get('profile') == 'mixed_checked':
         keys += ('profile', 'gradient_schedule')
     common, seen, results, platforms, hashes = None, set(), [], [], []

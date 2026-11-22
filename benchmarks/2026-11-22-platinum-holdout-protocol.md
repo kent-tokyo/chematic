@@ -2312,3 +2312,7 @@ alter the previously recorded holdout. Any follow-up using the new scorer
 must identify the changed fingerprints, retain individual engine errors and
 report its population and selection separately. A fresh independent comparison
 is needed to make an unbiased claim about the changed evaluation policy.
+The revised timed manifest also pins the independent-engine error policy;
+sealing and merging reject an absent or different policy, and the merged
+result retains it. This prevents mixing results from the earlier shared-error
+scorer with the revised scorer.

@@ -61,11 +61,18 @@ class TimedShardingTest(unittest.TestCase):
                 results.append(path)
             merged = timed.merge(timed_dir / 'manifest.json', results, root / 'merged.json')
             self.assertEqual([0, 1, 2], [r['index'] for r in merged['results']])
+            self.assertEqual('independent generation and scoring per engine',
+                             merged['engine_error_policy'])
             with self.assertRaises(ValueError):
                 timed.merge(timed_dir / 'manifest.json', results[:1], root / 'bad.json')
             with self.assertRaises(ValueError):
                 timed.merge(timed_dir / 'manifest.json', [results[0], results[0]], root / 'bad.json')
             altered = json.loads(results[0].read_text())
+            altered['engine_error_policy'] = 'shared failure'
+            results[0].write_bytes(fixed.encoded(altered))
+            with self.assertRaises(ValueError):
+                timed.merge(timed_dir / 'manifest.json', results, root / 'bad.json')
+            altered['engine_error_policy'] = tm['protocol']['engine_error_policy']
             altered['seconds'] = 1.0
             results[0].write_bytes(fixed.encoded(altered))
             with self.assertRaises(ValueError):
