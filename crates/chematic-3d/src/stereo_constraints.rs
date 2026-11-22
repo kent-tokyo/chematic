@@ -568,14 +568,17 @@ fn tetrahedral_constraint_for(
             BondOrder::Single | BondOrder::Up | BondOrder::Down
         )
     });
-    // Four-coordinate P and S can have formally double-bonded ligands.
-    // Their four actual neighbor positions still define tetrahedral parity.
-    let four_coordinate_ps = matches!(atom.element.atomic_number(), 15 | 16)
-        && mol.neighbors(idx).count() == 4
-        && (1..=2).contains(
-            &mol.neighbors(idx)
-                .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
-                .count(),
+    // Preserve the existing one-double-bond phosphorus case and admit the
+    // observed two-double-bond P(-) and neutral S geometries. Their four
+    // actual neighbor positions define tetrahedral parity.
+    let double_bonds = mol
+        .neighbors(idx)
+        .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+        .count();
+    let four_coordinate_ps = mol.neighbors(idx).count() == 4
+        && matches!(
+            (atom.element.atomic_number(), atom.charge, double_bonds),
+            (15, _, 1) | (15, -1, 2) | (16, 0, 2)
         )
         && mol.neighbors(idx).all(|(_, b)| {
             matches!(
