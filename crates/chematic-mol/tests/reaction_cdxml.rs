@@ -198,3 +198,17 @@ fn unsupported_bond_types_and_stereo_groups_never_become_plain_bonds() {
     )]);
     assert!(write(&r, &coords(&r), ARROW).is_err());
 }
+
+#[test]
+fn refused_reaction_output_identifies_invalid_layout_and_component() {
+    let reaction = parse_reaction("C>>O").unwrap();
+    let error = write(&reaction, &[], ARROW).unwrap_err();
+    assert!(error.to_string().contains("coordinate rows must match"));
+
+    let reaction = parse_reaction("C>[CH3:1]>O").unwrap();
+    let error = write(&reaction, &coords(&reaction), ARROW).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "reaction CDXML component 1: query atoms, R groups and atom maps are unsupported"
+    );
+}
