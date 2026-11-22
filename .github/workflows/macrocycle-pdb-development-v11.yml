@@ -2,7 +2,7 @@ name: PDB macrocycle force-field candidate pilot
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-pdb-development-v11.yml'
 
