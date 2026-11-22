@@ -1113,8 +1113,9 @@ The v9 Linux wheel SHA-256 was
 `bffb1cd496eef80f842ad26e9c036ba7cd46075204aa99374d1909a3a1642002`;
 it was built from the already tested merge commit
 `86fe06426ec53651c1f584e64f0e9d5d3bbbe563` (crates tree
-`fe6e1e1a7631d81e847e4be0c019d6f571a9834b`). The macOS wheel also built;
-its local download could not be completed because the host disk was full.
+`fe6e1e1a7631d81e847e4be0c019d6f571a9834b`). The macOS wheel SHA-256 is
+`605e1e0c0f256c9216b6f954a8a1cb6f8edc32b8375f71dd23308867182e828f`;
+both platform wheels were downloaded and their hashes verified.
 The 225-record v9 development conformer evaluation remains running.
 
 A later change caches the bounded MMFF parameter ring set on the input molecule
@@ -1143,3 +1144,29 @@ run. These exposed development results are not a noninferiority test. Raw data
 are `validation/results/cod-linux-{development,identity,support}-v9-2026-11-22.json.gz`;
 the uncompressed development result SHA-256 is
 `9612ca09c4f3608e1cc06861e72c17ccc912d4dfca5ef41144a9e46a48937653`.
+
+Two exposed macrocycles (SAWYAYVQRLIVEW-UHFFFAOYSA-P and
+FFDBWJMOMIIWCE-JNLZMNOBSA-N) had UFF discrepancies because the shared
+RDKit-parity view lost aromatic furan bonds when a larger ring was processed
+first. Relevant cycles are now used in both ranked perception and the SMILES
+sanitizer's aromaticity pass, with the existing path retained for the unranked
+shortcut and on the 10,000-cycle overflow. This does not reproduce the exact
+RingDecomposerLib family order in all graphs. The
+[Linux validation](https://github.com/kent-tokyo/chematic/actions/runs/44980080896)
+passed 274 perception tests, 447 SMILES tests, the force-field library tests,
+and fixed-coordinate RDKit 2026.09.2 aromatic-bond, UFF energy and gradient
+regressions. On a source-built wheel (merge commit
+`6fae31e8341a11913a20e46f740105044a6a5b59`, wheel SHA-256
+`e5b9211c1d72d37bf1bfc583d1771219c56afa0572bca66a8d05195067868c08`), both
+macrocycles matched RDKit energy and gradient exactly on that runner's shared
+ETKDG coordinates. Among the 56 successfully embedded cases of the 57-case
+exposed second-COD outlier follow-up, the UFF energy-error count above 1e−4
+kcal/mol and gradient-component error count above 1 kcal/mol/Å each fell from
+4 on v8 to 2. MMFF94 energy-error count fell from 11 to 9 and gradient-error
+count from 10 to 8, including the later cage-angle fix; its maximum energy
+error remained 254.53 kcal/mol. One RDKit embedding failed in both runs.
+This is development-only evidence with re-embedded coordinates, not an
+independent holdout or a general correctness claim. Raw result:
+`validation/results/cod-second-fields-aromatic-development-2026-11-22.json.gz`,
+uncompressed SHA-256
+`7f4d4b3d62519ada8c5950f6d960ae006f9428e4d9cfab8264768b109fe1fde6`.
