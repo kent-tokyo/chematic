@@ -1181,3 +1181,25 @@ consulted. A direct local Rust build passed the two earlier cage tests and an
 oracle-checked chorded-cycle classification probe. Full source-built CI,
 shared-coordinate outlier comparison and construction timing are in progress.
 The 10,000-cycle bound still applies to aromaticity and other separate uses.
+
+### First COD macOS checkpoint resume
+
+The [checkpointed macOS resume](https://github.com/kent-tokyo/chematic/actions/runs/44964491252)
+completed the remaining 285 fixed-count records and merged them with the
+original 1,808, after checking the frozen wheel, original checkpoint, split,
+input identities and scored names. This is the earlier pre-stereo-fix wheel,
+not v9 or the latest source. Among 2,093 common-supported records, fixed
+20-candidate recovery was 1,662 / 1,662 (chematic / RDKit); the paired
+molecule interval was −0.669 to +0.669 pp and scaffold-cluster interval was
+−0.670 to +0.662 pp. Those numerical bounds meet −2 pp, but the fixed
+candidates had 66 / 70 detected stereo violations among 41,441 / 41,437
+returned candidates; therefore the stereo gate fails. The split had also been
+partly exposed before scoring, so it is not independent noninferiority
+evidence. The original and resumed records ran on separate macOS arm64 hosts;
+this is not an uninterrupted timing measurement. Timed and force-field checks
+are still running separately. The merged and resumed portions are retained as
+`validation/results/cod-first-holdout-macos-{fixed-resumed,resumed-285}-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`621de9dcf4aa71ed90418e4d2cbe0072d65cdfa883e39f0b6ddea6f43f45123e` and
+`f0b533f09ae2c65378641bcd10f437f553541e1413d691a224eec6f283751437`;
+the fixed and stereo summaries are alongside them.
