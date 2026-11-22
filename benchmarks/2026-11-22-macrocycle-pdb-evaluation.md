@@ -331,3 +331,14 @@ results are
 uncompressed SHA-256
 `9b53e9ba5e06f1fa8c06d538ae63efcfd06898c0a353b47368d11fc42f7abb1c`;
 recovery and strict-stereo summaries are alongside them.
+
+The [strict shard-pipeline smoke test](https://github.com/kent-tokyo/chematic/actions/runs/44990731715)
+passed on Linux and macOS using the respective frozen v11 wheels. Each host
+regenerated and byte-compared the 16-shard manifest from the audited real
+inputs without scoring those inputs. Each then ran two synthetic molecules
+through fixed-count and timed generation, sealing, merging, recovery summary
+and strict-stereo summary. All four synthetic engine/profile combinations
+returned 40 candidates on each host, with no contradictions or unknowns.
+These checks establish that this small pipeline example works, not that the
+1,243-record experiment or physical-device acceptance has passed. Outputs:
+`validation/results/strict-shard-pipeline-smoke-{linux,macos}-2026-11-22.json`.
