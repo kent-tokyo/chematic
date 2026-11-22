@@ -24,7 +24,8 @@ def _raw_tetrahedral_parity(mol, index, coords, ranks):
               - a[1] * (b[0] * c[2] - b[2] * c[0])
               + a[2] * (b[0] * c[1] - b[1] * c[0]))
     scale = math.prod(math.sqrt(sum(v * v for v in vector)) for vector in vectors)
-    if scale == 0.0 or abs(volume) <= 1e-6 * scale:
+    if (not math.isfinite(volume) or not math.isfinite(scale)
+            or scale == 0.0 or abs(volume) <= 1e-6 * scale):
         return None
     return (volume > 0.0) == (atom.GetChiralTag() == Chem.ChiralType.CHI_TETRAHEDRAL_CCW)
 

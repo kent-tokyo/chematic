@@ -8,7 +8,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'benchmarks'))
-from platinum_stereo_strict import stereo_violations_strict  # noqa: E402
+from platinum_stereo_strict import _raw_tetrahedral_parity, stereo_violations_strict  # noqa: E402
 from summarize_platinum_stereo_strict import summarize  # noqa: E402
 
 
@@ -72,6 +72,9 @@ class StrictStereoTest(unittest.TestCase):
         with patch('platinum_stereo_strict.Chem.FindPotentialStereo', return_value=[]):
             result = stereo_violations_strict(equivalent, [coords])[0]
         self.assertEqual([1], result['unevaluable_atoms'])
+        extreme = [[1e308, 1e308, 1e308], [-1e308, 1e308, 1e308],
+                   [1e308, -1e308, 1e308], [1e308, 1e308, -1e308], [0.0, 0.0, 0.0]]
+        self.assertIsNone(_raw_tetrahedral_parity(mol, 1, extreme, list(range(5))))
 
     def test_tetrahedral_phosphorus_without_cip(self):
         smiles = 'Cc1cc(C)c(N2[P@H](=S)N(c3c(C)cc(C)cc3C)[P@H]2=S)c(C)c1'

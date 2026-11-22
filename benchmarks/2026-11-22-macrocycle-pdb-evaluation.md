@@ -197,9 +197,9 @@ is inspected. Each derived split is a subset of the already audited holdout;
 its derived audit retains the parent split and audit hashes. The manifests pin
 the source, wheel, scorer, geometry checker, sharding program and fixed-count
 summarizer. Their uncompressed SHA-256 values are
-`8471b137848f8bd88db036829a05bc76a7e4b68ecc1cd129372bf7ff8cb89c8a`
+`ef294fbef650d7839e7ebf78878654e5c31c2b500d0047fa473ba52744c33059`
 for Linux and
-`84cd4230ceb4488ac71621645f7839a2e98bd92cfafb520bacf85a42c5526ea9`
+`1c5926f87645f9c092941ce04e30dbf30b1fb7a5ca3d8747f5c9da00ed542dec`
 for macOS. They are stored in
 `validation/results/macrocycle-shard-manifest-v11-linux-2026-11-22.json.gz`
 and `validation/results/macrocycle-shard-manifest-v11-macos-2026-11-22.json.gz`.
@@ -276,6 +276,18 @@ strict summary reports them separately. Structural preflight output is
 uncompressed SHA-256
 `4a446fec8e08e8a753294927ae900b589f6783882acb2e8b194c8680409d1430`.
 The strict verifier SHA-256 is
-`07cfb99bb418c71eaf1f1f5257da5e452c03368b2cd6c20d3740887097e2fb16`.
+`3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132`.
 The 225-record COD and 32-record macrocycle development runs must be repeated
 with this verifier before interpreting strict stereo or recovery outcomes.
+
+A local RDKit 2026.09.2 check compared the old and strict stereo detectors on
+30 exposed COD development molecules, using an embedded geometry and its
+mirror for each. No old finding was lost; two geometries gained a detected
+contradiction and two gained an unknown. On 50 development molecules,
+raw signed-volume parity agreed with RDKit's 3D tag for 236 comparable
+center/geometry pairs; 16 were conservatively unknown. This is a small
+calibration set, not an independent accuracy estimate. Reproducible per-case
+selection and counts are retained in
+`validation/results/stereo-verifier-crosscheck-local-2026-11-22.json`.
+The final pre-score manifests supersede the previous strict-verifier hashes
+to include finite-overflow handling; no holdout conformer scores were viewed.
