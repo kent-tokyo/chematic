@@ -1926,6 +1926,19 @@ This holdout is now exposed and must not be reused as fresh independent
 evidence for a fix selected from its outliers. Other platform and macrocycle
 field results remain in progress.
 
+On the Linux macrocycle holdout, all four field shards have also completed.
+All 1,243 records are accounted for; RDKit embedding failed on 91. For each
+of MMFF94, MMFF94s and UFF, all 1,152 remaining records were comparable and
+the recorded energy and componentwise gradient differences were zero. The
+largest sampled finite-difference discrepancies were 0.982, 0.982 and 1.934
+respectively; matching RDKit's analytic gradient does not establish agreement
+with finite differences. The raw data and summary are
+`validation/results/macrocycle-holdout-linux-fields-2026-11-22.json.gz` and
+`validation/results/macrocycle-holdout-linux-fields-summary-2026-11-22.json`.
+The raw uncompressed SHA-256 is
+`df97eb4e1ec9a59cdd8f73427c73c985f3d6ede4b691211c7762fb39fe010b49`.
+The wheel predates the bridging-H+ fix; other OS results remain in progress.
+
 The exposed UFF outlier was reproduced on separately generated macOS
 coordinates: RDKit energy was 401.4506 kcal/mol and the prior chematic energy
 was 42,943,972.7872 kcal/mol. The gradient difference was concentrated on
