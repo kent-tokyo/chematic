@@ -342,3 +342,19 @@ returned 40 candidates on each host, with no contradictions or unknowns.
 These checks establish that this small pipeline example works, not that the
 1,243-record experiment or physical-device acceptance has passed. Outputs:
 `validation/results/strict-shard-pipeline-smoke-{linux,macos}-2026-11-22.json`.
+
+The [strict-stereo 32-case Linux repeat](https://github.com/kent-tokyo/chematic/actions/runs/44990053908)
+completed using the frozen v11 wheel and the strict verifier. Recovery remained
+2 / 4 for chematic / RDKit. Among 603 / 607 returned candidates, neither
+engine had a contradicted or unevaluable declared stereo element; chematic
+returned no candidate for one case. All 32 per-case RMSD arrays for each
+engine were identical to the earlier v11 run. The 363-record development
+input audit also reproduced the local structural counts. Results are in
+`validation/results/macrocycle-pdb-linux-development-v11-32-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`9d6ad9ca14d1539d24433e89c3a20c7d8c4d3ab5f8c060bdace1a14238e23ab1`,
+with recovery and strict-stereo summaries alongside. The Linux structural
+audit is `validation/results/macrocycle-development-declared-stereo-audit-linux-2026-11-22.json.gz`,
+uncompressed SHA-256
+`27aa5575e410eee2dfa38043d5f935a51f527e4705b60d974945104dfdf13b8f`.
+These remain exposed development results.
