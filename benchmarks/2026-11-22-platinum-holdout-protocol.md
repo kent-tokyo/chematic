@@ -1429,4 +1429,16 @@ Its structural audit is
 `validation/results/cod-development-declared-stereo-audit-macos-2026-11-22.json.gz`,
 uncompressed SHA-256
 `660a44b16ee8371af2f74d8e41e2e4f3d755baa64cba474308e83fac0f7ccacf`.
-The compatible-profile arms are still running.
+The compatible-profile arms also completed. Linux recovery was 162 / 163;
+macOS was 161 / 163. In 4,180 returned chematic candidates, Linux had 21
+contradicted, 59 unevaluable and 62 with either; macOS had 18, 55 and 58.
+For 4,180 RDKit candidates Linux had 19, 56 and 58 respectively, and macOS
+19, 57 and 59. The categories overlap. All 225 per-record RMSD arrays and
+status arrays matched their earlier platform-specific compatible v11 runs.
+Raw results are
+`validation/results/cod-linux-development-v11-compatible-strict-2026-11-22.json.gz`
+and `validation/results/cod-macos-development-v11-compatible-strict-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`b9c4712e5972c00674a042db1ffbea4fc70b92e9d45523fea60fd2dda07ba6f1` and
+`30d017e53528e33729f7a79f96a241c01435ff5cf40852a002e05071ca57dfa9`.
+These are exposed development comparisons, not a fresh acceptance test.
