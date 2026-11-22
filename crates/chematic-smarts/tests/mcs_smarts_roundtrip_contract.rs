@@ -152,3 +152,41 @@ fn mcs_smarts_rejects_malformed_query_adjacency() {
         chematic_smarts::McsSmartsError::InvalidGraph
     );
 }
+
+#[test]
+fn aromatic_bond_constraint_survives_mcs_smarts_serialization() {
+    let mut graph = QueryMolecule::new();
+    let a = graph.add_atom(atom(6));
+    let b = graph.add_atom(atom(6));
+    graph.add_bond(a, b, BondQuery::Primitive(B::Aromatic));
+    let query = parse_smarts(&mcs_query_to_smarts(&graph).unwrap()).unwrap();
+    assert!(!find_matches(&query, &parse("c1ccccc1").unwrap()).is_empty());
+    assert!(find_matches(&query, &parse("CC").unwrap()).is_empty());
+}
+
+#[test]
+fn unsupported_mcs_stereo_and_bond_logic_fail_closed() {
+    use chematic_smarts::McsSmartsError;
+    let mut graph = QueryMolecule::new();
+    graph.add_atom(Q::And(
+        Box::new(atom(6)),
+        Box::new(Q::Primitive(A::Chirality(3))),
+    ));
+    assert_eq!(
+        mcs_query_to_smarts(&graph).unwrap_err(),
+        McsSmartsError::UnsupportedChirality
+    );
+
+    let mut graph = QueryMolecule::new();
+    let a = graph.add_atom(atom(6));
+    let b = graph.add_atom(atom(8));
+    graph.add_bond(
+        a,
+        b,
+        BondQuery::Not(Box::new(BondQuery::Primitive(B::Single))),
+    );
+    assert_eq!(
+        mcs_query_to_smarts(&graph).unwrap_err(),
+        McsSmartsError::UnsupportedBondQuery
+    );
+}
