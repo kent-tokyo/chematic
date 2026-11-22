@@ -1086,9 +1086,9 @@ For two exposed cage structures (XTULIPKREBMLNM-XHGUTPRISA-N and
 OXBMFCGRQJNAOY-TWXUZQDTSA-N), v8 MMFF94 types and charges matched RDKit but
 energy errors were 42.17 and 41.62 kcal/mol. Term-level diagnosis traced the
 difference to angle and stretch-bend terms: one SSSR omitted a relevant
-four-membered ring, affecting four angles on each molecule. The source now
-uses relevant cycles for angle parameterization in both the prepared field and
-other MMFF paths, falling back to SSSR if enumeration exceeds 10,000 cycles.
+four-membered ring, affecting four angles on each molecule. An intermediate candidate used relevant cycles for angle parameterization in
+both the prepared field and other MMFF paths, falling back to SSSR if
+enumeration exceeded 10,000 cycles.
 The [Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44976034714)
 passed the RDKit-derived fixed-coordinate angle and stretch-bend energy and
 gradient test, the existing `chematic-ff` library tests, and a source-built
@@ -1118,8 +1118,8 @@ it was built from the already tested merge commit
 both platform wheels were downloaded and their hashes verified.
 The 225-record v9 development conformer evaluation remains running.
 
-A later change caches the bounded MMFF parameter ring set on the input molecule
-and invalidates the cache on edits. The [Linux cache validation](https://github.com/kent-tokyo/chematic/actions/runs/44978178977)
+A later intermediate change cached the bounded MMFF parameter ring set on the
+input molecule and invalidated the cache on edits. The [Linux cache validation](https://github.com/kent-tokyo/chematic/actions/runs/44978178977)
 passed the core and force-field library tests, a cache reuse/invalidation test,
 the cage angle regression and the two exposed shared-coordinate cage checks
 (zero observed energy and gradient-component differences). Its source merge
@@ -1170,3 +1170,14 @@ independent holdout or a general correctness claim. Raw result:
 `validation/results/cod-second-fields-aromatic-development-2026-11-22.json.gz`,
 uncompressed SHA-256
 `7f4d4b3d62519ada8c5950f6d960ae006f9428e4d9cfab8264768b109fe1fde6`.
+
+RDKit 2026.09.2 [`getMMFFAngleType`](https://github.com/rdkit/rdkit/blob/Release_2026_09_2/Code/GraphMol/ForceFieldHelpers/MMFF/AtomTyper.cpp)
+uses local bond adjacency for three- and four-membered angle classification.
+A four-cycle may be absent even from the union of minimum cycle bases, for
+example when its edge set is a sum of triangles. The current source replaces
+the intermediate relevant-cycle and cache implementations with this local
+topology check; the public `rings` parameter is retained but no longer
+consulted. A direct local Rust build passed the two earlier cage tests and an
+oracle-checked chorded-cycle classification probe. Full source-built CI,
+shared-coordinate outlier comparison and construction timing are in progress.
+The 10,000-cycle bound still applies to aromaticity and other separate uses.
