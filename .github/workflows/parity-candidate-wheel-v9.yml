@@ -2,7 +2,7 @@ name: Freeze sulfoxide and cage angle candidate wheels
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/parity-candidate-wheel-v9.yml'
 
