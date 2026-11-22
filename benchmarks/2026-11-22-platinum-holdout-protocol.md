@@ -586,6 +586,14 @@ were zero on that runner; the largest phosphorus finite-difference discrepancy
 was 3.62e−8 kcal/mol/Å. These are three exposed development cases, not a
 general UFF guarantee. Results are in
 `validation/results/uff-inversion-development-2026-11-22.json`.
+For a broader development-only recheck, 51 already-exposed first-COD records
+were selected if their earlier MMFF94 energy difference exceeded 1e−4
+kcal/mol, their MMFF94 finite-difference discrepancy exceeded 1, or their UFF
+gradient-component difference exceeded 1. The input list, rule and hashes of
+the earlier source files are retained in
+`validation/results/cod-first-field-outliers-development-2026-11-22.json`.
+These cases were selected because of observed errors and are not a random
+sample or independent test set.
 
 ## Second COD scaffold split for the silicon-corrected candidate
 
