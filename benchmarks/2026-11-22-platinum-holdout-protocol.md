@@ -1219,3 +1219,26 @@ merge commit was `55c5db999467dff3e30619b7a9e0467f55cc87bb`, with Linux wheel
 SHA-256 `55c448bc30cea6ebffdd930125730f61c8da094d24fd60033b4bad7437139c52`.
 Raw timing and field outputs are retained in
 `validation/results/mmff-local-angle-development-2026-11-22.json.gz`.
+
+An exposed MMFF outlier with formal charge −23 contains two sp-hybridized
+cumulene carbons in a six-membered ring. RDKit 2026.09.2 requires each ring
+carbon or nitrogen to be sp2 before accepting an MMFF aromatic ring; the old
+port checked degree instead and incorrectly accepted that ring. The current
+source uses sanitized hybridization, retained through Kekulization. The
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44981910098)
+passed the RDKit-derived atom-type, charge, energy and full-gradient test,
+the local-angle and UFF macrocycle tests, and the force-field library suite.
+Its source-built wheel (merge commit `1d868c13991773c4fdf9f834389e5cf71eba8ea2`,
+SHA-256 `21f482a615d2c4c2e7f5f224932a611d05cfc10bceb14c42cd3c51b03f099702`)
+matched RDKit energy and all gradient components exactly on that runner's
+re-embedded coordinates for the outlier. Across 56 successfully embedded
+records in the same 57-case exposed development follow-up, MMFF94 energy
+errors above 1e−4 fell from 9 to 8 and gradient-component errors above 1
+from 8 to 7 compared with the preceding aromaticity candidate. The maximum
+energy error fell from 254.53 to 41.64 kcal/mol and maximum gradient-component
+error from 513.78 to 141.19 kcal/mol/Å; one RDKit embedding failed in both
+runs. UFF counts remained 2 / 2. These are selected development inputs, not a
+general or independent guarantee. Raw data:
+`validation/results/cod-second-fields-hybrid-development-2026-11-22.json.gz`,
+uncompressed SHA-256
+`463ce55606ff29af018c86452d7a80fabe06b2bc5bb1d0f2ae4d12fc9f29c311`.
