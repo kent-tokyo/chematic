@@ -75,11 +75,10 @@ fn implicit_mcs_bond_keeps_single_or_aromatic_semantics() {
     }
 }
 
-#[test]
-fn mcs_smarts_roundtrips_more_than_nine_ring_closures() {
+fn triangle_chain(count: usize) -> QueryMolecule {
     let mut graph = QueryMolecule::new();
     let mut previous = None;
-    for _ in 0..12 {
+    for _ in 0..count {
         let a = graph.add_atom(atom(6));
         let b = graph.add_atom(atom(6));
         let c = graph.add_atom(atom(6));
@@ -91,6 +90,12 @@ fn mcs_smarts_roundtrips_more_than_nine_ring_closures() {
         }
         previous = Some(c);
     }
+    graph
+}
+
+#[test]
+fn mcs_smarts_roundtrips_more_than_nine_ring_closures() {
+    let graph = triangle_chain(12);
     let text = mcs_query_to_smarts(&graph).unwrap();
     assert!(text.contains("%10"), "{text}");
     let reread = parse_smarts(&text).unwrap();
@@ -100,4 +105,15 @@ fn mcs_smarts_roundtrips_more_than_nine_ring_closures() {
     before.sort_unstable();
     after.sort_unstable();
     assert_eq!(before, after);
+}
+
+#[test]
+fn mcs_smarts_refuses_more_than_99_ring_closures() {
+    let boundary = mcs_query_to_smarts(&triangle_chain(99)).unwrap();
+    assert!(boundary.contains("%99"));
+    assert!(parse_smarts(&boundary).is_ok());
+    assert_eq!(
+        mcs_query_to_smarts(&triangle_chain(100)).unwrap_err(),
+        chematic_smarts::McsSmartsError::TooManyRingClosures
+    );
 }
