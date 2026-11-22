@@ -39,6 +39,8 @@ class HoldoutShardingTest(unittest.TestCase):
             for shard in manifest['shards']:
                 result = dict(manifest['protocol'], chematic='test',
                               script_sha256=manifest['scorer_sha256'], source_sha256=split['source_sha256'],
+                              stereo_verifier_sha256=manifest['stereo_verifier_sha256'],
+                              stereo_wrapper_sha256=manifest['stereo_wrapper_sha256'],
                               split_sha256=shard['split_sha256'],
                               platform='test',
                               results=[dict(r, status='ok') for r in shard['records']])

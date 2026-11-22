@@ -160,7 +160,8 @@ Apply a paired 95% percentile scaffold-cluster bootstrap interval to the
 difference in recovery rates, using 10,000 resamples and seed 42. The
 proposed noninferiority gate is a lower interval bound
 above −2 percentage points, together with zero detected specified-stereo
-violations among returned chematic candidates. Report the raw recovery and
+violations or unevaluable declared stereo among returned chematic candidates.
+Report the raw recovery and
 converged-only recovery for both engines even if the noninferiority gate passes.
 A low recovery for both engines remains a limitation of the reference and
 budget, not proof of adequate absolute quality.
@@ -196,14 +197,15 @@ is inspected. Each derived split is a subset of the already audited holdout;
 its derived audit retains the parent split and audit hashes. The manifests pin
 the source, wheel, scorer, geometry checker, sharding program and fixed-count
 summarizer. Their uncompressed SHA-256 values are
-`82e8cd3f78a4f4137eb344d897638d098ea14bfe09f4009a592a7ddf7b25829a`
+`8471b137848f8bd88db036829a05bc76a7e4b68ecc1cd129372bf7ff8cb89c8a`
 for Linux and
-`e671d69daaf67de00dc235ad2ab3d145bf1cc65a8b2e7c3abfe194cf0e4219fe`
+`84cd4230ceb4488ac71621645f7839a2e98bd92cfafb520bacf85a42c5526ea9`
 for macOS. They are stored in
 `validation/results/macrocycle-shard-manifest-v11-linux-2026-11-22.json.gz`
 and `validation/results/macrocycle-shard-manifest-v11-macos-2026-11-22.json.gz`.
-The initial manifests were superseded before scoring to additionally pin the
-summary helper; the values above identify the replacement manifests. The
+The earlier manifests were superseded before scoring to pin the summary
+helper and require the stricter declared-stereo verifier described below;
+the values above identify the replacement manifests. The
 sharding utility rejects missing, duplicated or unexpected records,
 different protocol settings, mismatched input audits or scorer fingerprints,
 and wheel hashes that differ from the manifest. Synthetic integration checks
@@ -217,7 +219,7 @@ SHA-256(name) order and engine order alternates. Each timed shard verifies the
 wheel, baseline, scorer, geometry code, 0.2-second budget and 20-attempt
 limit; merging rejects missing or duplicate cases and mixed inputs or
 settings. The timed sharding helper SHA-256 is
-`bf7a7314bae5dbda5f940972a3d6f5ed17e815b0d8c6851b2335d9f29b320603`,
+`c5f5158e493baf9857ba05fb6d0cb6993397e9187ca27eaf8dd6fdbaa0d7e7ff`,
 the timed scorer SHA-256 is
 `d777845f55fabe450b0919329b4aa95f5df3ef5bb34012edc0bf821ba09a7ef6`,
 and the timed scaffold-summary SHA-256 is
@@ -242,7 +244,7 @@ uncompressed SHA-256
 A [follow-up development experiment](https://github.com/kent-tokyo/chematic/actions/runs/44987000248)
 selected the two exposed cases recovered by RDKit but not chematic in the
 20-candidate v11 pilot and generated 100 candidates per engine. Both engines
-recovered both references, with zero detected stereo violations among 200
+recovered both references, with zero stereo violations detected by the earlier CIP/E/Z check among 200
 candidates per engine. The first candidates passing the same 1 Å, stereo and
 geometry screen were numbers 38 / 12 for chematic / RDKit on
 `8bi2__Ligand_peptide_QR7_A_701` and 35 / 5 on
@@ -254,3 +256,26 @@ molecules. The two-case derived development split SHA-256 was
 results are in `validation/results/macrocycle-pdb-linux-development-v11-100-2026-11-22.json.gz`,
 uncompressed SHA-256
 `5af57fccb40f3b1ec60810ae0fd7202b982429c7341cb4db4a6b8a7ae5b5ea16`.
+
+
+A local macOS structural preflight with RDKit 2026.09.2, before scoring any holdout conformer, found 10,141
+specified tetrahedral centers and 132 specified double bonds in the 1,243
+records; 26 specified tetrahedral centers in 12 records lacked RDKit CIP
+labels. Four additional raw tetrahedral declarations in three records were
+not listed by RDKit as potential stereo; all four have four distinct ranked
+neighbors. The earlier scorer checked atoms only when CIP labels existed and
+therefore did not check those centers or non-tetrahedral declarations. Its
+reported zero violations must not be interpreted as comprehensive stereo
+validation. The new strict verifier checks declared raw tetrahedral parity
+against RDKit's 3D assignment, checks eligible unrecognized four-neighbor
+tetrahedra by signed volume, and checks recognized non-tetrahedral
+permutations when unambiguous. Degenerate or otherwise unevaluable cases are
+marked unknown. Recovery requires both zero contradictions and zero unknowns; the
+strict summary reports them separately. Structural preflight output is
+`validation/results/macrocycle-holdout-declared-stereo-audit-2026-11-22.json.gz`,
+uncompressed SHA-256
+`4a446fec8e08e8a753294927ae900b589f6783882acb2e8b194c8680409d1430`.
+The strict verifier SHA-256 is
+`07cfb99bb418c71eaf1f1f5257da5e452c03368b2cd6c20d3740887097e2fb16`.
+The 225-record COD and 32-record macrocycle development runs must be repeated
+with this verifier before interpreting strict stereo or recovery outcomes.

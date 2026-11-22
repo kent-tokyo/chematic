@@ -34,6 +34,8 @@ class TimedShardingTest(unittest.TestCase):
             for shard in m['shards']:
                 result = dict(m['protocol'], chematic='test', script_sha256=m['scorer_sha256'],
                               source_sha256=m['source_sha256'], split_sha256=shard['split_sha256'],
+                              stereo_verifier_sha256=m['stereo_verifier_sha256'],
+                              stereo_wrapper_sha256=m['stereo_wrapper_sha256'],
                               platform='test', results=[dict(r, status='ok') for r in shard['records']])
                 path = root / f"fixed-result-{shard['index']}.json"
                 path.write_bytes(fixed.encoded(result))
@@ -48,6 +50,8 @@ class TimedShardingTest(unittest.TestCase):
             for shard in tm['shards']:
                 data = dict(tm['protocol'], chematic='test', source_sha256=tm['source_sha256'],
                             script_sha256=tm['fingerprints']['time_scorer_sha256'],
+                            stereo_verifier_sha256=tm['fingerprints']['stereo_verifier_sha256'],
+                            stereo_wrapper_sha256=tm['fingerprints']['time_stereo_wrapper_sha256'],
                             platform='test', timing='same timed policy',
                             results=[dict(r) for r in shard['records']])
                 path = root / f"timed-result-{shard['index']}.json"

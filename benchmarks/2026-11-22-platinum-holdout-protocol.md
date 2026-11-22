@@ -1,5 +1,13 @@
 # Platinum Diverse holdout protocol
 
+**Stereo measurement limitation:** Results recorded below before the strict
+verifier was introduced check tetrahedral atoms only where RDKit assigned a
+CIP label, together with detected E/Z bonds. They do not establish that every
+declared tetrahedral or non-tetrahedral center was verified. In particular, a
+zero reported count is not a comprehensive stereo guarantee. The strict
+verifier and its separate unknown/contradicted counts are being evaluated on
+development inputs before any new holdout scoring.
+
 This protocol is fixed before running the holdout. Its split is
 `validation/results/platinum-diverse-scaffold-split-audited-2026-11-21.json`;
 the corresponding invalid-exclusion graph audit must have no overlaps. The
@@ -1339,3 +1347,44 @@ uncompressed SHA-256
 `3379bdc09929e04002eb1a01b03317f1ef92a21e38728249b7e9304cf738045c` and
 `883f8cbfa5dfb628556aefbf32dcd35c3326ad391391367be7070e47ef1cb1b7`.
 Machine-readable molecule, scaffold and field summaries are alongside them.
+
+The v11 [225-record COD development comparison](https://github.com/kent-tokyo/chematic/actions/runs/44985345006)
+completed both platforms and both API profiles under the earlier CIP-based
+stereo check. All 225 input identities matched; 212 had MMFF support in both
+engines and 13 in neither. The following recoveries use all 225 in the
+denominator and require the existing geometry and stereo screens:
+
+| Host and profile | Chematic / RDKit recovered | Chematic / RDKit detected stereo violations | Chematic / RDKit candidates checked |
+| --- | --- | --- | --- |
+| Linux compatible | 162 / 163 | 42 / 38 | 4,180 / 4,180 |
+| Linux corrected | 161 / 163 | 0 / 38 | 4,160 / 4,180 |
+| macOS compatible | 161 / 163 | 38 / 39 | 4,180 / 4,180 |
+| macOS corrected | 161 / 163 | 0 / 39 | 4,160 / 4,180 |
+
+In each compatible run, three supported inputs yielded no candidates for
+both engines; in each corrected run, chematic yielded none for one additional
+input while RDKit produced 20. That input has a declared square-planar sulfur
+center; the corrected path conservatively rejects stereo it cannot verify. A
+local five-conformer diagnostic on an earlier macOS wheel and RDKit 2026.09.2
+found that RDKit's 3D reassignment did not recover that square-planar tag for
+any of those generated or RDKit-optimized geometries. This small diagnostic
+is not a comparison of the final v11 wheels.
+
+These are exposed development inputs, not an independent acceptance test.
+The old checker did not inspect specified centers without CIP labels or
+non-tetrahedral stereo, so the zero counts in the table are limited to what
+it checked. All four raw outputs and summaries are in
+`validation/results/cod-{linux,macos}-development-v11-{compatible,corrected}-2026-11-22.json.gz`
+and corresponding `-summary-` files. Uncompressed raw SHA-256 values, in
+table order, are
+`1395f0534ee70e1fd782b19d3306805c808fcc0fe608b5ae9ccda89ac8c571b7`,
+`e81fd9c1eba4c8fa218308ad1e312939b8c3e7ec306684711f2341449d9448bb`,
+`4f924a25251c3f6d550474a55a2b9b3498e4ee035aae943e542dc6e0db0433fe`, and
+`58671c5408896f26b3c39453f29d50e185d47fcf8e3b9ff81dbfc093b4eda32f`.
+The v11 development support and atom-identity audit outputs were byte-identical
+on Linux and macOS and are retained as
+`validation/results/cod-support-v11-development-2026-11-22.json.gz` and
+`validation/results/cod-identity-v11-development-2026-11-22.json.gz`, with
+uncompressed SHA-256
+`53626b44dbcda1832f4744a42100fd92d59579f2b50d212d7cf43df1ea8e20c1` and
+`8860ef9ceaada101a93eae60fe95493193bfccf4cae6bfb7f01b3ea79b3cc202`.

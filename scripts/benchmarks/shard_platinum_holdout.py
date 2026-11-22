@@ -3,7 +3,11 @@
 import argparse
 import hashlib
 import json
+import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from summarize_platinum_stereo_strict import summarize as summarize_strict_stereo  # noqa: E402
 
 
 def digest(data):
@@ -45,8 +49,12 @@ def prepare(split_path, audit_path, output_dir, count, wheel_sha256):
                 'geometry_sha256': digest(Path(__file__).with_name('platinum_geometry.py').read_bytes()),
                 'summarizer_sha256': digest(Path(__file__).with_name('summarize_platinum_holdout.py').read_bytes()),
                 'summary_helper_sha256': digest(Path(__file__).with_name('summarize_platinum_probe.py').read_bytes()),
+                'stereo_verifier_sha256': digest(Path(__file__).with_name('platinum_stereo_strict.py').read_bytes()),
+                'stereo_wrapper_sha256': digest(Path(__file__).with_name('platinum_development_strict.py').read_bytes()),
+                'strict_summary_sha256': digest(Path(__file__).with_name('summarize_platinum_stereo_strict.py').read_bytes()),
                 'selection': 'SHA256(name) order, round-robin shards',
                 'protocol': {'rdkit': '2026.09.2', 'profile': 'corrected', 'geometry_checked': True,
+                             'stereo_policy': 'rdkit-declared-stereo-strict-v1',
                              'repair_iters': 400, 'candidate_limit': 20,
                              'mmff_iterations': 200, 'seed': 42}, 'shards': []}
     for shard_index in range(count):
@@ -81,7 +89,10 @@ def seal(manifest_path, shard_index, wheel_path, audit_path, result_path):
         raise ValueError('manifest shard index mismatch')
     for key, path in (('sharder_sha256', Path(__file__)),
                       ('scorer_sha256', Path(__file__).with_name('platinum_development_probe.py')),
-                      ('geometry_sha256', Path(__file__).with_name('platinum_geometry.py'))):
+                      ('geometry_sha256', Path(__file__).with_name('platinum_geometry.py')),
+                      ('stereo_verifier_sha256', Path(__file__).with_name('platinum_stereo_strict.py')),
+                      ('stereo_wrapper_sha256', Path(__file__).with_name('platinum_development_strict.py')),
+                      ('strict_summary_sha256', Path(__file__).with_name('summarize_platinum_stereo_strict.py'))):
         if digest(path.read_bytes()) != manifest[key]:
             raise ValueError(f'{key} mismatch')
     wheel_hash = digest(wheel_path.read_bytes())
@@ -91,10 +102,15 @@ def seal(manifest_path, shard_index, wheel_path, audit_path, result_path):
     data = json.loads(result_path.read_bytes())
     if data.get('split_sha256') != shard['split_sha256']:
         raise ValueError('result split mismatch')
+    if (data.get('stereo_policy') != manifest['protocol']['stereo_policy']
+            or data.get('stereo_verifier_sha256') != manifest['stereo_verifier_sha256']
+            or data.get('stereo_wrapper_sha256') != manifest['stereo_wrapper_sha256']):
+        raise ValueError('strict stereo policy or fingerprint mismatch')
     expected = {(r['index'], r['name']) for r in shard['records']}
     actual = [(r['index'], r['name']) for r in data['results']]
     if len(actual) != len(expected) or set(actual) != expected:
         raise ValueError('cannot seal an incomplete or incorrect shard')
+    summarize_strict_stereo(data)
     data['wheel_sha256'] = wheel_hash
     data['invalid_exclusion_audit_sha256'] = audit_hash
     temporary = result_path.with_suffix(result_path.suffix + '.seal.tmp')
@@ -111,6 +127,8 @@ def merge(manifest_path, shard_paths, output_path):
         raise ValueError('summarizer fingerprint mismatch')
     if digest(Path(__file__).with_name('summarize_platinum_probe.py').read_bytes()) != manifest['summary_helper_sha256']:
         raise ValueError('summary helper fingerprint mismatch')
+    if digest(Path(__file__).with_name('summarize_platinum_stereo_strict.py').read_bytes()) != manifest['strict_summary_sha256']:
+        raise ValueError('strict stereo summary fingerprint mismatch')
     shards = manifest['shards']
     if len(shards) != manifest['shard_count'] or len(shard_paths) != len(shards):
         raise ValueError('missing or extra shard output')
@@ -118,6 +136,7 @@ def merge(manifest_path, shard_paths, output_path):
     if len(by_split) != len(shards):
         raise ValueError('duplicate shard split hash')
     common_keys = ('rdkit', 'chematic', 'script_sha256', 'profile', 'geometry_checked',
+                   'stereo_policy', 'stereo_verifier_sha256', 'stereo_wrapper_sha256',
                    'repair_iters', 'candidate_limit', 'mmff_iterations', 'seed', 'source_sha256')
     expected_common = None
     seen, combined, platforms = set(), [], []
@@ -133,8 +152,10 @@ def merge(manifest_path, shard_paths, output_path):
                 or data.get('invalid_exclusion_audit_sha256') != shard['audit_sha256']):
             raise ValueError('wheel or shard audit fingerprint mismatch')
         common = {key: data[key] for key in common_keys}
-        if common['script_sha256'] != manifest['scorer_sha256']:
-            raise ValueError('scorer fingerprint mismatch')
+        if (common['script_sha256'] != manifest['scorer_sha256']
+                or common['stereo_verifier_sha256'] != manifest['stereo_verifier_sha256']
+                or common['stereo_wrapper_sha256'] != manifest['stereo_wrapper_sha256']):
+            raise ValueError('scorer or strict-stereo fingerprint mismatch')
         if common['source_sha256'] != manifest['source_sha256']:
             raise ValueError('source mismatch')
         if any(common[key] != value for key, value in manifest['protocol'].items()):
@@ -147,6 +168,7 @@ def merge(manifest_path, shard_paths, output_path):
         actual = [(r['index'], r['name']) for r in data['results']]
         if len(actual) != len(expected) or set(actual) != expected:
             raise ValueError('shard records are incomplete, duplicated or unexpected')
+        summarize_strict_stereo(data)
         combined.extend(data['results'])
         platforms.append(data['platform'])
         shard_hashes.append({'index': shard['index'], 'result_sha256': digest(raw)})

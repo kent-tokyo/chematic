@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from shard_platinum_holdout import digest, encoded
+from summarize_platinum_stereo_strict import summarize as summarize_strict_stereo
 
 HERE = Path(__file__).resolve().parent
 
@@ -14,6 +15,10 @@ def fingerprints():
         ('timed_sharder_sha256', 'shard_platinum_time.py'),
         ('fixed_sharder_sha256', 'shard_platinum_holdout.py'),
         ('time_scorer_sha256', 'platinum_time_budget.py'),
+        ('time_stereo_wrapper_sha256', 'platinum_time_strict.py'),
+        ('fixed_stereo_wrapper_sha256', 'platinum_development_strict.py'),
+        ('stereo_verifier_sha256', 'platinum_stereo_strict.py'),
+        ('strict_summary_sha256', 'summarize_platinum_stereo_strict.py'),
         ('fixed_scorer_sha256', 'platinum_development_probe.py'),
         ('geometry_sha256', 'platinum_geometry.py'),
         ('time_summary_sha256', 'summarize_platinum_time_holdout.py'),
@@ -29,7 +34,10 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
     fingerprints_now = fingerprints()
     if (fingerprints_now['fixed_sharder_sha256'] != fixed['sharder_sha256']
             or fingerprints_now['fixed_scorer_sha256'] != fixed['scorer_sha256']
-            or fingerprints_now['geometry_sha256'] != fixed['geometry_sha256']):
+            or fingerprints_now['geometry_sha256'] != fixed['geometry_sha256']
+            or fingerprints_now['fixed_stereo_wrapper_sha256'] != fixed['stereo_wrapper_sha256']
+            or fingerprints_now['stereo_verifier_sha256'] != fixed['stereo_verifier_sha256']
+            or fingerprints_now['strict_summary_sha256'] != fixed['strict_summary_sha256']):
         raise ValueError('fixed scorer fingerprint mismatch')
     provenance = baseline.get('shard_provenance', {})
     if (provenance.get('manifest_sha256') != digest(manifest_bytes)
@@ -38,6 +46,8 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
             or baseline.get('source_sha256') != fixed['source_sha256']):
         raise ValueError('baseline is not the verified fixed-count result')
     if (baseline.get('script_sha256') != fixed['scorer_sha256']
+            or baseline.get('stereo_verifier_sha256') != fixed['stereo_verifier_sha256']
+            or baseline.get('stereo_wrapper_sha256') != fixed['stereo_wrapper_sha256']
             or any(baseline.get(k) != v for k, v in fixed['protocol'].items())):
         raise ValueError('fixed-count protocol mismatch')
     expected = {(r['index'], r['name']) for shard in fixed['shards'] for r in shard['records']}
@@ -52,6 +62,7 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
              'wheel_sha256': fixed['wheel_sha256'],
              'shard_count': fixed['shard_count'],
              'protocol': {'rdkit': '2026.09.2', 'seconds': 0.2,
+                          'stereo_policy': 'rdkit-declared-stereo-strict-v1',
                           'max_candidates': 20, 'repair_iters': 400,
                           'geometry_checked': True,
                           'seed_schedule': '42 * (attempt + 1)'},
@@ -84,12 +95,15 @@ def seal(manifest_path, index, wheel_path, baseline_path, result_path):
     data = json.loads(result_path.read_bytes())
     if (data.get('source_sha256') != manifest['source_sha256']
             or data.get('script_sha256') != manifest['fingerprints']['time_scorer_sha256']
+            or data.get('stereo_verifier_sha256') != manifest['fingerprints']['stereo_verifier_sha256']
+            or data.get('stereo_wrapper_sha256') != manifest['fingerprints']['time_stereo_wrapper_sha256']
             or any(data.get(k) != v for k, v in manifest['protocol'].items())):
         raise ValueError('timed scoring protocol mismatch')
     expected = {(r['index'], r['name']) for r in shard['records']}
     actual = [(r['index'], r['name']) for r in data['results']]
     if len(actual) != len(expected) or set(actual) != expected:
         raise ValueError('cannot seal incomplete or incorrect timed shard')
+    summarize_strict_stereo(data)
     data['wheel_sha256'] = wheel_hash
     data['baseline_sha256'] = baseline_hash
     temporary = result_path.with_suffix(result_path.suffix + '.seal.tmp')
@@ -109,6 +123,7 @@ def merge(manifest_path, shard_paths, output_path):
     if len(by_baseline) != len(shards):
         raise ValueError('duplicate baseline hash')
     keys = ('rdkit', 'chematic', 'script_sha256', 'source_sha256', 'seconds',
+            'stereo_policy', 'stereo_verifier_sha256', 'stereo_wrapper_sha256',
             'max_candidates', 'repair_iters', 'geometry_checked', 'seed_schedule', 'timing')
     common, seen, results, platforms, hashes = None, set(), [], [], []
     for path in shard_paths:
@@ -121,6 +136,8 @@ def merge(manifest_path, shard_paths, output_path):
         current = {key: data[key] for key in keys}
         if (current['source_sha256'] != manifest['source_sha256']
                 or current['script_sha256'] != manifest['fingerprints']['time_scorer_sha256']
+                or current['stereo_verifier_sha256'] != manifest['fingerprints']['stereo_verifier_sha256']
+                or current['stereo_wrapper_sha256'] != manifest['fingerprints']['time_stereo_wrapper_sha256']
                 or any(current[k] != v for k, v in manifest['protocol'].items())):
             raise ValueError('timed scoring protocol mismatch')
         if common is None:
@@ -131,6 +148,7 @@ def merge(manifest_path, shard_paths, output_path):
         actual = [(r['index'], r['name']) for r in data['results']]
         if len(actual) != len(expected) or set(actual) != expected:
             raise ValueError('timed shard records are incomplete, duplicated or unexpected')
+        summarize_strict_stereo(data)
         results.extend(data['results'])
         platforms.append(data['platform'])
         hashes.append({'index': shard['index'], 'result_sha256': digest(raw)})
