@@ -64,10 +64,21 @@ fn params_for(label: &str) -> Option<AtomicParams> {
 }
 
 /// RDKit hybridization (`Atom::HybridizationType`) as chematic's SMARTS
-/// `^n` code: 0 S, 1 SP, 2 SP2, 3 SP3, 4 SP3D, 5 SP3D2; `None` unspecified.
+/// `^n` code: 0 S, 1 SP, 2 SP2, 3 SP3, 4 SP3D, 5 SP3D2;
+/// 6 represents SP2D, which has no SMARTS `^n` code; `None` is unspecified.
 fn hybridization(mol: &Molecule) -> Vec<Option<u8>> {
     (0..mol.atom_count())
-        .map(|i| chematic_smarts::rdkit_hybridization(mol, AtomIdx(i as u32)))
+        .map(|i| {
+            let idx = AtomIdx(i as u32);
+            // RDKit assigns non-tetrahedral hybridization from the stereo tag.
+            match mol.atom(idx).chirality {
+                chematic_core::Chirality::SquarePlanar(_)
+                | chematic_core::Chirality::SquarePlanarUnnumbered => Some(6),
+                chematic_core::Chirality::TrigonalBipyramidal(_) => Some(4),
+                chematic_core::Chirality::Octahedral(_) => Some(5),
+                _ => chematic_smarts::rdkit_hybridization(mol, idx),
+            }
+        })
         .collect()
 }
 
@@ -159,6 +170,7 @@ fn atom_label(mol: &Molecule, i: usize, hyb: Option<u8>, conjugated: bool) -> St
                 Some(3) => key.push('3'),
                 Some(4) => key.push('5'),
                 Some(5) => key.push('6'),
+                Some(6) => key.push('4'),
                 _ => {}
             },
         }
