@@ -615,6 +615,14 @@ wheel's energy differences on those structures were approximately 27.84,
 33.14 and 57.67 kcal/mol. The combined phosphorus and UFF development checks
 also passed; this is targeted evidence, not a general MMFF claim. The result
 is `validation/results/mmff-terminal-carbon-development-2026-11-22.json`.
+In the [v6 51-case recheck](https://github.com/kent-tokyo/chematic/actions/runs/44969183955),
+the number with MMFF94 energy error above 1e−4 kcal/mol fell from 19 to 11;
+the maximum fell from 57.67 to 41.52 kcal/mol. UFF analytic gradients still
+matched RDKit on all 51, while the largest sampled finite-difference discrepancy
+remained 6.09 kcal/mol/Å. The uncompressed result SHA-256 is
+`6c7a9e723c672b43391ea3dbf0dc4042359ef6f6a471e9c51428a308d4d04ea1`;
+the per-record compressed result is
+`validation/results/cod-first-fields-v6-development-2026-11-22.json.gz`.
 Another exposed case had matching atom types and charges but a 41.52 kcal/mol
 energy difference on the original Linux coordinates. Its type-75 phosphorus
 was missing from the special single-bond classification, changing the angle and
@@ -835,8 +843,14 @@ includes the terminal-carbon fix and uses merge commit
 `c5f0941fa318d22b280d172585c944052c6aafa74bdab995ca29d35ef04a5aea` and
 `08179d1a33f4af6296c064831eecbd85de66c16529b63309b3d539a98587e23a`.
 It was fixed before inspecting any second-COD holdout conformer scores and
-requires its own development rerun. A v7 candidate including the
-phosphorus-bond fix is also being frozen before inspecting those scores.
+requires its own development rerun. The
+[v7 build](https://github.com/kent-tokyo/chematic/actions/runs/44969286762)
+also includes the phosphorus-bond fix, and was fixed before inspecting those
+scores. It uses merge commit `cd8a7f266a40531fa203dc7ec3434bd22b9f5834`
+and crates tree `4871f3f53cb1ceb3940de32e744e223ae3d641b1`; its Linux and
+macOS CPython 3.12 wheel SHA-256 values are
+`cb9a9ca17f377693ebbbc8ba176e7da8defc8185d2e7cd3abdc77f4d5d7ec295` and
+`accff6f48fa6567e94197dab8793e0e0e94325f12d22e628344b27fa992fba7d`.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
