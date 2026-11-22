@@ -2,7 +2,7 @@ name: PDB macrocycle macOS chemistry support audit
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-support-v11-macos.yml'
 

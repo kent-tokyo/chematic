@@ -44,6 +44,7 @@ def prepare(split_path, audit_path, output_dir, count, wheel_sha256):
                 'scorer_sha256': digest(Path(__file__).with_name('platinum_development_probe.py').read_bytes()),
                 'geometry_sha256': digest(Path(__file__).with_name('platinum_geometry.py').read_bytes()),
                 'summarizer_sha256': digest(Path(__file__).with_name('summarize_platinum_holdout.py').read_bytes()),
+                'summary_helper_sha256': digest(Path(__file__).with_name('summarize_platinum_probe.py').read_bytes()),
                 'selection': 'SHA256(name) order, round-robin shards',
                 'protocol': {'rdkit': '2026.09.2', 'profile': 'corrected', 'geometry_checked': True,
                              'repair_iters': 400, 'candidate_limit': 20,
@@ -108,6 +109,8 @@ def merge(manifest_path, shard_paths, output_path):
         raise ValueError('sharder fingerprint mismatch')
     if digest(Path(__file__).with_name('summarize_platinum_holdout.py').read_bytes()) != manifest['summarizer_sha256']:
         raise ValueError('summarizer fingerprint mismatch')
+    if digest(Path(__file__).with_name('summarize_platinum_probe.py').read_bytes()) != manifest['summary_helper_sha256']:
+        raise ValueError('summary helper fingerprint mismatch')
     shards = manifest['shards']
     if len(shards) != manifest['shard_count'] or len(shard_paths) != len(shards):
         raise ValueError('missing or extra shard output')

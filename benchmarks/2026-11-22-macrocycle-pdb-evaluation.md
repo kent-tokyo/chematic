@@ -186,9 +186,9 @@ label is `S_5+4`; successful construction of a UFF field alone does not imply
 all parameters are present. These are support checks, not conformer outcomes.
 The per-record inputs and results are retained in
 `validation/results/macrocycle-holdout-support-v11-2026-11-22.json.gz` and
-`validation/results/macrocycle-uff-support-v11-2026-11-22.json.gz`. The audit
-used the Linux v11 wheel and pinned structural files; macOS support has not
-been separately established.
+`validation/results/macrocycle-uff-support-v11-2026-11-22.json.gz`. The Linux audit used the v11 wheel and pinned structural files. A
+[macOS v11 audit](https://github.com/kent-tokyo/chematic/actions/runs/44987000227)
+produced byte-identical support outputs and the same counts.
 
 For a possible fixed-count holdout run, the 1,243 names are partitioned by
 SHA-256(name) order into 16 round-robin shards before any conformer outcome
@@ -196,13 +196,15 @@ is inspected. Each derived split is a subset of the already audited holdout;
 its derived audit retains the parent split and audit hashes. The manifests pin
 the source, wheel, scorer, geometry checker, sharding program and fixed-count
 summarizer. Their uncompressed SHA-256 values are
-`163d98d3600d0db2c2e55b6a88a1f13a0b8d98f9125d1799c3c12aa9958f80a2`
+`82e8cd3f78a4f4137eb344d897638d098ea14bfe09f4009a592a7ddf7b25829a`
 for Linux and
-`303b28e515421cce8ea95528839d396b1123c768057db3033613c682558794d2`
+`e671d69daaf67de00dc235ad2ab3d145bf1cc65a8b2e7c3abfe194cf0e4219fe`
 for macOS. They are stored in
 `validation/results/macrocycle-shard-manifest-v11-linux-2026-11-22.json.gz`
 and `validation/results/macrocycle-shard-manifest-v11-macos-2026-11-22.json.gz`.
-The sharding utility rejects missing, duplicated or unexpected records,
+The initial manifests were superseded before scoring to additionally pin the
+summary helper; the values above identify the replacement manifests. The
+sharding utility rejects missing, duplicated or unexpected records,
 different protocol settings, mismatched input audits or scorer fingerprints,
 and wheel hashes that differ from the manifest. Synthetic integration checks
 exercised preparation, scoring, sealing, merging and summary without scoring
@@ -236,3 +238,19 @@ to establish noninferiority. Full output:
 `validation/results/macrocycle-pdb-linux-development-v11-2026-11-22.json.gz`,
 uncompressed SHA-256
 `821e4cbb342bbb94db5f4a44a62560d17001ead9e1a7f1190f0cb58ab3d14708`.
+
+A [follow-up development experiment](https://github.com/kent-tokyo/chematic/actions/runs/44987000248)
+selected the two exposed cases recovered by RDKit but not chematic in the
+20-candidate v11 pilot and generated 100 candidates per engine. Both engines
+recovered both references, with zero detected stereo violations among 200
+candidates per engine. The first candidates passing the same 1 Å, stereo and
+geometry screen were numbers 38 / 12 for chematic / RDKit on
+`8bi2__Ligand_peptide_QR7_A_701` and 35 / 5 on
+`6exq__Ligand_organic_C2W_B_303`. The first 20 RMSDs in each 100-candidate
+run matched the earlier pilot. This targeted observation suggests the extra
+budget helps these cases but does not estimate performance on the remaining
+molecules. The two-case derived development split SHA-256 was
+`94dd509bbc9bfdc13c07f244eb5ea695c80599a7c38dc4694a8fcf843740e4ab`;
+results are in `validation/results/macrocycle-pdb-linux-development-v11-100-2026-11-22.json.gz`,
+uncompressed SHA-256
+`5af57fccb40f3b1ec60810ae0fd7202b982429c7341cb4db4a6b8a7ae5b5ea16`.
