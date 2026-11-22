@@ -594,6 +594,20 @@ the earlier source files are retained in
 `validation/results/cod-first-field-outliers-development-2026-11-22.json`.
 These cases were selected because of observed errors and are not a random
 sample or independent test set.
+The [v5 Linux recheck](https://github.com/kent-tokyo/chematic/actions/runs/44966536889)
+completed all 51 without row errors. UFF energies and analytic gradients
+matched RDKit on these inputs; the largest of the six sampled finite-difference
+gradient discrepancies per molecule was 6.09 kcal/mol/Å. MMFF94 still had
+maximum energy and gradient differences of 57.67 kcal/mol and 121.10
+kcal/mol/Å, respectively, and a sampled finite-difference discrepancy as
+large as 279.13 kcal/mol/Å. These maxima are not representative percentiles.
+Per-record output is retained as
+`validation/results/cod-first-fields-v5-development-2026-11-22.json.gz`
+(uncompressed SHA-256
+`df7958d0379175bccf9b9d228ee9cfa0f27916918d9e7db730d90470b4a4a6f6`).
+Some of the MMFF energy outliers exposed a missing one-neighbor carbon
+type-60 branch, which has a subsequent development fix and regression job;
+that fix is not included in the v5 results.
 
 ## Second COD scaffold split for the silicon-corrected candidate
 
