@@ -1506,3 +1506,18 @@ with uncompressed SHA-256
 `8227f938e47562df9a889438f8609fb7aacb0521eabb4fba4ca04b12c87cfe3a`.
 These reports identify a verifier coverage gap on RDKit geometries; they do
 not establish why each chematic embedding attempt failed.
+
+The verifier was then extended only for four-neighbor phosphorus with one
+double bond (existing behavior), four-neighbor P(-) or neutral S with two
+double bonds, three-neighbor neutral S with one S=O or S=N bond, and
+three-neighbor S(+) with single bonds. Unsupported non-tetrahedral geometry
+remains unevaluable. The [cross-platform development tests](https://github.com/kent-tokyo/chematic/actions/runs/44997866129)
+checked 17 externally satisfied RDKit geometries from the four exposed cases
+and 20 additional RDKit-generated geometries from four smaller controls;
+RDKit independently confirmed that each original matched its declaration and
+that reflection contradicted the target center. Native checks passed for all
+37 originals and mirrors on both hosts, along with existing stereo and
+corrected-ensemble tests. A neutral four-coordinate sulfur radical outside the
+specified topology remains unevaluable. These fixtures demonstrate bounded
+verifier behavior, not general sulfur or phosphorus stereochemistry parity;
+wheels and a fresh exposed-case repeat are needed to assess generated candidates.

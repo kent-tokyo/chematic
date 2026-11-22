@@ -533,13 +533,10 @@ fn tetrahedral_positions(
 
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
-/// geometry check inline (kept behavior-identical on purpose: this is a pure
-/// extraction, see the PR that introduced [`TetrahedralConstraint`] for the
-/// before/after test evidence). Only a plain tetrahedral center (single/up/down
-/// bonds only) is in scope -- mirrors `stereo3d.rs`'s `assign_stereo_from_3d` gate,
-/// excluding e.g. allene central atoms (which declare axial chirality via bond
-/// directions, not `Atom::chirality`, and are handled by the double-bond path
-/// instead).
+/// geometry check inline. Plain tetrahedral centers and explicitly supported
+/// phosphorus and sulfur coordination are in scope. Allene central atoms,
+/// which declare axial chirality via bond directions rather than
+/// `Atom::chirality`, are handled by the double-bond path instead.
 fn tetrahedral_constraint_for(
     mol: &Molecule,
     idx: AtomIdx,

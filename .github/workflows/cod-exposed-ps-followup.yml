@@ -1,0 +1,64 @@
+name: COD exposed phosphorus sulfur verifier follow-up
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-exposed-ps-followup.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [corrected, fallback]
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify selection and pinned scoring scripts
+        run: |
+          python -c 'import hashlib,pathlib; p={"scripts/validation/select_cod_exposed_empty_v4.py":"bfa93485cb0323f303226719cd03497536d7c65e47e8426c0eb7fe915bf30094","scripts/benchmarks/platinum_development_probe.py":"eecbf2c8a12d9cfb75daac79ebde3a2504f87f0b267e7a196737951f6c73f9a8","scripts/benchmarks/platinum_development_strict.py":"944e62367f3aaef8c96cc9293d2339eaccf3cfc76807e592a3561927bcd2620c","scripts/benchmarks/platinum_fallback_development_probe.py":"95d1bf19aa126ec9f5e438a56ba43e21435e861916e5227735516029bbd26bcc","scripts/benchmarks/platinum_fallback_development_strict.py":"3588453c94f937e6a6e6c0e995c08bc929cf2e03bd981de43975891b0fb9e205","scripts/benchmarks/platinum_stereo_strict.py":"3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132","scripts/benchmarks/platinum_geometry.py":"56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22"}; assert all(hashlib.sha256(pathlib.Path(k).read_bytes()).hexdigest()==v for k,v in p.items())'
+          python scripts/validation/select_cod_exposed_empty_v4.py exposed-split.json
+          echo 'ae789fb069210844d698e907a732af2520fbff6beb8940f3fa9b1eabb82fbc06  exposed-split.json' | sha256sum --check
+      - name: Fetch pinned candidate and reference
+        run: |
+          gh run download 44997866129 --repo "$GITHUB_REPOSITORY" --name ps-stereo-development-ubuntu-latest-5020f56de0f7bd03e4fcf87f46bab09b4d5956f6 --dir candidate
+          expected=e21d849fbac5795bccf6d99d35242a6e698639fdb2a2cf3bac78863a5d023b63
+          wheel=$(find candidate -name '*.whl' -type f)
+          echo "$expected  $wheel" | sha256sum --check
+          gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+          echo '6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74  reference/cod-sample.sdf' | sha256sum --check
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$wheel"
+          python -m unittest scripts.validation.test_platinum_stereo_strict
+      - name: Compare the 52 exposed cases
+        run: |
+          if [ "${{ matrix.profile }}" = corrected ]; then script=platinum_development_strict.py; else script=platinum_fallback_development_strict.py; fi
+          python "scripts/benchmarks/$script" --sdf reference/cod-sample.sdf --split exposed-split.json --output exposed-result.json --partition development --limit 52 --count 20 --seed 42 --profile "${{ matrix.profile }}" --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py exposed-result.json --output exposed-summary.json
+          python scripts/benchmarks/summarize_platinum_stereo_strict.py exposed-result.json --output exposed-stereo-summary.json
+          python -c 'import json; x=json.load(open("exposed-result.json")); assert len(x["results"])==52'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-exposed-ps-${{ matrix.profile }}-${{ github.sha }}
+          path: |
+            exposed-split.json
+            exposed-result.json
+            exposed-summary.json
+            exposed-stereo-summary.json
+          if-no-files-found: warn
+  verify-extended:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Verify all stereo declarations in oracle geometries
+        run: cargo test --locked --release -p chematic-3d --lib phosphorus_and_sulfur_stereo_matches_rdkit_and_mirrors

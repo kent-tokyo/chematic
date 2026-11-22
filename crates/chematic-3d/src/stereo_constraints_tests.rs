@@ -36,6 +36,9 @@ mod tests {
                         .map(|&[x, y, z]| Point3::new(-x, y, z))
                         .collect(),
                 };
+                let original_report = verify_stereo(&molecule, &coords);
+                assert_eq!(original_report.n_violations(), 0, "{}", row["name"]);
+                assert_eq!(original_report.n_unevaluable(), 0, "{}", row["name"]);
                 let status = |geometry: &Coords3D| {
                     verify_stereo(&molecule, geometry)
                         .tetrahedral
