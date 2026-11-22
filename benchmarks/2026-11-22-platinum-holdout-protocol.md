@@ -2123,3 +2123,33 @@ the compatibility gradient; this observation does not establish a general
 accuracy bound, or explain the separately re-embedded Linux maximum. The
 binary hash used for this additional local comparison is recorded with the
 term breakdown rather than attributed to either frozen holdout wheel.
+
+### Post-bridge-fix independent force-field holdout: macOS
+
+All four macOS comparison shards of run `45035566273` completed with the
+frozen `261e520a` wheel (SHA-256
+`83eaf6994439b98647c65d34322ccb50489d6d537f0b396cba4674be6b14d20c`).
+The manifest and shard provenance were verified before merging. The 3,579-row
+merged result has uncompressed SHA-256
+`290ea5e50b23171c744354f101f61d3add501247a3120c080d412b170b6bd466`
+and is stored as
+`validation/results/cod-unused-bridge-fix-force-fields-macos-2026-11-22.json.gz`;
+the summary SHA-256 is
+`ecec19fab0d67b5eed2a067a55370e32914524f3ba4674fffa93249c4bd6da6f`.
+The CI merge had not completed when these locally merged results were recorded.
+
+RDKit embedding failed for 47 records. MMFF94 and MMFF94s were comparable for
+3,280 molecules and UFF for 3,532. No MMFF molecule exceeded 1e-4 kcal/mol
+energy error or 1e-3 kcal/mol/angstrom maximum gradient-component error;
+the maxima were 7.80e-11 and 8.71e-5, respectively. UFF had one molecule
+above the energy threshold and two above the gradient threshold. Index 11276
+(`LMFFRDPJJLNUDX-UHFFFAOYSA-N`) had energy difference 0.00023652 and maximum
+gradient-component difference 0.00366211; index 3669
+(`KKEYKMQSFPECHD-UHFFFAOYSA-N`) had zero reported energy difference and
+maximum gradient-component difference 0.00146485. These threshold exceedances
+remain visible rather than being treated as a pass. The separately recorded
+index 3669 diagnostic found very large UFF energy and gradient on the macOS
+re-embedding, but further investigation is needed to attribute each discrepancy.
+Maximum sampled 1e-5 angstrom finite-difference discrepancies were 7,093.11
+for MMFF94/MMFF94s and 3,012.95 for UFF; the diagnostics above describe
+selected exposed cases and do not prove general derivative accuracy.
