@@ -537,6 +537,40 @@ fn tetrahedral_positions(
 /// phosphorus and sulfur coordination are in scope. Allene central atoms,
 /// which declare axial chirality via bond directions rather than
 /// `Atom::chirality`, are handled by the double-bond path instead.
+fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
+    let atom = mol.atom(idx);
+    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
+    // S+ with three single bonds, have a stereochemically active lone pair.
+    // Represent it by the direction opposite the three unit bond vectors.
+    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
+        && atom.charge == 0
+        && mol.neighbors(idx).count() == 3
+        && mol
+            .neighbors(idx)
+            .filter(|(n, b)| {
+                mol.bond(*b).order == BondOrder::Double
+                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
+            })
+            .count()
+            == 1
+        && mol.neighbors(idx).all(|(_, b)| {
+            matches!(
+                mol.bond(b).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
+            )
+        })
+        && mol
+            .neighbors(idx)
+            .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+            .count()
+            == 1;
+    let sulfonium_lone_pair = atom.element.atomic_number() == 16
+        && atom.charge == 1
+        && mol.neighbors(idx).count() == 3
+        && all_single_ish;
+    neutral_sulfur_lone_pair || sulfonium_lone_pair
+}
+
 fn tetrahedral_constraint_for(
     mol: &Molecule,
     idx: AtomIdx,
@@ -592,36 +626,7 @@ fn tetrahedral_constraint_for(
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
         });
-    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
-    // S+ with three single bonds, have a stereochemically active lone pair.
-    // Represent it by the direction opposite the three unit bond vectors.
-    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
-        && atom.charge == 0
-        && mol.neighbors(idx).count() == 3
-        && mol
-            .neighbors(idx)
-            .filter(|(n, b)| {
-                mol.bond(*b).order == BondOrder::Double
-                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
-            })
-            .count()
-            == 1
-        && mol.neighbors(idx).all(|(_, b)| {
-            matches!(
-                mol.bond(b).order,
-                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
-            )
-        })
-        && mol
-            .neighbors(idx)
-            .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
-            .count()
-            == 1;
-    let sulfonium_lone_pair = atom.element.atomic_number() == 16
-        && atom.charge == 1
-        && mol.neighbors(idx).count() == 3
-        && all_single_ish;
-    let sulfur_lone_pair = neutral_sulfur_lone_pair || sulfonium_lone_pair;
+    let sulfur_lone_pair = sulfur_has_stereo_lone_pair(mol, idx, all_single_ish);
     if !all_single_ish && !four_coordinate_ps && !sulfur_lone_pair {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
