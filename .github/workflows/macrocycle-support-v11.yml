@@ -37,6 +37,10 @@ jobs:
         run: |
           echo '606d5d3f8b2a8cb17a3fe5534f9a1b9f09257eb4e8a9ae16c32e41fc7d474dcc  scripts/validation/cod_support_probe.py' | sha256sum --check
           python scripts/validation/cod_support_probe.py macrocycle/macrocycle-prepared.sdf macrocycle/macrocycle-prepared-split.json --partition holdout --output macrocycle-holdout-support.json
+      - name: Compare UFF all-atom parameter availability
+        run: |
+          sha256sum scripts/validation/macrocycle_uff_support_probe.py > macrocycle-uff-support-script.sha256
+          python scripts/validation/macrocycle_uff_support_probe.py macrocycle/macrocycle-prepared.sdf macrocycle-holdout-support.json --output macrocycle-uff-support.json
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
@@ -44,4 +48,6 @@ jobs:
           name: macrocycle-support-v11-${{ github.sha }}
           path: |
             macrocycle-holdout-support.json
+            macrocycle-uff-support.json
+            macrocycle-uff-support-script.sha256
           if-no-files-found: warn
