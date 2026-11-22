@@ -1,0 +1,47 @@
+name: COD exposed stereo rejection diagnostic
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-exposed-stereo-diagnostic.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: f8c48c8b44321e14f4648b94ec03035ad5ae099d
+          path: candidate-source
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify source, diagnostic code and wheel
+        run: |
+          test "$(git -C candidate-source rev-parse HEAD:crates)" = 84a9a2ec64b2769a24d7c848b63a7e4529dce266
+          python -c 'import hashlib,pathlib; p={"scripts/validation/cod_exposed_stereo_input.py":"7c135e5900f93fcf00d09037a6ab1684dc06eb4e5054187fb5e27cdb96d3dd94","scripts/validation/cod_exposed_stereo_diagnostic.rs":"f7334f51e0b0ccb3f669072349f7db266e5e11745b7a59b330c96b6f05223918","scripts/benchmarks/platinum_development_probe.py":"eecbf2c8a12d9cfb75daac79ebde3a2504f87f0b267e7a196737951f6c73f9a8","scripts/benchmarks/platinum_stereo_strict.py":"3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132"}; assert all(hashlib.sha256(pathlib.Path(k).read_bytes()).hexdigest()==v for k,v in p.items())'
+          gh run download 44992673854 --repo "$GITHUB_REPOSITORY" --name corrected-fallback-development-ubuntu-latest-f8c48c8b44321e14f4648b94ec03035ad5ae099d --dir wheel
+          wheel=$(find wheel -name '*.whl' -type f)
+          echo "deaa345879874ef2d6b935c39d512807c175cbeaa2e203025f35993b65c51d38  $wheel" | sha256sum --check
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$wheel"
+      - name: Generate RDKit geometries and inspect native stereo reports
+        run: |
+          python scripts/validation/cod_exposed_stereo_input.py stereo-input.json
+          cp scripts/validation/cod_exposed_stereo_diagnostic.rs candidate-source/crates/chematic-3d/examples/cod_exposed_stereo_diagnostic.rs
+          cargo run --manifest-path candidate-source/Cargo.toml --locked --release -p chematic-3d --example cod_exposed_stereo_diagnostic -- stereo-input.json > stereo-diagnostic.json
+          python -c 'import json; d=json.load(open("stereo-diagnostic.json")); assert len(d)==7 and sum(len(x["conformers"]) for x in d)>0'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-exposed-stereo-diagnostic-${{ github.sha }}
+          path: |
+            stereo-input.json
+            stereo-diagnostic.json
+          if-no-files-found: warn

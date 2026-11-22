@@ -1442,3 +1442,41 @@ with uncompressed SHA-256
 `b9c4712e5972c00674a042db1ffbea4fc70b92e9d45523fea60fd2dda07ba6f1` and
 `30d017e53528e33729f7a79f96a241c01435ff5cf40852a002e05071ca57dfa9`.
 These are exposed development comparisons, not a fresh acceptance test.
+
+The Linux arm of the [fallback strict-stereo COD development repeat](https://github.com/kent-tokyo/chematic/actions/runs/44994764474)
+recovered 161 / 163 references among 225 records, exactly as the v11
+corrected-profile run. All 225 chematic candidate counts and RMSD arrays
+matched the earlier run, as did all RDKit RMSD arrays. Chematic had zero
+contradicted or unevaluable declarations among 4,160 candidates. The same
+three RDKit `Bad Conformer Id` errors occurred in both runs; 13 additional
+records were unsupported by both. This is exposed development evidence and
+shows no recovery gain from fallback in this sample. The raw result is
+`validation/results/cod-linux-development-fallback-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`71c65b728c0cf6a065f2d1c4dea8555eca87cfa7dffb67c8ab024f718fba663b`,
+with recovery and strict-stereo summaries alongside it. The macOS arm is
+still running.
+
+For development diagnosis, 52 already-exposed second-COD holdout records were
+selected solely because the older Linux v4 run returned zero chematic and at
+least one RDKit candidate. The selection script verifies the prior result and
+original split hashes, then labels these records as development; it does not
+create a new independent holdout. In the [v11 corrected follow-up](https://github.com/kent-tokyo/chematic/actions/runs/44996384331),
+all 52 records were processed, 45 had at least one chematic candidate, and
+recovery was 36 / 40 (chematic / RDKit). Among 900 / 1,016 candidates, the
+strict verifier found chematic 0 contradictions and 0 unevaluable, and RDKit
+19 contradictions and 36 unevaluable. This selected sample cannot support a
+general performance estimate. The raw result is
+`validation/results/cod-exposed-empty-linux-corrected-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`83c31eae906112bc82840e713dbf3ad90bb9255e18eb4ec28dcbde8e5372e146`;
+the exact selection and summaries are alongside it. The fallback arm also
+recovered 36 / 40, with seven zero-candidate records and no chematic stereo
+contradictions or unknowns among 900 returned candidates. All 52 candidate
+counts and chematic and RDKit RMSD arrays matched the corrected arm. The
+fallback raw result is
+`validation/results/cod-exposed-empty-linux-fallback-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`94834e1cd261610c2f2fc98d95b7f75a1999f292c3d129e94fc115b3707d303c`.
+The seven remaining records include non-tetrahedral and sulfur/phosphorus
+stereo declarations; the reason for each zero result requires diagnosis.
