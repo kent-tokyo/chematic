@@ -37,3 +37,25 @@ fn mixed_site_species_limit_counts_species_independently_of_sites() {
         Err(FingerprintError::ResourceLimit)
     );
 }
+
+#[test]
+fn geometry_fingerprint_ignores_label_but_exact_identity_keeps_it() {
+    let make = |label: &str| {
+        let site = PeriodicSite::new(
+            vec![SiteSpecies::full(Element::SI)],
+            FractionalCoord::new([0.2, 0.3, 0.4]),
+            Some(label.to_owned()),
+        )
+        .unwrap();
+        PeriodicStructure::new(Lattice::cubic(4.0).unwrap(), vec![site]).unwrap()
+    };
+    let a = make("site-A");
+    let b = make("site-B");
+    assert_ne!(a.identity_bytes(), b.identity_bytes());
+    let fingerprint = |structure: &PeriodicStructure| {
+        geometry_fingerprint(Some(structure), "fixture", FingerprintLimits::default())
+            .unwrap()
+            .fingerprint
+    };
+    assert_eq!(fingerprint(&a), fingerprint(&b));
+}
