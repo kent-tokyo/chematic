@@ -1,7 +1,7 @@
 name: UFF macrocycle aromatic development
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/uff-macrocycle-aromatic-development.yml'
 permissions:
