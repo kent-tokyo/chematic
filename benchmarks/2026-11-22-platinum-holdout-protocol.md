@@ -1116,3 +1116,18 @@ it was built from the already tested merge commit
 `fe6e1e1a7631d81e847e4be0c019d6f571a9834b`). The macOS wheel also built;
 its local download could not be completed because the host disk was full.
 The 225-record v9 development conformer evaluation remains running.
+
+A later change caches the bounded MMFF parameter ring set on the input molecule
+and invalidates the cache on edits. The [Linux cache validation](https://github.com/kent-tokyo/chematic/actions/runs/44978178977)
+passed the core and force-field library tests, a cache reuse/invalidation test,
+the cage angle regression and the two exposed shared-coordinate cage checks
+(zero observed energy and gradient-component differences). Its source merge
+commit was `d038846ec894036371ae34cf961a9e76886642c9`; the Linux wheel SHA-256
+was `0ecc715e6bf5915f24d3d7237eff5fc378c22d4c2fe9a13f1f340405ff84b69f`.
+On 212 exposed development molecules, the same warm-construction A-B-B-A
+microbenchmark reported a median cached/v9 time ratio of 0.940 (p95 0.969),
+with sums of per-molecule medians 65.65 ms and 70.16 ms respectively. This
+is a separate runner from the v8/v9 measurement and does not establish the
+cached candidate's speed relative to v8 or end-to-end conformer performance.
+Raw timings and cage diagnostics are in
+`validation/results/mmff-ring-cache-development-2026-11-22.json.gz`.
