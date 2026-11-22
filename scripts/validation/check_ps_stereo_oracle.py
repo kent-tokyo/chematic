@@ -29,7 +29,7 @@ assert fixture['rows'] == expected and len(expected) == 17
 controls = json.loads(Path('crates/chematic-3d/src/stereo_constraints_ps_controls.json').read_text())
 assert controls['rdkit'] == '2026.09.2' and len(controls['rows']) == 20
 assert {r['smiles'] for r in controls['rows']} == {
-    'C[S@+](CC)CCC', 'C[S@](=NC)(O)CC', 'C[S@](=O)(=NC)CC', 'N=[P@-](=S)(N)O'}
+    'C[S@+](CC)CCC', 'C[S@](=NC)CC', 'C[S@](=O)(=NC)CC', 'N=[P@-](=S)(N)O'}
 for row in expected + controls['rows']:
     mol = Chem.AddHs(Chem.MolFromSmiles(row['smiles']))
     original = stereo_violations_strict(mol, [row['coords']])[0]

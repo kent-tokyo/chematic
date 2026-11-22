@@ -51,6 +51,15 @@ mod tests {
     }
 
     #[test]
+    fn unverified_four_coordinate_sulfur_remains_unevaluable() {
+        let molecule = chematic_chem::add_hydrogens(&mol("C[S@](=NC)(O)CC"));
+        assert!(matches!(
+            tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+            Err(StereoRejectionReason::UnsupportedCoordination)
+        ));
+    }
+
+    #[test]
     fn sulfoxide_parity_matches_rdkit_coordinates_and_repair() {
         // RDKit 2026.09.2 ETKDG, seed 42, C[S@](=O)CC.
         let m = mol("C[S@](=O)CC");
