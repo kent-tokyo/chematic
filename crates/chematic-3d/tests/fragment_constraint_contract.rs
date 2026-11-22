@@ -28,3 +28,30 @@ fn disconnected_fragments_keep_their_own_bond_length_constraints() {
         assert!((1.3..=1.7).contains(&distance), "{a}-{b}: {distance}");
     }
 }
+
+#[test]
+fn nonfinite_torsion_bounds_fail_before_embedding() {
+    use chematic_3d::rdkit_embed::{TorsionAngleConstraint, rdkit_bounds_matrix_with_constraints};
+    let molecule = chematic_smiles::parse("CCCC").unwrap();
+    for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let constraints = InternalCoordinateConstraints {
+            torsions: vec![TorsionAngleConstraint {
+                atom1: 0,
+                atom2: 1,
+                atom3: 2,
+                atom4: 3,
+                lower: value,
+                upper: 1.,
+            }],
+            ..Default::default()
+        };
+        let error =
+            rdkit_bounds_matrix_with_constraints(&molecule, &constraints, true, true, false)
+                .unwrap_err();
+        assert!(
+            error
+                .to_string()
+                .contains("torsion constraint contains a non-finite value")
+        );
+    }
+}
