@@ -1454,8 +1454,16 @@ shows no recovery gain from fallback in this sample. The raw result is
 `validation/results/cod-linux-development-fallback-strict-2026-11-22.json.gz`,
 uncompressed SHA-256
 `71c65b728c0cf6a065f2d1c4dea8555eca87cfa7dffb67c8ab024f718fba663b`,
-with recovery and strict-stereo summaries alongside it. The macOS arm is
-still running.
+with recovery and strict-stereo summaries alongside it. The macOS arm also
+recovered 161 / 163, with zero contradicted or unevaluable declarations in
+4,160 chematic candidates. All 225 chematic candidate counts and chematic and
+RDKit RMSD arrays matched the earlier macOS corrected-profile run; the same
+three RDKit conformer errors occurred. The raw macOS result is
+`validation/results/cod-macos-development-fallback-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`568983c0bc413a23c00a56de188c774177b01f449edc76cbee75edf1ca4a9b82`.
+These comparisons used the candidate before the subsequent phosphorus/sulfur
+verifier changes.
 
 For development diagnosis, 52 already-exposed second-COD holdout records were
 selected solely because the older Linux v4 run returned zero chematic and at

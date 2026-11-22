@@ -26,10 +26,14 @@ for row in source:
                                  'center': centers[row['name']], 'coords': c['coords']})
 fixture = json.loads(Path('crates/chematic-3d/src/stereo_constraints_ps_oracle.json').read_text())
 assert fixture['rows'] == expected and len(expected) == 17
-for row in expected:
+controls = json.loads(Path('crates/chematic-3d/src/stereo_constraints_ps_controls.json').read_text())
+assert controls['rdkit'] == '2026.09.2' and len(controls['rows']) == 20
+assert {r['smiles'] for r in controls['rows']} == {
+    'C[S@+](CC)CCC', 'C[S@](=NC)(O)CC', 'C[S@](=O)(=NC)CC', 'N=[P@-](=S)(N)O'}
+for row in expected + controls['rows']:
     mol = Chem.AddHs(Chem.MolFromSmiles(row['smiles']))
     original = stereo_violations_strict(mol, [row['coords']])[0]
     reflected = stereo_violations_strict(mol, [[[-x, y, z] for x, y, z in row['coords']]])[0]
     assert not (original['atoms'] or original['bonds'])
     assert row['center'] in reflected['violated_atoms']
-print('RDKit 2026.09.2 independently confirmed all 17 originals and reflected centers')
+print('RDKit 2026.09.2 independently confirmed all 37 originals and reflected centers')
