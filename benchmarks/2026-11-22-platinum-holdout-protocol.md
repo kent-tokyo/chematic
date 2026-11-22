@@ -1388,3 +1388,12 @@ on Linux and macOS and are retained as
 uncompressed SHA-256
 `53626b44dbcda1832f4744a42100fd92d59579f2b50d212d7cf43df1ea8e20c1` and
 `8860ef9ceaada101a93eae60fe95493193bfccf4cae6bfb7f01b3ea79b3cc202`.
+
+A separate local RDKit 2026.09.2 structural audit of the 225 COD development
+inputs found 259 specified tetrahedral centers, 58 specified double bonds and
+one square-planar center. Of the tetrahedral centers, 28 in nine records had
+no assigned CIP label. This audited input declarations without generating or
+scoring conformers. The per-record output is
+`validation/results/cod-development-declared-stereo-audit-local-2026-11-22.json.gz`,
+uncompressed SHA-256
+`2a9f2c6250f7cb9721fac77b86d2396405555f1fef340a5aa5e9bf82e77dfafc`.

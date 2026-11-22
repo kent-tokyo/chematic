@@ -309,3 +309,12 @@ The local result remained 236 comparisons with zero disagreements and 16
 unknowns; the two platform CI outputs above are from the preceding script
 version, and the tightened cross-platform rerun is pending. This refinement
 was made before any macrocycle holdout conformer scoring.
+
+The same local structural audit on the 363 macrocycle development records
+found 3,025 specified tetrahedral centers and 27 specified double bonds;
+eight tetrahedral centers in four records lacked CIP labels. No raw declared
+atom was omitted by RDKit's potential-stereo list in that development set.
+This is input inspection only. The per-record audit is
+`validation/results/macrocycle-development-declared-stereo-audit-local-2026-11-22.json.gz`,
+uncompressed SHA-256
+`fb7d8b05c33f2f385777d4e3483b1264496d5cccaef6170509352c6663fe546d`.
