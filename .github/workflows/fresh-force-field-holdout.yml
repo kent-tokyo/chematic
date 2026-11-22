@@ -1,0 +1,88 @@
+name: Fresh common-coordinate force-field holdout
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/fresh-force-field-holdout.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        dataset: [cod, macrocycle]
+        shard: [0, 1, 2, 3]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Restore frozen candidate and split
+        run: |
+          test "$(git rev-parse HEAD:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
+          echo '4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18  scripts/benchmarks/platinum_force_fields.py' | shasum -a 256 --check
+          echo '50faafc6bd55d589bc51f5be6a65567edcdf997a554fadd6f6d1d75703d43169  scripts/benchmarks/prepare_force_field_holdout.py' | shasum -a 256 --check
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh '${{ matrix.os }}' '${{ matrix.dataset }}'
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name 'fresh-plan-${{ matrix.dataset }}-${{ matrix.os }}-45026013999' --dir parent
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$(cat evaluation/wheel-path.txt)"
+      - name: Prepare and score common coordinates
+        run: |
+          index='${{ matrix.shard }}'
+          suffix=$(printf '%03d' "$index")
+          mkdir -p field
+          python scripts/benchmarks/prepare_force_field_holdout.py evaluation/reference/reference.sdf "parent/plan/split-$suffix.json" --output field/input.json
+          python -c 'import hashlib,json,pathlib,sys; p=pathlib.Path("parent/plan/manifest.json").read_bytes(); m=json.loads(p); s=m["shards"][int(sys.argv[1])]; i=json.load(open("field/input.json")); w=pathlib.Path("evaluation/wheel/candidate/wheel-sha256.txt").read_text().strip(); assert i["split_sha256"]==s["split_sha256"] and w==m["wheel_sha256"]; json.dump({"index":int(sys.argv[1]),"manifest_sha256":hashlib.sha256(p).hexdigest(),"wheel_sha256":w,"probe_sha256":"4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18"},open("field/metadata.json","w"))' "$index"
+          python scripts/benchmarks/platinum_force_fields.py --development field/input.json --output field/result.json --checkpoint-every 10
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: fresh-fields-${{ matrix.dataset }}-${{ matrix.os }}-${{ matrix.shard }}-${{ github.run_id }}
+          path: field/
+          if-no-files-found: warn
+
+  merge:
+    needs: compare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        dataset: [cod, macrocycle]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Merge verified shards and summarize
+        run: |
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name 'fresh-plan-${{ matrix.dataset }}-${{ matrix.os }}-45026013999' --dir parent
+          for i in 0 1 2 3; do
+            gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "fresh-fields-${{ matrix.dataset }}-${{ matrix.os }}-$i-${{ github.run_id }}" --dir "part-$i"
+          done
+          python scripts/benchmarks/merge_force_field_holdout.py parent/plan/manifest.json part-0 part-1 part-2 part-3 --output fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py fields.json --output summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fresh-fields-merged-${{ matrix.dataset }}-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            fields.json
+            summary.json
+          if-no-files-found: error

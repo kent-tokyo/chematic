@@ -1883,6 +1883,25 @@ identity and macrocycle support order, are
 `65a7f4b25c56a2a5e15c7bcafb49860289823a080fd731c5ba04a1110a78fbbb`, and
 `105bd9299633d65bf309badd7067287f3e187e501952d955460a4a9788e69cf1`.
 
+### Prospective common-coordinate force-field follow-up
+
+The same sealed COD and macrocycle holdouts will also be assessed separately
+on Linux and macOS using the wheels fixed above and RDKit 2026.09.2. For each
+record, construct an explicit-hydrogen graph from its reference isomeric
+SMILES, verify graph identity, and generate one RDKit ETKDGv3 structure with
+seed 42 and one thread. Evaluate both engines on those identical coordinates
+for MMFF94, MMFF94s and UFF. Record support failures, embedding and graph
+errors, absolute energy and componentwise gradient differences, and sampled
+central finite-difference discrepancies at step 1e-5 angstrom. Keep all
+selected records in the accounting and report comparable counts separately.
+Report p95 and maximum differences and the number of comparable molecules
+with absolute energy error above 1e-4 kcal/mol or any gradient-component
+error above 1e-3 kcal/mol/angstrom. These are diagnostic thresholds rather
+than a predeclared overall parity pass; sampled finite differences do not
+establish derivative correctness over all coordinates. This force-field
+follow-up is independent of the conformer-recovery criterion, and no field
+outcomes from the new holdouts have been inspected when this protocol is set.
+
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
 (SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).

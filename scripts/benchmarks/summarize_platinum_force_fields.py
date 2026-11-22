@@ -55,8 +55,13 @@ def main():
             "comparable": len(comparable),
             "energy_absolute_error_p95": percentile(energies, 0.95),
             "energy_absolute_error_max": max(energies, default=None),
+            "molecules_energy_error_over_1e-4": sum(value > 1e-4 for value in energies),
             "gradient_absolute_error_p95": percentile(gradients, 0.95),
             "gradient_absolute_error_max": max(gradients, default=None),
+            "molecules_gradient_error_over_1e-3": sum(
+                max(field["gradient_absolute_errors"], default=0.0) > 1e-3
+                for field in comparable
+            ),
             "finite_difference_absolute_error_max": max(differences, default=None),
         }
     args.output.write_text(json.dumps(summary, indent=2, allow_nan=False) + "\n")
