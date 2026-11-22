@@ -136,3 +136,22 @@ fn pdb_conect_repetitions_encode_bond_order_in_either_direction() {
         }
     }
 }
+
+#[test]
+fn mol2_unity_atom_attributes_apply_formal_charge_and_validate_values() {
+    use chematic_core::AtomIdx;
+    let prefix = "@<TRIPOS>MOLECULE\nfixture\n1 0 0 0 0\nSMALL\nNO_CHARGES\n\n@<TRIPOS>ATOM\n1 C 0 0 0 C.3 1 RES 0\n@<TRIPOS>UNITY_ATOM_ATTR\n";
+    let valid = format!("{prefix}1 1\nAtomExpr -1\n");
+    let result = rdkit_mol_from_mol2_block(&valid, false, false, false).unwrap();
+    assert_eq!(result.molecule.atom(AtomIdx(0)).charge, -1);
+    for (record, message) in [
+        ("1 1\nAtomExpr invalid\n", "formal charge"),
+        ("2 1\nAtomExpr -1\n", "atom index out of range"),
+        ("x 1\nAtomExpr -1\n", "UnityAtomAttr"),
+    ] {
+        assert_reader_error(
+            rdkit_mol_from_mol2_block(&format!("{prefix}{record}"), false, false, false),
+            message,
+        );
+    }
+}
