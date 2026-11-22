@@ -3865,7 +3865,7 @@ export interface InitOutput {
     readonly cip_assignments_accurate_json: (a: number) => [number, number];
     readonly cip_assignments_json: (a: number) => [number, number];
     readonly cip_unresolved_json: (a: number) => [number, number];
-    readonly cleanup_mol: (a: number) => number;
+    readonly cleanup_mol: (a: number) => [number, number, number];
     readonly compare_molecules_batch_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly compare_molecules_json: (a: number, b: number, c: number, d: number) => [number, number, number, number];
     readonly compute_canonical_transform_from_coords_json: (a: number, b: number, c: number, d: number, e: number, f: number, g: number) => [number, number, number, number];
