@@ -2,7 +2,7 @@ name: PDB macrocycle fallback strict stereo development pilot
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-pdb-development-fallback.yml'
 

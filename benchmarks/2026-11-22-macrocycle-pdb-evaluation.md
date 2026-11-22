@@ -405,3 +405,13 @@ fallback profile and remains unscored. The 32-record repeat uses up to 20
 corrected attempts plus 20 compatibility attempts when fallback is needed,
 while RDKit uses 20 attempts. Its fixed-count results therefore do not compare
 equal attempt budgets; a separately timed comparison is also required.
+
+The same candidate's macOS arm passed its Rust and Python checks. On the same
+exposed 208-atom case the corrected and fallback calls both returned the same
+one unfinished candidate, with no contradicted or unevaluable declaration in
+the strict verifier. Its result is
+`validation/results/macrocycle-fallback-development-macos-2026-11-22.json`
+(SHA-256 `cd5ebc205d25eaf64ccb0258e0882813a52c6ad6c72441c7271bc89ba08f0a9a`);
+the macOS wheel SHA-256 was
+`637154a74bd4eb7000a284c5a6fe2420833dc87d1c9e7de2fb9b50b8569f7b2e`.
+Both wheels came from merge commit `f8c48c8b44321e14f4648b94ec03035ad5ae099d`.

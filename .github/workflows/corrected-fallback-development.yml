@@ -1,7 +1,7 @@
 name: Corrected ensemble fallback development regression
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/corrected-fallback-development.yml'
 permissions:
