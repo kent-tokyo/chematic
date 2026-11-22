@@ -70,3 +70,56 @@ fn pdb_non_tetrahedral_stereo_tracks_each_opposite_ligand_pair() {
         }
     }
 }
+
+#[test]
+fn pdb_five_coordinate_stereo_tracks_each_axial_ligand_pair() {
+    // Independent reference: RDKit 2025.09.3, unsanitized PDB import.
+    let cases = [
+        ((0, 1), "[NH2][Pt@TB13]([F])([Cl])([Br])[I]"),
+        ((0, 2), "[NH2][Pt@TB10]([F])([Cl])([Br])[I]"),
+        ((0, 3), "[NH2][Pt@TB9]([F])([Cl])([Br])[I]"),
+        ((0, 4), "[NH2][Pt@TB8]([F])([Cl])([Br])[I]"),
+        ((1, 2), "[NH2][Pt@TB16]([F])([Cl])([Br])[I]"),
+        ((1, 3), "[NH2][Pt@TB15]([F])([Cl])([Br])[I]"),
+        ((1, 4), "[NH2][Pt@TB6]([F])([Cl])([Br])[I]"),
+        ((2, 3), "[NH2][Pt@TB17]([F])([Cl])([Br])[I]"),
+        ((2, 4), "[NH2][Pt@TB4]([F])([Cl])([Br])[I]"),
+        ((3, 4), "[NH2][Pt@TB2]([F])([Cl])([Br])[I]"),
+    ];
+    let vectors = [
+        [1., 0., 0.],
+        [-1., 0., 0.],
+        [0., 1., 0.],
+        [0., -0.5, 0.866],
+        [0., -0.5, -0.866],
+    ];
+    for ((first, second), expected) in cases {
+        let mut points = [[0.; 3]; 5];
+        points[first] = vectors[0];
+        points[second] = vectors[1];
+        let mut next = 2;
+        for (i, point) in points.iter_mut().enumerate() {
+            if i != first && i != second {
+                *point = vectors[next];
+                next += 1;
+            }
+        }
+        let mut lines = vec![atom(1, "Pt", [0.; 3])];
+        for (i, element) in ["F", "Cl", "Br", "I", "N"].iter().enumerate() {
+            lines.push(atom(i + 2, element, points[i]));
+        }
+        lines.extend([
+            "CONECT    1    2    3    4    5".into(),
+            "CONECT    1    6".into(),
+            "END".into(),
+        ]);
+        let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            rdkit_smiles(&parsed.molecule, &Default::default()).unwrap(),
+            expected,
+            "axial pair {first} {second}"
+        );
+    }
+}
