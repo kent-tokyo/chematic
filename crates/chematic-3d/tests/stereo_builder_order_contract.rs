@@ -45,3 +45,27 @@ fn builder_stereocenters_recover_the_same_neighbor_order_as_parser() {
         );
     }
 }
+
+#[test]
+fn partial_and_incompatible_stereo_are_reported_as_unevaluable() {
+    use chematic_3d::stereo_constraints::{StereoRejectionReason, StereoStatus};
+    use chematic_core::{BondIdx, BondOrder};
+    let partial = chematic_smiles::parse(r"F/C=CF").unwrap();
+    let coords = Coords3D::new_zeroed(partial.atom_count());
+    let report = verify_stereo(&partial, &coords);
+    assert_eq!(report.double_bond.len(), 1);
+    assert_eq!(
+        report.double_bond[0].status,
+        StereoStatus::Unevaluable(StereoRejectionReason::AmbiguousDirection)
+    );
+
+    let mut incompatible = chematic_smiles::parse("F[C@](Cl)(Br)I").unwrap();
+    incompatible.set_bond_order(BondIdx(0), BondOrder::Double);
+    let coords = Coords3D::new_zeroed(incompatible.atom_count());
+    let report = verify_stereo(&incompatible, &coords);
+    assert_eq!(report.tetrahedral.len(), 1);
+    assert_eq!(
+        report.tetrahedral[0].status,
+        StereoStatus::Unevaluable(StereoRejectionReason::UnsupportedCoordination)
+    );
+}
