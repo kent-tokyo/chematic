@@ -208,3 +208,18 @@ and wheel hashes that differ from the manifest. Synthetic integration checks
 exercised preparation, scoring, sealing, merging and summary without scoring
 any of these holdout records. Timed-run sharding and development results are
 still needed before deciding whether to run the candidate holdout.
+
+The timed evaluation can derive the same shard membership only from a
+verified, complete fixed-count baseline. Within each shard, cases run in
+SHA-256(name) order and engine order alternates. Each timed shard verifies the
+wheel, baseline, scorer, geometry code, 0.2-second budget and 20-attempt
+limit; merging rejects missing or duplicate cases and mixed inputs or
+settings. The timed sharding helper SHA-256 is
+`bf7a7314bae5dbda5f940972a3d6f5ed17e815b0d8c6851b2335d9f29b320603`,
+the timed scorer SHA-256 is
+`d777845f55fabe450b0919329b4aa95f5df3ef5bb34012edc0bf821ba09a7ef6`,
+and the timed scaffold-summary SHA-256 is
+`3ac65dead9bae503c078a8943235bc3dc75cac18647396543b40802872e60c5f`.
+A synthetic two-molecule test exercised the fixed-to-timed pipeline and
+summary; no macrocycle holdout conformer result was used. A timed manifest
+is generated only after the complete fixed-count baseline exists.
