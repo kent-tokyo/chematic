@@ -146,11 +146,20 @@ fn mcs_smarts_rejects_malformed_query_adjacency() {
     let a = graph.add_atom(atom(6));
     let b = graph.add_atom(atom(8));
     graph.add_bond(a, b, BondQuery::Primitive(B::Single));
-    graph.adj[a].clear();
-    assert_eq!(
-        mcs_query_to_smarts(&graph).unwrap_err(),
-        chematic_smarts::McsSmartsError::InvalidGraph
-    );
+    let mut missing_adjacency = graph.clone();
+    missing_adjacency.adj[a].clear();
+    let mut missing_list = graph.clone();
+    missing_list.adj.pop();
+    let mut bad_neighbor = graph.clone();
+    bad_neighbor.adj[a][0].1 = 99;
+    let mut missing_bond = graph;
+    missing_bond.adj[a][0].0 = 99;
+    for malformed in [missing_adjacency, missing_list, bad_neighbor, missing_bond] {
+        assert_eq!(
+            mcs_query_to_smarts(&malformed).unwrap_err(),
+            chematic_smarts::McsSmartsError::InvalidGraph
+        );
+    }
 }
 
 #[test]
