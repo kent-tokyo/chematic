@@ -32,7 +32,9 @@ def summarize(data):
         "seconds": seconds,
         "max_candidates": cap,
         "timing": data["timing"],
-        "errors": sum(bool(row.get("error")) for row in rows),
+        "errors": sum(bool(row.get("error") or row.get("engine_errors")) for row in rows),
+        "engine_errors": {engine: sum(engine in row.get("engine_errors", {}) for row in rows)
+                          for engine in ("chematic", "rdkit")},
         "engines": {},
     }
     for engine in ("chematic", "rdkit"):

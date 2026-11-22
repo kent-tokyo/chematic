@@ -12,7 +12,7 @@ def recovered(row, engine, require_geometry=False, require_converged=False):
     record = row.get(engine, {})
     rmsd = record.get("rmsd", [])
     stereo = record.get("stereo", [])
-    if row.get("error") or len(rmsd) != len(stereo):
+    if row.get("error") or engine in row.get("engine_errors", {}) or len(rmsd) != len(stereo):
         return False
     geometry = record.get("geometry", [])
     if require_geometry:
@@ -74,12 +74,14 @@ def main():
     summary = {
         "rows": len(rows),
         "seconds": report["seconds"],
-        "errors": sum(bool(row.get("error")) for row in rows),
+        "errors": sum(bool(row.get("error") or row.get("engine_errors")) for row in rows),
+        "engine_errors": {engine: sum(engine in row.get("engine_errors", {}) for row in rows) for engine in ("chematic", "rdkit")},
         "recovery_difference": sum(a - b for a, b in pairs) / len(pairs),
         "paired_bootstrap_95_percentile_interval": [samples[249], samples[9749]],
     }
     if all(
-        row.get("error") or "statuses" in row.get(engine, {})
+        row.get("error") or engine in row.get("engine_errors", {})
+        or "statuses" in row.get(engine, {})
         for row in rows
         for engine in ("chematic", "rdkit")
     ):

@@ -2294,3 +2294,21 @@ exception skipped those scores and the coordinates were not saved. The other
 interval reflects the stated shared-error policy; the raw data do not support
 recovering RDKit's independent success or a strict-stereo assessment on those
 75 error rows. This audit does not alter or reclassify the frozen result.
+
+### Timed scorer engine isolation correction
+
+The timed scorer was subsequently changed so generation errors are recorded
+per engine and do not prevent the other engine from running or being scored.
+Scoring errors are likewise isolated. Recovery treats an engine's own error as
+no recovery while preserving the other engine's result; input preparation or
+graph-identity errors remain row-level errors. The output identifies this new
+engine-error policy, and the scorer and summary-helper fingerprints change.
+Regression checks cover generation failure in either execution order and a
+one-sided scoring failure. A historical-result check confirms that the frozen
+Linux COD aggregate remains unchanged when read by the updated recovery helper.
+
+This correction is post hoc: it does not reconstruct missing coordinates or
+alter the previously recorded holdout. Any follow-up using the new scorer
+must identify the changed fingerprints, retain individual engine errors and
+report its population and selection separately. A fresh independent comparison
+is needed to make an unbiased claim about the changed evaluation policy.

@@ -63,6 +63,31 @@ def attempts(engine, mol, other, seconds, max_candidates, repair_iters=0):
     }
 
 
+def score_engines(result, order, mol, other, reference, checks, seconds, max_candidates, repair_iters):
+    """Retain and score each engine independently if the other engine fails."""
+    ensembles = {}
+    engine_errors = {}
+    for engine in order:
+        try:
+            conformers, timing = attempts(
+                engine, mol, other, seconds, max_candidates, repair_iters
+            )
+            ensembles[engine] = conformers
+            result[engine] = timing
+        except Exception as exc:
+            engine_errors[engine] = {"stage": "generation", "error": repr(exc)}
+    for engine, conformers in ensembles.items():
+        try:
+            result[engine]["rmsd"] = rms_values(mol, reference, conformers)
+            result[engine]["stereo"] = stereo_violations(mol, conformers)
+            if checks is not None:
+                result[engine]["geometry"] = [check_geometry(coords, checks) for coords in conformers]
+        except Exception as exc:
+            engine_errors[engine] = {"stage": "scoring", "error": repr(exc)}
+    if engine_errors:
+        result["engine_errors"] = engine_errors
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--sdf", type=Path, required=True)
@@ -99,6 +124,7 @@ def main():
         "max_candidates": args.max_candidates,
         "repair_iters": args.repair_iters,
         "geometry_checked": args.geometry,
+        "engine_error_policy": "independent generation and scoring per engine",
         "seed_schedule": "42 * (attempt + 1)",
         "timing": "individual embedding and minimization attempts, accept only attempts completed before the deadline; scoring excluded",
         "results": [],
@@ -130,32 +156,17 @@ def main():
                 }
             order = ("chematic", "rdkit") if index % 2 == 0 else ("rdkit", "chematic")
             result["order"] = order
-            ensembles = {}
-            for engine in order:
-                conformers, timing = attempts(
-                    engine,
-                    mol,
-                    other,
-                    args.seconds,
-                    args.max_candidates,
-                    args.repair_iters,
-                )
-                ensembles[engine] = conformers
-                result[engine] = timing
-            for engine, conformers in ensembles.items():
-                result[engine]["rmsd"] = rms_values(mol, reference, conformers)
-                result[engine]["stereo"] = stereo_violations(mol, conformers)
-                if checks is not None:
-                    result[engine]["geometry"] = [
-                        check_geometry(coords, checks) for coords in conformers
-                    ]
+            score_engines(
+                result, order, mol, other, reference, checks,
+                args.seconds, args.max_candidates, args.repair_iters,
+            )
         except Exception as exc:
             result["error"] = repr(exc)
         output["results"].append(result)
         checkpoint = args.output.with_suffix(args.output.suffix + ".tmp")
         checkpoint.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")
         checkpoint.replace(args.output)
-        print(row["name"], result.get("error", "ok"), flush=True)
+        print(row["name"], result.get("error") or result.get("engine_errors") or "ok", flush=True)
 
 
 if __name__ == "__main__":

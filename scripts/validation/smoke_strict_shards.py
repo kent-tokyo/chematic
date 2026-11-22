@@ -94,7 +94,7 @@ def main():
             timed_results.append(result)
         timed_merged = root / 'timed-merged.json'
         timed_data = timed.merge(timed_dir / 'manifest.json', timed_results, timed_merged)
-        if len(timed_data['results']) != 2 or any(row.get('error') for row in timed_data['results']):
+        if len(timed_data['results']) != 2 or any(row.get('error') or row.get('engine_errors') for row in timed_data['results']):
             raise RuntimeError('synthetic timed scoring failed')
         run('summarize_platinum_time_holdout.py', timed_merged, split, '--output', root / 'timed-summary.json', '--bootstrap', 100)
         run('summarize_platinum_stereo_strict.py', timed_merged, '--output', root / 'timed-stereo.json')

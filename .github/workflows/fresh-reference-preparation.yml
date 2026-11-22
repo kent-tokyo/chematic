@@ -65,7 +65,7 @@ jobs:
       - name: Test fixed and timed shard pipelines
         run: |
           python -m pip install --force-reinstall --no-deps candidate/*.whl
-          python -m unittest scripts.validation.test_shard_platinum_holdout scripts.validation.test_shard_platinum_time scripts.validation.test_platinum_time_mixed
+          python -m unittest scripts.validation.test_shard_platinum_holdout scripts.validation.test_shard_platinum_time scripts.validation.test_platinum_time_mixed scripts.validation.test_platinum_time_engine_isolation
           python scripts/validation/smoke_strict_shards.py --wheel candidate/*.whl --profile corrected --output corrected-smoke.json
           python scripts/validation/smoke_strict_shards.py --wheel candidate/*.whl --profile mixed_checked --output mixed-smoke.json
           python -c 'import hashlib,pathlib; w=list(pathlib.Path("candidate").glob("*.whl")); assert len(w)==1; pathlib.Path("candidate/wheel-sha256.txt").write_text(hashlib.sha256(w[0].read_bytes()).hexdigest()+"\n")'
