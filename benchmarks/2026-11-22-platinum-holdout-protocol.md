@@ -2400,3 +2400,14 @@ population, the macOS timed run is a post-hoc follow-up on an exposed set, not
 a fresh independent test of the revised scorer. Its data and errors will be
 reported separately from the earlier Linux shared-error result. No outcome is
 available before this run.
+
+For explicit scoring coverage, `summarize_platinum_timed_scoring_coverage.py`
+counts accepted conformers without stereo diagnostics separately from missing
+engine records and row or engine errors. On the historical Linux COD timed
+result it reports 556 accepted but unscored RDKit conformers on 72 records;
+all 9,718 accepted chematic conformers were scored. Its machine-readable
+output is `validation/results/cod-independent-mixed-time-linux-coverage-2026-11-22.json`.
+The same audit of the Linux macrocycle timed result found no accepted unscored
+conformers for either engine. For the revised evaluation, zero reported stereo
+violations alone is insufficient if any accepted chematic conformers were
+unscored; report scoring coverage and engine failures explicitly.

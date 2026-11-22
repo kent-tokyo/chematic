@@ -1,0 +1,27 @@
+{
+  "rows": 2102,
+  "engines": {
+    "chematic": {
+      "engine_records": 1927,
+      "missing_engine_records": 175,
+      "row_errors": 175,
+      "generation_errors": 0,
+      "scoring_errors": 0,
+      "accepted_conformers": 9718,
+      "stereo_scored_conformers": 9718,
+      "unscored_accepted_conformers": 0,
+      "records_with_unscored_accepted": 0
+    },
+    "rdkit": {
+      "engine_records": 2002,
+      "missing_engine_records": 100,
+      "row_errors": 175,
+      "generation_errors": 0,
+      "scoring_errors": 0,
+      "accepted_conformers": 7961,
+      "stereo_scored_conformers": 7405,
+      "unscored_accepted_conformers": 556,
+      "records_with_unscored_accepted": 72
+    }
+  }
+}
