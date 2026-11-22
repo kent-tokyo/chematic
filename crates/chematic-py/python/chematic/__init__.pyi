@@ -460,6 +460,30 @@ class Mol:
         """
         ...
 
+    def etkdg_embed_multiple_confs_mmff_compatible_checked(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate an ensemble with the compatibility gradient and stereo checks."""
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_mixed_checked(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Split one checked ensemble between compatibility and corrected gradients."""
+        ...
+
     def etkdg_embed_multiple_confs_mmff_corrected_fallback(
         self,
         num_confs: int,

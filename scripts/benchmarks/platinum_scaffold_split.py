@@ -18,11 +18,22 @@ def main():
     parser.add_argument("--exclude-manifest", type=Path, action="append", default=[])
     parser.add_argument("--exclude-smiles", type=Path, action="append", default=[])
     parser.add_argument("--exclude-jsonl", type=Path, action="append", default=[])
+    parser.add_argument("--exclude-scaffold-split", type=Path, action="append", default=[])
     parser.add_argument("--allow-invalid-exclusions", action="store_true")
     args = parser.parse_args()
     source_hash = hashlib.sha256(args.sdf.read_bytes()).hexdigest()
     excluded = set()
     invalid_exclusions = []
+    for path in args.exclude_scaffold_split:
+        prior = json.loads(path.read_text())
+        if prior.get("rdkit_version") != rdBase.rdkitVersion:
+            raise ValueError(f"RDKit version differs in {path}")
+        for row in prior["rows"]:
+            scaffold_hash = row.get("scaffold_sha256")
+            if scaffold_hash is not None:
+                if len(scaffold_hash) != 64 or any(c not in "0123456789abcdef" for c in scaffold_hash):
+                    raise ValueError(f"invalid scaffold hash in {path}")
+                excluded.add(scaffold_hash)
     for path in args.exclude_manifest:
         for row in json.loads(path.read_text())["molecules"]:
             mol = Chem.MolFromSmiles(row["smiles"])
@@ -95,7 +106,7 @@ def main():
         counts[split] += 1
     exclusions = {
         str(path): hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in args.exclude_manifest + args.exclude_smiles + args.exclude_jsonl
+        for path in args.exclude_manifest + args.exclude_smiles + args.exclude_jsonl + args.exclude_scaffold_split
     }
     args.output.write_text(
         json.dumps(

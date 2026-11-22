@@ -1,0 +1,1638 @@
+{
+  "source_commit": "63c053ce218dff9418971d570fea899e716f1630",
+  "wheel_sha256": "a23175f9ef80635d7d568023fd2bfadca68abbf9e850ad4c2106305152dbb9fc",
+  "cases": [
+    {
+      "name": "ARKBXVVFEWNGFI-UHFFFAOYSA-N",
+      "rdkit": "2026.09.2",
+      "seed": 42,
+      "max_iters": 200,
+      "results": [
+        {
+          "cid": 0,
+          "initial_rmsd": 1.8691345671601411,
+          "chematic_rmsd": 1.3852675642857195,
+          "rdkit_rmsd": 1.3852675642639667,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -99.17106910348417,
+          "rdkit_energy": -99.17106909260569,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 1,
+          "initial_rmsd": 1.6012424236184286,
+          "chematic_rmsd": 1.411303237882499,
+          "rdkit_rmsd": 1.4113032378917434,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -103.51310085320033,
+          "rdkit_energy": -103.51310085320488,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 2,
+          "initial_rmsd": 0.9186987749256322,
+          "chematic_rmsd": 1.3802043484432065,
+          "rdkit_rmsd": 1.3802043484436277,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -121.56382340518442,
+          "rdkit_energy": -121.56382340514793,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 3,
+          "initial_rmsd": 0.9899325287457235,
+          "chematic_rmsd": 1.649211164135869,
+          "rdkit_rmsd": 1.6492111641249556,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -109.97285986027671,
+          "rdkit_energy": -109.97285986031368,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 4,
+          "initial_rmsd": 1.939433047059858,
+          "chematic_rmsd": 1.8148907004673134,
+          "rdkit_rmsd": 1.8148907036692892,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -112.26505926767726,
+          "rdkit_energy": -112.26505923806585,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 5,
+          "initial_rmsd": 1.618620169823738,
+          "chematic_rmsd": 1.346068445988279,
+          "rdkit_rmsd": 1.3460684459858052,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -104.65159917423382,
+          "rdkit_energy": -104.65159917423574,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 6,
+          "initial_rmsd": 1.8309875606169606,
+          "chematic_rmsd": 1.9854368885748228,
+          "rdkit_rmsd": 1.9854368885747953,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -112.10856761368048,
+          "rdkit_energy": -112.10856761368056,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 7,
+          "initial_rmsd": 2.3247159438650398,
+          "chematic_rmsd": 2.0379565901497974,
+          "rdkit_rmsd": 2.0379565901497374,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -104.90515083440619,
+          "rdkit_energy": -104.90515083440657,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 8,
+          "initial_rmsd": 1.9008944330442683,
+          "chematic_rmsd": 1.2448450334961578,
+          "rdkit_rmsd": 1.244845033492401,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -107.37237145733846,
+          "rdkit_energy": -107.37237145742805,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 9,
+          "initial_rmsd": 2.2441403647771594,
+          "chematic_rmsd": 1.502326506113747,
+          "rdkit_rmsd": 1.502326506292592,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -106.02089994524025,
+          "rdkit_energy": -106.02089994544305,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 10,
+          "initial_rmsd": 1.085263622984362,
+          "chematic_rmsd": 1.0285625521778656,
+          "rdkit_rmsd": 1.0285625549440849,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -114.45683616482388,
+          "rdkit_energy": -114.45683618123428,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 11,
+          "initial_rmsd": 2.103422114860826,
+          "chematic_rmsd": 1.465977044396478,
+          "rdkit_rmsd": 1.4659770443978433,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -106.2590616613616,
+          "rdkit_energy": -106.2590616613636,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 12,
+          "initial_rmsd": 1.5391204917915957,
+          "chematic_rmsd": 1.2924519143427031,
+          "rdkit_rmsd": 1.2924512762679343,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -106.16172549150339,
+          "rdkit_energy": -106.16172256013533,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 13,
+          "initial_rmsd": 2.2054907389970566,
+          "chematic_rmsd": 0.8600948324178062,
+          "rdkit_rmsd": 0.860094832469365,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -109.9850569354858,
+          "rdkit_energy": -109.98505693785746,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 14,
+          "initial_rmsd": 1.642126455761052,
+          "chematic_rmsd": 1.3315682425815736,
+          "rdkit_rmsd": 1.3315682425815867,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -101.979609674513,
+          "rdkit_energy": -101.97960967451114,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 15,
+          "initial_rmsd": 1.914575464651257,
+          "chematic_rmsd": 1.9003137178825067,
+          "rdkit_rmsd": 1.9003137178816012,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -94.38473611838255,
+          "rdkit_energy": -94.38473611883198,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 16,
+          "initial_rmsd": 1.0823050961036602,
+          "chematic_rmsd": 1.3425764177925212,
+          "rdkit_rmsd": 1.342576417792238,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -120.82761465336644,
+          "rdkit_energy": -120.82761465336637,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 17,
+          "initial_rmsd": 2.1552413104348105,
+          "chematic_rmsd": 2.113743436229141,
+          "rdkit_rmsd": 2.113743436230158,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -111.4676501942386,
+          "rdkit_energy": -111.467650194236,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 18,
+          "initial_rmsd": 2.3681476024110752,
+          "chematic_rmsd": 1.5406906776541673,
+          "rdkit_rmsd": 1.5406906776322908,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -103.19708118638795,
+          "rdkit_energy": -103.1970811869835,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 19,
+          "initial_rmsd": 1.6440019295938284,
+          "chematic_rmsd": 1.1074112773291767,
+          "rdkit_rmsd": 1.1074105708524726,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": -108.86841117979341,
+          "rdkit_energy": -108.86840501528314,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "YGOGYARKXIRJPF-GXGABASRSA-N",
+      "rdkit": "2026.09.2",
+      "seed": 42,
+      "max_iters": 200,
+      "results": [
+        {
+          "cid": 0,
+          "initial_rmsd": 1.7247492434516052,
+          "chematic_rmsd": 1.52213159344043,
+          "rdkit_rmsd": 1.5221315934407802,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 261.1164449264542,
+          "rdkit_energy": 261.11644492647014,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 1,
+          "initial_rmsd": 1.776905953758856,
+          "chematic_rmsd": 1.5867770681508495,
+          "rdkit_rmsd": 1.5867770688812473,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 254.32366570226273,
+          "rdkit_energy": 254.32366571056127,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 2,
+          "initial_rmsd": 2.379198691788624,
+          "chematic_rmsd": 1.5445114923608487,
+          "rdkit_rmsd": 1.5445114914876175,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 248.03728179392493,
+          "rdkit_energy": 248.03728176691328,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 3,
+          "initial_rmsd": 1.7178528450879402,
+          "chematic_rmsd": 1.3797486096258618,
+          "rdkit_rmsd": 1.3797486094356062,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 246.28249879949357,
+          "rdkit_energy": 246.28249879866445,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 4,
+          "initial_rmsd": 2.041682101822001,
+          "chematic_rmsd": 2.208376612060475,
+          "rdkit_rmsd": 2.208376612062535,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 264.8358935561219,
+          "rdkit_energy": 264.83589355611946,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 5,
+          "initial_rmsd": 2.439790837548545,
+          "chematic_rmsd": 1.9565294162660212,
+          "rdkit_rmsd": 1.9565294163345548,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 253.18120022414507,
+          "rdkit_energy": 253.1812002240119,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 6,
+          "initial_rmsd": 1.5536880923814,
+          "chematic_rmsd": 1.4182686482253224,
+          "rdkit_rmsd": 1.4182686480461715,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 252.93368501544796,
+          "rdkit_energy": 252.93368501797397,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 7,
+          "initial_rmsd": 1.274046366723527,
+          "chematic_rmsd": 1.2538607020662993,
+          "rdkit_rmsd": 1.2538607014016612,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 252.9737703240304,
+          "rdkit_energy": 252.9737702353546,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 8,
+          "initial_rmsd": 2.7281292654791267,
+          "chematic_rmsd": 2.5691371200857205,
+          "rdkit_rmsd": 2.5691371198760855,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 256.3304393964938,
+          "rdkit_energy": 256.3304393971332,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 9,
+          "initial_rmsd": 2.0201560968771677,
+          "chematic_rmsd": 1.4578684543817453,
+          "rdkit_rmsd": 1.4578684536346793,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 247.81127587863932,
+          "rdkit_energy": 247.81127587662493,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 10,
+          "initial_rmsd": 1.1603178379859203,
+          "chematic_rmsd": 1.0849101301567816,
+          "rdkit_rmsd": 1.0849101301588628,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 256.60533422216594,
+          "rdkit_energy": 256.60533422232226,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 11,
+          "initial_rmsd": 1.8708851726436901,
+          "chematic_rmsd": 2.0443375254592846,
+          "rdkit_rmsd": 2.0443375254532183,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 265.13108518344336,
+          "rdkit_energy": 265.1310851834493,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 12,
+          "initial_rmsd": 2.0518601921563167,
+          "chematic_rmsd": 2.08461880152103,
+          "rdkit_rmsd": 2.0846187877662237,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 266.7648951012513,
+          "rdkit_energy": 266.7648990889326,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 13,
+          "initial_rmsd": 1.8886631481115617,
+          "chematic_rmsd": 2.0147156722958672,
+          "rdkit_rmsd": 2.0147156721581805,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 265.230689639019,
+          "rdkit_energy": 265.23068963912175,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 14,
+          "initial_rmsd": 1.6293087922170668,
+          "chematic_rmsd": 1.6033462168831043,
+          "rdkit_rmsd": 1.6033462168623094,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 259.84767294419106,
+          "rdkit_energy": 259.84767294738936,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 15,
+          "initial_rmsd": 2.206665018232633,
+          "chematic_rmsd": 2.379595095902541,
+          "rdkit_rmsd": 2.379595095901275,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 264.4978428841321,
+          "rdkit_energy": 264.49784288412286,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 16,
+          "initial_rmsd": 2.271886451799402,
+          "chematic_rmsd": 2.5106323498054515,
+          "rdkit_rmsd": 2.5106323498015635,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 264.149507480743,
+          "rdkit_energy": 264.14950748061034,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 17,
+          "initial_rmsd": 2.5189934510255143,
+          "chematic_rmsd": 1.9653992800379287,
+          "rdkit_rmsd": 1.9653992796197912,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 258.5424403378143,
+          "rdkit_energy": 258.5424403652442,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 18,
+          "initial_rmsd": 2.636990518937263,
+          "chematic_rmsd": 2.189052644753514,
+          "rdkit_rmsd": 2.189052642666016,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 253.62358054878555,
+          "rdkit_energy": 253.62358055115845,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 19,
+          "initial_rmsd": 1.8303931158738556,
+          "chematic_rmsd": 1.4328556886094563,
+          "rdkit_rmsd": 1.4328556886038093,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 252.37813731802515,
+          "rdkit_energy": 252.3781373181758,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ZXMKGJDQRHLYLG-JOCHJYFZSA-N",
+      "rdkit": "2026.09.2",
+      "seed": 42,
+      "max_iters": 200,
+      "results": [
+        {
+          "cid": 0,
+          "initial_rmsd": 2.154220554013276,
+          "chematic_rmsd": 2.247743712184984,
+          "rdkit_rmsd": 2.2477437121849717,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78812460962931,
+          "rdkit_energy": 63.788124609629264,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 1,
+          "initial_rmsd": 2.1304294445273038,
+          "chematic_rmsd": 2.245941313606267,
+          "rdkit_rmsd": 2.2459413136062945,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112656604087,
+          "rdkit_energy": 63.78112656604086,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 2,
+          "initial_rmsd": 1.864268890877289,
+          "chematic_rmsd": 1.5741875717893468,
+          "rdkit_rmsd": 1.5741875717893261,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 68.24297598164091,
+          "rdkit_energy": 68.24297598164091,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 3,
+          "initial_rmsd": 2.1275491462539793,
+          "chematic_rmsd": 2.245956087511316,
+          "rdkit_rmsd": 2.2459560875115896,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112632722196,
+          "rdkit_energy": 63.78112632722191,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 4,
+          "initial_rmsd": 2.212800188683101,
+          "chematic_rmsd": 2.247739836597154,
+          "rdkit_rmsd": 2.247739836596451,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.788124604295774,
+          "rdkit_energy": 63.788124604295746,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 5,
+          "initial_rmsd": 2.1043024400469506,
+          "chematic_rmsd": 2.2459497723933084,
+          "rdkit_rmsd": 2.2459497723933093,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.781126358336756,
+          "rdkit_energy": 63.78112635833667,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 6,
+          "initial_rmsd": 2.1323892365597517,
+          "chematic_rmsd": 2.24595574874507,
+          "rdkit_rmsd": 2.2459557487450645,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112638229288,
+          "rdkit_energy": 63.78112638229284,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 7,
+          "initial_rmsd": 2.134452539309625,
+          "chematic_rmsd": 2.2459201366860544,
+          "rdkit_rmsd": 2.245920136686046,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.781126662628495,
+          "rdkit_energy": 63.781126662628495,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 8,
+          "initial_rmsd": 2.1481788390088496,
+          "chematic_rmsd": 2.2477423045064713,
+          "rdkit_rmsd": 2.247742304506323,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.788124639600866,
+          "rdkit_energy": 63.788124639600944,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 9,
+          "initial_rmsd": 2.1321146292081883,
+          "chematic_rmsd": 2.24594841843477,
+          "rdkit_rmsd": 2.2459484184348897,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.781126274152,
+          "rdkit_energy": 63.78112627415213,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 10,
+          "initial_rmsd": 2.119836057268486,
+          "chematic_rmsd": 2.245945503894584,
+          "rdkit_rmsd": 2.245945503894579,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112629947704,
+          "rdkit_energy": 63.781126299477016,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 11,
+          "initial_rmsd": 0.6830050761012301,
+          "chematic_rmsd": 0.25657946381531055,
+          "rdkit_rmsd": 0.2565794773258162,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 67.13726393028375,
+          "rdkit_energy": 67.13726393055896,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 12,
+          "initial_rmsd": 1.8833413943000115,
+          "chematic_rmsd": 1.574171717775839,
+          "rdkit_rmsd": 1.5741717177758316,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 68.24297584123792,
+          "rdkit_energy": 68.24297584123798,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 13,
+          "initial_rmsd": 2.119131309291075,
+          "chematic_rmsd": 2.2459456915296934,
+          "rdkit_rmsd": 2.2459456915120746,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112630554792,
+          "rdkit_energy": 63.78112630554811,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 14,
+          "initial_rmsd": 2.1613433824984685,
+          "chematic_rmsd": 2.2459495274380883,
+          "rdkit_rmsd": 2.245949527437649,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112628356698,
+          "rdkit_energy": 63.781126283567005,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 15,
+          "initial_rmsd": 2.1492467909335433,
+          "chematic_rmsd": 2.24773571898271,
+          "rdkit_rmsd": 2.247735718982707,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78812616233547,
+          "rdkit_energy": 63.78812616233543,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 16,
+          "initial_rmsd": 2.1918415123913313,
+          "chematic_rmsd": 2.2459520107857305,
+          "rdkit_rmsd": 2.2459520107882316,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112628328073,
+          "rdkit_energy": 63.78112628328066,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 17,
+          "initial_rmsd": 2.190009152482056,
+          "chematic_rmsd": 2.2459470419580705,
+          "rdkit_rmsd": 2.2459470419580705,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.78112638555426,
+          "rdkit_energy": 63.781126385554224,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 18,
+          "initial_rmsd": 1.8283575625796793,
+          "chematic_rmsd": 1.573243939778221,
+          "rdkit_rmsd": 1.5732439397782307,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 68.19883266749247,
+          "rdkit_energy": 68.1988326674925,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 19,
+          "initial_rmsd": 2.1223815400288224,
+          "chematic_rmsd": 2.245946776619539,
+          "rdkit_rmsd": 2.2459467766128363,
+          "chematic_status": 0,
+          "rdkit_status": 0,
+          "chematic_energy": 63.781126405315916,
+          "rdkit_energy": 63.781126405315966,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "ZYJBYFMAGWUOLR-PBYQXAPXSA-N",
+      "rdkit": "2026.09.2",
+      "seed": 42,
+      "max_iters": 200,
+      "results": [
+        {
+          "cid": 0,
+          "initial_rmsd": 1.8869069962936227,
+          "chematic_rmsd": 2.044230722098935,
+          "rdkit_rmsd": 2.0442307221022293,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 62.48411371363927,
+          "rdkit_energy": 62.48411371363795,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 1,
+          "initial_rmsd": 1.6954666485078362,
+          "chematic_rmsd": 2.1135685308851357,
+          "rdkit_rmsd": 2.113567532229005,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 64.540653674001,
+          "rdkit_energy": 64.54065548878506,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 2,
+          "initial_rmsd": 2.7766082785963224,
+          "chematic_rmsd": 3.324680239234941,
+          "rdkit_rmsd": 3.3246802392343993,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.86825442685161,
+          "rdkit_energy": 61.86825442685222,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 3,
+          "initial_rmsd": 1.9586587094965417,
+          "chematic_rmsd": 2.110053770235219,
+          "rdkit_rmsd": 2.1100537130206978,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 62.41106514328065,
+          "rdkit_energy": 62.41106502426521,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 4,
+          "initial_rmsd": 1.6771604558544593,
+          "chematic_rmsd": 1.6452562183510149,
+          "rdkit_rmsd": 1.645256218433949,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 60.99650861428278,
+          "rdkit_energy": 60.99650861431192,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 5,
+          "initial_rmsd": 1.4208536737397557,
+          "chematic_rmsd": 1.711122451958271,
+          "rdkit_rmsd": 1.711122452324162,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.34626662327863,
+          "rdkit_energy": 61.34626662306424,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 6,
+          "initial_rmsd": 2.16303943186629,
+          "chematic_rmsd": 1.997658564620928,
+          "rdkit_rmsd": 1.9976585646066556,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 60.60728577944508,
+          "rdkit_energy": 60.60728577944825,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 7,
+          "initial_rmsd": 2.6674874073116834,
+          "chematic_rmsd": 2.2332223939425395,
+          "rdkit_rmsd": 2.2332223939934144,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.94087260810736,
+          "rdkit_energy": 61.940872608649144,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 8,
+          "initial_rmsd": 1.7519469889063284,
+          "chematic_rmsd": 0.7872504561075617,
+          "rdkit_rmsd": 0.7872400127651464,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 62.20519465297997,
+          "rdkit_energy": 62.20515199912231,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 9,
+          "initial_rmsd": 2.995805595633639,
+          "chematic_rmsd": 2.1353441194071343,
+          "rdkit_rmsd": 2.1353441174429935,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.14935575087727,
+          "rdkit_energy": 61.14935575097227,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 10,
+          "initial_rmsd": 1.9643745116945006,
+          "chematic_rmsd": 1.4562952707672867,
+          "rdkit_rmsd": 1.456295270771662,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 59.88376655122748,
+          "rdkit_energy": 59.88376655122794,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 11,
+          "initial_rmsd": 1.9302684909293508,
+          "chematic_rmsd": 2.366462111113169,
+          "rdkit_rmsd": 2.3664621110391626,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 63.33773898560455,
+          "rdkit_energy": 63.337738985678094,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 12,
+          "initial_rmsd": 2.4264875508121584,
+          "chematic_rmsd": 2.1560181493525015,
+          "rdkit_rmsd": 2.1561155063232937,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.707753591469185,
+          "rdkit_energy": 61.70748162445487,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 13,
+          "initial_rmsd": 1.6411932680097236,
+          "chematic_rmsd": 1.8900869357759804,
+          "rdkit_rmsd": 1.890086935781067,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.50533293997179,
+          "rdkit_energy": 61.50533293996928,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 14,
+          "initial_rmsd": 2.685699581040493,
+          "chematic_rmsd": 2.4231409715618653,
+          "rdkit_rmsd": 2.42314097150511,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 65.31467170404113,
+          "rdkit_energy": 65.31467170406071,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 15,
+          "initial_rmsd": 2.565904681368181,
+          "chematic_rmsd": 3.3088388866989633,
+          "rdkit_rmsd": 3.308838886546157,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.87670570287936,
+          "rdkit_energy": 61.87670570289732,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 16,
+          "initial_rmsd": 2.643458415495667,
+          "chematic_rmsd": 2.8024625589318415,
+          "rdkit_rmsd": 2.8024625745573384,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 62.163052429197904,
+          "rdkit_energy": 62.16305243183151,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 17,
+          "initial_rmsd": 1.334367925968267,
+          "chematic_rmsd": 1.5069955072333774,
+          "rdkit_rmsd": 1.5069955040364407,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 63.2030521214306,
+          "rdkit_energy": 63.20305213362353,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 18,
+          "initial_rmsd": 2.3435347371028197,
+          "chematic_rmsd": 2.205759303593827,
+          "rdkit_rmsd": 2.2057593037830516,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 61.16091465215166,
+          "rdkit_energy": 61.160914652315164,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        },
+        {
+          "cid": 19,
+          "initial_rmsd": 2.7306943718390313,
+          "chematic_rmsd": 2.7811123967507236,
+          "rdkit_rmsd": 2.781112397075032,
+          "chematic_status": 1,
+          "rdkit_status": 1,
+          "chematic_energy": 62.44877991839798,
+          "rdkit_energy": 62.44877995381801,
+          "stereo": [
+            {
+              "atoms": [],
+              "bonds": []
+            },
+            {
+              "atoms": [],
+              "bonds": []
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

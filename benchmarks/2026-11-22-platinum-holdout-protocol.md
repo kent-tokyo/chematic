@@ -1546,3 +1546,237 @@ stereo element, not solely the phosphorus or sulfur center. This selected,
 exposed sample is not a noninferiority result. The two-double-bond support has since been narrowed to
 the exact tested S(=N)(=O) and P(-)(=N)(=S) topologies and requires a further
 repeat on the final candidate.
+
+### Current macOS repeat on the 52 exposed records
+
+The corrected profile was repeated on macOS arm64 from source commit
+`63c053ce218dff9418971d570fea899e716f1630`, using a CPython 3.13 wheel with
+SHA-256 `a23175f9ef80635d7d568023fd2bfadca68abbf9e850ad4c2106305152dbb9fc`
+and RDKit 2026.09.2. The 52-record selection and reference hashes match the
+previous follow-up. With 20 candidates, 200 MMFF iterations, seed 42 and
+the bounded 400-iteration repair, chematic / RDKit recovered 38 / 40 records
+under the 1 Å, stereo and geometry screens. Chematic returned 981 candidates,
+with zero contradicted or unevaluable declared stereochemistry, and no
+candidates for two records. RDKit returned 1,016 candidates, with 18
+contradicted and 36 unevaluable declarations. This is a macOS development
+repeat on selected, previously exposed inputs, and does not establish general
+recovery or a paired change against the earlier Linux run.
+
+The raw result is
+`validation/results/cod-exposed-52-macos-63c053ce-corrected-2026-11-22.json.gz`.
+Its uncompressed SHA-256 is
+`a69441aa23d0e36b8f5b60619375dd257cce838a7b5eeb9f8e816bca08e34747`.
+
+For the four records where the engines' screened recovery differed, a
+shared-start diagnostic minimized each of 20 RDKit ETKDGv3 conformers with
+both MMFF94 optimizers. The number of minimized conformers within 1 Å was
+1 / 1, 1 / 1, 1 / 1 and 0 / 0 respectively for chematic / RDKit. This
+diagnostic checks RMSD without the full stereo and geometry screening and
+does not cover chematic-generated starting coordinates. Its raw per-conformer
+energies, statuses and RMSDs are in
+`validation/results/cod-exposed-52-macos-63c053ce-rdkit-start-minimizers-2026-11-22.json`.
+
+### Other exposed COD disagreements
+
+From the old Linux v4 fixed-count result, 103 records had screened recovery
+for exactly one engine. Forty-two were already in the 52-record selection
+above. The remaining 61 were selected from the audited scaffold split and
+relabeled development for diagnosis, without using current outcomes. The
+selection is `validation/results/cod-discordant-61-selection-2026-11-22.json`,
+SHA-256 `1fab3aca3294035b18bf9d18730a871f4108e8dfc7482c418a92c41ea75b8da2`.
+
+The same macOS wheel and corrected profile recovered 30 / 29 records for
+chematic / RDKit. Chematic produced 1,219 conformers with no contradicted or
+unevaluable declared stereo. RDKit produced 1,219, with no contradictions
+and 20 unevaluable. Fourteen records were recovered only by RDKit and 15
+only by chematic. These previously exposed, outcome-selected cases are for
+diagnosis and do not estimate population recovery. Raw output is
+`validation/results/cod-discordant-61-macos-63c053ce-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`ab2d6d316d0591137dde2d6ea0b3f987a804330d4c5e6d8c65aa71f7396d8638`.
+
+Seven of the 14 RDKit-only recoveries were examined using 20 common RDKit
+starting coordinates per molecule and each engine's MMFF94 optimizer.
+The numbers of final geometries within 1 Å agreed in every pair, respectively
+1, 3, 1, 5, 1, 3 and 1. These RMSD counts are not screened for stereo or
+geometry and do not address chematic-generated starts. The shared-start data
+are in `validation/results/cod-discordant-macos-63c053ce-rdkit-start-minimizers-2026-11-22.json`.
+
+The seven were also tested in both directions with corrected chematic and
+RDKit starting coordinates, and both MMFF optimizers. On chematic starts,
+neither optimizer produced a geometry within 1 Å for any of the seven. On
+RDKit starts, both optimizers produced at least one for all seven. The two
+optimizers also agreed on the number of matching final geometries per case.
+These counts are RMSD-only; the full per-conformer strict stereo results and
+optimizer statuses are recorded in
+`validation/results/cod-discordant-7-cross-start-macos-63c053ce-2026-11-22.json`.
+This selected set supports further embedding investigation; it does not
+establish that all recovery differences have the same cause.
+
+Changing the corrected-profile seed from 42 to 43 on these same 61 exposed
+records changed chematic recovery from 30 to 28, gaining 11 and losing 13.
+An offline combination of the first ten returned candidates from each run
+recovered 27, gaining nine and losing twelve relative to seed 42 alone.
+The combination is a candidate-count diagnostic and does not measure the
+time or failed attempts of a two-call implementation. The seed-43 raw result
+is `validation/results/cod-discordant-61-macos-63c053ce-seed43-2026-11-22.json.gz`,
+uncompressed SHA-256
+`00711c026fac1e29f0c49e3185d373f21f0fdf279e1cd4a150a4047df12dc329`.
+
+The compatibility profile, using the same 20-candidate seed-42 budget,
+recovered 32 records on the same 61 compared with 30 for corrected. It
+gained three and lost one, but returned 20 candidates with a declared-stereo
+failure or unknown under the strict verifier. This diagnostic profile also
+performs a separate unminimized embedding for measurement, so its recorded
+elapsed time is not directly comparable. It is not an accepted replacement
+for the stereo-checked corrected profile. Raw data are
+`validation/results/cod-discordant-61-macos-63c053ce-compatible-2026-11-22.json.gz`,
+uncompressed SHA-256
+`6a5ade41e6676d24c4a286e986ccbdaea8f088c783fa2b43f749324f1604a43a`.
+
+The 225-record macOS development comparison was repeated with the same
+`63c053ce` wheel, fallback profile, seed 42 and 20-candidate budget. Recovery
+was 161 / 163 for chematic / RDKit, with 13 records unsupported by RDKit.
+Chematic returned 4,160 conformers with no contradicted or unevaluable
+declared stereo. The chematic candidate counts, RMSD arrays and optimizer
+statuses, and RDKit RMSD arrays, all match the earlier macOS fallback run.
+These are exposed development results. Raw output is
+`validation/results/cod-development-225-macos-63c053ce-fallback-2026-11-22.json.gz`,
+uncompressed SHA-256
+`f46a825b1cafd0b5d6c1260831b1d158deb28c9fc53bd9ca8eacecd016a54a3f`.
+
+An experimental compatibility-gradient profile applies the same native
+stereo and final-gradient checks and 400-iteration nitrogen repair as the
+corrected profile. On the same 61 selected macOS development records, its
+recovery was 33 / 29 for chematic / RDKit. It gained three chematic recoveries
+and lost none versus corrected, with zero contradictions or unknowns in 1,219
+returned chematic conformers. RDKit RMSD arrays matched the preceding run.
+This is selected, exposed data and does not establish an independent gain.
+The experimental wheel was built from `63c053ce` with the compatibility-check
+changes in the working tree; SHA-256
+`0af4d69edbcc363e036e550d27a721c4f781d2ea00d3e1ce7cffde0a472e7507`.
+The `molecule.rs` and Python `identity.rs` source SHA-256 values were
+`4dd9b403c47585a465cdc8b3449c6452434f864f01851d8745029b012f8ffd63`
+and `856d1fd11ff704f18b999feb60616e4ba51501d843acdee39f43ada88a7ca81b`.
+The underlying scoring script records profile `corrected` because its wrapper
+routes that option to the experimental compatibility-check method. Raw data
+are `validation/results/cod-discordant-61-macos-compatible-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`e62dca37ef6191f9cfad6edef56f599ca9a9fda25af3a89051fa76dc578a131e`.
+On the separate 52 selected macOS records, the experimental profile recovered
+38 / 40 for chematic / RDKit, matching the corrected profile record for
+record. Chematic returned 981 candidates with no contradicted or unevaluable
+declared stereo. Raw data are
+`validation/results/cod-exposed-52-macos-compatible-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`fece6ec71c46c50ff4f4237d0120c12a2b32ec7a82dd46f298b5269253245487`.
+On all 225 macOS development records the checked compatibility profile
+recovered 161 / 163 for chematic / RDKit, the same totals as the corrected
+baseline. Four chematic recoveries were gained and four lost. It returned
+4,159 candidates with zero contradicted or unevaluable declared stereo;
+13 records were unsupported by RDKit. Raw data are
+`validation/results/cod-development-225-macos-compatible-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`b73444a5c5ef4c0ea42b38e7d54b93eb1f1827f60cbc1f2d6e454d5eeafd7c0e`.
+
+The same experimental macOS wheel was checked on common RDKit-generated
+coordinates for the 51 exposed first-COD force-field outliers. All 51 were
+comparable for MMFF94, MMFF94s and UFF. MMFF94 energy differences had p95
+`2.28e-13` and maximum `5.2531` kcal/mol; gradient-component differences had
+p95 `1.14e-13` and maximum `49.809` kcal/mol/Å. The only MMFF energy error
+over `1e-4` was the previously identified `WLHBTTYMQPYHBG-UHFFFAOYSA-N`
+ring-order case. UFF maximum energy and gradient-component differences were
+`4.55e-13` kcal/mol and `1.37e-7` kcal/mol/Å. Re-embedding can produce
+different coordinates across hosts. These selected exposed cases are not
+general force-field acceptance evidence. Raw data are
+`validation/results/cod-first-fields-macos-compatible-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`8d98cf918755a2b0af32c5f4eaa2334940456a0a9759d7316e2406c397d34dcb`.
+On the separate 57 exposed second-COD outliers, all 57 were comparable on
+this macOS run. The maximum MMFF94 energy and gradient-component differences
+were `2.26e-10` kcal/mol and `1.28e-6` kcal/mol/Å. For UFF they were
+`4.55e-13` kcal/mol and `1.20e-6` kcal/mol/Å. Sampled finite-difference
+errors remain large near singular geometries, as described above. Raw data are
+`validation/results/cod-second-fields-macos-compatible-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`0af50ee0f13d0d84e98676c61c91887e3e4c68b012f1de89d41d7d0cd6b29b42`.
+
+An offline candidate-order experiment used the first ten checked compatible
+and last ten corrected candidates for each record where both profiles
+returned all 20 candidates. Among 60 eligible selected disagreement records,
+recovery changed from 29 to 31, gaining two and losing none. Among 207
+eligible records from the separate 225-record development population,
+recovery changed from 160 to 161, gaining two and losing one. These counts
+exclude records without 20 candidates in either profile and are based on
+previously exposed data; they are hypothesis-generating only. A native mixed
+profile must be run independently on all records, with actual failure and
+timing behavior, before using these counts to evaluate it.
+
+The mixed implementation was built as a macOS arm64 CPython 3.13 wheel from
+`63c053ce` plus the recorded working-tree changes. Its wheel SHA-256 is
+`55ff3b6f14d01d7da5af6b00e35ded4ef2df03d22bfd7a4d803f2dc36f51f49b`;
+the `molecule.rs` and Python `identity.rs` SHA-256 values at build time were
+`57e8fa8a2086bd16a38f0f63440288a2bb8df9ad992f77945337cf4fbd4fe67b`
+and `3b6724883f5595f566bdc417d1ea528db1a445d090ddb6830cd71d39904e58cf`.
+On the 52 exposed records it recovered 38 / 40 for chematic / RDKit, matching
+the corrected profile per record. All 981 returned chematic candidates had
+evaluable and consistent declared stereo. This is development evidence.
+Raw data are `validation/results/cod-exposed-52-macos-mixed-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`8557ae233d3bc20429cf4abdc20188e26f764d92d353e66edaa9f4bca923383c`.
+On all 61 selected disagreement records, the actual mixed profile recovered
+32 / 29 for chematic / RDKit, gaining two chematic recoveries and losing none
+relative to corrected. It returned 1,219 candidates with zero contradicted or
+unevaluable declared stereo. RDKit RMSD arrays matched the corrected run.
+This selected sample is development evidence. Raw data are
+`validation/results/cod-discordant-61-macos-mixed-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`dc3092e93c8894b3c4e348a0d59bd54a3122edfbb958bbcb5ace1b73e3a10c0b`.
+
+### Proposed fresh COD evaluation
+
+Before examining any conformer results, select the next 12,000 SDF archive
+members in path-SHA-256 order after the original 12,000-member selection.
+Verify the archive and old selection identities and exclude every scaffold
+in the original COD sample and prepared PDB macrocycle sample, together with
+the known exposure manifests used by the previous COD split. Use RDKit
+2026.09.1 for scaffold assignment, retaining complete scaffold groups and the
+existing invalid-exclusion graph audit. The split and audit must be fixed
+before any candidate or reference conformer is generated. Previously unknown
+exposures cannot be excluded by this procedure.
+
+Before scoring the holdout, fix the candidate source, wheel hashes, engine
+settings, split and audit hashes. Compare on Linux and macOS separately against
+RDKit 2026.09.2 using up to 20 conformers, seed 42, MMFF94 with at most 200
+iterations, the same geometry and strict declared-stereo screens, and the
+symmetry-aware heavy-atom RMSD threshold of 1 Å. Count all selected holdout
+records in the primary denominator and report common-MMFF support and errors
+separately. For each platform report the paired 95% scaffold-cluster bootstrap
+interval with 10,000 resamples and seed 42. The fixed-count noninferiority
+criterion is an interval lower bound above −2 percentage points, alongside
+zero contradicted or unevaluable declared stereo among returned chematic
+conformers. Report convergence-required recovery and numerical force-field
+outliers separately. A time-budget run and the independent PDB macrocycle
+holdout remain separate gates. This protocol is prospective; the fresh sample
+has not been scored.
+
+The archive hash matched the original sample, and the next 12,000 members
+were selected with no path overlap with the original 12,000. The new SDF
+SHA-256 is `6e2f93fb05c8ff49aff24577aa62d3f04f6531b505e12a9f711c9b79cf3ba008`;
+the uncompressed selection manifest SHA-256 is
+`20f3d482d1078e22d54cd45580ca342ca89614ef927cfa269cf445c428a3ddd4`.
+The initial invalid-exclusion audit found six records across four scaffolds;
+all six were excluded before selecting 200 development and 2,000 holdout
+scaffold groups by the existing hash rule. The resulting split contains 213
+development and 2,102 holdout records, 4,848 known-scaffold exclusions,
+62 parse failures, six invalid-overlap exclusions and 4,769 unused records.
+Its uncompressed SHA-256 is
+`c9d185e075f83dacc48620d1b843727cbaf6729406aee0568fada9e30bfbff9d`.
+No eligible scaffold intersects the old COD or prepared macrocycle sets, and
+development and holdout scaffolds are disjoint. The final invalid-exclusion
+audit has no overlaps and SHA-256
+`03111f28aa56e26a0e895d9f55128c2e29fce6060502fbaa123f6f4f9c9e3f63`.
+The sample manifest, prior-scaffold inputs, selected split and both audits
+are stored under `validation/results/cod-fresh-*` and
+`validation/results/{cod,macrocycle}-prior-scaffolds-*`. No conformer
+outcome from this sample has been inspected.

@@ -471,3 +471,43 @@ not independent acceptance evidence. The raw result is
 `validation/results/macrocycle-pdb-macos-fallback-time-2s-2026-11-22.json`,
 SHA-256 `ebbc4e42084ab81a66e9aa82b9ab276e8f01b3fb442832dc827592422d681a5b`,
 with recovery and strict-stereo summaries alongside it.
+
+For the exposed development record `8bi2__Ligand_peptide_QR7_A_701`, which
+RDKit alone recovered in the earlier macOS 32-record fallback run, a
+shared-start diagnostic used source `63c053ce218dff9418971d570fea899e716f1630`
+and the macOS CPython 3.13 wheel with SHA-256
+`a23175f9ef80635d7d568023fd2bfadca68abbf9e850ad4c2106305152dbb9fc`.
+With 20 initial structures per engine and 200 MMFF94 iterations, neither
+optimizer reached 1 Å from a chematic start, while each reached it once from
+an RDKit start. These counts are RMSD-only. The per-conformer statuses,
+energies and strict stereo checks are in
+`validation/results/macrocycle-8bi2-cross-start-macos-63c053ce-2026-11-22.json`.
+With the same seed and candidate count, disabling macrocycle torsions alone
+or macrocycle 1–4 bounds alone produced no chematic-start geometry within
+1 Å after either optimizer. The minimum RMSDs after chematic minimization
+were 1.156 Å with both enabled, 1.183 Å without macrocycle torsions and
+1.029 Å without macrocycle 1–4 bounds. These one-record exploratory results
+are stored as `macrocycle-8bi2-no-torsions-macos-63c053ce-2026-11-22.json`
+and `macrocycle-8bi2-no-14-macos-63c053ce-2026-11-22.json` in
+`validation/results/` and do not justify a default change.
+
+The 32-record macOS development run was repeated with the `63c053ce` wheel
+and corrected profile. Recovery was 3 / 4 for chematic / RDKit; all 605 / 606
+returned candidates had evaluable, consistent declared stereo. Candidate
+counts and RMSD arrays for both engines matched the earlier macOS fallback
+run. This exposed sample is not holdout evidence. The raw result is
+`validation/results/macrocycle-pdb-macos-development-63c053ce-corrected-32-2026-11-22.json.gz`,
+uncompressed SHA-256
+`c01ce49a4e83b911cfd23e459d5cbcb0d4f35d68a18239ea01f7fde776611a10`.
+
+The experimental checked compatibility-gradient wheel
+`0af4d69edbcc363e036e550d27a721c4f781d2ea00d3e1ce7cffde0a472e7507`
+was also evaluated on the same 32 macOS development records. It recovered
+3 / 4 for chematic / RDKit, with the same per-record recovery outcomes as
+the corrected baseline. All 605 / 606 candidates had consistent and
+evaluable declared stereo. The scorer's `corrected` option is routed to the
+experimental method by its wrapper. This sample is exposed and cannot
+establish macrocycle noninferiority. Raw output is
+`validation/results/macrocycle-pdb-macos-development-compatible-checked-32-2026-11-22.json.gz`,
+uncompressed SHA-256
+`1f6182c019c41a2e04e00e10d4f33916fd0cbd150814dc93a8715f6ae6ba0022`.

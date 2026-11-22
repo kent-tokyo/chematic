@@ -1,0 +1,10 @@
+{
+  "eligible_scaffolds": 2200,
+  "overlap_counts": {},
+  "overlaps": [],
+  "source_sha256": "6e2f93fb05c8ff49aff24577aa62d3f04f6531b505e12a9f711c9b79cf3ba008",
+  "split_sha256": "c9d185e075f83dacc48620d1b843727cbaf6729406aee0568fada9e30bfbff9d",
+  "rdkit_version": "2026.09.1",
+  "invalid_exclusion_count": 8,
+  "rule": "Match eligible scaffold as an atom-number graph substructure of each unsanitized exclusion, ignoring bond orders; any match requires exclusion before scoring."
+}

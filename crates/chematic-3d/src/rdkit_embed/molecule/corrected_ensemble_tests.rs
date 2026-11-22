@@ -509,6 +509,60 @@ fn near_linear_mmff_plane_gradient_matches_energy_difference() {
 }
 
 #[test]
+fn compatible_checked_ensemble_preserves_declared_stereo() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let conformers =
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 5, &options, 200, 0).unwrap();
+    assert!(!conformers.is_empty());
+    assert!(conformers.iter().all(|candidate| {
+        candidate.energy.is_finite() && stereo_safe_retry(&molecule, &candidate.coords)
+    }));
+    assert!(
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn mixed_checked_uses_disjoint_seed_ranges_and_preserves_stereo() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CS(=O)(=O)NCC").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let compatible =
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 4, &options, 200, 0).unwrap();
+    let corrected =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 4, &options, 200, 0).unwrap();
+    let mixed =
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 4, &options, 200, 0).unwrap();
+    assert_eq!(compatible.len(), 4);
+    assert_eq!(corrected.len(), 4);
+    assert_eq!(mixed.len(), 4);
+    for index in 0..4 {
+        let expected = if index < 2 {
+            &compatible[index]
+        } else {
+            &corrected[index]
+        };
+        assert_eq!(mixed[index].coords, expected.coords);
+        assert_eq!(mixed[index].status, expected.status);
+        assert_eq!(mixed[index].energy, expected.energy);
+        assert!(stereo_safe_retry(&molecule, &mixed[index].coords));
+    }
+    let odd =
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 3, &options, 200, 0).unwrap();
+    assert_eq!(odd.len(), 3);
+    assert_eq!(odd[0].coords, compatible[0].coords);
+    assert_eq!(odd[1].coords, corrected[1].coords);
+    assert_eq!(odd[2].coords, corrected[2].coords);
+    assert!(
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
 fn corrected_fallback_keeps_successful_corrected_ensemble() {
     let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
     let options = RdkitEmbedOptions::default();

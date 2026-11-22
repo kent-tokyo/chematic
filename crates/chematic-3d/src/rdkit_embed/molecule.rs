@@ -563,6 +563,57 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected_repair(
     Ok(conformers)
 }
 
+/// Generate a compatibility-gradient ensemble with the same stereo, gradient,
+/// and optional near-linear nitrogen checks as the corrected profile.
+pub fn etkdg_embed_multiple_confs_mmff_compatible_checked(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let embedded = embed_multiple_confs_with_mode(mh, num_confs, o, false)?;
+    let mut conformers = optimize_checked_ensemble(mh, embedded, max_iters)?;
+    for conformer in &mut conformers {
+        repair_linear_nitrogen(mh, conformer, retry_iters);
+    }
+    Ok(conformers)
+}
+
+/// Split one ensemble between compatibility and corrected torsion gradients.
+/// Each attempt uses its original position in the reproducible seed schedule.
+pub fn etkdg_embed_multiple_confs_mmff_mixed_checked(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    validate_options(mh, o)?;
+    if num_confs == 0 {
+        return Ok(Vec::new());
+    }
+    let prepared = match prepare_fragments(mh, o) {
+        Ok(prepared) => prepared,
+        Err(RdkitEmbedError::Failed) => return Ok(Vec::new()),
+        Err(error) => return Err(error.into()),
+    };
+    let first_count = num_confs / 2;
+    let mut embedded = embed_prepared_multiple_confs(&prepared, first_count, 0, o, false)?;
+    embedded.extend(embed_prepared_multiple_confs(
+        &prepared,
+        num_confs - first_count,
+        first_count,
+        o,
+        true,
+    )?);
+    let mut conformers = optimize_checked_ensemble(mh, embedded, max_iters)?;
+    for conformer in &mut conformers {
+        repair_linear_nitrogen(mh, conformer, retry_iters);
+    }
+    Ok(conformers)
+}
+
 /// Generate a stereo-checked corrected ensemble, with a compatibility-gradient
 /// fallback if the corrected ensemble yields no usable candidates. The fallback
 /// has the same embedding attempt and minimization limits, so the worst-case

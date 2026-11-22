@@ -155,6 +155,22 @@ def test_corrected_ensemble_uses_one_batch_and_preserves_default_molecule_behavi
     assert corrected_raw[0][2] != compatible_raw[0][2]
 
 
+def test_compatible_checked_ensemble_is_deterministic_and_handles_zero():
+    mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
+    conformers = mol.etkdg_embed_multiple_confs_mmff_compatible_checked(3, random_seed=42)
+    assert conformers
+    assert conformers == mol.etkdg_embed_multiple_confs_mmff_compatible_checked(3, random_seed=42)
+    assert mol.etkdg_embed_multiple_confs_mmff_compatible_checked(0) == []
+
+
+def test_mixed_checked_ensemble_is_deterministic_and_handles_zero():
+    mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
+    conformers = mol.etkdg_embed_multiple_confs_mmff_mixed_checked(3, random_seed=42)
+    assert conformers
+    assert conformers == mol.etkdg_embed_multiple_confs_mmff_mixed_checked(3, random_seed=42)
+    assert mol.etkdg_embed_multiple_confs_mmff_mixed_checked(0) == []
+
+
 def test_corrected_fallback_preserves_successful_corrected_ensemble():
     mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
     corrected = mol.etkdg_embed_multiple_confs_mmff_corrected(2, random_seed=42)

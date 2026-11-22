@@ -27,14 +27,17 @@ def main():
     parser.add_argument("--sdf", type=Path, required=True)
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--sample-size", type=int, default=12000)
+    parser.add_argument("--offset", type=int, default=0,
+                        help="skip this many members in path-hash order")
     args = parser.parse_args()
-    if args.sample_size < 1:
-        parser.error("sample-size must be positive")
+    if args.sample_size < 1 or args.offset < 0:
+        parser.error("sample-size must be positive and offset nonnegative")
     with tarfile.open(args.archive, mode="r:") as archive:
         candidates = (member for member in archive if member.isfile() and member.name.endswith(".sdf"))
-        selected = heapq.nsmallest(args.sample_size, candidates, key=lambda m: (hashlib.sha256(m.name.encode()).digest(), m.name))
-        if len(selected) != args.sample_size:
+        ranked = heapq.nsmallest(args.offset + args.sample_size, candidates, key=lambda m: (hashlib.sha256(m.name.encode()).digest(), m.name))
+        if len(ranked) != args.offset + args.sample_size:
             raise ValueError("archive contains fewer SDF members than requested")
+        selected = ranked[args.offset:]
         records, rejected = [], []
         with args.sdf.open("wb") as out:
             for member in selected:
@@ -48,6 +51,9 @@ def main():
                 out.write(name.encode("ascii") + b"\n" + remainder.rstrip() + b"\n")
                 records.append(member.name)
     result = {"archive_sha256": digest_file(args.archive), "sample_sdf_sha256": digest_file(args.sdf), "rule": "lowest SHA256 of exact SDF member path, ties by path; preserve single-record structure blocks", "selected_members": len(selected), "written_records": len(records), "rejected_members": rejected, "member_paths": records}
+    if args.offset:
+        result["offset"] = args.offset
+        result["rule"] = "SHA256 of exact SDF member path, ties by path; skip offset then preserve single-record structure blocks"
     args.manifest.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(f"selected {len(selected)}, written {len(records)}, rejected {len(rejected)}")
 
