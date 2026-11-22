@@ -459,3 +459,15 @@ acceptance evidence. The raw result is
 `validation/results/macrocycle-pdb-linux-fallback-time-2s-2026-11-22.json`,
 SHA-256 `3b19f32fbebd868b1d6b609e72e2933d10a594ec34c54edd3ca5e134d6b7aacd`,
 with recovery and strict-stereo summaries alongside it.
+
+The [macOS 2-second-deadline repeat](https://github.com/kent-tokyo/chematic/actions/runs/44995558202)
+recovered 3 / 4 references, or 2 / 2 using only converged candidates. The
+median number of accepted candidates was 2 / 2, with 196 / 172 total.
+Neither engine had contradicted or unevaluable declared stereo; each had nine
+records with no candidate before the deadline. Calls were not interrupted:
+median actual elapsed time was 2.256 / 2.313 seconds and maxima were
+5.110 / 8.151 seconds; 27 / 29 records overran. These 32 exposed records are
+not independent acceptance evidence. The raw result is
+`validation/results/macrocycle-pdb-macos-fallback-time-2s-2026-11-22.json`,
+SHA-256 `ebbc4e42084ab81a66e9aa82b9ab276e8f01b3fb442832dc827592422d681a5b`,
+with recovery and strict-stereo summaries alongside it.
