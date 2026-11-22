@@ -1,7 +1,7 @@
 name: MMFF local angle development
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/mmff-local-angle-development.yml'
 permissions:

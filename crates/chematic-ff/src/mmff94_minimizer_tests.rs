@@ -757,7 +757,7 @@ mod tests {
                 "each 4-ring atom has exactly 2 ring neighbors"
             );
             let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
-            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+            if is_angle_in_ring_of_size_3_or_4(&mol, i, j, k) != 4 {
                 continue;
             }
             let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
@@ -793,7 +793,7 @@ mod tests {
                 "each 4-ring atom has exactly 2 ring neighbors"
             );
             let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
-            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+            if is_angle_in_ring_of_size_3_or_4(&mol, i, j, k) != 4 {
                 continue;
             }
             let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
