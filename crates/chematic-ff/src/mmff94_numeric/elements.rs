@@ -79,6 +79,7 @@ fn assign_c_type(
             Ok(2) // C=C vinylic / generic sp2 carbon
         }
         2 => Ok(4), // CSP: acetylenic or allenic carbon
+        1 => Ok(60), // C%-: one-neighbor carbon, including isonitrile
         _ => Ok(1),
     }
 }
