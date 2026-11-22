@@ -28,3 +28,31 @@ fn atom_chirality_negation_complements_positive_constraint_after_mapping() {
         assert_eq!(!no_parity.is_empty(), no, "{smiles}");
     }
 }
+
+#[test]
+fn chirality_disjunction_accepts_either_tetrahedral_orientation() {
+    let either = parse_smarts("F[C;@,@@](Cl)(Br)I").unwrap();
+    let config = MatchConfig {
+        use_chirality: true,
+        ..Default::default()
+    };
+    for (smiles, expected) in [
+        ("F[C@](Cl)(Br)I", true),
+        ("F[C@@](Cl)(Br)I", true),
+        ("FC(Cl)(Br)I", false),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        assert_eq!(
+            !find_matches_with_config(&either, &mol, &config).is_empty(),
+            expected,
+            "{smiles}"
+        );
+        let parity = RdkitParityConfig {
+            base: config.clone(),
+            ..Default::default()
+        };
+        let (matches, exhausted) = find_matches_rdkit_parity(&either, &mol, &parity).unwrap();
+        assert!(!exhausted);
+        assert_eq!(!matches.is_empty(), expected, "{smiles}");
+    }
+}
