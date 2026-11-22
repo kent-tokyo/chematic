@@ -2459,7 +2459,20 @@ workflow difference involving unavailable MMFF parameters, not evidence
 that RDKit successfully optimized those molecules. This population was
 previously exposed to common-coordinate force-field evaluation; the timed
 outcomes were assessed prospectively, and earlier exposure remains unknown.
-The official CI merge and the macOS run remain pending.
+The official Linux CI merge subsequently succeeded. Its engine and
+scaffold-bootstrap summaries reproduce the counts and interval above.
+
+The eight macOS shards from the same run were verified against their pinned
+manifest and merged locally while the macOS CI merge was queued. On 3,579
+molecules, chematic recovered 1,883 references and RDKit 1,736; the paired
+scaffold-bootstrap 95% interval for the difference was +2.99 to +5.22
+percentage points. All 18,987 accepted chematic conformers passed the strict
+declared-stereo check. The same 240 chematic generation failures consisted
+of 191 boron and 49 selenium MMFF type-assignment errors. RDKit accepted
+at least one candidate for 201 of those records. These results use the
+previously exposed population described above. The acceptance deadline does
+not interrupt an attempt: median elapsed times were 0.220 and 0.232 seconds,
+and the maxima were 320.94 and 294.20 seconds, for chematic and RDKit.
 
 The post-hoc macOS COD timed rerun (45063672297), after independent
 engine error isolation, completed all four scoring shards. Independent
