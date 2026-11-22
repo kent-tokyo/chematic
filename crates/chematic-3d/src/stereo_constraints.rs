@@ -566,17 +566,26 @@ fn tetrahedral_constraint_for(
         )
     });
     // Preserve the existing one-double-bond phosphorus case and admit the
-    // observed two-double-bond P(-) and neutral S geometries. Their four
+    // observed P(-)(=N)(=S) and neutral S(=N)(=O) geometries. Their four
     // actual neighbor positions define tetrahedral parity.
     let double_bonds = mol
         .neighbors(idx)
         .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
         .count();
+    let has_double_to = |element| {
+        mol.neighbors(idx).any(|(n, b)| {
+            mol.bond(b).order == BondOrder::Double && mol.atom(n).element.atomic_number() == element
+        })
+    };
+    let supported_four_coordinate = match (atom.element.atomic_number(), atom.charge, double_bonds)
+    {
+        (15, _, 1) => true,
+        (15, -1, 2) => has_double_to(7) && has_double_to(16),
+        (16, 0, 2) => has_double_to(7) && has_double_to(8),
+        _ => false,
+    };
     let four_coordinate_ps = mol.neighbors(idx).count() == 4
-        && matches!(
-            (atom.element.atomic_number(), atom.charge, double_bonds),
-            (15, _, 1) | (15, -1, 2) | (16, 0, 2)
-        )
+        && supported_four_coordinate
         && mol.neighbors(idx).all(|(_, b)| {
             matches!(
                 mol.bond(b).order,

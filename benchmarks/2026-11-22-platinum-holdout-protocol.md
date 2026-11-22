@@ -1508,8 +1508,7 @@ These reports identify a verifier coverage gap on RDKit geometries; they do
 not establish why each chematic embedding attempt failed.
 
 The verifier was then extended only for four-neighbor phosphorus with one
-double bond (existing behavior), four-neighbor P(-) or neutral S with two
-double bonds, three-neighbor neutral S with one S=O or S=N bond, and
+double bond (existing behavior), four-neighbor P(-)(=N)(=S) or neutral S(=N)(=O), three-neighbor neutral S with one S=O or S=N bond, and
 three-neighbor S(+) with single bonds. Unsupported non-tetrahedral geometry
 remains unevaluable. The [cross-platform development tests](https://github.com/kent-tokyo/chematic/actions/runs/44997866129)
 checked 17 externally satisfied RDKit geometries from the four exposed cases
@@ -1521,3 +1520,23 @@ corrected-ensemble tests. A neutral four-coordinate sulfur radical outside the
 specified topology remains unevaluable. These fixtures demonstrate bounded
 verifier behavior, not general sulfur or phosphorus stereochemistry parity;
 wheels and a fresh exposed-case repeat are needed to assess generated candidates.
+
+A [follow-up with the first phosphorus/sulfur verifier candidate](https://github.com/kent-tokyo/chematic/actions/runs/44998708441)
+used the same 52 exposed records, the fallback profile and a Linux wheel built
+from merge `5020f56de0f7bd03e4fcf87f46bab09b4d5956f6` (SHA-256
+`e21d849fbac5795bccf6d99d35242a6e698639fdb2a2cf3bac78863a5d023b63`).
+The number of zero-candidate records fell from seven to three, with 980
+chematic and 1,016 RDKit candidates. Chematic / RDKit recovery rose from
+36 / 40 to 39 / 40, while no chematic candidate had contradicted or
+unevaluable declared stereo. Exactly four chematic RMSD arrays changed: the
+four sulfur/phosphorus records previously diagnosed as unevaluable; three of
+those four were within 1 Å of their references. All RDKit RMSD arrays matched
+the previous run. The three remaining zero-candidate cases declare
+square-planar, trigonal-bipyramidal or degenerate double-bond stereo. The raw
+result is `validation/results/cod-exposed-ps-linux-fallback-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`62db0ce8ca010e418182005c7640cdf9bb7da97335ee70cd201fdfe3bf9ad4ff`;
+summary files are alongside it. This selected, exposed sample is not a
+noninferiority result. The two-double-bond support has since been narrowed to
+the exact tested S(=N)(=O) and P(-)(=N)(=S) topologies and requires a further
+repeat on the final candidate.
