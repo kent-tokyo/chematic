@@ -37,7 +37,7 @@ fn aromatic_substituents_and_rings() {
                     let height = coords.get(outside[0]).sub(&p).dot(&normal).abs();
                     assert!(height < 0.05, "{smiles}: height {height}");
                     for n in ring {
-                        let angle = get_bond_angle_deg(&coords, n, center, outside[0]);
+                        let angle = get_bond_angle_deg(coords, n, center, outside[0]);
                         assert!((angle - 120.0).abs() < 5.0, "{smiles}: {angle}");
                     }
                 }
@@ -79,5 +79,15 @@ fn minimized_water_and_methane_bonds() {
                 assert!((distance - expected).abs() < 0.05, "{smiles}: {distance}");
             }
         }
+    }
+}
+
+#[test]
+fn biaryl_bond_is_in_plane_at_both_rings() {
+    let mol = chematic_smiles::parse("c1ccccc1-c2ccccc2").unwrap();
+    let coords = generate_coords(&mol);
+    for (a, center, b) in [(4, 5, 6), (0, 5, 6), (5, 6, 7), (5, 6, 11)] {
+        let angle = get_bond_angle_deg(&coords, AtomIdx(a), AtomIdx(center), AtomIdx(b));
+        assert!((angle - 120.0).abs() < 5.0, "{a}-{center}-{b}: {angle}");
     }
 }
