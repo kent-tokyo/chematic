@@ -179,3 +179,25 @@ fn refuses_incomplete_or_nonfinite_geometry_without_partial_output() {
         }
     }
 }
+
+#[test]
+fn refused_cjson_values_report_actionable_indices_and_values() {
+    let mol = pair(B::Zero);
+    let error = write_cjson_checked(&mol, &[]).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "CJSON: cannot preserve bond order Zero at bond 0"
+    );
+
+    let mol = pair(B::Single);
+    let error = write_cjson_checked(&mol, &[(0., 0., 0.)]).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "CJSON: expected 2 coordinate rows or none, got 1"
+    );
+    let error = write_cjson_checked(&mol, &[(0., 0., 0.), (0., f64::NAN, 0.)]).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "CJSON: nonfinite coordinate at atom 1, axis 1"
+    );
+}
