@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let candidates = etkdg_embed_multiple_confs_corrected(&mol, 20, &RdkitEmbedOptions::default())?;
     let mut rows = Vec::new();
     if let Some(first) = candidates.first() {
-        let field = RdkitMmffField::new(&mol, first, 100.0, true)?;
+        let field = RdkitMmffField::new(&mol, first, 100.0, true).map_err(|e| e.to_string())?;
         for (index, original) in candidates.iter().enumerate() {
             let mut optimized = original.clone();
             let result = field.optimize_detailed(optimized.as_flattened_mut(), 200);
