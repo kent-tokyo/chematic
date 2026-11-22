@@ -1977,6 +1977,8 @@ Raw macrocycle results and summary are
 `validation/results/macrocycle-holdout-macos-fields-summary-2026-11-22.json`;
 the uncompressed result SHA-256 is
 `346a684dce181bc1c1e82623e94e061e2e458a2e4193026c60692dfda6c7a88b`.
+The macOS macrocycle merge job in run 45030248656 subsequently succeeded;
+its raw result and summary are byte-identical to the locally verified merge.
 
 The exposed UFF outlier was reproduced on separately generated macOS
 coordinates: RDKit energy was 401.4506 kcal/mol and the prior chematic energy
