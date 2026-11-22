@@ -349,8 +349,17 @@ fn mmff_torsion_terms(
             })
     };
     let sp2_or_sp3 = |atom: usize| {
-        matches!(
-            chematic_smarts::rdkit_hybridization(view, AtomIdx(atom as u32)),
+        let idx = AtomIdx(atom as u32);
+        // RDKit treats these stereo-tagged atoms as SP2D, SP3D or SP3D2,
+        // none of which is eligible as a central MMFF torsion atom.
+        !matches!(
+            view.atom(idx).chirality,
+            chematic_core::Chirality::SquarePlanar(_)
+                | chematic_core::Chirality::SquarePlanarUnnumbered
+                | chematic_core::Chirality::TrigonalBipyramidal(_)
+                | chematic_core::Chirality::Octahedral(_)
+        ) && matches!(
+            chematic_smarts::rdkit_hybridization(view, idx),
             Some(2) | Some(3)
         )
     };

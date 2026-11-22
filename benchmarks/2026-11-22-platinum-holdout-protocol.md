@@ -1242,3 +1242,22 @@ general or independent guarantee. Raw data:
 `validation/results/cod-second-fields-hybrid-development-2026-11-22.json.gz`,
 uncompressed SHA-256
 `463ce55606ff29af018c86452d7a80fabe06b2bc5bb1d0f2ae4d12fc9f29c311`.
+
+The next MMFF aromatic-typing candidate enumerates relevant cycles, with the
+previous SSSR implementation retained as a fallback above the 10,000-cycle
+limit. This is not a reproduction of every RDKit ring ordering. The
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44982865443)
+passed the force-field library and previous targeted tests, and all eight
+previously exposed ring-typing outliers matched RDKit MMFF94 energies and full
+gradients on the runner's shared coordinates. Its tested merge commit was
+`12ca0abae3040563d503c7e13a059e8c91a808cc`; the Linux wheel SHA-256 was
+`2b5cd7a9c7766b6e9ccc97e52c4522c7aa6f85c5476ac3f4a283f048f5af1a6e`.
+Among 51 first-split selected cases, one MMFF94 energy error exceeded 1e-4
+and one gradient-component error exceeded 1. Among 56 successfully embedded
+of 57 second-split selected cases, the counts were two and one respectively;
+one embedded in RDKit for the remaining case. These exposed, selected sets
+are development checks, not independent acceptance tests. Some sampled
+finite-difference errors also remain large and require investigation. The
+complete runner outputs are retained in
+`validation/results/cod-first-fields-relevant-development-2026-11-22.json.gz`
+and `validation/results/cod-second-fields-relevant-development-2026-11-22.json.gz`.

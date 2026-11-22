@@ -1,7 +1,7 @@
 name: UFF non-tetrahedral development
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/uff-nontetrahedral-development.yml'
 permissions:
