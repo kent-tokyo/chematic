@@ -12,6 +12,7 @@ fn aromatic_substituents_and_rings() {
         "Oc1ccccc1",
         "c1ccccc1O",
         "c1ccccc1",
+        "CC(=O)Oc1ccccc1C(=O)O",
     ] {
         let heavy = chematic_smiles::parse(smiles).unwrap();
         let explicit = chematic_chem::add_hydrogens(&heavy);
