@@ -1974,6 +1974,10 @@ The source candidate is commit `261e520ab4d0fce681b23c168bee0888c2103b0a`.
 Pin and verify each platform's wheel hash before evaluating this set. Use
 the same common-coordinate field procedure and diagnostic thresholds above,
 and report all selected records and unsupported or failed cases separately.
+The Linux wheel built from the fixed candidate in run 45032082181 has SHA-256
+`cb9d6b6df61db6b6f4abb3326f315f122ceb80afdc9ef2de909800c689dbeba6`;
+its source-commit file and wheel bytes were checked. The macOS wheel is
+being prepared separately and its hash is not yet fixed.
 
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
