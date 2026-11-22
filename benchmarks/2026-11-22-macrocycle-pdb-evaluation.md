@@ -444,3 +444,18 @@ uncompressed SHA-256
 recovery and strict-stereo summaries are alongside it. The Linux and macOS
 hosts can produce different coordinates; this is an exposed development
 comparison, not a platform-independent recovery guarantee.
+
+In a [separate Linux 2-second-deadline development comparison](https://github.com/kent-tokyo/chematic/actions/runs/44995216291),
+recovery was 2 / 4 (chematic / RDKit) across the same 32 records. The median
+number of candidates completed before the deadline was 2 / 1. The engines
+returned 185 / 164 candidates, with zero contradicted or unevaluable declared
+stereo, and seven / eleven records had none before the deadline. Calls were not
+interrupted: median actual elapsed time was 2.257 / 2.251 seconds and maxima
+were 5.122 / 7.193 seconds; 27 / 29 records overran. Thus this compares
+acceptance deadlines, not hard wall-clock limits. Returned unfinished
+candidates were eligible for the main recovery measure; restricting recovery
+to converged candidates gave 2 / 2. The exposed sample is not independent
+acceptance evidence. The raw result is
+`validation/results/macrocycle-pdb-linux-fallback-time-2s-2026-11-22.json`,
+SHA-256 `3b19f32fbebd868b1d6b609e72e2933d10a594ec34c54edd3ca5e134d6b7aacd`,
+with recovery and strict-stereo summaries alongside it.
