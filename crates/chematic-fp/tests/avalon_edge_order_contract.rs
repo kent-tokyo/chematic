@@ -58,3 +58,47 @@ fn shortcut_labels_affect_fingerprint_only_when_enabled() {
         avalon_fp_bytes(&molecule("Me"), 2048, without_labels)
     );
 }
+
+#[test]
+fn distinct_cyclic_graphs_keep_fingerprints_when_bond_rows_are_reordered() {
+    let atom = AvalonAtom {
+        symbol: "C".into(),
+        charge: 0,
+        radical: 0,
+        atext: String::new(),
+    };
+    let cases: &[&[[i32; 2]]] = &[
+        &[[1, 2], [2, 3], [3, 1]],
+        &[[1, 2], [2, 3], [3, 4], [4, 1], [2, 5], [5, 6], [6, 3]],
+        &[[1, 2], [2, 3], [3, 1], [4, 5], [5, 6], [6, 4]],
+        &[[1, 2], [2, 3], [3, 4], [4, 1], [1, 5], [5, 6], [6, 3]],
+        &[
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 5],
+            [5, 1],
+            [2, 6],
+            [6, 7],
+            [7, 4],
+        ],
+    ];
+    for edges in cases {
+        let count = edges.iter().flatten().copied().max().unwrap() as usize;
+        let mut molecule = AvalonMolecule {
+            atoms: vec![atom.clone(); count],
+            bonds: edges
+                .iter()
+                .copied()
+                .map(|atoms| AvalonBond {
+                    atoms,
+                    bond_type: 1,
+                })
+                .collect(),
+        };
+        let before = avalon_fp_bytes(&molecule, 512, RDKIT_AVALON_DEFAULT_BIT_FLAGS);
+        molecule.bonds.reverse();
+        let after = avalon_fp_bytes(&molecule, 512, RDKIT_AVALON_DEFAULT_BIT_FLAGS);
+        assert_eq!(before, after, "{edges:?}");
+    }
+}
