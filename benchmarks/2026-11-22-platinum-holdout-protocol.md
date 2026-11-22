@@ -1098,3 +1098,21 @@ merge commit was `86fe06426ec53651c1f584e64f0e9d5d3bbbe563` and results are
 `validation/results/mmff-cage-angle-development-2026-11-22.json`. This is a
 targeted development result; the fallback, performance cost, broader corpus,
 macOS and independent holdout have not been validated for this change.
+
+The [v8/v9 constructor microbenchmark](https://github.com/kent-tokyo/chematic/actions/runs/44977893135)
+ran on one Linux runner using verified source-built wheels and synthetic fixed
+coordinates for 212 previously exposed COD development records. Four separate
+processes ran in v8–v9–v9–v8 order; each performed a warm-up then seven timed
+field constructions per molecule. No construction errors occurred. Pooling
+repeats within each version, the median per-molecule v9/v8 ratio was 1.060,
+and its p95 was 1.114. The sums of per-molecule median times were 86.25 ms
+(v8) and 91.51 ms (v9). The run is short, includes runtime noise, and measures
+warm repeated construction, not cold startup or end-to-end conformer speed.
+Results are `validation/results/mmff-construction-v8-v9-development-2026-11-22.json.gz`.
+The v9 Linux wheel SHA-256 was
+`bffb1cd496eef80f842ad26e9c036ba7cd46075204aa99374d1909a3a1642002`;
+it was built from the already tested merge commit
+`86fe06426ec53651c1f584e64f0e9d5d3bbbe563` (crates tree
+`fe6e1e1a7631d81e847e4be0c019d6f571a9834b`). The macOS wheel also built;
+its local download could not be completed because the host disk was full.
+The 225-record v9 development conformer evaluation remains running.
