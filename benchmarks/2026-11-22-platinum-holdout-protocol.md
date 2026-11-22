@@ -578,7 +578,14 @@ implementation retained a P/As/Sb/Bi inversion-gradient sign from RDKit
 2026.03.2. A subsequent source change updates the sign and tests against
 2026.09.2 plus numerical derivatives. These three exposed structures are
 development diagnostics, not fresh holdout evidence; the change is not in the
-wheel currently being scored on the second COD holdout.
+wheel currently being scored on the second COD holdout. The combined
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44965076304)
+passed the UFF contract and boundary tests, then compared those three
+structures against RDKit 2026.09.2. The maximum energy and gradient differences
+were zero on that runner; the largest phosphorus finite-difference discrepancy
+was 3.62e−8 kcal/mol/Å. These are three exposed development cases, not a
+general UFF guarantee. Results are in
+`validation/results/uff-inversion-development-2026-11-22.json`.
 
 ## Second COD scaffold split for the silicon-corrected candidate
 
@@ -735,6 +742,20 @@ The result is retained in
 `validation/results/cod-zero-candidates-diagnostic-2026-11-22.json`.
 The subsequent phosphorus verifier change is a separate development
 candidate and is not part of the frozen-wheel holdout evaluation below.
+On the same combined Linux development wheel, the two phosphorus-containing
+records that previously returned no candidate returned 20 each. RDKit found
+no specified-stereo violations among those 40 candidates; 11 and 20,
+respectively, had unfinished status. The results are in
+`validation/results/phosphoryl-candidate-development-2026-11-22.json`.
+The sulfur cases remain outside this change.
+
+The phosphorus and UFF fixes were selected from already-exposed development
+inputs and the first COD evaluation, before inspecting any conformer scores
+from the running second COD holdout. A new candidate must be built from the
+tested source, fingerprinted on both platforms, and checked again on all 225
+development inputs before any prospective follow-up on that holdout. Any
+such follow-up is related to the already-running v4 assessment and must report
+the complete set of candidate results, rather than select a favorable one.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
