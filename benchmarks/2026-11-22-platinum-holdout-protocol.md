@@ -2179,3 +2179,21 @@ merged result and summary recorded above. The macOS CI merge remains queued.
 The macOS CI merge job in run `45035566273` subsequently succeeded. Its
 `fields.json` and `summary.json` are byte-identical to the locally verified
 macOS merged result and summary recorded above.
+
+### Interrupted Linux COD fixed-count shard recovery
+
+The Linux COD fixed-count shard 3 from run `45026013999` was cancelled after
+approximately 300 minutes. Its uploaded checkpoint has SHA-256
+`04d98b442ab03b276a81d41b6427583a0f037f18578fd38ec47c1f8439139ec2` and
+contains the first 234 of the shard's 525 records in increasing source-index
+order. The checkpoint is incomplete and cannot be treated as a sealed shard.
+
+The recovery workflow keeps those rows, derives an audited subset containing
+only the remaining 291 records, and divides it deterministically into eight
+subshards. It restores the exact original scorer, wheel and strict stereo
+verifier. Each subshard must pass the original seal and merge checks; the final
+reconstruction verifies the checkpoint prefix, subset, source and protocol,
+records per-part provenance, and seals all 525 original identities. The new
+runners may differ from the checkpoint runner. Recovery preserves that platform
+provenance and must not be interpreted as one uninterrupted timed measurement.
+No recovery outcome is available until the workflow completes.
