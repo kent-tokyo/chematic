@@ -659,6 +659,16 @@ is `validation/results/cod-first-fields-v8-development-2026-11-22.json.gz`
 (uncompressed SHA-256
 `e45dbb23a0ccb87f00467ae9b6eaffa5734a115184c2b1fff2e4c49000e6593f`).
 
+Among the five remaining v8 energy outliers, three exposed development
+inputs have the same ring sets as RDKit 2026.09.2 but a different iteration
+order in chematic's 2026.03.6-based ring port. Supplying the RDKit ring order
+directly to the MMFF aromaticity view changed the problematic aromatic atom
+and bond states in each of these three cases. This is a diagnostic, not yet
+a tested force-field correction. RDKit 2026.09.2 uses RingDecomposerLib
+relevant cycles for its default symmetrized ring information; chematic's
+relevant-cycle enumeration also returns a different order for two of the
+cases, so replacing the ring set or sorting by size alone is insufficient.
+
 The largest sampled v5 finite-difference discrepancy occurred on an exposed
 structure with a 179.998-degree bond angle. In the separate
 [Linux diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44969777281),
