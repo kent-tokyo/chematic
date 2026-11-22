@@ -14,6 +14,17 @@ fn config() -> MinimizeConfig {
 #[test]
 fn stretched_bonds_contract_for_varied_elements_and_orders() {
     let pairs = [
+        ("C", "H", BondOrder::Single),
+        ("C", "S", BondOrder::Aromatic),
+        ("H", "N", BondOrder::Single),
+        ("H", "O", BondOrder::Single),
+        ("H", "P", BondOrder::Single),
+        ("N", "N", BondOrder::Aromatic),
+        ("N", "O", BondOrder::Single),
+        ("N", "O", BondOrder::Aromatic),
+        ("Cl", "Cl", BondOrder::Double),
+        ("Cl", "Cl", BondOrder::Triple),
+        ("Cl", "Cl", BondOrder::Aromatic),
         ("C", "C", BondOrder::Triple),
         ("C", "N", BondOrder::Double),
         ("C", "O", BondOrder::Aromatic),
