@@ -2284,3 +2284,13 @@ The uncompressed raw result SHA-256 is
 `eac89872d9d0eacd95eb87eb47d66cdf86938b1f5d3085378e1b6ad6773b550c`, stored as
 `validation/results/cod-independent-mixed-time-linux-2026-11-22.json.gz`.
 Recovery, strict-stereo and timing-distribution summaries accompany it.
+
+A follow-up audit of the 75 error rows with a prior RDKit timing record found
+that 72 had accepted at least one RDKit conformer (556 accepted in total), but
+none has RMSD, geometry or stereo scoring fields. The frozen timed scorer
+scores both ensembles only after both engines finish, so the subsequent chematic
+exception skipped those scores and the coordinates were not saved. The other
+100 error rows have no RDKit engine record. Therefore the published paired
+interval reflects the stated shared-error policy; the raw data do not support
+recovering RDKit's independent success or a strict-stereo assessment on those
+75 error rows. This audit does not alter or reclassify the frozen result.
