@@ -689,3 +689,13 @@ with uncompressed SHA-256
 Recovery and strict-stereo summaries accompany it. The merged result was
 written directly to compressed output; the comparison does not establish a
 macOS timed or published-package result.
+
+The macOS timed follow-up reconstructs the four original fixed shards and
+requires the recorded merged SHA-256 above before generating timed plans. It
+uses the original macOS mixed-profile wheel and the revised engine-isolated
+scorer, with the independent-error policy pinned in the timed manifest. The
+fixed-count result and Linux timing results were already observed when this
+follow-up was planned, so it is a post-hoc platform comparison rather than an
+unexposed selection for the revised scoring policy. The run must report
+per-engine failures, unscored accepted conformers and wall-time distributions.
+No macOS timed outcome is available before the run.
