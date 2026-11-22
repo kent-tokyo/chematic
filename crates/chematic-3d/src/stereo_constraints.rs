@@ -585,18 +585,40 @@ fn tetrahedral_constraint_for(
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
         });
-    if !all_single_ish && !tetrahedral_pv {
+    // A neutral sulfoxide has three bonded ligands and a stereochemically
+    // active lone pair. Use a phantom fourth position, as for implicit H,
+    // but only for the three-coordinate S(=O) topology.
+    let sulfoxide = atom.element.atomic_number() == 16
+        && atom.charge == 0
+        && mol.neighbors(idx).count() == 3
+        && mol
+            .neighbors(idx)
+            .filter(|(n, b)| {
+                mol.bond(*b).order == BondOrder::Double && mol.atom(*n).element.atomic_number() == 8
+            })
+            .count()
+            == 1
+        && mol.neighbors(idx).all(|(_, b)| {
+            matches!(
+                mol.bond(b).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
+            )
+        });
+    if !all_single_ish && !tetrahedral_pv && !sulfoxide {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
-    let Some(order) = declared_neighbor_order(mol, idx) else {
+    let Some(mut order) = declared_neighbor_order(mol, idx) else {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     };
+    if sulfoxide && order.len() == 3 {
+        order.push(STEREO_H_SENTINEL);
+    }
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
-    if n_sentinels == 1 && implicit_hcount(mol, idx) != 1 {
+    if n_sentinels == 1 && !sulfoxide && implicit_hcount(mol, idx) != 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
@@ -1076,8 +1098,9 @@ fn repair_tetrahedral_center(
     coords: &mut Coords3D,
     idx: AtomIdx,
 ) -> Result<RepairedElement, RepairRejectionReason> {
-    let order = declared_neighbor_order(mol, idx)
-        .expect("already validated Some by verify_stereo before repair was attempted");
+    let order = tetrahedral_constraint_for(mol, idx)
+        .expect("already validated by verify_stereo before repair was attempted")
+        .order;
     let real_neighbors: Vec<u32> = order
         .iter()
         .copied()

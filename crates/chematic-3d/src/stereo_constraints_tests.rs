@@ -10,6 +10,39 @@ mod tests {
     }
 
     #[test]
+    fn sulfoxide_parity_matches_rdkit_coordinates_and_repair() {
+        // RDKit 2026.09.2 ETKDG, seed 42, C[S@](=O)CC.
+        let m = mol("C[S@](=O)CC");
+        let opposite = mol("C[S@@](=O)CC");
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        for (i, point) in [
+            [2.1873, -0.2531, -0.1457],
+            [0.5095, -0.9180, -0.0778],
+            [0.1373, -1.6378, -1.3669],
+            [-0.5588, 0.5257, 0.1932],
+            [-1.5, 1.5, 0.4],
+        ]
+        .iter()
+        .enumerate()
+        {
+            coords.set(AtomIdx(i as u32), Point3::new(point[0], point[1], point[2]));
+        }
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+        assert_eq!(
+            verify_stereo(&opposite, &coords).tetrahedral[0].status,
+            StereoStatus::Violated
+        );
+        let repaired = repair_stereo(&opposite, &coords).expect("sulfoxide repair should succeed");
+        assert_eq!(
+            verify_stereo(&opposite, &repaired.coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+    }
+
+    #[test]
     fn phosphoryl_tetrahedral_parity_matches_rdkit_coordinates() {
         // RDKit 2026.09.2 ETKDGv3, seed 42, O=[P@](F)(Cl)Br; RDKit S.
         let m = mol("O=[P@](F)(Cl)Br");
