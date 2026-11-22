@@ -432,3 +432,15 @@ uncompressed SHA-256
 `6d8590234425b725893b598c93b9c670950aa8934ad2d717120332bb614d5331`;
 recovery and strict-stereo summaries are alongside it. This exposed sample is
 not independent acceptance evidence.
+
+The corresponding [macOS fallback development repeat](https://github.com/kent-tokyo/chematic/actions/runs/44993927884)
+also evaluated all 32 records. Recovery was 3 / 4 (chematic / RDKit), with
+605 / 606 candidates and no contradicted or unevaluable declarations in
+either engine. Both returned at least one candidate for each record. Its raw
+result is
+`validation/results/macrocycle-pdb-macos-development-fallback-32-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`c201d5551e0a781f72970ba568dce47c0de369002d61705fffff728e574ac9c5`;
+recovery and strict-stereo summaries are alongside it. The Linux and macOS
+hosts can produce different coordinates; this is an exposed development
+comparison, not a platform-independent recovery guarantee.
