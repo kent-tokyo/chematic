@@ -1,7 +1,7 @@
 name: Resume first COD macOS checkpoint
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-first-macos-resume.yml'
 permissions:
