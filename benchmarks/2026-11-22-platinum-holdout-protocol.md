@@ -2153,3 +2153,25 @@ re-embedding, but further investigation is needed to attribute each discrepancy.
 Maximum sampled 1e-5 angstrom finite-difference discrepancies were 7,093.11
 for MMFF94/MMFF94s and 3,012.95 for UFF; the diagnostics above describe
 selected exposed cases and do not prove general derivative accuracy.
+
+A subsequent exposed-case diagnostic re-embedded both UFF threshold outliers
+on macOS with RDKit 2026.09.2, seed 42, and compared the two force fields on
+those common coordinates. It used a local chematic binary identified by hash
+in the artifact, not the frozen holdout wheel. The absolute differences
+reproduced the recorded macOS values. For index 3669, the reference energy was
+6.64779686494e11 kcal/mol and the reference gradient component at the largest
+difference was 3.64966058328e12 kcal/mol/angstrom; the difference was
+0.00146484375. For index 11276, the reference energy was 6.73388324355e10 and
+the reference gradient component was 9.56484334065e11; their respective
+absolute differences were 0.00023651123046875 and 0.003662109375. These
+magnitudes put the component differences near floating-point relative
+precision in these two re-embeddings, while the absolute-threshold exceedances
+remain recorded and the physical validity of these high-energy structures is
+not established. The diagnostic, including coordinates and the local binary
+hash, is
+`validation/results/cod-unused-bridge-fix-uff-scale-macos-diagnostic-2026-11-22.json.gz`
+(uncompressed SHA-256 `8953cf86dd740c82adf220dcc38e5e0e4054255abf8357cf0ac81e8c8d4bd405`).
+
+The Linux CI merge job in run `45035566273` subsequently succeeded. Its
+`fields.json` and `summary.json` are byte-identical to the locally verified
+merged result and summary recorded above. The macOS CI merge remains queued.
