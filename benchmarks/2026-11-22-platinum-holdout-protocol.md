@@ -554,8 +554,7 @@ macOS job reached its six-hour limit after writing a prefix of 1,808 out of
 The remaining 285 records are resumed with the same wheel and scoring
 configuration; the join rejects mismatched metadata, incomplete records and
 non-macOS-arm64 hosts. The combined fixed result spans two identified hosts,
-and the timed comparison runs separately on a third host. No macOS result is
-claimed until all records are complete and validated.
+and the timed comparison runs separately on a third host. At that checkpoint no macOS result was claimed; the completed result is recorded below.
 
 On shared RDKit-embedded coordinates, the same Linux artifact reports 2,071
 force-field comparisons and 22 row errors. Maximum absolute differences were
@@ -1197,7 +1196,7 @@ returned candidates; therefore the stereo gate fails. The split had also been
 partly exposed before scoring, so it is not independent noninferiority
 evidence. The original and resumed records ran on separate macOS arm64 hosts;
 this is not an uninterrupted timing measurement. Timed and force-field checks
-are still running separately. The merged and resumed portions are retained as
+subsequently completed on a third host, as recorded below. The merged and resumed portions are retained as
 `validation/results/cod-first-holdout-macos-{fixed-resumed,resumed-285}-2026-11-22.json.gz`,
 with uncompressed SHA-256
 `621de9dcf4aa71ed90418e4d2cbe0072d65cdfa883e39f0b6ddea6f43f45123e` and
@@ -1319,3 +1318,24 @@ the macOS arm64 wheel SHA-256 is
 These binaries are not the Linux wheel used in the earlier one-off regression
 job, despite sharing its tested source. New development comparisons use the
 v11 wheel hashes; neither wheel has passed a fresh independent holdout.
+
+The first COD macOS [timed and force-field job](https://github.com/kent-tokyo/chematic/actions/runs/44964491252)
+completed on the earlier frozen wheel, separate from both fixed-count hosts.
+At 0.2 seconds, recovery was 1,280 / 1,134 out of 2,093 for chematic / RDKit;
+the paired scaffold-cluster 95% interval was +5.80 to +8.17 percentage points.
+The returned ensembles contained 16 / 8 detected stereo violations among
+13,592 / 7,438 candidates, so the chematic stereo gate fails despite that
+recovery interval. There were no row errors. These results are from an earlier
+partly exposed split and predate the later fixes; they do not establish a
+current or independent parity result.
+
+On shared RDKit coordinates for the same 2,093 cases, RDKit embedding failed
+for 23. For the remaining 2,070, maximum MMFF94 energy and gradient-component
+differences were 57.67 kcal/mol and 121.10 kcal/mol/Å; UFF's maximum gradient
+difference was 74.36 kcal/mol/Å. The per-record timed and force-field results
+are `validation/results/cod-first-holdout-macos-time-2026-11-22.json.gz` and
+`validation/results/cod-first-holdout-macos-fields-2026-11-22.json.gz`, with
+uncompressed SHA-256
+`3379bdc09929e04002eb1a01b03317f1ef92a21e38728249b7e9304cf738045c` and
+`883f8cbfa5dfb628556aefbf32dcd35c3326ad391391367be7070e47ef1cb1b7`.
+Machine-readable molecule, scaffold and field summaries are alongside them.

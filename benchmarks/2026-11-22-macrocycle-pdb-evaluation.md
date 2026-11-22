@@ -223,3 +223,16 @@ and the timed scaffold-summary SHA-256 is
 A synthetic two-molecule test exercised the fixed-to-timed pipeline and
 summary; no macrocycle holdout conformer result was used. A timed manifest
 is generated only after the complete fixed-count baseline exists.
+
+The [v11 Linux development pilot](https://github.com/kent-tokyo/chematic/actions/runs/44985344904)
+completed the same 32 previously exposed cases with the fixed v11 wheel.
+Under the 20-candidate, stereo and geometry screened, 1 Å criterion, chematic
+recovered 2 and RDKit 4; both engines recovered the same two cases and RDKit
+recovered two additional cases. Chematic produced 603 candidates and RDKit
+607, with zero detected stereo violations in either set. Chematic returned no
+candidate for one case; RDKit returned at least one for every case. These
+aggregate outcomes match the earlier pilot and remain too small and exposed
+to establish noninferiority. Full output:
+`validation/results/macrocycle-pdb-linux-development-v11-2026-11-22.json.gz`,
+uncompressed SHA-256
+`821e4cbb342bbb94db5f4a44a62560d17001ead9e1a7f1190f0cb58ab3d14708`.
