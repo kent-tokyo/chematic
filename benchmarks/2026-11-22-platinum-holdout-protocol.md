@@ -1775,6 +1775,12 @@ passed for both profiles on macOS with the mixed wheel. The report is
 `validation/results/mixed-shard-pipeline-smoke-macos-2026-11-22.json`;
 this is not holdout evidence.
 
+Once the timed shards are merged, `summarize_platinum_timing_details.py`
+reports the platform, attempted and accepted counts, median, 95th percentile
+and maximum elapsed time, and the number exceeding the acceptance deadline.
+Calls are not interrupted, so an elapsed time above the deadline is possible.
+The helper only reads the sealed result and does not change the scorer.
+
 ### Proposed fresh COD evaluation
 
 Before examining any conformer results, select the next 12,000 SDF archive
