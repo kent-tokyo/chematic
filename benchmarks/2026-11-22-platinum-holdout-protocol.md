@@ -999,3 +999,21 @@ timed artifacts and summaries are preserved under `validation/results/` with
 (macOS). The v8 candidate was frozen before these results were inspected, but
 any comparison on this same holdout is a related follow-up, not a fresh
 independent test. This was itself a post-hoc follow-up after first-COD exposure.
+
+The v4 common-coordinate force-field jobs subsequently completed on both
+platforms. Of 2,098 records, RDKit reference embedding failed on 22 Linux and
+21 macOS records; all remaining records were comparable for MMFF94, MMFF94s,
+and UFF. For MMFF94 the maximum absolute energy differences were 271.60 and
+275.45 kcal/mol and maximum gradient-component differences were 513.78 and
+558.40 kcal/mol/Å on Linux and macOS respectively. For UFF the corresponding
+maximum energy differences were 35.77 and 36.07 kcal/mol and gradient
+component differences 633.65 and 820.85 kcal/mol/Å. The p95 of energy and
+gradient differences was zero on Linux and below 2e−13 on macOS; those
+percentiles do not remove the significant outliers. Maximum sampled numerical
+finite-difference discrepancies for MMFF94 were 141,918 and 302,089 kcal/mol/Å;
+their individual causes have not yet been established. These results concern
+the old v4 wheels, not the later fixes or the sulfoxide change. Raw results and
+summaries have `cod-second-holdout-{linux,macos}-fields` prefixes under
+`validation/results/`; uncompressed raw SHA-256 values are
+`325606dfb7a7e9b43de49507ae58e99cced799f52d54bc1c7aace54d6f198939`
+and `163543e8cba0ef5ae41d9d23f129e04369cce79143426110d1ca3d88de690d9e`.
