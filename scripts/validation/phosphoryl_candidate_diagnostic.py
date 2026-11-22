@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path.cwd() / 'scripts/benchmarks'))
 from platinum_development_probe import stereo_violations
 with gzip.open('validation/results/cod-linux-development-v4-2026-11-22.json.gz','rt') as source:
     rows=json.load(source)['results']
-names={'VJUNGNXBONODDR-UHFFFAOYSA-N','HRPUQROAFUIJQN-NPTIBEEQSA-N'}
+names={'VJUNGNXBONODDR-UHFFFAOYSA-N','HRPUQROAFUIJQN-UHFFFAOYSA-N'}
 out=[]
 for row in rows:
     if row['name'] not in names: continue

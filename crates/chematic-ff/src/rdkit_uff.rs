@@ -711,7 +711,8 @@ impl InversionTerm {
         let cos_theta = clip_to_one(r_ji.dot(r_jk));
         let sin_theta_sq = 1.0 - cos_theta * cos_theta;
         let sin_theta = smax(sin_theta_sq.sqrt(), 1.0e-8);
-        let de_dw = -self.force_constant * (self.c1 * cos_y - 4.0 * self.c2 * cos_y * sin_y);
+        // RDKit corrected the sign of the C2 term in 2026.03.2 (issue #9229).
+        let de_dw = -self.force_constant * (self.c1 * cos_y + 4.0 * self.c2 * cos_y * sin_y);
         let t1 = r_jl.cross(r_jk);
         let t2 = r_ji.cross(r_jl);
         let t3 = r_jk.cross(r_ji);

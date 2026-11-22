@@ -79,15 +79,12 @@ fn uff_minimization_decreases_energy_and_handles_unparameterized_atoms() {
 
 #[test]
 fn pyramidal_inversion_retains_rdkit_reference_energy_and_gradient() {
-    // Independently measured using rdkit==2026.3.1, Chem.AddHs and
-    // UFFGetMoleculeForceField with the coordinates below. This API promises
-    // RDKit's expressions. For P/As inversion its analytic gradient differs
-    // from a finite difference of its energy; do not replace the parity
-    // contract with the finite-difference contract used for organic cases.
-    // Upstream: Release_2026_03_1/Code/ForceField/UFF/Inversion.cpp:113.
+    // Independently measured using rdkit==2026.09.2, Chem.AddHs and
+    // UFFGetMoleculeForceField with the coordinates below. RDKit corrected
+    // its P/As/Sb/Bi inversion gradient in 2026.03.2 (issue #9229).
     for (smiles, expected_energy, expected_y_gradient) in [
-        ("CP(C)C", 67330.09078592298, -1224.619113639887),
-        ("C[As](C)C", 66325.53503120068, -1087.4359414743303),
+        ("CP(C)C", 67330.09078592298, -1223.03629899755),
+        ("C[As](C)C", 66325.53503120068, -1085.9973882882161),
     ] {
         let mol = rdkit_added_hs_molecule(&parse(smiles).unwrap()).unwrap();
         let coords: Vec<_> = (0..mol.atom_count())
@@ -109,6 +106,12 @@ fn pyramidal_inversion_retains_rdkit_reference_energy_and_gradient() {
             "{smiles}: {}",
             grad[1]
         );
+        let mut plus = pos.clone();
+        let mut minus = pos.clone();
+        plus[1] += 1e-5;
+        minus[1] -= 1e-5;
+        let finite_difference = (field.energy(&plus) - field.energy(&minus)) / 2e-5;
+        assert!((grad[1] - finite_difference).abs() < 1e-4, "{smiles}");
         assert!(
             field
                 .debug_terms()

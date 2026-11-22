@@ -33,7 +33,7 @@ jobs:
           import json
           x=json.load(open('cod-zero-candidates-diagnostic.json'))
           cases={r['name']:r for r in x['results']}
-          for name in ('VJUNGNXBONODDR-UHFFFAOYSA-N','HRPUQROAFUIJQN-NPTIBEEQSA-N'):
+          for name in ('VJUNGNXBONODDR-UHFFFAOYSA-N','HRPUQROAFUIJQN-UHFFFAOYSA-N'):
               item=cases[name]
               stereo=item.get('final_stereo') or {}
               assert not any(t.get('status') == 'unevaluable' for t in stereo.get('tetrahedral',[])), item

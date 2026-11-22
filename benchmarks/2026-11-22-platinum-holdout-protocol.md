@@ -568,6 +568,18 @@ corresponding raw fixed, timed and force-field JSON SHA-256 hashes are
 The artifact retains the raw records and summaries. Results are for the older
 wheel and do not predict the separately running updated-wheel assessment.
 
+The first holdout's UFF gradient outliers were subsequently exposed as
+development cases. On three phosphorus-containing structures, the earlier
+wheel differed from RDKit 2026.09.2 by 47.75–74.22 kcal/mol/Å in a gradient
+component, while RDKit agreed with a central difference of the energy. The
+implementation retained a P/As/Sb/Bi inversion-gradient sign from RDKit
+2026.03.1. RDKit corrected that sign in
+[issue #9229](https://github.com/rdkit/rdkit/issues/9229), released in
+2026.03.2. A subsequent source change updates the sign and tests against
+2026.09.2 plus numerical derivatives. These three exposed structures are
+development diagnostics, not fresh holdout evidence; the change is not in the
+wheel currently being scored on the second COD holdout.
+
 ## Second COD scaffold split for the silicon-corrected candidate
 
 After the first COD support audit exposed a holdout molecule, a second split
