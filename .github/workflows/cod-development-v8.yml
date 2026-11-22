@@ -2,7 +2,7 @@ name: Directional bond candidate COD development comparison
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-development-v8.yml'
 
