@@ -20,8 +20,12 @@ fn presence_respects_ring_search_budget_after_a_cached_success() {
         [2, 0, 0, 0]
     );
     config.ring_model_budget.max_candidates = 0;
+    let error = rdkit_relevant_ring_count_presence(&mol, &config).unwrap_err();
     assert!(matches!(
-        rdkit_relevant_ring_count_presence(&mol, &config),
-        Err(RdkitParityError::RingModelBudgetExceeded { cap: 0, .. })
+        error,
+        RdkitParityError::RingModelBudgetExceeded { cap: 0, .. }
     ));
+    let message = error.to_string();
+    assert!(message.contains("candidate cycle search exceeded budget"));
+    assert!(message.contains("cap 0"));
 }
