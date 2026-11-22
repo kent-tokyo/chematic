@@ -1,0 +1,137 @@
+name: Bridge-fix independent force-field holdout
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/bridge-fix-independent-fields.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify frozen inputs and candidate
+        run: |
+          test "$(git rev-parse HEAD:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
+          bash scripts/validation/fetch_bridge_fix_holdout_inputs.sh '${{ matrix.os }}'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$(cat bridge-input/wheel-path.txt)"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          import chematic
+          for path in ("validation/rdkit-2026.09.2-uff-bridging-hydrogen.json", "validation/rdkit-2026.09.2-uff-bridging-hydrogen-exposed.json"):
+              ref = json.loads(Path(path).read_text())
+              f = chematic.from_smiles(ref["smiles"]).add_hydrogens().uff_force_field(ref["coords"])
+              gradient = [v for atom in f.gradient() for v in atom]
+              assert abs(f.energy()-ref["energy"]) < 1e-8
+              assert len(gradient) == len(ref["gradient"])
+              assert max(abs(a-b) for a,b in zip(gradient,ref["gradient"])) < 1e-7
+          PY
+      - name: Audit input and restore sealed plan
+        run: |
+          python scripts/validation/cod_atom_identity_audit.py bridge-input/reference/reference.sdf bridge-input/split.json --partition holdout --output identity.json
+          python scripts/validation/cod_support_probe.py bridge-input/reference/reference.sdf bridge-input/split.json --partition holdout --output support.json
+          python scripts/benchmarks/shard_platinum_holdout.py prepare --split bridge-input/split.json --audit bridge-input/audit.json --output-dir plan --shards 4 --wheel-sha256 "$(cat bridge-input/wheel-sha256.txt)" --profile mixed_checked
+          case '${{ matrix.os }}' in ubuntu-latest) platform=linux ;; macos-latest) platform=macos ;; esac
+          gzip -dc "validation/results/cod-unused-force-field-${platform}-shard-manifest-2026-11-22.json.gz" > expected-manifest.json
+          cmp plan/manifest.json expected-manifest.json
+          python -c 'import json; m=json.load(open("plan/manifest.json")); assert sum(x["count"] for x in m["shards"])==3579'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: bridge-fix-plan-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            plan/
+            identity.json
+            support.json
+          if-no-files-found: error
+
+  compare:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard: [0, 1, 2, 3]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Restore sealed input and wheel
+        run: |
+          test "$(git rev-parse HEAD:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
+          echo '4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18  scripts/benchmarks/platinum_force_fields.py' | shasum -a 256 --check
+          echo '50faafc6bd55d589bc51f5be6a65567edcdf997a554fadd6f6d1d75703d43169  scripts/benchmarks/prepare_force_field_holdout.py' | shasum -a 256 --check
+          bash scripts/validation/fetch_bridge_fix_holdout_inputs.sh '${{ matrix.os }}'
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name 'bridge-fix-plan-${{ matrix.os }}-${{ github.run_id }}' --dir parent
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$(cat bridge-input/wheel-path.txt)"
+      - name: Compare force fields on common coordinates
+        run: |
+          index='${{ matrix.shard }}'
+          suffix=$(printf '%03d' "$index")
+          mkdir -p field
+          python scripts/benchmarks/prepare_force_field_holdout.py bridge-input/reference/reference.sdf "parent/plan/split-$suffix.json" --output field/input.json
+          python -c 'import hashlib,json,pathlib,sys; p=pathlib.Path("parent/plan/manifest.json").read_bytes(); m=json.loads(p); s=m["shards"][int(sys.argv[1])]; i=json.load(open("field/input.json")); w=pathlib.Path("bridge-input/wheel-sha256.txt").read_text().strip(); assert i["split_sha256"]==s["split_sha256"] and w==m["wheel_sha256"]; json.dump({"index":int(sys.argv[1]),"manifest_sha256":hashlib.sha256(p).hexdigest(),"wheel_sha256":w,"probe_sha256":"4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18"},open("field/metadata.json","w"))' "$index"
+          python scripts/benchmarks/platinum_force_fields.py --development field/input.json --output field/result.json --checkpoint-every 10
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: bridge-fix-fields-${{ matrix.os }}-${{ matrix.shard }}-${{ github.run_id }}
+          path: field/
+          if-no-files-found: warn
+
+  merge:
+    needs: compare
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Merge verified shards and summarize
+        run: |
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name 'bridge-fix-plan-${{ matrix.os }}-${{ github.run_id }}' --dir parent
+          for i in 0 1 2 3; do
+            gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "bridge-fix-fields-${{ matrix.os }}-$i-${{ github.run_id }}" --dir "part-$i"
+          done
+          python scripts/benchmarks/merge_force_field_holdout.py parent/plan/manifest.json part-0 part-1 part-2 part-3 --output fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py fields.json --output summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: bridge-fix-fields-merged-${{ matrix.os }}-${{ github.run_id }}
+          path: |
+            fields.json
+            summary.json
+          if-no-files-found: error

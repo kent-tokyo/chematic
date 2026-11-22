@@ -9,6 +9,11 @@ case "$os" in
     artifact="mixed-development-wheel-${candidate_commit}"
     expected_wheel="cb9d6b6df61db6b6f4abb3326f315f122ceb80afdc9ef2de909800c689dbeba6"
     ;;
+  macos-latest)
+    run_id=45033920398
+    artifact="bridge-fix-wheel-macos-${candidate_commit}"
+    expected_wheel="83eaf6994439b98647c65d34322ccb50489d6d537f0b396cba4674be6b14d20c"
+    ;;
   *) echo "platform is not yet pinned: $os" >&2; exit 1 ;;
 esac
 mkdir -p bridge-input/wheel bridge-input/reference
