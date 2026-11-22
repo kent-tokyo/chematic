@@ -74,3 +74,30 @@ fn implicit_mcs_bond_keeps_single_or_aromatic_semantics() {
         );
     }
 }
+
+#[test]
+fn mcs_smarts_roundtrips_more_than_nine_ring_closures() {
+    let mut graph = QueryMolecule::new();
+    let mut previous = None;
+    for _ in 0..12 {
+        let a = graph.add_atom(atom(6));
+        let b = graph.add_atom(atom(6));
+        let c = graph.add_atom(atom(6));
+        for (left, right) in [(a, b), (b, c), (c, a)] {
+            graph.add_bond(left, right, BondQuery::Primitive(B::Single));
+        }
+        if let Some(last) = previous {
+            graph.add_bond(last, a, BondQuery::Primitive(B::Single));
+        }
+        previous = Some(c);
+    }
+    let text = mcs_query_to_smarts(&graph).unwrap();
+    assert!(text.contains("%10"), "{text}");
+    let reread = parse_smarts(&text).unwrap();
+    assert_eq!((reread.atoms.len(), reread.bonds.len()), (36, 47));
+    let mut before: Vec<_> = graph.adj.iter().map(Vec::len).collect();
+    let mut after: Vec<_> = reread.adj.iter().map(Vec::len).collect();
+    before.sort_unstable();
+    after.sort_unstable();
+    assert_eq!(before, after);
+}
