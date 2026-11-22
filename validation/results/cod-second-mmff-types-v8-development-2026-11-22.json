@@ -1,0 +1,423 @@
+{
+  "rdkit": "2026.09.2",
+  "classification": "exposed development",
+  "results": [
+    {
+      "name": "MPNGGXLLXDBUNV-UHFFFAOYSA-N",
+      "type_mismatches": [],
+      "charge_mismatches": [],
+      "formal_charge": 3
+    },
+    {
+      "name": "UURPMXLGHWPFLL-UHFFFAOYSA-O",
+      "type_mismatches": [
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic": 78,
+          "rdkit": 2
+        },
+        {
+          "atom": 20,
+          "element": "N",
+          "chematic": 76,
+          "rdkit": 62
+        },
+        {
+          "atom": 21,
+          "element": "C",
+          "chematic": 78,
+          "rdkit": 2
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 18,
+          "chematic": -0.402,
+          "rdkit": -0.495
+        },
+        {
+          "atom": 19,
+          "chematic": -0.131,
+          "rdkit": -0.355
+        },
+        {
+          "atom": 20,
+          "chematic": -1.3,
+          "rdkit": -0.6
+        },
+        {
+          "atom": 21,
+          "chematic": -0.13,
+          "rdkit": -0.354
+        },
+        {
+          "atom": 22,
+          "chematic": -0.507,
+          "rdkit": -0.6
+        },
+        {
+          "atom": 38,
+          "chematic": -0.013,
+          "rdkit": -0.046
+        },
+        {
+          "atom": 48,
+          "chematic": 0.028,
+          "rdkit": -0.0049999999999999975
+        }
+      ],
+      "formal_charge": 0
+    },
+    {
+      "name": "HHVSZPBWYSYHPA-NQCZCJPMSA-N",
+      "type_mismatches": [
+        {
+          "atom": 28,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 2
+        },
+        {
+          "atom": 29,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 2
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 12,
+          "chematic": 0.348,
+          "rdkit": 0.3427
+        },
+        {
+          "atom": 21,
+          "chematic": 0.348,
+          "rdkit": 0.3427
+        },
+        {
+          "atom": 28,
+          "chematic": -0.1435,
+          "rdkit": -0.1666
+        },
+        {
+          "atom": 29,
+          "chematic": -0.1435,
+          "rdkit": -0.1666
+        },
+        {
+          "atom": 30,
+          "chematic": 0.0,
+          "rdkit": 0.0284
+        },
+        {
+          "atom": 41,
+          "chematic": 0.0,
+          "rdkit": 0.0284
+        }
+      ],
+      "formal_charge": 0
+    },
+    {
+      "name": "XTULIPKREBMLNM-XHGUTPRISA-N",
+      "type_mismatches": [],
+      "charge_mismatches": [],
+      "formal_charge": 0
+    },
+    {
+      "name": "NMRCPJXHOHBRSD-UHFFFAOYSA-N",
+      "type_mismatches": [
+        {
+          "atom": 21,
+          "element": "N",
+          "chematic": 58,
+          "rdkit": 40
+        },
+        {
+          "atom": 22,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 4
+        },
+        {
+          "atom": 23,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 2
+        },
+        {
+          "atom": 30,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 4
+        },
+        {
+          "atom": 31,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 4
+        },
+        {
+          "atom": 32,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 4
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 20,
+          "chematic": 0.361,
+          "rdkit": 0.1
+        },
+        {
+          "atom": 21,
+          "chematic": -0.08299999999999996,
+          "rdkit": -0.228
+        },
+        {
+          "atom": 22,
+          "chematic": 0.361,
+          "rdkit": -0.0010000000000000009
+        },
+        {
+          "atom": 23,
+          "chematic": 0.361,
+          "rdkit": 0.483
+        },
+        {
+          "atom": 24,
+          "chematic": -0.08299999999999996,
+          "rdkit": -0.07499999999999996
+        },
+        {
+          "atom": 30,
+          "chematic": 0.0,
+          "rdkit": -0.065
+        },
+        {
+          "atom": 32,
+          "chematic": 0.361,
+          "rdkit": 0.064
+        }
+      ],
+      "formal_charge": -23
+    },
+    {
+      "name": "MKLIKYIPTNXTNK-UHFFFAOYSA-N",
+      "type_mismatches": [],
+      "charge_mismatches": [
+        {
+          "atom": 15,
+          "chematic": -0.1516,
+          "rdkit": -0.2046
+        },
+        {
+          "atom": 16,
+          "chematic": 0.0,
+          "rdkit": 0.053
+        }
+      ],
+      "formal_charge": 1
+    },
+    {
+      "name": "MSOXXGSICAQJBM-UHFFFAOYSA-N",
+      "type_mismatches": [
+        {
+          "atom": 7,
+          "element": "N",
+          "chematic": 39,
+          "rdkit": 10
+        },
+        {
+          "atom": 8,
+          "element": "C",
+          "chematic": 63,
+          "rdkit": 37
+        },
+        {
+          "atom": 13,
+          "element": "C",
+          "chematic": 64,
+          "rdkit": 37
+        },
+        {
+          "atom": 14,
+          "element": "C",
+          "chematic": 64,
+          "rdkit": 37
+        },
+        {
+          "atom": 21,
+          "element": "C",
+          "chematic": 63,
+          "rdkit": 37
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 5,
+          "chematic": 0.5646,
+          "rdkit": 0.6155999999999999
+        },
+        {
+          "atom": 7,
+          "chematic": 0.2942,
+          "rdkit": -0.294
+        },
+        {
+          "atom": 8,
+          "chematic": -0.1516,
+          "rdkit": 0.117
+        },
+        {
+          "atom": 21,
+          "chematic": -0.1516,
+          "rdkit": 0.117
+        }
+      ],
+      "formal_charge": 0
+    },
+    {
+      "name": "SPGGIFLVQFHPFG-LTKUFQEZSA-N",
+      "type_mismatches": [
+        {
+          "atom": 46,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 2
+        },
+        {
+          "atom": 47,
+          "element": "C",
+          "chematic": 37,
+          "rdkit": 2
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 2,
+          "chematic": 0.49149999999999994,
+          "rdkit": 0.48619999999999997
+        },
+        {
+          "atom": 39,
+          "chematic": 0.49149999999999994,
+          "rdkit": 0.48619999999999997
+        },
+        {
+          "atom": 46,
+          "chematic": -0.1435,
+          "rdkit": -0.1666
+        },
+        {
+          "atom": 47,
+          "chematic": -0.1435,
+          "rdkit": -0.1666
+        },
+        {
+          "atom": 48,
+          "chematic": 0.0,
+          "rdkit": 0.0284
+        },
+        {
+          "atom": 59,
+          "chematic": 0.0,
+          "rdkit": 0.0284
+        }
+      ],
+      "formal_charge": 0
+    },
+    {
+      "name": "OXBMFCGRQJNAOY-TWXUZQDTSA-N",
+      "type_mismatches": [],
+      "charge_mismatches": [],
+      "formal_charge": 0
+    },
+    {
+      "name": "WWDTYJJTIMSSDO-UHFFFAOYSA-N",
+      "type_mismatches": [],
+      "charge_mismatches": [],
+      "formal_charge": 0
+    },
+    {
+      "name": "UUGPTWNTETYOMZ-ACKIGEAWSA-N",
+      "type_mismatches": [
+        {
+          "atom": 18,
+          "element": "C",
+          "chematic": 64,
+          "rdkit": 2
+        },
+        {
+          "atom": 19,
+          "element": "C",
+          "chematic": 63,
+          "rdkit": 2
+        },
+        {
+          "atom": 20,
+          "element": "N",
+          "chematic": 39,
+          "rdkit": 10
+        },
+        {
+          "atom": 21,
+          "element": "C",
+          "chematic": 63,
+          "rdkit": 37
+        },
+        {
+          "atom": 26,
+          "element": "C",
+          "chematic": 64,
+          "rdkit": 37
+        }
+      ],
+      "charge_mismatches": [
+        {
+          "atom": 17,
+          "chematic": 0.181,
+          "rdkit": 0.1382
+        },
+        {
+          "atom": 18,
+          "chematic": -0.181,
+          "rdkit": -0.1666
+        },
+        {
+          "atom": 19,
+          "chematic": -0.3316,
+          "rdkit": -0.02919999999999999
+        },
+        {
+          "atom": 20,
+          "chematic": 0.2942,
+          "rdkit": -0.28600000000000003
+        },
+        {
+          "atom": 21,
+          "chematic": -0.1516,
+          "rdkit": 0.117
+        },
+        {
+          "atom": 26,
+          "chematic": 0.0,
+          "rdkit": 0.0284
+        },
+        {
+          "atom": 27,
+          "chematic": 0.5179999999999999,
+          "rdkit": 0.569
+        },
+        {
+          "atom": 29,
+          "chematic": 0.48009999999999997,
+          "rdkit": 0.43829999999999997
+        }
+      ],
+      "formal_charge": 0
+    }
+  ]
+}
