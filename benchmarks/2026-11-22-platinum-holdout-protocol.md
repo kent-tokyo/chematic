@@ -1943,6 +1943,25 @@ The latter is development evidence because the holdout revealed the case;
 the running holdout jobs still use the pre-fix frozen wheel. A newly
 independent population is required to assess the modified source.
 
+The [Linux bridge regression](https://github.com/kent-tokyo/chematic/actions/runs/45032082180)
+subsequently passed the complete SMARTS and force-field library test suites.
+Before examining any field outcomes for the modified source, reserve every
+record previously marked `unused_holdout` in the frozen fresh-COD split.
+These 3,579 records contain 3,403 scaffold groups and do not intersect the
+first fresh split's development or holdout scaffolds, its unused-development
+scaffolds, or the prior known-scaffold exclusions. Previously unknown
+exposures cannot be ruled out. The conservative invalid-exclusion graph audit
+found no overlaps among the 3,403 groups. The fixed split and audit are
+`validation/results/cod-unused-force-field-holdout-split-2026-11-22.json.gz`
+and `validation/results/cod-unused-force-field-holdout-audit-2026-11-22.json.gz`;
+their uncompressed SHA-256 values are
+`9cbf6b107745be663dab2f0edf9dc2e48e372d3f90319c5fd2bcd348b97764d5` and
+`c748851eb0bae87d61158ec59c12e41ece76c5b6951a97869e917c4d6a385cce`.
+The source candidate is commit `261e520ab4d0fce681b23c168bee0888c2103b0a`.
+Pin and verify each platform's wheel hash before evaluating this set. Use
+the same common-coordinate field procedure and diagnostic thresholds above,
+and report all selected records and unsupported or failed cases separately.
+
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
 (SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).
