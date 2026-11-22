@@ -23,3 +23,15 @@ fn bond_constraints_use_element_and_bond_order_targets() {
         );
     }
 }
+
+#[test]
+fn maximum_violation_accounts_for_angle_constraints() {
+    let mol = parse("CCC").unwrap();
+    let constraints = build_constraints(&mol);
+    let mut coords = Coords3D::new_zeroed(3);
+    coords.set(AtomIdx(0), Point3::new(1.54, 0.0, 0.0));
+    coords.set(AtomIdx(2), Point3::new(0.0, 1.54, 0.0));
+    assert_eq!(constraints.angles.len(), 1);
+    assert_eq!(constraints.violated_count(&coords), 1);
+    assert!((constraints.max_violation(&coords) - 14.47_f64.to_radians()).abs() < 1e-12);
+}
