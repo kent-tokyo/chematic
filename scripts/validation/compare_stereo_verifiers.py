@@ -55,6 +55,7 @@ def main():
                    if a.GetChiralTag() in (Chem.ChiralType.CHI_TETRAHEDRAL_CW,
                                            Chem.ChiralType.CHI_TETRAHEDRAL_CCW)
                    and a.GetDegree() == 4]
+        recognized = {s.centeredOn for s in specified if str(s.type) == 'Atom_Tetrahedral'}
         need_old = len(old_names) < 30 and bool(specified)
         need_parity = len(parity_names) < 50 and bool(centers)
         if not (need_old or need_parity):
@@ -79,6 +80,9 @@ def main():
                     or set(strict['unevaluable_bonds']) - old_bonds)
             if need_parity:
                 for center in centers:
+                    if center not in recognized:
+                        parity_counts['rdkit_not_recognized'] += 1
+                        continue
                     raw = _raw_tetrahedral_parity(mol, center, coords, ranks)
                     if raw is None:
                         parity_counts['raw_unknown'] += 1

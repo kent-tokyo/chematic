@@ -1,6 +1,6 @@
 {
   "development_sha256": "e81fd9c1eba4c8fa218308ad1e312939b8c3e7ec306684711f2341449d9448bb",
-  "script_sha256": "59de53b98c20add7e081fb51d45412410683c0de91a6fd084da507bc57785193",
+  "script_sha256": "66a4ddee68d4cd0478e1ca8bc452e99a59fcb8e590fc54f2cf314e901510d932",
   "rdkit_version": "2026.09.2",
   "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
   "selection": "first eligible exposed development records; at most 70 atoms",

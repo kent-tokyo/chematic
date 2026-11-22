@@ -291,3 +291,21 @@ selection and counts are retained in
 `validation/results/stereo-verifier-crosscheck-local-2026-11-22.json`.
 The final pre-score manifests supersede the previous strict-verifier hashes
 to include finite-overflow handling; no holdout conformer scores were viewed.
+
+The [cross-platform verifier check](https://github.com/kent-tokyo/chematic/actions/runs/44990054068)
+passed on Linux and macOS with RDKit 2026.09.2 and the frozen v11 wheels.
+Both independently reproduced the local development-set findings: zero
+old-only findings in 60 geometries, two additional contradictions and two
+additional unknowns; signed-volume parity agreed with RDKit's 3D tags for
+236 comparable center/geometry pairs, with 16 raw-parity cases marked
+unknown. The 11 synthetic unit and integration checks also passed on both
+hosts. Per-platform outputs are retained as
+`validation/results/stereo-verifier-crosscheck-{linux,macos}-2026-11-22.json`.
+These checks do not validate every stereo class or establish holdout recovery.
+
+The raw-parity calibration script was then tightened to count only centers
+that RDKit itself recognizes, so a fallback cannot be compared with itself.
+The local result remained 236 comparisons with zero disagreements and 16
+unknowns; the two platform CI outputs above are from the preceding script
+version, and the tightened cross-platform rerun is pending. This refinement
+was made before any macrocycle holdout conformer scoring.
