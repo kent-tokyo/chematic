@@ -105,6 +105,11 @@ def main():
         "chematic": importlib.metadata.version("chematic"),
         "platform": platform.platform(),
         "script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "dependency_sha256": {
+            path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in (Path(__file__).with_name("platinum_development_probe.py"),
+                         Path(__file__).with_name("platinum_geometry.py"))
+        },
         "source_sha256": baseline["source_sha256"],
         "split_sha256": baseline["split_sha256"],
         "baseline_sha256": hashlib.sha256(args.baseline.read_bytes()).hexdigest(),
