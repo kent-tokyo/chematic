@@ -189,3 +189,22 @@ The per-record inputs and results are retained in
 `validation/results/macrocycle-uff-support-v11-2026-11-22.json.gz`. The audit
 used the Linux v11 wheel and pinned structural files; macOS support has not
 been separately established.
+
+For a possible fixed-count holdout run, the 1,243 names are partitioned by
+SHA-256(name) order into 16 round-robin shards before any conformer outcome
+is inspected. Each derived split is a subset of the already audited holdout;
+its derived audit retains the parent split and audit hashes. The manifests pin
+the source, wheel, scorer, geometry checker, sharding program and fixed-count
+summarizer. Their uncompressed SHA-256 values are
+`163d98d3600d0db2c2e55b6a88a1f13a0b8d98f9125d1799c3c12aa9958f80a2`
+for Linux and
+`303b28e515421cce8ea95528839d396b1123c768057db3033613c682558794d2`
+for macOS. They are stored in
+`validation/results/macrocycle-shard-manifest-v11-linux-2026-11-22.json.gz`
+and `validation/results/macrocycle-shard-manifest-v11-macos-2026-11-22.json.gz`.
+The sharding utility rejects missing, duplicated or unexpected records,
+different protocol settings, mismatched input audits or scorer fingerprints,
+and wheel hashes that differ from the manifest. Synthetic integration checks
+exercised preparation, scoring, sealing, merging and summary without scoring
+any of these holdout records. Timed-run sharding and development results are
+still needed before deciding whether to run the candidate holdout.
