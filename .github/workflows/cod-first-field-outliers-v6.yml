@@ -1,7 +1,7 @@
 name: COD exposed force-field outliers on v6
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-first-field-outliers-v6.yml'
 permissions:
