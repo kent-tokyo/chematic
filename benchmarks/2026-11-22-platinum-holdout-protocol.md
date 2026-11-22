@@ -1131,3 +1131,15 @@ is a separate runner from the v8/v9 measurement and does not establish the
 cached candidate's speed relative to v8 or end-to-end conformer performance.
 Raw timings and cage diagnostics are in
 `validation/results/mmff-ring-cache-development-2026-11-22.json.gz`.
+
+The [v9 Linux development conformer evaluation](https://github.com/kent-tokyo/chematic/actions/runs/44977687329)
+completed on the frozen pre-cache, pre-aromaticity-fix wheel. All 225 atom
+identities matched; both implementations supported MMFF for 212 records and
+neither for 13. Reference recovery was 161 / 163 (chematic / RDKit, denominator
+225; paired molecule 95% interval −4.00 to +2.22 pp). The 4,160 / 4,180
+returned candidates had 0 / 38 detected stereo violations. Four supported
+inputs had zero chematic candidates, compared with six in the v8 development
+run. These exposed development results are not a noninferiority test. Raw data
+are `validation/results/cod-linux-{development,identity,support}-v9-2026-11-22.json.gz`;
+the uncompressed development result SHA-256 is
+`9612ca09c4f3608e1cc06861e72c17ccc912d4dfca5ef41144a9e46a48937653`.

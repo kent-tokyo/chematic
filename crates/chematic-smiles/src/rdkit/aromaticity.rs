@@ -289,7 +289,17 @@ fn apply_huckel_to_fused(
 }
 
 pub(crate) fn set_aromaticity(mol: &mut Mol) {
-    let srings = mol.ring_info().atom_rings.clone();
+    // RDKit 2026.09 considers relevant cycles in its aromaticity pass.
+    // The older symmetrized SSSR can visit a large ring before a small ring
+    // containing the same donor, changing the donor's aromaticity verdict.
+    // Retain the pre-existing ring set if the bounded enumeration overflows.
+    let bonds: Vec<_> = mol
+        .bonds
+        .iter()
+        .map(|bond| (bond.begin, bond.end, bond.bt != BondType::Dative))
+        .collect();
+    let srings = chematic_perception::relevant_cycles_from_graph(mol.atoms.len(), &bonds, 10_000)
+        .unwrap_or_else(|_| mol.ring_info().atom_rings.clone());
     let n = mol.atoms.len();
     let mut acands = vec![false; n];
     let mut aseen = vec![false; n];
