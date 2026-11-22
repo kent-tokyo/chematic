@@ -306,9 +306,10 @@ These checks do not validate every stereo class or establish holdout recovery.
 The raw-parity calibration script was then tightened to count only centers
 that RDKit itself recognizes, so a fallback cannot be compared with itself.
 The local result remained 236 comparisons with zero disagreements and 16
-unknowns; the two platform CI outputs above are from the preceding script
-version, and the tightened cross-platform rerun is pending. This refinement
-was made before any macrocycle holdout conformer scoring.
+unknowns. The [tightened cross-platform rerun](https://github.com/kent-tokyo/chematic/actions/runs/44990230618)
+passed on Linux and macOS with the same counts; its outputs are
+`validation/results/stereo-verifier-crosscheck-v2-{linux,macos}-2026-11-22.json`.
+This refinement was made before any macrocycle holdout conformer scoring.
 
 The same local structural audit on the 363 macrocycle development records
 found 3,025 specified tetrahedral centers and 27 specified double bonds;
@@ -318,3 +319,15 @@ This is input inspection only. The per-record audit is
 `validation/results/macrocycle-development-declared-stereo-audit-local-2026-11-22.json.gz`,
 uncompressed SHA-256
 `fb7d8b05c33f2f385777d4e3483b1264496d5cccaef6170509352c6663fe546d`.
+
+The [strict-stereo repeat](https://github.com/kent-tokyo/chematic/actions/runs/44990435587)
+of the same two 100-candidate development cases also recovered 2 / 2 for
+both engines. Among 200 returned candidates per engine it found zero
+contradicted and zero unevaluable declared stereo elements; the first passing
+candidate indices remained 38 / 12 and 35 / 5 for chematic / RDKit. This is
+still a deliberately selected two-case development experiment. Its raw
+results are
+`validation/results/macrocycle-pdb-linux-development-v11-100-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`9b53e9ba5e06f1fa8c06d538ae63efcfd06898c0a353b47368d11fc42f7abb1c`;
+recovery and strict-stereo summaries are alongside them.

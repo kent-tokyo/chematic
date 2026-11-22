@@ -2,7 +2,7 @@ name: PDB macrocycle strict 100-candidate comparison
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-pdb-development-100-strict.yml'
 
