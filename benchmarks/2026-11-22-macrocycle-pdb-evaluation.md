@@ -548,3 +548,12 @@ The remaining-development split is
 `validation/results/macrocycle-development-remaining331-split-2026-11-22.json.gz`,
 uncompressed SHA-256
 `7d82fc45028f1220d120a12947babdf7903a11350b7673a9adce5e95ad152caa`.
+
+On Linux, the mixed development wheel built from commit
+`fc4011fd696344d70b1677342fb85a2baee041dd` recovered 2 of the same
+32 records versus 4 for RDKit. All 604 returned chematic candidates had
+consistent and evaluable declared stereo. This is development evidence,
+not a holdout result. The raw result is
+`validation/results/macrocycle-pdb-linux-development-mixed-32-2026-11-22.json.gz`,
+uncompressed SHA-256
+`6e0705f1bcac16e3abf2e86b9dd5efb7620f828f88beabc027776af3d594ad77`.
