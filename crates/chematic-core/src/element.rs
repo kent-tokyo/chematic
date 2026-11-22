@@ -455,6 +455,11 @@ mod tests {
             let back =
                 Element::from_symbol(sym).unwrap_or_else(|| panic!("no elem for symbol {sym}"));
             assert_eq!(elem, back, "roundtrip failed for atomic number {n}");
+            assert_eq!(
+                elem.to_string(),
+                sym,
+                "display failed for atomic number {n}"
+            );
         }
     }
 
