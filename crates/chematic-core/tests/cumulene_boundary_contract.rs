@@ -52,3 +52,36 @@ fn tetrahedral_remap_reports_duplicate_in_canonical_order() {
         Err(StereoGeometryError::DuplicateSlotId(2))
     );
 }
+
+#[test]
+fn cumulene_end_requires_consistent_markers_and_at_most_two_substituents() {
+    fn molecule(second_marker: BondOrder, extra_substituent: bool) -> chematic_core::Molecule {
+        let mut builder = MoleculeBuilder::new();
+        for _ in 0..8 {
+            builder.add_atom(Atom::new(Element::C));
+        }
+        for (a, b) in [(0, 1), (1, 2), (2, 3)] {
+            builder
+                .add_bond(AtomIdx(a), AtomIdx(b), BondOrder::Double)
+                .unwrap();
+        }
+        builder
+            .add_bond(AtomIdx(0), AtomIdx(4), BondOrder::Up)
+            .unwrap();
+        builder
+            .add_bond(AtomIdx(0), AtomIdx(5), second_marker)
+            .unwrap();
+        builder
+            .add_bond(AtomIdx(3), AtomIdx(6), BondOrder::Up)
+            .unwrap();
+        if extra_substituent {
+            builder
+                .add_bond(AtomIdx(0), AtomIdx(7), BondOrder::Single)
+                .unwrap();
+        }
+        builder.build()
+    }
+    assert!(planar_cumulene_at(&molecule(BondOrder::Down, false), AtomIdx(0)).is_some());
+    assert!(planar_cumulene_at(&molecule(BondOrder::Up, false), AtomIdx(0)).is_none());
+    assert!(planar_cumulene_at(&molecule(BondOrder::Down, true), AtomIdx(0)).is_none());
+}
