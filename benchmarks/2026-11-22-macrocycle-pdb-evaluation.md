@@ -630,7 +630,8 @@ sealed, merged and summarized.
 
 All four shards of [run 45055839414](https://github.com/kent-tokyo/chematic/actions/runs/45055839414)
 completed and were locally merged with the frozen timed manifest. The CI merge
-was still queued when this result was recorded. Across all 1,243 records,
+also succeeded; its raw result, recovery summary and strict-stereo summary were
+byte-identical to the independently reconstructed local files. Across all 1,243 records,
 within the 0.2-second acceptance deadline chematic recovered 87 references and
 RDKit 81. The paired difference was +0.48 percentage points; the 10,000-draw,
 seed-42 scaffold-cluster 95% interval was −0.26 to +1.27 percentage points
