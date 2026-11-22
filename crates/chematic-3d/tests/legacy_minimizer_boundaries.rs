@@ -67,3 +67,23 @@ fn nonbonded_and_heteroatom_angles_remain_finite() {
         }
     }
 }
+
+#[test]
+fn close_unbonded_atoms_repel_for_supported_and_fallback_elements() {
+    for symbol in [
+        "H", "C", "N", "O", "F", "Si", "P", "S", "Cl", "Br", "I", "Se", "Te", "Ne",
+    ] {
+        let mut builder = MoleculeBuilder::new();
+        let atom = Atom::new(Element::from_symbol(symbol).unwrap());
+        let a = builder.add_atom(atom.clone());
+        let b = builder.add_atom(atom);
+        let mut coords = Coords3D::new_zeroed(2);
+        coords.set(b, Point3::new(2., 0., 0.));
+        let result = minimize_with_config(&builder.build(), coords, &config());
+        let distance = result.get(a).distance(&result.get(b));
+        assert!(
+            distance.is_finite() && distance > 2.,
+            "{symbol}: {distance}"
+        );
+    }
+}

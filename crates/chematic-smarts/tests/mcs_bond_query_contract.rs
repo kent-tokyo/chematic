@@ -19,6 +19,11 @@ fn single_molecule_mcs_preserves_query_bond_alternatives() {
         (BondOrder::Triple, p(P::Triple)),
         (BondOrder::Aromatic, p(P::Aromatic)),
         (BondOrder::QueryAny, p(P::Any)),
+        (BondOrder::Zero, p(P::Any)),
+        (BondOrder::Quadruple, p(P::Any)),
+        (BondOrder::Up, p(P::Single)),
+        (BondOrder::Down, p(P::Single)),
+        (BondOrder::Dative, p(P::Single)),
         (BondOrder::QuerySingleOrDouble, either(P::Single, P::Double)),
         (
             BondOrder::QuerySingleOrAromatic,
