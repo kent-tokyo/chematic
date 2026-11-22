@@ -21,3 +21,12 @@ fn legacy_torsion_counts_ignore_removable_explicit_hydrogens() {
         );
     }
 }
+
+#[test]
+fn legacy_torsion_count_retains_quadruple_metal_bonds() {
+    // RDKit 2025.09.3 legacy topological-torsion counts.
+    for smiles in ["C[Re]$[Re]C", "C[Mo]$[Mo]C"] {
+        let counts = rdkit_legacy_torsion_counts(&parse(smiles).unwrap());
+        assert_eq!(counts, [(4_421_042_208, 1)], "{smiles}");
+    }
+}
