@@ -136,3 +136,41 @@ interval method before scoring. Use development cases first. At the time this
 split and index audit were fixed, no holdout SDF coordinate or conformer
 outcome had been inspected. Reference preparation checks coordinate finiteness
 without scoring, and no performance claim is made for these partitions.
+
+## Proposed fixed candidate evaluation, before holdout scoring
+
+The candidate population is the 1,243 prepared, scaffold-disjoint holdout
+records in the pinned split described above. Protein-bound conformations are
+assessed as a separate population; this test does not establish solution-state
+sampling or Prime-set equivalence. The structural files, split and preparation
+identity audits remain unchanged. Before starting a conformer evaluation,
+record exact tested source and Linux/macOS wheel hashes and run the chemistry
+support audit without generating conformers. Resolve any input-identity
+mismatch before proceeding; if doing so exposes conformer outcomes, create a
+fresh scaffold-disjoint holdout rather than silently reusing that record.
+
+For each engine, generate up to 20 candidates with seed 42 using the same
+stereo and heuristic geometry checks and the same 1 Å symmetry-aware
+heavy-atom RMSD criterion used by the COD fixed-count protocol. Use the
+corrected chematic profile with the bounded 400-iteration retry; retain all
+failures in the 1,243-record primary denominator. Report the matched-MMFF
+support subset separately and report parameterization, embedding,
+minimization, no-candidate, nonconvergence, and stereo failures separately.
+Apply a paired 95% percentile scaffold-cluster bootstrap interval to the
+difference in recovery rates, using 10,000 resamples and seed 42. The
+proposed noninferiority gate is a lower interval bound
+above −2 percentage points, together with zero detected specified-stereo
+violations among returned chematic candidates. Report the raw recovery and
+converged-only recovery for both engines even if the noninferiority gate passes.
+A low recovery for both engines remains a limitation of the reference and
+budget, not proof of adequate absolute quality.
+
+A separate timed comparison uses 0.2 seconds per molecule per engine, up to
+20 attempts, the seed schedule `42 * (attempt + 1)`, and the same screens;
+its measured time includes embedding, minimization and any retry but excludes
+RMSD scoring. Apply the same paired, scaffold-cluster 95% interval and −2
+percentage-point margin. Publish host/OS, elapsed-time distributions,
+completed attempt counts and errors; report Linux and macOS separately. The
+support audit and candidate/time budgets are proposed here before observing
+any holdout conformer outcomes; this paragraph does not itself report a test
+result or claim acceptance.

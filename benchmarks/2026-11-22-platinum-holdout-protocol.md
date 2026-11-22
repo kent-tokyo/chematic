@@ -1308,3 +1308,14 @@ UFF differences were reported as zero. These selected and exposed inputs are
 not independent acceptance evidence. Full outputs:
 `validation/results/cod-first-fields-aromatic-torsion-development-2026-11-22.json.gz`
 and `validation/results/cod-second-fields-aromatic-torsion-development-2026-11-22.json.gz`.
+
+Linux and macOS candidate wheels were separately built from the tested merge
+commit `22578e3829bfee7aaab03b4c1bd829e580c3a8fe` in the
+[v11 wheel run](https://github.com/kent-tokyo/chematic/actions/runs/44984753739).
+The Linux wheel SHA-256 is
+`0052c7ad06ce6fe92ddf919fc0e2a15869b7d683c530f794c62a052edf0d1603`;
+the macOS arm64 wheel SHA-256 is
+`fa33b33382589fd46124131525e5efabc06150bca33eba7153a4f551c9d985d6`.
+These binaries are not the Linux wheel used in the earlier one-off regression
+job, despite sharing its tested source. New development comparisons use the
+v11 wheel hashes; neither wheel has passed a fresh independent holdout.
