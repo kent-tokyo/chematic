@@ -1,7 +1,7 @@
 name: Macrocycle embedding stage diagnostic
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-stage-diagnostic-v11.yml'
 permissions:

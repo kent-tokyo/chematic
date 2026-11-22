@@ -1,0 +1,41 @@
+name: Macrocycle corrected embedding diagnostic
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/macrocycle-raw-corrected-v11.yml'
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Verify tested source and extract exposed development input
+        run: |
+          test "$(git rev-parse HEAD:crates)" = 8ddeec5d8efd30ffe1e77a75e5abd1869ef48568
+          python3 - <<'PY'
+          import gzip,hashlib,json,pathlib
+          script=pathlib.Path('scripts/validation/macrocycle_raw_corrected.rs')
+          assert hashlib.sha256(script.read_bytes()).hexdigest() == '3d5f37bdfb6911a2cad26f6947f46a53fbf299ad90ff3577e8dac5d456173598'
+          raw=gzip.decompress(pathlib.Path('validation/results/macrocycle-pdb-linux-development-v11-2026-11-22.json.gz').read_bytes())
+          assert hashlib.sha256(raw).hexdigest() == '821e4cbb342bbb94db5f4a44a62560d17001ead9e1a7f1190f0cb58ab3d14708'
+          rows=[r for r in json.loads(raw)['results'] if r['name']=='5vk0__Ligand_phospholipids_ALA_L_4']
+          assert len(rows)==1
+          pathlib.Path('macrocycle-input.smi').write_text(rows[0]['smiles']+'\n')
+          PY
+          cp scripts/validation/macrocycle_raw_corrected.rs crates/chematic-3d/examples/macrocycle_raw_corrected.rs
+      - name: Separate corrected embedding from stereo screening
+        run: |
+          cargo run --locked --release -p chematic-3d --example macrocycle_raw_corrected -- macrocycle-input.smi | tee macrocycle-raw-corrected.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: macrocycle-raw-corrected-v11-${{ matrix.os }}-${{ github.sha }}
+          path: macrocycle-raw-corrected.json
+          if-no-files-found: warn

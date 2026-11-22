@@ -1397,3 +1397,34 @@ scoring conformers. The per-record output is
 `validation/results/cod-development-declared-stereo-audit-local-2026-11-22.json.gz`,
 uncompressed SHA-256
 `2a9f2c6250f7cb9721fac77b86d2396405555f1fef340a5aa5e9bf82e77dfafc`.
+
+The Linux corrected-profile arm of the [strict-stereo development repeat](https://github.com/kent-tokyo/chematic/actions/runs/44990053917)
+completed on the frozen v11 wheel. Recovery remained 161 / 163 of 225 for
+chematic / RDKit, and all 225 per-record RMSD arrays for both engines matched
+the corresponding earlier v11 Linux run. Of 4,160 chematic candidates, zero
+had contradicted or unevaluable declared stereo. Of 4,180 RDKit candidates,
+19 had contradictions, 56 had unevaluable declarations, and 58 had either
+(the categories overlap). Seventeen / sixteen records had no returned
+candidate, including the 13 unsupported by both engines. These are exposed
+development data, not a fresh noninferiority result. The raw output is
+`validation/results/cod-linux-development-v11-corrected-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`2f59294f7b22a6f257dc284b8c14fc2fede18c289c72b425d510f729c1c11fbd`;
+recovery and strict-stereo summaries are alongside it. The Linux structural
+audit of all 225 development inputs is
+`validation/results/cod-development-declared-stereo-audit-linux-2026-11-22.json.gz`,
+uncompressed SHA-256
+`4f3390c46d4e89023f5d4f1959a38e9265c844e7ea451b48276446052ed6ce7b`.
+The macOS corrected-profile arm also recovered 161 / 163. Among 4,160
+chematic candidates there were zero contradicted or unevaluable declarations;
+among 4,180 RDKit candidates, 19 were contradicted, 57 unevaluable and 59
+had either. Seventeen / sixteen records returned no candidate, including 13
+unsupported by both. The raw macOS output is
+`validation/results/cod-macos-development-v11-corrected-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`a52c8071108b1221b21f0117fb5cb2e351094db0eab31ad575ac7de245b4aeb0`.
+Its structural audit is
+`validation/results/cod-development-declared-stereo-audit-macos-2026-11-22.json.gz`,
+uncompressed SHA-256
+`660a44b16ee8371af2f74d8e41e2e4f3d755baa64cba474308e83fac0f7ccacf`.
+The compatible-profile arms are still running.
