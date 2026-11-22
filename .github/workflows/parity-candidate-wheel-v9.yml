@@ -2,7 +2,7 @@ name: Freeze sulfoxide and cage angle candidate wheels
 
 on:
   pull_request:
-    types: [opened, reopened]
+    types: [opened, reopened, synchronize]
     paths:
       - '.github/workflows/parity-candidate-wheel-v9.yml'
 
@@ -20,13 +20,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: d2811de8c94faab818afba5f789015cc1124cd05
+          ref: 86fe06426ec53651c1f584e64f0e9d5d3bbbe563
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: '3.12'
       - name: Build and fingerprint candidate
         run: |
-          test "$(git rev-parse HEAD:crates)" = 'ed769deebdaf3f15530d7022e10be96958f31be9'
+          test "$(git rev-parse HEAD:crates)" = 'fe6e1e1a7631d81e847e4be0c019d6f571a9834b'
           python -m pip install 'maturin==1.13.3'
           git rev-parse HEAD > candidate-source-commit.txt
           uname -a > candidate-platform.txt
