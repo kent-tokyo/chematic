@@ -2240,3 +2240,11 @@ with uncompressed SHA-256 values
 The machine-readable recovery and stereo summaries accompany the complete
 result. The CI recovery manifest and individual subshard artifacts remain
 available in the linked run.
+
+The separate Linux COD timed-recovery workflow starts from the complete
+CI-verified fixed-count result above and the original fixed manifest. Both are
+checked against their recorded SHA-256 values before the original timed-shard
+planner runs. The 2,102 records remain in their original four fixed-shard
+memberships, with the prespecified cooperative 0.2-second deadline and frozen
+wheel. This workflow was prepared after fixed-count outcomes became available;
+its timing outcomes remain unobserved until it runs and completes.
