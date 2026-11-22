@@ -56,6 +56,7 @@ mod tests {
     #[test]
     fn unverified_four_coordinate_sulfur_remains_unevaluable() {
         let molecule = chematic_chem::add_hydrogens(&mol("C[S@](=NC)(O)CC"));
+        assert!(molecule.atom(AtomIdx(1)).chirality.is_tetrahedral());
         assert!(matches!(
             tetrahedral_constraint_for(&molecule, AtomIdx(1)),
             Err(StereoRejectionReason::UnsupportedCoordination)
@@ -65,6 +66,7 @@ mod tests {
     #[test]
     fn unverified_sulfur_double_bond_pair_remains_unevaluable() {
         let molecule = chematic_chem::add_hydrogens(&mol("C[S@](=O)(=O)CC"));
+        assert!(molecule.atom(AtomIdx(1)).chirality.is_tetrahedral());
         assert!(matches!(
             tetrahedral_constraint_for(&molecule, AtomIdx(1)),
             Err(StereoRejectionReason::UnsupportedCoordination)
