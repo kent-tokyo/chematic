@@ -93,6 +93,9 @@ fn apply_torsion_preferences_with_noise(
 
             let b_idx = AtomIdx(b as u32);
             let c_idx = AtomIdx(c as u32);
+            if ring_bond_set.contains(&(b as u32, c as u32)) {
+                continue;
+            }
             if mol.bond_between(b_idx, c_idx).is_none() {
                 continue;
             }
