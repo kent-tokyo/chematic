@@ -123,3 +123,24 @@ fn pdb_five_coordinate_stereo_tracks_each_axial_ligand_pair() {
         );
     }
 }
+
+#[test]
+fn overlapping_ligand_and_center_are_rejected_during_3d_stereo_assignment() {
+    let mut lines = vec![atom(1, "Pt", [0.; 3])];
+    for (i, (element, point)) in [
+        ("F", [0., 0., 0.]),
+        ("Cl", [1., 0., 0.]),
+        ("Br", [0., 1., 0.]),
+        ("I", [0., 0., 1.]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        lines.push(atom(i + 2, element, point));
+    }
+    lines.extend(["CONECT    1    2    3    4    5".into(), "END".into()]);
+    let error = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("zero length vector"), "{error}");
+}
