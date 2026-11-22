@@ -1,7 +1,7 @@
 name: MMFF ring cache development
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/mmff-ring-cache-development.yml'
 permissions:
