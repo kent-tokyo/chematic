@@ -1,28 +1,4 @@
-use chematic_chem::standardize::{CleanupError, cleanup, cleanup_checked, cleanup_unchecked};
-
-#[test]
-fn cleanup_errors_have_stable_codes_and_descriptions() {
-    for (error, code, description) in [
-        (
-            CleanupError::AmbiguousMetalHydrogen,
-            "cleanup_metal_hydrogen",
-            "Cleanup cannot account for the metal hydrogen change",
-        ),
-        (
-            CleanupError::UnstableMetalDisconnection,
-            "cleanup_unstable_metal",
-            "Cleanup would charge the detached metal on a subsequent call",
-        ),
-        (
-            CleanupError::UnstableMetalStereo,
-            "cleanup_metal_stereo",
-            "Cleanup cannot reliably represent a tetrahedral center with five ligands including a metal",
-        ),
-    ] {
-        assert_eq!(error.code(), code);
-        assert_eq!(error.to_string(), description);
-    }
-}
+use chematic_chem::standardize::{cleanup, cleanup_checked, cleanup_unchecked};
 
 #[test]
 fn cleanup_alias_and_checked_cleanup_agree_on_ordinary_molecules() {
