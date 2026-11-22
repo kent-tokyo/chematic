@@ -1902,6 +1902,30 @@ establish derivative correctness over all coordinates. This force-field
 follow-up is independent of the conformer-recovery criterion, and no field
 outcomes from the new holdouts have been inspected when this protocol is set.
 
+The four Linux COD field shards completed in run 45030248656 and were
+verified against the sealed manifest before merging. All 2,102 selected
+records are accounted for; RDKit reference embedding failed on 35. MMFF94
+and MMFF94s were comparable on 1,885 records. For both variants, one record
+exceeded each diagnostic threshold; the maximum absolute energy difference
+was 2.6336 kcal/mol and maximum gradient-component difference was
+50.683 kcal/mol/angstrom. UFF was comparable on 2,067 records; one exceeded
+both thresholds, with maximum absolute energy difference `4.05914e7`
+kcal/mol and gradient-component difference `6.51752e8` kcal/mol/angstrom.
+The MMFF and UFF outliers are different molecules. Their causes are not yet
+established, and the latter large discrepancy precludes an unqualified
+force-field parity claim. Sampled maximum finite-difference discrepancies
+were 0.493, 0.693 and 0.432 for MMFF94, MMFF94s and UFF respectively.
+The 95th percentiles of absolute energy and componentwise gradient errors
+were zero for all three variants; they do not erase the outliers. Raw data
+and the summary are retained as
+`validation/results/fresh-cod-holdout-linux-fields-2026-11-22.json.gz` and
+`validation/results/fresh-cod-holdout-linux-fields-summary-2026-11-22.json`.
+The uncompressed merged result SHA-256 is
+`10cfcd5790d5dbe4f7c33f4c8c7abd1301c1dc384ece1f747c72441a17000d76`.
+This holdout is now exposed and must not be reused as fresh independent
+evidence for a fix selected from its outliers. Other platform and macrocycle
+field results remain in progress.
+
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
 (SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).
