@@ -2197,3 +2197,46 @@ records per-part provenance, and seals all 525 original identities. The new
 runners may differ from the checkpoint runner. Recovery preserves that platform
 provenance and must not be interpreted as one uninterrupted timed measurement.
 No recovery outcome is available until the workflow completes.
+
+### Independent Linux COD fixed-count result after recovery
+
+The [recovery run](https://github.com/kent-tokyo/chematic/actions/runs/45055482083)
+completed all eight remaining subshards and its merge. The recovered shard,
+remaining-shard merge, complete fixed-count merge, recovery summary and strict
+stereo summary were each independently reconstructed locally and verified
+byte-for-byte against the CI artifacts. The original checkpoint and resumed
+subshards used the frozen scorer and Linux wheel. The wheel predates the
+separate bridging-hydrogen correction. The recovered shard records the
+checkpoint and resumed runner provenance; this is not an uninterrupted timing
+measurement.
+
+For the full 2,102-record holdout, 1,919 records had status `ok` and 183 were
+RDKit MMFF-unsupported. At the 1 angstrom reference-recovery threshold,
+chematic recovered 1,515 and RDKit 1,511 (all-record denominator 2,102).
+The paired difference is +0.19 percentage points and the 10,000-resample,
+seed-42 scaffold-cluster 95% interval is −0.52 to +0.90 percentage points
+across 2,000 scaffold groups. Its lower bound exceeds the prespecified −2
+percentage-point noninferiority margin for this platform and fixed-count
+population. Converged-only recovery was 986 and 981; its scaffold-cluster
+interval was −0.48 to +0.95 percentage points.
+
+Strict stereo checking found zero contradicted or unevaluable declared stereo
+among 37,717 chematic conformers; 63 of 37,754 RDKit conformers were flagged
+(29 contradicted and 34 unevaluable). The no-conformer record counts were 209
+and 207. The original scorer recorded 24 RDKit `Bad Conformer Id` errors;
+these remain in the data and are not reclassified by the later scorer fix.
+This fixed-count result is not the pending time-budget result, macOS result,
+or evidence for published packages or general RDKit parity.
+
+The uncompressed complete result SHA-256 is
+`3fb325b1f18e3150f76f1bb5fb89c9c6cc05be3f2f7e4a437b97f306fbf0f7d0`, stored as
+`validation/results/cod-independent-mixed-fixed-linux-2026-11-22.json.gz`.
+The recovered original shard and combined remaining subshards are retained as
+`validation/results/cod-independent-mixed-recovered-shard3-linux-2026-11-22.json.gz`
+and `validation/results/cod-independent-mixed-recovery-remaining-linux-2026-11-22.json.gz`,
+with uncompressed SHA-256 values
+`093c7e341e0228930e0026d95234b22eb26b11159f6a80174b64b8a0f14ea4b4` and
+`b3e31060d28cf3769610c9793295b46801ac9fc71ab3e58bbe467562ff795bb3`.
+The machine-readable recovery and stereo summaries accompany the complete
+result. The CI recovery manifest and individual subshard artifacts remain
+available in the linked run.
