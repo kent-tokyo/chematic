@@ -22,7 +22,7 @@ Rich-document issue boundaries are listed in the
 - Rust is the reference implementation. Python and WASM/Node expose selected,
   versioned operations rather than every Rust type or RDKit method.
 
-The v1.2.2 tag workflow establishes its exact artifact and platform results. Older package measurements keep their recorded versions and scope.
+See [release verification](validation.md#v122-published-release) for v1.2.2 and [Cleanup migration](cleanup-migration.md) for checked Cleanup error handling.
 
 ## Main bounded surfaces
 

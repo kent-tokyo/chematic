@@ -126,7 +126,7 @@ impl std::error::Error for CleanupError {}
 /// Apply Cleanup and reject unresolved or unstable metal transformations.
 ///
 /// [`cleanup_unchecked`] retains the historical best-effort behavior.
-pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
+pub fn cleanup_checked(mol: &Molecule) -> Result<Molecule, CleanupError> {
     if mol.atoms().any(|(idx, atom)| {
         matches!(
             atom.chirality,
@@ -167,9 +167,9 @@ pub fn cleanup(mol: &Molecule) -> Result<Molecule, CleanupError> {
     Ok(cleaned)
 }
 
-/// Alias for [`cleanup`], retained for callers that prefer an explicit name.
-pub fn cleanup_checked(mol: &Molecule) -> Result<Molecule, CleanupError> {
-    cleanup(mol)
+/// Apply best-effort Cleanup, preserving the original API.
+pub fn cleanup(mol: &Molecule) -> Molecule {
+    cleanup_unchecked(mol)
 }
 
 fn restore_cut_metal_hydrogens(

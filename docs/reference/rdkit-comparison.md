@@ -8,42 +8,20 @@ it is the better choice when a workflow needs an unsupported API or production
 For individual API mappings, see [migration](rdkit-migration.md). For actual
 support and refusal boundaries, see [compatibility scope](compatibility-scope.md).
 
-## Current measured boundary
+## v1.2.2 results
 
-The **v1.2.2 release line** retains the named RDKit-compatible surfaces,
-adds stronger fail-closed canonical-SMILES, reaction, R-group and
-standardization handling, fixes bounded MCS and conversion edge cases, and
-preserves dated evidence under its original version. v1.2.2 package claims require exact published artifacts; source timing remains source timing. In the recorded v1.0.41 source comparison, chematic matches RDKit at
-least as often as COSMolKit 0.5.0rc15 on all 161 operations over ChEMBL 5k and
-RDKit.js 10k; the separate stress corpus retains one weaker native canonical
-SMILES round-trip result. This is source-build evidence, not a universal or
-published-package parity claim. The latest
-published-package chemistry comparison packet is pinned to
-**v1.0.42** against RDKit 2026.09.1. A separate v1.1.3 Python artifact packet
-covers exact public wheels on hosted Linux x86-64, macOS arm64, macOS x86-64,
-and Windows x86-64. The v1.2.0 hosted published-wheel chemistry run completed
-all 11 jobs, but its durable per-row packet is not checked in yet.
-These are output-validation results. The separate [v1.2.2 published Python
-timing packet](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-v122-published-comparison.md)
-compares three chematic releases, RDKit and COSMolKit on fixed inputs and one
-macOS arm64 host.
+The published Python comparison uses hash-verified wheels for chematic
+1.2.0–1.2.2, RDKit 2026.9.2 and COSMolKit 0.6.3 on one macOS arm64 host.
+It covers descriptors, fingerprints and five MCS cases. The
+[benchmark report](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-v122-published-comparison.md)
+gives the timing boundaries and per-case output checks.
 
-The v1.2.2 source Cleanup comparison with RDKit 2026.09.1 matches 4,022/4,069
-comparable stress rows and 9,996/10,000 broad rows. Against the 2026-10-24
-source record, 47 and 2 previously exact rows now differ; the
-[stress](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-stress-2026-11-21.json)
-and [broad](https://github.com/kent-tokyo/chematic/blob/main/validation/results/rdkit-cleanup-v1.2.2-source-10k-2026-11-21.json)
-records classify each difference. The same source Reionize gate matches all
-4,072 stress rows. These are fixed-corpus string comparisons.
+The v1.2.2 source gate matches RDKit 2026.09.1 on 4,022/4,069 comparable
+Cleanup stress rows and 9,996/10,000 broad rows. Reionize matches all
+4,072 stress rows. Later Cleanup candidate results and refusals are in the
+[Cleanup audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md).
 
-The later source candidate preserves explicit metal hydrogens when their loss
-accounts for a molecular hydrogen deficit and rejects an unresolved hydrogen
-transfer or unstable detached metals. Its fixed-corpus comparison records
-4,000/4,069 exact stress strings, including seven refusals, and 9,994/10,000
-broad strings, including two refusals. Some differences preserve hydrogens
-that earlier chematic and RDKit discarded or avoid introducing new ones.
-The [row audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md)
-separates the released wheel from the source candidates.
+## Earlier evidence
 
 | Lane | Recorded result | What it does not show |
 |---|---|---|

@@ -3,11 +3,9 @@
 Pure-Rust cheminformatics library for Python — SMILES parsing, descriptors,
 fingerprints, substructure search, formats, reactions, and bounded 3D tools.
 
-The current published line is 1.1.3. It includes molecule pickling, indexed
-SDF access, V3000 bond-stereo collections, and reusable Python MMFF94/UFF
-force fields. Compatibility and performance claims remain operation-,
-artifact-, and corpus-scoped; see the validation and migration guides before
-replacing a production RDKit workflow.
+See [PyPI](https://pypi.org/project/chematic/) for available versions and
+the [validation report](https://kent-tokyo.github.io/chematic/reference/validation/)
+for package results.
 
 ## Installation
 
@@ -20,95 +18,18 @@ pip install chematic
 ```python
 import chematic
 
-mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")  # aspirin
-
-print(mol.mw)      # 180.16
-print(mol.logp)    # 1.31
-print(mol.tpsa)    # 63.6
-print(mol.qed)     # 0.55
-
-# New descriptors
-print(mol.vabc)              # van der Waals volume (no 3D needed)
-print(mol.schultz_mti)       # Schultz MTI
-print(mol.gutman_mti)        # Gutman MTI*
-print(mol.gravitational_index)  # gravitational index
-
-# pKa prediction
-print(mol.pka())   # {"most_acidic": 3.49, "most_basic": None}
-
-# ADMET profile
-print(mol.admet())
-# {"bbb": False, "bbb_score": ..., "caco2": ..., "herg_risk": ..., "cyp3a4_risk": ...}
-
-# Fingerprints (bytes, 2048-bit ECFP4)
-fp = mol.ecfp4()
-
-# Tanimoto similarity
-mol2 = chematic.from_smiles("c1ccccc1")
-sim = chematic.tanimoto(mol.ecfp4(), mol2.ecfp4())
-
-# Mol objects can be cached or sent to worker processes with pickle. Graph
-# chemistry, stereo, R-groups, source metadata, and SD properties survive.
-import pickle
-restored = pickle.loads(pickle.dumps(mol))
-
-# Natural-language property summary (for LLM / MCP agents)
-print(mol.describe())
-
-# Structural diff between two molecules
-ibuprofen = chematic.from_smiles("CC(C)Cc1ccc(CC(C)C(=O)O)cc1")
-d = mol.diff(ibuprofen)  # {"summary": "...", "delta_mw": 66.1, "delta_logp": 2.75, ...}
-
-# SVG / PDF / EPS depiction
+mol = chematic.from_smiles("CC(=O)Oc1ccccc1C(=O)O")
+print(mol.mw, mol.tpsa)
+print(chematic.tanimoto(mol.ecfp4(), chematic.from_smiles("CCO").ecfp4()))
 svg = mol.to_svg()
-pdf_bytes = mol.to_pdf()   # bytes; requires pdf feature
-eps_str   = mol.to_eps()   # PostScript string
-
-# ChemicalJSON (Avogadro 2 / MolSSI)
-cjson_str = mol.to_cjson(coords=[])   # coords: list of (x,y,z) tuples, optional
-mol2, coords = chematic.from_cjson(cjson_str)
-
-# Template-based retrosynthesis (60 retro-SMIRKS templates)
-mol3 = chematic.from_smiles("CC(=O)Nc1ccccc1")  # acetanilide
-results = mol3.retro_disconnect(max_results=5)
-for r in results:
-    print(r["template"], "→", r["precursors"])
-# amide_secondary → ['CC(=O)O', 'Nc1ccccc1']
-
-# Filter by reaction class
-amides = mol3.retro_disconnect(reaction_class="AmideBond")
-
-# Bulk substructure match against a pre-parsed Mol list (returns indices)
-mols = [chematic.from_smiles(s) for s in ["CCO", "c1ccccc1O", "CC(=O)O"]]
-hits = chematic.bulk.substructure_match("[OH]", mols)  # → [0, 1, 2]
-
-# All descriptors as a dict (for Pandas)
-import pandas as pd
-smiles = ["CCO", "c1ccccc1", "CC(=O)O"]
-df = pd.DataFrame([chematic.from_smiles(s).descriptors() for s in smiles])
-
-# Opt-in v2 embedding pipeline: torsion-knowledge-aware distance geometry +
-# stereo verification/repair + policy-gated force field, with full per-stage
-# evidence (never just final coordinates)
-config = chematic.PipelineV2Config.safe(
-    force_field="mmff94_with_uff_fallback",
-    stereo_policy="repair_and_verify",
-    ring_torsion_policy="fail_closed",
-)
-try:
-    result = mol.embed_pipeline_v2(config)
-    coords = result["coords"]                       # same atom order as mol
-    print(result["force_field"]["actual_force_field_used"])  # fallback if MMFF94 lacked params
-    print(result["final_validation"]["sound"])
-except chematic.PipelineV2Error as e:
-    print(e.diagnostics["stage"], e.diagnostics["cause"])   # structured, not just a message
-
-# Reuse prepared MMFF94 terms across iterative energy/gradient calls
-field = mol.mmff_force_field(coords)
-energy, gradient = field.energy_gradient()
-field.set_position_(0, [coords[0][0] + 0.01, *coords[0][1:]])
-status, optimized_energy = field.minimize_()
 ```
+
+See the [Python notebook guide](https://kent-tokyo.github.io/chematic/use-cases/python-notebook/)
+for descriptors and batch analysis and the
+[API reference](https://kent-tokyo.github.io/chematic/api/chematic/) for molecule
+methods, indexed SDF, pickle and optional workflows. See
+[Cleanup migration](../../docs/reference/cleanup-migration.md) for error behavior
+in the unreleased source.
 
 ## Molecular GNN input
 
@@ -154,33 +75,18 @@ the chirality retained in `record.mol` from the CTAB wedge representation.
 
 ## Features
 
-- **Zero C/C++ dependencies** — pure Rust, no RDKit or OpenBabel required
-- **SMILES / MOL / SDF / ChemicalJSON** parsing and writing
-- **Indexed SDF datasets** — `SdfDataset` provides cheap record counts,
-  metadata, random access, and bounded range reads without materializing every
-  molecule
-- **190+ descriptor values** (70+ functions; several return vectors): MW,
-  LogP, TPSA, QED, Fsp3, SA Score, HBD, `vabc`, `schultz_mti`,
-  `gutman_mti`, and `gravitational_index`. RDKit agreement is metric-specific;
-  see the [validation report](../../docs/reference/validation.md).
-- **14 fingerprint algorithms**: ECFP2/4/6, FCFP4/6, MACCS, AtomPair, Torsion, …
-- **pKa prediction** (15 SMARTS rules — unique to chematic)
-- **ADMET profile**: BBB, Caco-2, hERG, CYP3A4
-- **Template-based retrosynthesis**: `mol.retro_disconnect()` — 60 retro-SMIRKS templates, SA Score ranked
-- **SMARTS substructure search** — `chematic.smarts_match()` and `bulk.substructure_match(smarts, mols)` (pre-parsed Mol list, returns indices)
-- **SVG / PDF / EPS depiction**: `mol.to_svg()`, `mol.to_pdf()`, `mol.to_eps()`
-- **ChemicalJSON**: `mol.to_cjson(coords=[])`, `chematic.from_cjson(s)` — Avogadro 2 / MolSSI compatible
-- **Opt-in v2 embedding pipeline**: `mol.embed_pipeline_v2(config)` — torsion-knowledge-aware distance geometry, stereo verify/repair, and policy-gated force field (`PipelineV2Config`), returning full per-stage evidence (embed stats, torsion knowledge/optimization reports, stereo before/after, force-field actual policy and fallback, final geometry validation, stage timings) instead of just coordinates; raises `chematic.PipelineV2Error` with structured `.diagnostics` on failure
-- **Reusable MMFF94/UFF objects**: `mol.mmff_force_field(coords)` and
-  `mol.uff_force_field(coords)` retain prepared terms across energy, gradient,
-  coordinate-update, and in-place minimization calls
-- **Charge-conserving EEM**: `mol.eem_charges(coords)` uses the published
-  NEEMP model and preserves the formal-charge sum for ions
+- Read and write common molecule formats, including indexed SDF. See the
+  [format matrix](../../docs/reference/format-capabilities.md).
+- Compute descriptors and fingerprints, run SMARTS and reaction workflows,
+  and render SVG, PDF or EPS depending on build features.
+- Use opt-in 3D embedding and prepared MMFF94/UFF force fields. The
+  [validation report](../../docs/reference/validation.md) describes
+  their tested limits.
 
 ## RDKit compatibility
 
 The operation/profile boundaries and measured oracle lanes are listed in the
-[Compatibility Contract dashboard](../../docs/compatibility-dashboard.md).
+[Compatibility Contract dashboard](../../docs/reference/compatibility-dashboard.md).
 For persisted fingerprints, saved indices, canonical identity, stereo, and
 browser/Worker migration decisions, read the
 [RDKit migration guide](../../docs/reference/rdkit-migration.md) before changing a

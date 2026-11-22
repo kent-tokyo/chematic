@@ -82,13 +82,8 @@ finishes after its `CI gate` and the other fast lanes. `Test`, `Clippy`,
 `Format Check`, and `Build Check` remain required checks. Keep the PR branch up to date with `main` before
 merging, so the tested merge includes the current base.
 
-Stable release tags must point to a version-matching commit on `main`. The
-`publish-pypi.yml` Release workflow remains the PyPI Trusted Publisher entry
-point. It reruns full CI, Coverage, and Security on that exact tag before
-publishing crates.io, npm, or PyPI packages. It checks the published PyPI
-wheel matrix and hashes, runs published-wheel smoke and chemistry validation,
-and creates the GitHub Release only after those jobs pass. A failed release can
-be rerun at the same tag; publishing jobs handle already published packages.
+For version preparation, tag qualification, and registry verification, follow
+the [release checklist](scripts/release/README.md).
 
 ## Development workflow
 

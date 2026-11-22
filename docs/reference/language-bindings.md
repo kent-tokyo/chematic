@@ -17,6 +17,8 @@ matter when porting code. Format coverage is in
 Python arrays and WASM typed arrays are copies, not views into Rust memory.
 Parsers remain format-specific; there is no `parse_any(text)` auto-detection.
 
+For standardization, see [Cleanup calls and refusal codes](cleanup-migration.md).
+
 ## Atom provenance and output order
 
 | Capability | Rust | Python | WASM / Node |

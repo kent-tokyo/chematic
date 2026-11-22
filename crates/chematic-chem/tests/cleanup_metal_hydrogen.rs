@@ -1,4 +1,6 @@
-use chematic_chem::{CleanupError, add_hydrogens, calc_mol_formula, cleanup, cleanup_checked};
+use chematic_chem::{
+    CleanupError, add_hydrogens, calc_mol_formula, cleanup_checked, cleanup_checked as cleanup,
+};
 use chematic_smiles::{parse, rdkit_cleanup_canonical_smiles};
 
 #[test]

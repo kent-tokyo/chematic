@@ -1,19 +1,14 @@
 # Open-work ledger
 
-Updated 2026-11-21 for **v1.2.2**. Completed work belongs in the
-[CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md);
-dated evidence belongs in the
-[benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md).
+The [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
+tracks completed changes. The [validation report](validation.md) records
+published v1.2.2 and links the dated evidence.
 
 ## Release and compatibility
 
-- Re-run changed chemistry lanes from exact PyPI, npm/WASM, and crates.io
-  artifacts. Source, package, browser, and operating-system evidence stay
-  separate.
-- Compare every public Rust crate with the immediately previous release and
-  retain consumer fixtures where static semver tools cannot observe behavior.
-- Preserve RDKit 2026.03.6/2026.09.1 ring differences and typed CIP
-  abstentions instead of treating one oracle version as universal truth.
+- Check the v1.2.3 source and bindings against the v1.2.2 tag. Verify [Rust Cleanup compatibility](cleanup-migration.md) against v1.2.2.
+- Qualify the exact release artifacts across Rust, Python and WASM. Preserve
+  comparator versions and typed refusals when reporting results.
 
 ## Chemistry correctness
 
@@ -25,9 +20,10 @@ dated evidence belongs in the
   chirality matching. Encoding those constraints in the result, full FMCS
   parity, the explicit-H policy difference, and a newly selected independent
   holdout remain open.
-- **Standardization:** current source matches RDKit 2026.09.1 on Normalize
-  4,069/4,069, Cleanup 4,057/4,069, and Reionize 4,069/4,069 comparable rows.
-  Classify the remaining 12 Cleanup rows before adding more transforms.
+- **Standardization:** adjudicate the remaining Cleanup graph differences
+  and the hydrogen-total change in the 575-row metal audit. The
+  [Cleanup audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md)
+  records the published wheel and the subsequently tested candidate.
 - **CTfile:** one chematic readback failure and ten stereo-only rows remain;
   16 RDKit oracle failures stay outside the chematic failure count.
 - **Reaction/SMARTS:** retain the 80 exact reaction rows plus three jointly
@@ -44,10 +40,9 @@ broaden the supported domain.
 
 ## Performance and memory
 
-- Re-run ASA, TPSA, chiral Morgan, QED, reaction, and 3D lanes from exact
-  public artifacts. Split parsing, first use, prepared reuse, startup, and peak
-  RSS.
-- Add a second host to current macOS source measurements.
+- Extend the v1.2.2 single-host [descriptor and MCS comparison](benchmark.md)
+  to a second host. Measure ASA, QED, reactions and 3D on exact packages where
+  comparable. Record parsing, first use, prepared reuse, startup and peak RSS.
 - Do not rank rows with unequal outputs, comparator failures, skips, or
   unsupported work. Preparation cost cannot be hidden at another boundary.
 
