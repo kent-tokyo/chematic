@@ -155,6 +155,14 @@ def test_corrected_ensemble_uses_one_batch_and_preserves_default_molecule_behavi
     assert corrected_raw[0][2] != compatible_raw[0][2]
 
 
+def test_corrected_fallback_preserves_successful_corrected_ensemble():
+    mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
+    corrected = mol.etkdg_embed_multiple_confs_mmff_corrected(2, random_seed=42)
+    assert corrected
+    assert mol.etkdg_embed_multiple_confs_mmff_corrected_fallback(2, random_seed=42) == corrected
+    assert mol.etkdg_embed_multiple_confs_mmff_corrected_fallback(0) == []
+
+
 def test_corrected_ensemble_checks_final_gradient():
     mol = chematic.from_smiles("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").add_hydrogens()
     conformers = mol.etkdg_embed_multiple_confs_mmff_corrected(20, random_seed=42)

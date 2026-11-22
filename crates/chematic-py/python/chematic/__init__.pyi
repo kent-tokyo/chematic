@@ -460,6 +460,20 @@ class Mol:
         """
         ...
 
+    def etkdg_embed_multiple_confs_mmff_corrected_fallback(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Use the stereo-checked corrected ensemble, or retry with the
+        compatibility gradient if it returns no usable candidates. The retry
+        may double the embedding and optimization work."""
+        ...
+
     def etkdg_embed_multiple_confs_mmff_best_gradient(
         self,
         num_confs: int,

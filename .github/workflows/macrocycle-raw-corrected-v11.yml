@@ -1,7 +1,7 @@
 name: Macrocycle corrected embedding diagnostic
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/macrocycle-raw-corrected-v11.yml'
 permissions:
