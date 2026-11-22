@@ -59,6 +59,12 @@ fn partial_and_incompatible_stereo_are_reported_as_unevaluable() {
         StereoStatus::Unevaluable(StereoRejectionReason::AmbiguousDirection)
     );
 
+    let cumulated = chematic_smiles::parse(r"F/C=C=C/F").unwrap();
+    let report = verify_stereo(&cumulated, &Coords3D::new_zeroed(cumulated.atom_count()));
+    assert_eq!(report.double_bond.len(), 2);
+    assert!(report.double_bond.iter().all(|entry| entry.status
+        == StereoStatus::Unevaluable(StereoRejectionReason::TerminalOrCumulatedAlkene)));
+
     let mut incompatible = chematic_smiles::parse("F[C@](Cl)(Br)I").unwrap();
     incompatible.set_bond_order(BondIdx(0), BondOrder::Double);
     let coords = Coords3D::new_zeroed(incompatible.atom_count());
