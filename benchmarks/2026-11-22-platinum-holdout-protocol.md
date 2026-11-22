@@ -801,7 +801,19 @@ uses merge commit `acc79a611d5c3bac571a7b1a6f274700b20f534e`, crates tree
 SHA-256 is `e113e7f74b6e5018a03913836824c203d2366e34189264c0d85291fbd663b7b3`;
 its macOS arm64 wheel SHA-256 is
 `402918d1553f4760d87eb5e3f1602f91bc3c37c164c8b01ac7cb048f4deeb464`.
-The v5 development comparison remains in progress. The
+The [v5 development comparison](https://github.com/kent-tokyo/chematic/actions/runs/44966536884)
+matched atom identity on 225 records, with 212 common-MMFF inputs and 13
+unsupported by both engines. Chematic/RDKit recovered 161/163 references out
+of 225; the paired molecule-bootstrap interval was −4.00 to +2.22 percentage
+points. Among 4,120/4,180 returned candidates, specified-stereo violations
+were 0/38. Chematic returned no candidates for six inputs: three for which
+RDKit returned 20 candidates and three for which RDKit reported a conformer
+error. This is an exploratory development result, not noninferiority evidence.
+Its uncompressed JSON SHA-256 is
+`9c4b6fec1eeb8798fc58c5a8f262f0842fc2a78e30215bb2c2bb232e9f7af9b9`, and the
+compressed result, support and identity records are retained as
+`validation/results/cod-linux-{development,support,identity}-v5-2026-11-22.json.gz`.
+The
 [v6 build](https://github.com/kent-tokyo/chematic/actions/runs/44967752750)
 includes the terminal-carbon fix and uses merge commit
 `76a6d3c8ef9642155821d6810a1a0d28c6bfb146`, crates tree
