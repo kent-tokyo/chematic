@@ -20,13 +20,17 @@ reference=AllChem.MMFFGetMoleculeForceField(mol,props,nonBondedThresh=100.0)
 native=other.mmff_force_field(coords)
 native_grad=[v for p in native.gradient() for v in p];rdkit_grad=list(reference.CalcGrad())
 axes=sorted({round(i*(len(flat)-1)/5) for i in range(6)})
-def fd(field_energy,axis):
-    plus=flat[:];minus=flat[:];plus[axis]+=1e-5;minus[axis]-=1e-5
-    return (field_energy(plus)-field_energy(minus))/2e-5
+def fd(field_energy,axis,step=1e-5):
+    plus=flat[:];minus=flat[:];plus[axis]+=step;minus[axis]-=step
+    return (field_energy(plus)-field_energy(minus))/(2*step)
 native_fd=lambda x:other.mmff_force_field([x[i:i+3] for i in range(0,len(x),3)]).energy()
 checks=[{'axis':i,'native_gradient':native_grad[i],'rdkit_gradient':rdkit_grad[i],
          'native_fd':fd(native_fd,i),'rdkit_fd':fd(reference.CalcEnergy,i)} for i in axes]
 worst=max(checks,key=lambda x:abs(x['native_gradient']-x['native_fd']))['axis']
+consistent_grad=[v for point in native.gradient_with_consistent_planes() for v in point]
+step_sweep=[{'step':h,'native_fd':fd(native_fd,worst,h),
+             'rdkit_fd':fd(reference.CalcEnergy,worst,h)}
+            for h in (1e-3,1e-4,1e-5,1e-6,1e-7,1e-8)]
 methods={'bond':'SetMMFFBondTerm','angle':'SetMMFFAngleTerm','stretch_bend':'SetMMFFStretchBendTerm',
          'oop':'SetMMFFOopTerm','torsion':'SetMMFFTorsionTerm','vdw':'SetMMFFVdWTerm','ele':'SetMMFFEleTerm'}
 terms=[]
@@ -45,6 +49,8 @@ for a in mol.GetAtoms():
         for j in range(i+1,len(n)):
             degree=rdMolTransforms.GetAngleDeg(mol.GetConformer(),n[i],a.GetIdx(),n[j])
             if degree>175:angles.append({'atoms':[n[i],a.GetIdx(),n[j]],'degrees':degree})
-out={'name':name,'rdkit':rdBase.rdkitVersion,'worst_sampled_axis':worst,'sampled_axes':checks,'terms':terms,'angles_over_175':angles}
+out={'name':name,'rdkit':rdBase.rdkitVersion,'worst_sampled_axis':worst,
+     'consistent_plane_gradient':consistent_grad[worst],'step_sweep':step_sweep,
+     'sampled_axes':checks,'terms':terms,'angles_over_175':angles}
 Path('mmff-gradient-singularity-diagnostic.json').write_text(json.dumps(out,indent=2)+'\n')
 print(json.dumps(out))
