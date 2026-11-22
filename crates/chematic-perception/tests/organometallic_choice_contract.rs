@@ -17,3 +17,13 @@ fn hypervalent_nitrogen_selects_one_metal_bond_for_dative_cleanup() {
         );
     }
 }
+
+#[test]
+fn cleanup_prefers_a_metal_with_fewer_existing_dative_bonds() {
+    // RDKit 2025.09.3 selects Zn; the Cu already has a dative N donor.
+    let molecule = parse("C[N]([Cu]<-N)([Zn])C").unwrap();
+    assert_eq!(
+        rdkit_organometallic_dative_bonds(&molecule),
+        [false, false, false, true, false]
+    );
+}
