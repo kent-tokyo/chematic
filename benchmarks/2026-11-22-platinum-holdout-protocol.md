@@ -2175,3 +2175,7 @@ hash, is
 The Linux CI merge job in run `45035566273` subsequently succeeded. Its
 `fields.json` and `summary.json` are byte-identical to the locally verified
 merged result and summary recorded above. The macOS CI merge remains queued.
+
+The macOS CI merge job in run `45035566273` subsequently succeeded. Its
+`fields.json` and `summary.json` are byte-identical to the locally verified
+macOS merged result and summary recorded above.
