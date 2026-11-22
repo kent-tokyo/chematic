@@ -1480,3 +1480,21 @@ uncompressed SHA-256
 `94834e1cd261610c2f2fc98d95b7f75a1999f292c3d129e94fc115b3707d303c`.
 The seven remaining records include non-tetrahedral and sulfur/phosphorus
 stereo declarations; the reason for each zero result requires diagnosis.
+
+A [same-coordinate stereo diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44996942332)
+regenerated up to five RDKit 2026.09.2 optimized geometries for each of the
+seven exposed zero-candidate records, checking atom and bond identity first.
+All seven had at least one unevaluable declaration in the native verifier.
+Four contained externally evaluable, satisfied examples: a four-coordinate
+S(VI) center (5/5), a three-coordinate S=N center (3/5), a four-coordinate
+phosphorus center with two double bonds (5/5), and a three-coordinate
+sulfonium center (4/5). The other three contained square-planar,
+trigonal-bipyramidal or degenerate double-bond declarations; these remain
+unevaluable in this diagnostic. The RDKit geometry input and native reports
+are `validation/results/cod-exposed-stereo-rdkit-input-2026-11-22.json.gz`
+and `validation/results/cod-exposed-stereo-diagnostic-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`d6029b3350c3ea6f33f14b4713bf6b6be1830a10299ac730c4bb5a31045a167d` and
+`8227f938e47562df9a889438f8609fb7aacb0521eabb4fba4ca04b12c87cfe3a`.
+These reports identify a verifier coverage gap on RDKit geometries; they do
+not establish why each chematic embedding attempt failed.

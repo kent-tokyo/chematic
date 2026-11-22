@@ -10,6 +10,42 @@ mod tests {
     }
 
     #[test]
+    fn phosphorus_and_sulfur_stereo_matches_rdkit_and_mirrors() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("stereo_constraints_ps_oracle.json")).unwrap();
+        let rows = fixture["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 17);
+        for row in rows {
+            let molecule = chematic_chem::add_hydrogens(&mol(row["smiles"].as_str().unwrap()));
+            let center = AtomIdx(row["center"].as_u64().unwrap() as u32);
+            let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+            assert_eq!(points.len(), molecule.atom_count());
+            let coords = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            let mirror = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(-x, y, z))
+                    .collect(),
+            };
+            let status = |geometry: &Coords3D| {
+                verify_stereo(&molecule, geometry)
+                    .tetrahedral
+                    .into_iter()
+                    .find(|report| report.atom == center)
+                    .unwrap()
+                    .status
+            };
+            assert_eq!(status(&coords), StereoStatus::Satisfied, "{}", row["name"]);
+            assert_eq!(status(&mirror), StereoStatus::Violated, "{}", row["name"]);
+        }
+    }
+
+    #[test]
     fn sulfoxide_parity_matches_rdkit_coordinates_and_repair() {
         // RDKit 2026.09.2 ETKDG, seed 42, C[S@](=O)CC.
         let m = mol("C[S@](=O)CC");

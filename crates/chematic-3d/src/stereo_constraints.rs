@@ -568,33 +568,32 @@ fn tetrahedral_constraint_for(
             BondOrder::Single | BondOrder::Up | BondOrder::Down
         )
     });
-    // A tetrahedral P(V) center can have one formally double-bonded ligand,
-    // e.g. a phosphine oxide or thiophosphoryl group. Its four actual
-    // substituent positions still define a tetrahedral signed volume. Keep the
-    // ordinary single-bond-only rule for other elements and coordination.
-    let tetrahedral_pv = atom.element.atomic_number() == 15
+    // Four-coordinate P and S can have formally double-bonded ligands.
+    // Their four actual neighbor positions still define tetrahedral parity.
+    let four_coordinate_ps = matches!(atom.element.atomic_number(), 15 | 16)
         && mol.neighbors(idx).count() == 4
-        && mol
-            .neighbors(idx)
-            .filter(|(_, bidx)| mol.bond(*bidx).order == BondOrder::Double)
-            .count()
-            == 1
-        && mol.neighbors(idx).all(|(_, bidx)| {
+        && (1..=2).contains(
+            &mol.neighbors(idx)
+                .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+                .count(),
+        )
+        && mol.neighbors(idx).all(|(_, b)| {
             matches!(
-                mol.bond(bidx).order,
+                mol.bond(b).order,
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
         });
-    // A neutral sulfoxide has three bonded ligands and a stereochemically
-    // active lone pair. Use a phantom fourth position, as for implicit H,
-    // but only for the three-coordinate S(=O) topology.
-    let sulfoxide = atom.element.atomic_number() == 16
+    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
+    // S+ with three single bonds, have a stereochemically active lone pair.
+    // Represent it by the direction opposite the three unit bond vectors.
+    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
         && atom.charge == 0
         && mol.neighbors(idx).count() == 3
         && mol
             .neighbors(idx)
             .filter(|(n, b)| {
-                mol.bond(*b).order == BondOrder::Double && mol.atom(*n).element.atomic_number() == 8
+                mol.bond(*b).order == BondOrder::Double
+                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
             })
             .count()
             == 1
@@ -603,22 +602,32 @@ fn tetrahedral_constraint_for(
                 mol.bond(b).order,
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
-        });
-    if !all_single_ish && !tetrahedral_pv && !sulfoxide {
+        })
+        && mol
+            .neighbors(idx)
+            .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+            .count()
+            == 1;
+    let sulfonium_lone_pair = atom.element.atomic_number() == 16
+        && atom.charge == 1
+        && mol.neighbors(idx).count() == 3
+        && all_single_ish;
+    let sulfur_lone_pair = neutral_sulfur_lone_pair || sulfonium_lone_pair;
+    if !all_single_ish && !four_coordinate_ps && !sulfur_lone_pair {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
     let Some(mut order) = declared_neighbor_order(mol, idx) else {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     };
-    if sulfoxide && order.len() == 3 {
+    if sulfur_lone_pair && order.len() == 3 {
         order.push(STEREO_H_SENTINEL);
     }
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
-    if n_sentinels == 1 && !sulfoxide && implicit_hcount(mol, idx) != 1 {
+    if n_sentinels == 1 && !sulfur_lone_pair && implicit_hcount(mol, idx) != 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
