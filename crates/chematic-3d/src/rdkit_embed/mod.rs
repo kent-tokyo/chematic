@@ -42,6 +42,7 @@ pub use molecule::{
     RdkitMmffConformerDiagnostics, etkdg_embed_molecule_corrected,
     etkdg_embed_multiple_confs_corrected, etkdg_embed_multiple_confs_mmff_best_gradient,
     etkdg_embed_multiple_confs_mmff_corrected, etkdg_embed_multiple_confs_mmff_corrected_checked,
+    etkdg_embed_multiple_confs_mmff_corrected_fallback,
     etkdg_embed_multiple_confs_mmff_corrected_repair,
     etkdg_embed_multiple_confs_mmff_torsion_search,
     etkdg_embed_multiple_confs_mmff_torsion_search_with_pool, rdkit_bounds_matrix,

@@ -507,3 +507,46 @@ fn near_linear_mmff_plane_gradient_matches_energy_difference() {
         }
     }
 }
+
+#[test]
+fn corrected_fallback_keeps_successful_corrected_ensemble() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let corrected =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 2, &options, 200, 0).unwrap();
+    assert!(!corrected.is_empty());
+    let fallback =
+        etkdg_embed_multiple_confs_mmff_corrected_fallback(&molecule, 2, &options, 200, 0).unwrap();
+    assert_eq!(corrected.len(), fallback.len());
+    for (a, b) in corrected.iter().zip(&fallback) {
+        assert_eq!(a.coords, b.coords);
+        assert_eq!(a.status, b.status);
+        assert_eq!(a.energy, b.energy);
+    }
+    assert!(
+        etkdg_embed_multiple_confs_mmff_corrected_fallback(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+#[ignore = "large exposed macrocycle regression; run explicitly in release mode"]
+fn corrected_fallback_recovers_exposed_macrocycle() {
+    let smiles = "CC(=O)N[C@H](C(=O)N[C@@H](CO)C(=O)N[C@@H](Cc1ccccc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CCC(=O)O)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N[C@H]1CCCCN[C@@H](S)SC[C@@H](C(N)=O)NC(=O)[C@H](CO)NC(=O)[C@H](CC(C)C)NC(=O)[C@H](CC(C)C)NC1=O)[C@@H](C)O";
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+    let conformers = etkdg_embed_multiple_confs_mmff_corrected_fallback(
+        &molecule,
+        20,
+        &RdkitEmbedOptions::default(),
+        200,
+        400,
+    )
+    .unwrap();
+    assert!(!conformers.is_empty());
+    assert!(
+        conformers
+            .iter()
+            .all(|c| stereo_safe_retry(&molecule, &c.coords))
+    );
+}

@@ -482,6 +482,14 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected_checked(
     max_iters: u32,
 ) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
     let embedded = etkdg_embed_multiple_confs_corrected(mh, num_confs, o)?;
+    optimize_checked_ensemble(mh, embedded, max_iters)
+}
+
+fn optimize_checked_ensemble(
+    mh: &Molecule,
+    embedded: Vec<Vec<[f64; 3]>>,
+    max_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
     let Some(first) = embedded.first() else {
         return Ok(Vec::new());
     };
@@ -549,6 +557,30 @@ pub fn etkdg_embed_multiple_confs_mmff_corrected_repair(
 ) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
     let mut conformers =
         etkdg_embed_multiple_confs_mmff_corrected_checked(mh, num_confs, o, max_iters)?;
+    for conformer in &mut conformers {
+        repair_linear_nitrogen(mh, conformer, retry_iters);
+    }
+    Ok(conformers)
+}
+
+/// Generate a stereo-checked corrected ensemble, with a compatibility-gradient
+/// fallback if the corrected ensemble yields no usable candidates. The fallback
+/// has the same embedding attempt and minimization limits, so the worst-case
+/// work can be twice that of the corrected profile. Both optimized and fallback
+/// coordinates pass the same declared-stereo gate as the corrected profile.
+pub fn etkdg_embed_multiple_confs_mmff_corrected_fallback(
+    mh: &Molecule,
+    num_confs: usize,
+    o: &RdkitEmbedOptions,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let mut conformers =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(mh, num_confs, o, max_iters)?;
+    if conformers.is_empty() && num_confs != 0 {
+        let embedded = embed_multiple_confs_with_mode(mh, num_confs, o, false)?;
+        conformers = optimize_checked_ensemble(mh, embedded, max_iters)?;
+    }
     for conformer in &mut conformers {
         repair_linear_nitrogen(mh, conformer, retry_iters);
     }

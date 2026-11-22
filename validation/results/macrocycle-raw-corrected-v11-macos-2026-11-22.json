@@ -1,0 +1,24 @@
+{
+  "atom_count": 208,
+  "candidates": [
+    {
+      "energy": 159.12925156723114,
+      "index": 0,
+      "iterations": 200,
+      "optimized": {
+        "declared": 14,
+        "details": "StereoVerification { tetrahedral: [TetrahedralReport { atom: AtomIdx(4), status: Satisfied }, TetrahedralReport { atom: AtomIdx(8), status: Satisfied }, TetrahedralReport { atom: AtomIdx(14), status: Satisfied }, TetrahedralReport { atom: AtomIdx(25), status: Satisfied }, TetrahedralReport { atom: AtomIdx(30), status: Satisfied }, TetrahedralReport { atom: AtomIdx(39), status: Satisfied }, TetrahedralReport { atom: AtomIdx(51), status: Satisfied }, TetrahedralReport { atom: AtomIdx(65), status: Satisfied }, TetrahedralReport { atom: AtomIdx(71), status: Satisfied }, TetrahedralReport { atom: AtomIdx(75), status: Satisfied }, TetrahedralReport { atom: AtomIdx(82), status: Satisfied }, TetrahedralReport { atom: AtomIdx(88), status: Satisfied }, TetrahedralReport { atom: AtomIdx(96), status: Satisfied }, TetrahedralReport { atom: AtomIdx(104), status: Satisfied }], double_bond: [] }",
+        "unevaluable": 0,
+        "violations": 0
+      },
+      "raw": {
+        "declared": 14,
+        "details": "StereoVerification { tetrahedral: [TetrahedralReport { atom: AtomIdx(4), status: Satisfied }, TetrahedralReport { atom: AtomIdx(8), status: Satisfied }, TetrahedralReport { atom: AtomIdx(14), status: Satisfied }, TetrahedralReport { atom: AtomIdx(25), status: Satisfied }, TetrahedralReport { atom: AtomIdx(30), status: Satisfied }, TetrahedralReport { atom: AtomIdx(39), status: Satisfied }, TetrahedralReport { atom: AtomIdx(51), status: Satisfied }, TetrahedralReport { atom: AtomIdx(65), status: Satisfied }, TetrahedralReport { atom: AtomIdx(71), status: Satisfied }, TetrahedralReport { atom: AtomIdx(75), status: Satisfied }, TetrahedralReport { atom: AtomIdx(82), status: Satisfied }, TetrahedralReport { atom: AtomIdx(88), status: Satisfied }, TetrahedralReport { atom: AtomIdx(96), status: Satisfied }, TetrahedralReport { atom: AtomIdx(104), status: Satisfied }], double_bond: [] }",
+        "unevaluable": 0,
+        "violations": 0
+      },
+      "status": 1
+    }
+  ],
+  "raw_corrected_count": 1
+}

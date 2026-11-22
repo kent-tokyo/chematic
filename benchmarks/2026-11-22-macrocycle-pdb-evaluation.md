@@ -373,3 +373,16 @@ is intended to distinguish those cases. Results are recorded in
 (SHA-256 `61baeacf39df21d9e3b4523bbfdb4e805f10b1e503d3b1d36e110cf5910e7575`)
 and `validation/results/macrocycle-stage-diagnostic-v11-macos-2026-11-22.json`
 (SHA-256 `a23f0333e923421b4b44a1d65d17d38ca633951a07a98a4f5a9d4531a7e804`).
+
+A further [Rust stage diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44992153299)
+checked out the exact source of the v11 wheels. On Linux the corrected
+embedding itself returned zero candidates, before MMFF or the stereo gate. On
+macOS it returned one; all 14 declared tetrahedral constraints were satisfied
+before and after MMFF, with unfinished optimization status. The raw outputs are
+`validation/results/macrocycle-raw-corrected-v11-linux-2026-11-22.json`
+(SHA-256 `45134bea73df4f4402d0166ca7b4586aca5fb1f7f7c645695fd8fe6bd96d7116`)
+and `validation/results/macrocycle-raw-corrected-v11-macos-2026-11-22.json`
+(SHA-256 `399d544029b479561a81e659f38505145254e619ddf3046893b80a613e454b4a`).
+The earlier diagnostic run did not validate the candidate source tree against
+the wheel, and the next run masked a compiler failure behind a shell pipe;
+neither provides results. The linked run fixed both problems.
