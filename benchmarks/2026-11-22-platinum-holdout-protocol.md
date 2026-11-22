@@ -632,6 +632,23 @@ passed a registry-consistency test and matched RDKit energy and gradient on
 that development structure; the result is
 `validation/results/mmff-phosphaalkene-development-2026-11-22.json`. This
 change is not included in the frozen v6 wheel or the running v4 holdout.
+In the [v7 51-case recheck](https://github.com/kent-tokyo/chematic/actions/runs/44971010367),
+seven inputs still had MMFF94 energy error above 1e−4 kcal/mol, with a maximum
+of 32.94 kcal/mol. All 51 UFF energies and analytic gradients matched RDKit
+on the tested coordinates. The compressed per-record output is
+`validation/results/cod-first-fields-v7-development-2026-11-22.json.gz`
+(uncompressed SHA-256
+`a58c583e3e8204753deab5f373fe3261caec792fa176436ecef99177ddb742f7`).
+
+Two of the seven MMFF outliers had directional single bonds adjacent to an
+N-oxide; treating those bonds as single during MMFF typing corrected the
+oxygen type. In the [subsequent regression](https://github.com/kent-tokyo/chematic/actions/runs/44970866778),
+both exposed molecules matched RDKit 2026.09.2 atom types, charges, MMFF
+energies and gradients at the tested coordinates. The combined earlier
+regressions also passed. Evidence is
+`validation/results/mmff-directional-nitrone-development-2026-11-22.json`.
+This is another targeted development fix and is not included in v7 or the
+running v4 holdout.
 
 The largest sampled v5 finite-difference discrepancy occurred on an exposed
 structure with a 179.998-degree bond angle. In the separate
@@ -851,6 +868,9 @@ and crates tree `4871f3f53cb1ceb3940de32e744e223ae3d641b1`; its Linux and
 macOS CPython 3.12 wheel SHA-256 values are
 `cb9a9ca17f377693ebbbc8ba176e7da8defc8185d2e7cd3abdc77f4d5d7ec295` and
 `accff6f48fa6567e94197dab8793e0e0e94325f12d22e628344b27fa992fba7d`.
+The directional-bond fix was likewise selected from already-exposed inputs,
+before inspecting any second-COD holdout conformer results, and a further
+candidate including it is being frozen separately.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.

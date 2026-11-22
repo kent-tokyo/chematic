@@ -1,0 +1,19 @@
+{
+  "rdkit": "2026.09.2",
+  "cases": [
+    {
+      "name": "JYXDRMQUJFWNKR-GDNBJRDFSA-N",
+      "type_mismatches": [],
+      "max_charge_error": 0.0,
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0
+    },
+    {
+      "name": "ZHXJVVRBKITVLS-GDNBJRDFSA-N",
+      "type_mismatches": [],
+      "max_charge_error": 0.0,
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0
+    }
+  ]
+}
