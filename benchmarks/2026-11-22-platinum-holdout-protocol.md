@@ -1026,3 +1026,12 @@ sort in `RDLcycleFams.c` and `RDLdimacs.c`. A compatible port must account for
 that stable ordering as well as the biconnected-component, ring-family and
 cycle iteration order. This source identification does not itself fix or
 validate the MMFF discrepancies.
+The pinned RingDecomposerLib implementation first performs biconnected
+component decomposition, enumerates cycle families using an ordering involving
+vertex degree, and stably sorts candidate families by cycle weight; its cycle
+iterator advances through component, URF, RCF and path order. The existing
+`relevant_cycles.rs` instead collects candidates globally using atom-index
+ordering and expands relevant candidate families. Matching the set therefore
+does not guarantee matching the order. Compare
+[`RDLcycleFams.c`](https://github.com/rareylab/RingDecomposerLib/blob/v1.1.3_rdkit/src/RingDecomposerLib/RDLcycleFams.c)
+and [`RDLhandler.c`](https://github.com/rareylab/RingDecomposerLib/blob/v1.1.3_rdkit/src/RingDecomposerLib/RDLhandler.c).
