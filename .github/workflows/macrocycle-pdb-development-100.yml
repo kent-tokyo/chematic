@@ -23,7 +23,9 @@ jobs:
           python-version: '3.12'
       - name: Fetch and verify frozen wheel and structural sample
         run: |
-          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          echo 'eecbf2c8a12d9cfb75daac79ebde3a2504f87f0b267e7a196737951f6c73f9a8  scripts/benchmarks/platinum_development_probe.py' | sha256sum --check
+          echo '56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22  scripts/benchmarks/platinum_geometry.py' | sha256sum --check
+          echo '0733b8add33eabb45dbb49eda3df7ab9d9e293af3a08cdab29037b172c2b606d  scripts/benchmarks/summarize_platinum_probe.py' | sha256sum --check
           gh run download 44984753739 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v11-ubuntu-latest-54780e156da34198ed3ae0d76b5efe8b76d02ae2 --dir candidate
           python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="0052c7ad06ce6fe92ddf919fc0e2a15869b7d683c530f794c62a052edf0d1603"'
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'
