@@ -43,5 +43,5 @@ do not establish correctness for every possible stereochemical specification.
 MMFF iterations when attempting to repair a near-linear three-coordinate
 nitrogen; a repair is retained only if its checks pass. The example uses 400
 to match the ongoing evaluation, not as a universally optimal setting.
-See the [evaluation protocol](../../benchmarks/2026-11-22-platinum-holdout-protocol.md)
+See the [evaluation protocol](https://github.com/kent-tokyo/chematic/blob/d3051520/benchmarks/2026-11-22-platinum-holdout-protocol.md)
 for the candidate, datasets, screens and current evidence.
