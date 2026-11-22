@@ -1081,3 +1081,20 @@ they do not establish general gradient correctness. The checked optimizer
 still uses its RDKit-compatible gradient, not the optional consistent-plane
 one. Both raw records are in
 `validation/results/near-linear-second-cod-{linux,macos}-v8-development-2026-11-22.json`.
+
+For two exposed cage structures (XTULIPKREBMLNM-XHGUTPRISA-N and
+OXBMFCGRQJNAOY-TWXUZQDTSA-N), v8 MMFF94 types and charges matched RDKit but
+energy errors were 42.17 and 41.62 kcal/mol. Term-level diagnosis traced the
+difference to angle and stretch-bend terms: one SSSR omitted a relevant
+four-membered ring, affecting four angles on each molecule. The source now
+uses relevant cycles for angle parameterization in both the prepared field and
+other MMFF paths, falling back to SSSR if enumeration exceeds 10,000 cycles.
+The [Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44976034714)
+passed the RDKit-derived fixed-coordinate angle and stretch-bend energy and
+gradient test, the existing `chematic-ff` library tests, and a source-built
+wheel comparison on ETKDG coordinates. In the latter comparison both inputs
+had zero energy and gradient-component difference on that runner; the tested
+merge commit was `86fe06426ec53651c1f584e64f0e9d5d3bbbe563` and results are
+`validation/results/mmff-cage-angle-development-2026-11-22.json`. This is a
+targeted development result; the fallback, performance cost, broader corpus,
+macOS and independent holdout have not been validated for this change.
