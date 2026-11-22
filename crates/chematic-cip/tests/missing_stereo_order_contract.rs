@@ -17,3 +17,19 @@ fn tagged_center_without_ligand_order_is_skipped_not_guessed() {
         [(AtomIdx(0), SkipReason::NotFourSubstituents)]
     );
 }
+
+#[test]
+fn malformed_ligand_frame_is_skipped_instead_of_assigned() {
+    let mol = parse("[C@](F)(Cl)(Br)I").unwrap();
+    for order in [vec![1, 2, 3, 3], vec![0, 1, 2, 3]] {
+        let mut edited = MoleculeBuilder::from_molecule(&mol);
+        edited.set_stereo_neighbor_order(AtomIdx(0), order);
+        let result =
+            assign_cip_accurate_experimental(&edited.build(), CipBudget::default_budget()).unwrap();
+        assert!(result.assignments.is_empty());
+        assert_eq!(
+            result.skipped,
+            [(AtomIdx(0), SkipReason::NotFourSubstituents)]
+        );
+    }
+}
