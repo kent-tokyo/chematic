@@ -582,3 +582,36 @@ retroactively classified because their original embedding counts were not
 recorded. A genuine empty ensemble counted as no recovery both before and
 after this reporting fix. The ongoing holdout uses the previously frozen
 scorer, so its original error records must also be retained as reported.
+
+### Independent mixed-profile fixed-count evaluation: Linux
+
+All four Linux PDB macrocycle fixed-count shards of GitHub Actions run
+`45026013999` completed. The sealed manifest, wheel, scorer and strict-stereo
+fingerprints, protocol, and exact set of 1,243 records were verified by
+`shard_platinum_holdout.py merge`. The candidate is the previously frozen
+`29e37e16` mixed-gradient wheel, SHA-256
+`da93ee39d81727e3566a65b352657f745ed3ed91aa7fffd8a4dcbd784d8e8edb`,
+compared with RDKit 2026.09.2 using seed 42, up to 20 candidates and 200 MMFF
+iterations. The four shards ran on two Linux host configurations. This wheel
+predates the separate bridging-hydrogen fix.
+
+At the 1 angstrom threshold, recovery was 182/1,243 for chematic and
+180/1,243 for RDKit. The paired difference was +0.16 percentage points; the
+10,000-resample, seed-42 scaffold-cluster 95% interval was −0.73 to +1.03
+percentage points across 802 scaffold groups. Converged-only recovery was
+77/1,243 and 80/1,243 respectively, with a −0.67 to +0.16 percentage-point
+scaffold-cluster interval. No returned candidate had contradicted or
+unevaluable declared stereo: 23,027 chematic and 23,022 RDKit candidates were
+checked. There were no returned candidates for 58 and 53 records respectively.
+This Linux fixed-count result meets the stated lower-bound and strict-stereo
+criteria, while the low absolute recovery remains a material limitation. It
+is not a time-budget or cross-platform result.
+
+The verified merged raw data are
+`validation/results/macrocycle-pdb-independent-mixed-fixed-linux-2026-11-22.json.gz`
+(uncompressed SHA-256
+`87ec819a42895c45da757475966c27b98d75db8b3dc179a6529c8e0c83ba1ff9`),
+with companion `-summary-2026-11-22.json` and `-stereo-2026-11-22.json`
+outputs. This local merge is pending comparison against the CI merge, which
+waits for the other fixed-count shards. Unknown historical exposures remain
+outside the recorded scaffold-exclusion guarantee.
