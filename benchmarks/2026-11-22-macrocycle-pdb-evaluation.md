@@ -401,4 +401,7 @@ The wheel SHA-256 was
 built from merge commit `f8c48c8b44321e14f4648b94ec03035ad5ae099d`.
 This is one exposed development case; a 32-record development repeat is
 scheduled. The previously sealed holdout protocol does not describe this
-fallback profile and remains unscored.
+fallback profile and remains unscored. The 32-record repeat uses up to 20
+corrected attempts plus 20 compatibility attempts when fallback is needed,
+while RDKit uses 20 attempts. Its fixed-count results therefore do not compare
+equal attempt budgets; a separately timed comparison is also required.
