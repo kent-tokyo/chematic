@@ -1035,3 +1035,34 @@ ordering and expands relevant candidate families. Matching the set therefore
 does not guarantee matching the order. Compare
 [`RDLcycleFams.c`](https://github.com/rareylab/RingDecomposerLib/blob/v1.1.3_rdkit/src/RingDecomposerLib/RDLcycleFams.c)
 and [`RDLhandler.c`](https://github.com/rareylab/RingDecomposerLib/blob/v1.1.3_rdkit/src/RingDecomposerLib/RDLhandler.c).
+
+### Exposed second-COD follow-up probes
+
+After inspecting v4 holdout results, 29 previously zero-candidate records with
+specified neutral three-coordinate S(=O) stereo and RDKit candidates were
+selected for a development-only sulfoxide probe. The updated source passed the
+[Linux stereo regression](https://github.com/kent-tokyo/chematic/actions/runs/44973738608).
+In the [candidate probe](https://github.com/kent-tokyo/chematic/actions/runs/44974156820)
+the source merge commit was `6379b78989c7b56d37123635d86fd1f59cc3a92d`;
+all 29 returned 20 candidates, compared with zero in v4. RDKit detected no
+stereo violations in the 580 returned candidates, of which 176 were unfinished.
+These cases informed the change and are not an independent holdout. The raw
+result is `validation/results/cod-sulfoxide-candidates-development-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`30316e0d0f4cf36d0c319854607b2405b529ea500923d5ccd882218efab39e76`.
+
+A separate [frozen-v8 field probe](https://github.com/kent-tokyo/chematic/actions/runs/44974275953)
+selected 57 exposed records with v4 MMFF94 or UFF energy error above 1e−4,
+gradient-component error above 1, or sampled finite-difference discrepancy
+above 1, on either OS. One RDKit reference embedding failed; on the other 56,
+the count with MMFF94 energy error above 1e−4 fell from 18 in Linux v4 to 11
+in v8, and UFF gradient-component error above 1 fell from 39 to 4. These are
+Linux re-embeddings at the same seed, not a promise of bit-identical coordinates
+across runners. The v8 maximum MMFF94 energy error remained 254.53 kcal/mol,
+and the maximum MMFF94 and UFF sampled finite-difference discrepancies were
+141,918 and 113,682 kcal/mol/Å. The largest MMFF energy outlier has multiple
+negative formal charges; the finite-difference outlier is a different molecule.
+The raw result is `validation/results/cod-second-fields-v8-development-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`0f077e7eebaae5824b05cda0d8c0e73dd2f92832530e5ff90588060f08f0f4a5`.
+Neither follow-up is independent evidence for v8 or a later candidate.
