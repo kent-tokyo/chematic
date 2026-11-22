@@ -13,6 +13,19 @@ mod tests {
     use chematic_core::{Atom, BondOrder, Element};
 
     #[test]
+    fn mmff_parameter_ring_cache_reuses_and_invalidates_on_edit() {
+        let mut mol = chematic_smiles::parse("C1CCCCC1").unwrap();
+        let first = mmff_parameter_rings(&mol);
+        let again = mmff_parameter_rings(&mol);
+        assert!(std::sync::Arc::ptr_eq(&first, &again));
+        assert_eq!(first.len(), 1);
+        mol.add_atom(Atom::new(Element::C));
+        let edited = mmff_parameter_rings(&mol);
+        assert!(!std::sync::Arc::ptr_eq(&first, &edited));
+        assert_eq!(*first, *edited);
+    }
+
+    #[test]
     fn phosphorus_type_75_single_bond_classification_matches_registry() {
         // RDKit 2026.09.2: c1ccccc1P=C has a type-1 C(37)-P(75)
         // single bond and a type-0 P(75)=C(3) double bond.
