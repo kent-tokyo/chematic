@@ -2086,3 +2086,22 @@ RDKit does not establish that the shared analytic gradient is accurate. The
 macOS shards and CI merge were still running when this Linux result was
 recorded. Independence is limited to the exposure and scaffold checks described
 above; unknown earlier exposures cannot be excluded.
+
+A follow-up diagnostic re-embedded the three largest Linux finite-difference
+outliers on macOS with RDKit 2026.09.2, ETKDGv3 and seed 42, then applied
+central differences directly to RDKit's own energy and analytic gradient.
+It is an exposed-case diagnostic, not an independent holdout, and the
+re-embedded coordinates differ by platform from the Linux coordinates that
+were not saved by the original probe. The diagnostic preserves its coordinates,
+axes and per-step differences in
+`validation/results/cod-unused-bridge-fix-rdkit-finite-difference-macos-diagnostic-2026-11-22.json.gz`.
+
+For `VDCLBUQGYUHKMX-JXAWBTAJSA-O` (index 2615), RDKit MMFF94's sampled
+component 43 was -67,351.51 kcal/mol/angstrom; the central-difference minus
+analytic difference was -9,754.04 at a 1e-7 angstrom step and -9,754.30 at
+1e-8. On the same coordinates UFF's maximum sampled difference decreased from
+2,416.76 at 1e-5 to 0.0029 at 1e-8. For index 3669, UFF's energy was about
+6.65e11 kcal/mol, so absolute finite-difference errors must be considered
+against its scale and numerical precision. Index 11977 did not reproduce the
+Linux outlier after macOS re-embedding. These observations do not identify the
+cause of the persistent MMFF difference or establish the Linux error's cause.
