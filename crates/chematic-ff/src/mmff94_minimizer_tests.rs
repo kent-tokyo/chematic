@@ -12,6 +12,21 @@ mod tests {
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 
+    #[test]
+    fn phosphorus_type_75_single_bond_classification_matches_registry() {
+        // RDKit 2026.09.2: c1ccccc1P=C has a type-1 C(37)-P(75)
+        // single bond and a type-0 P(75)=C(3) double bond.
+        assert_eq!(bond_type_for(37, 75, BondOrder::Single), 1);
+        assert_eq!(bond_type_for(75, 3, BondOrder::Double), 0);
+        let registry: Vec<u8> = (1..=99)
+            .filter(|&id| {
+                crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(id)
+                    .is_some_and(|info| info.single_bond_multiple_bond)
+            })
+            .collect();
+        assert_eq!(MLTB_TYPES, registry.as_slice());
+    }
+
     fn methane_mol() -> (Molecule, Vec<[f64; 3]>) {
         let mut b = MoleculeBuilder::new();
         let c = b.add_atom(Atom::new(Element::C));

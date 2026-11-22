@@ -15,7 +15,7 @@
 /// ...)` row for that specific pair, so classifying them bt=1 under the
 /// broader set was itself a fresh miss the tighter, evidence-derived set
 /// avoids by routing them to their real `(0, ...)` row instead.
-pub const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 78, 80, 81];
+pub const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 75, 78, 80, 81];
 
 /// Real bond order between two bonded atoms, defaulting to `Single` if no
 /// bond exists between them (defensive only — every call site here passes
