@@ -17,6 +17,9 @@
 //! geometry, not a neutral baseline. Re-verified sane post-fix (minimum
 //! pairwise interatomic distance 1.22 \u{c5}, no collisions) before repinning.
 //!
+//! Re-pinned for issue #1286 after placing aromatic substituents in the ring
+//! plane. The aspirin conformer changes because it has two ring substituents.
+//!
 //! A second, independent `dg::generate_coords` fix landed in the same PR
 //! (`place_rings`'s ring visiting order didn't match ring-fusion adjacency,
 //! silently superimposing unrelated rings in some multi-ring-fused systems
@@ -77,18 +80,18 @@ fn shape_descriptors_outputs_are_stable() {
     let (mol, coords) = aspirin_coords();
 
     let (p1, p2, p3) = pmi(&mol, &coords);
-    assert_close_ulp(p1, 4642488561478464692, 2, "pmi[0]");
-    assert_eq!(p2.to_bits(), 4646694506356206969);
-    assert_eq!(p3.to_bits(), 4648593491540578086);
+    assert_close_ulp(p1, 4646162458439767773, 2, "pmi[0]");
+    assert_eq!(p2.to_bits(), 4648545344482986046);
+    assert_eq!(p3.to_bits(), 4651261649362001637);
 
-    assert_close_ulp(npr1(&mol, &coords), 4600603682732697251, 2, "npr1");
-    assert_eq!(npr2(&mol, &coords).to_bits(), 4604858220831292512);
+    assert_close_ulp(npr1(&mol, &coords), 4602012443947194032, 2, "npr1");
+    assert_eq!(npr2(&mol, &coords).to_bits(), 4604143290639878645);
     assert_eq!(
         radius_of_gyration(&mol, &coords).to_bits(),
-        4611435890214201730
+        4612535895566114687
     );
-    assert_eq!(asphericity(&mol, &coords).to_bits(), 4643407586323950178);
-    assert_eq!(eccentricity(&mol, &coords).to_bits(), 4605239949045052297);
+    assert_eq!(asphericity(&mol, &coords).to_bits(), 4645746933489568286);
+    assert_eq!(eccentricity(&mol, &coords).to_bits(), 4604775666986499008);
     // Not bit-pinned like the rest: this value's summation order makes it
     // sensitive to FMA/vectorization differences between the aarch64
     // (local) and x86_64 (CI) targets. Keep a small ULP allowance for that
@@ -97,7 +100,7 @@ fn shape_descriptors_outputs_are_stable() {
     // into a magnitude-blind absolute epsilon.
     assert_close_ulp(
         plane_of_best_fit(&mol, &coords),
-        4602456162078098012,
+        4603096997044419753,
         2,
         "plane_of_best_fit",
     );
@@ -109,20 +112,20 @@ fn descriptors_3d_outputs_are_stable() {
 
     let whim = whim_descriptors(&mol, &coords);
     assert_eq!(whim.len(), 22);
-    assert_close_ulp(whim[0], 4612594550505702359, 2, "whim[0]");
+    assert_close_ulp(whim[0], 4614460481735964194, 2, "whim[0]");
 
     let getaway = getaway_descriptors(&mol, &coords);
     assert_eq!(getaway.len(), 19);
-    assert_close_ulp(getaway[0], 4613199105410399549, 2, "getaway[0]");
+    assert_close_ulp(getaway[0], 4612105992719185798, 2, "getaway[0]");
 
     let rdf = rdf_descriptors(&mol, &coords);
     assert_eq!(rdf.len(), 20);
     // Same aarch64/x86_64 FMA/summation-order drift as plane_of_best_fit
     // above -- see that comment. The value is near 1e-20, so a ULP-based
     // allowance is more meaningful than an absolute epsilon.
-    assert_close_ulp(rdf[0], 4626963717017789206, 150, "rdf[0]");
+    assert_close_ulp(rdf[0], 4308752783383236452, 150, "rdf[0]");
 
     let ac = autocorr_3d(&mol, &coords);
     assert_eq!(ac.len(), 8);
-    assert_eq!(ac[0].to_bits(), 4648838210805188049);
+    assert_eq!(ac[0].to_bits(), 0);
 }

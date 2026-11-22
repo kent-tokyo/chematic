@@ -675,7 +675,26 @@ fn dfs_place_connectivity_ordered(
         }
 
         let dihedral = (i as f64) * (2.0 * PI / 3.0);
-        let dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
+        let mut dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
+        if mol.atom(current).aromatic && atom_to_system.contains_key(&current) {
+            let ring_neighbors: Vec<_> = mol
+                .neighbors(current)
+                .map(|(neighbor, _)| neighbor)
+                .filter(|neighbor| {
+                    placed[neighbor.0 as usize]
+                        && atom_to_system.get(neighbor) == atom_to_system.get(&current)
+                        && mol.atom(*neighbor).aromatic
+                })
+                .collect();
+            if ring_neighbors.len() == 2 {
+                let a = coords.get(ring_neighbors[0]).sub(&pos_current).normalize();
+                let b = coords.get(ring_neighbors[1]).sub(&pos_current).normalize();
+                let outward = a.add(&b).scale(-1.0);
+                if outward.norm() > 1e-8 {
+                    dir_final = outward.normalize();
+                }
+            }
+        }
         let bond_len = ideal_bond_len(mol, current, nb);
         let new_pos = pos_current.add(&dir_final.scale(bond_len));
         coords.set(nb, new_pos);

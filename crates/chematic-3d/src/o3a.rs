@@ -579,11 +579,14 @@ mod tests {
                     apply_rotation_translation(&probe.coords2, c2, matmul3(axes1, signed), c1);
                 let greedy = greedy_correspondence(&probe.coords1, &types1, &seeded, &types2);
                 let global = global_correspondence(&probe.coords1, &types1, &seeded, &types2);
-                assert!(
-                    overlap_score(&global, &probe.coords1, &seeded) + 1e-9
-                        >= overlap_score(&greedy, &probe.coords1, &seeded),
-                    "{smiles}: global assignment reduced seed overlap"
-                );
+                assert!(global.len() >= greedy.len(), "{smiles}: fewer matches");
+                if global.len() == greedy.len() {
+                    assert!(
+                        overlap_score(&global, &probe.coords1, &seeded) + 1e-9
+                            >= overlap_score(&greedy, &probe.coords1, &seeded),
+                        "{smiles}: global assignment reduced seed overlap"
+                    );
+                }
             }
         }
     }

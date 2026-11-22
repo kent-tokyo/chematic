@@ -30,11 +30,9 @@ pub fn dreiding_vdw(t: DREIDINGType) -> (f64, f64) {
 }
 
 pub fn dreiding_bond_len(t1: DREIDINGType, t2: DREIDINGType, order: BondOrder) -> f64 {
-    let key = (
-        dreiding_type_order(t1),
-        dreiding_type_order(t2),
-        bond_order_value(order),
-    );
+    let a = dreiding_type_order(t1);
+    let b = dreiding_type_order(t2);
+    let key = (a.min(b), a.max(b), bond_order_value(order));
 
     match key {
         (1, 1, 1) => 1.090,
@@ -147,6 +145,18 @@ fn bond_order_value(order: BondOrder) -> u8 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn bond_lengths_are_independent_of_atom_order() {
+        for (a, b, expected) in [
+            (DREIDINGType::H_, DREIDINGType::C_3, 1.09),
+            (DREIDINGType::H_, DREIDINGType::O_3, 0.96),
+            (DREIDINGType::C_3, DREIDINGType::O_3, 1.427),
+        ] {
+            assert_eq!(dreiding_bond_len(a, b, BondOrder::Single), expected);
+            assert_eq!(dreiding_bond_len(b, a, BondOrder::Single), expected);
+        }
+    }
 
     #[test]
     fn test_vdw_carbon() {
