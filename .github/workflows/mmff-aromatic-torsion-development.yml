@@ -1,0 +1,51 @@
+name: MMFF aromatic torsion development
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/mmff-aromatic-torsion-development.yml'
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+      - name: Check aromatic torsions and prior force-field regressions
+        run: |
+          cargo test --locked -p chematic-ff --test mmff_aromatic_torsion
+          cargo test --locked -p chematic-ff --test mmff_nontetrahedral
+          cargo test --locked -p chematic-ff --test uff_nontetrahedral
+          cargo test --locked -p chematic-ff --test mmff_relevant_rings
+          cargo test --locked -p chematic-ff --test mmff_sp_ring
+          cargo test --locked -p chematic-ff --test mmff94_relevant_cage_angles
+          cargo test --locked -p chematic-ff --test uff_macrocycle_aromatic
+          cargo test --locked -p chematic-ff --lib
+      - name: Build source candidate
+        run: |
+          python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+          git rev-parse HEAD > aromatic-torsion-source-commit.txt
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/candidate
+          sha256sum dist/candidate/*.whl > aromatic-torsion-wheel.sha256
+          python -m pip install --force-reinstall --no-deps dist/candidate/*.whl
+      - name: Compare both exposed field-outlier sets
+        run: |
+          python scripts/benchmarks/platinum_force_fields.py --development validation/results/cod-first-field-outliers-development-2026-11-22.json --output aromatic-torsion-first-fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py aromatic-torsion-first-fields.json --output aromatic-torsion-first-fields-summary.json
+          python scripts/benchmarks/platinum_force_fields.py --development validation/results/cod-second-field-outliers-development-2026-11-22.json --output aromatic-torsion-second-fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py aromatic-torsion-second-fields.json --output aromatic-torsion-second-fields-summary.json
+          python -c 'import json; names={"UFGZEVHNPOQFQV-TWGQIWQCSA-N","YTFRXLQGRKQOPE-DAAWMIFDSA-N","DEZSLFWYSCQUHD-QUMXLFQESA-N","UURPMXLGHWPFLL-UHFFFAOYSA-O","HHVSZPBWYSYHPA-NQCZCJPMSA-N","MSOXXGSICAQJBM-UHFFFAOYSA-N","SPGGIFLVQFHPFG-LTKUFQEZSA-N","UUGPTWNTETYOMZ-ACKIGEAWSA-N"}; rows=sum((json.load(open(p))["results"] for p in ("aromatic-torsion-first-fields.json","aromatic-torsion-second-fields.json")),[]); found=[x for x in rows if x["name"] in names]; assert len(found)==len(names); assert all("error" not in x and x["fields"]["MMFF94"]["energy_absolute_error"]<1e-5 and max(x["fields"]["MMFF94"]["gradient_absolute_errors"])<1e-4 for x in found),found; targets={"MPNGGXLLXDBUNV-UHFFFAOYSA-N","FUWOMFSLAWQDPO-UHFFFAOYSA-N"}; found=[x for x in rows if x["name"] in targets]; assert len(found)==2; assert all("error" not in x and x["fields"]["UFF"]["energy_absolute_error"]<1e-5 and max(x["fields"]["UFF"]["gradient_absolute_errors"])<1e-4 for x in found),found; p=next(x for x in found if x["name"].startswith("MPNGGX")); assert p["fields"]["MMFF94"]["energy_absolute_error"]<1e-5 and max(p["fields"]["MMFF94"]["gradient_absolute_errors"])<1e-4,p; w=next(x for x in rows if x["name"].startswith("WWDTY")); assert w["fields"]["MMFF94"]["energy_absolute_error"]<1e-5 and max(w["fields"]["MMFF94"]["gradient_absolute_errors"])<1e-4,w'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: aromatic-torsion-development-${{ github.sha }}
+          path: |
+            aromatic-torsion-source-commit.txt
+            aromatic-torsion-wheel.sha256
+            relevant-*-fields*.json
+          if-no-files-found: warn

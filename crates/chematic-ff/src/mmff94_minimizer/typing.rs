@@ -15,7 +15,9 @@
 /// ...)` row for that specific pair, so classifying them bt=1 under the
 /// broader set was itself a fresh miss the tighter, evidence-derived set
 /// avoids by routing them to their real `(0, ...)` row instead.
-pub const MLTB_TYPES: &[u8] = &[2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 75, 78, 80, 81];
+pub const MLTB_TYPES: &[u8] = &[
+    2, 3, 4, 9, 30, 37, 39, 54, 57, 58, 63, 64, 67, 75, 78, 80, 81,
+];
 
 /// Real bond order between two bonded atoms, defaulting to `Single` if no
 /// bond exists between them (defensive only — every call site here passes
@@ -44,8 +46,12 @@ fn bond_order_between(mol: &Molecule, a: usize, b: usize) -> BondOrder {
 /// `angle_energy`/`stretch_bend_energy` use, instead of hand-copying this
 /// logic and risking drift (same rationale as [`OOP_SP2_TYPES`]).
 pub fn is_angle_in_ring_of_size_3_or_4(mol: &Molecule, i: usize, j: usize, k: usize) -> u8 {
-    if mol.bond_between(AtomIdx(i as u32), AtomIdx(j as u32)).is_none()
-        || mol.bond_between(AtomIdx(j as u32), AtomIdx(k as u32)).is_none()
+    if mol
+        .bond_between(AtomIdx(i as u32), AtomIdx(j as u32))
+        .is_none()
+        || mol
+            .bond_between(AtomIdx(j as u32), AtomIdx(k as u32))
+            .is_none()
     {
         return 0;
     }
@@ -55,9 +61,9 @@ pub fn is_angle_in_ring_of_size_3_or_4(mol: &Molecule, i: usize, j: usize, k: us
     {
         return 3;
     }
-    let shares_neighbor = mol.neighbors(AtomIdx(i as u32)).any(|(nb, _)| {
-        nb.0 != j as u32 && mol.bond_between(nb, AtomIdx(k as u32)).is_some()
-    });
+    let shares_neighbor = mol
+        .neighbors(AtomIdx(i as u32))
+        .any(|(nb, _)| nb.0 != j as u32 && mol.bond_between(nb, AtomIdx(k as u32)).is_some());
     if shares_neighbor { 4 } else { 0 }
 }
 
@@ -527,7 +533,7 @@ fn torsion_empirical_rule(
     if pj.linear || pk.linear {
         return zero;
     }
-    if let Some(barrier) = multiple_bond_torsion_barrier(pj, pk, order, u) {
+    if let Some(barrier) = multiple_bond_torsion_barrier(pj, pk, order, u, tj, tk) {
         return barrier;
     }
     if let Some(barrier) = coordination_torsion_barrier(pj, pk, v3, zero) {
@@ -560,8 +566,17 @@ fn multiple_bond_torsion_barrier(
     right: &crate::mmff94_numeric_type_registry::Mmff94NumericTypeInfo,
     order: BondOrder,
     u: [f64; 2],
+    tj: u8,
+    tk: u8,
 ) -> Option<TorsionEnergyParams> {
-    if left.aromatic && right.aromatic && order == BondOrder::Aromatic {
+    // MMFFArom is distinct from the aromatic flag in the MMFFProp table.
+    let aromatic_type = |t| {
+        matches!(
+            t,
+            37 | 38 | 39 | 44 | 58 | 59 | 63 | 64 | 65 | 66 | 69 | 76 | 78 | 79 | 80 | 81 | 82
+        )
+    };
+    if aromatic_type(tj) && aromatic_type(tk) && order == BondOrder::Aromatic {
         let beta = if matches!((left.valence, right.valence), (3, 4) | (4, 3)) {
             3.0
         } else {
@@ -594,9 +609,17 @@ fn coordination_torsion_barrier(
     if left.coordination == 4 && right.coordination == 4 {
         Some(v3)
     } else if left.coordination == 4 {
-        Some(if torsion_end_conjugates(right) { zero } else { v3 })
+        Some(if torsion_end_conjugates(right) {
+            zero
+        } else {
+            v3
+        })
     } else if right.coordination == 4 {
-        Some(if torsion_end_conjugates(left) { zero } else { v3 })
+        Some(if torsion_end_conjugates(left) {
+            zero
+        } else {
+            v3
+        })
     } else {
         None
     }
@@ -609,10 +632,8 @@ fn conjugated_torsion_barrier(
     atomic_numbers: [u8; 2],
     u: [f64; 2],
 ) -> Option<TorsionEnergyParams> {
-    let (left_multiple, right_multiple) =
-        (left.multiple_bond_count, right.multiple_bond_count);
-    let (left_lone_pair, right_lone_pair) =
-        (left.has_pi_lone_pair, right.has_pi_lone_pair);
+    let (left_multiple, right_multiple) = (left.multiple_bond_count, right.multiple_bond_count);
+    let (left_lone_pair, right_lone_pair) = (left.has_pi_lone_pair, right.has_pi_lone_pair);
     let conjugated = (order == BondOrder::Single && left_multiple != 0 && right_multiple != 0)
         || (left_multiple != 0 && right_lone_pair)
         || (left_lone_pair && right_multiple != 0);
@@ -654,9 +675,8 @@ fn torsion_element_constants(atomic_number: u8) -> (f64, f64, f64) {
 fn torsion_end_conjugates(
     info: &crate::mmff94_numeric_type_registry::Mmff94NumericTypeInfo,
 ) -> bool {
-    (info.coordination == 3
-        && matches!(info.valence, 4 | 34)
-            || info.coordination == 3 && info.multiple_bond_count != 0)
+    (info.coordination == 3 && matches!(info.valence, 4 | 34)
+        || info.coordination == 3 && info.multiple_bond_count != 0)
         || (info.coordination == 2 && (info.valence == 3 || info.multiple_bond_count != 0))
 }
 
