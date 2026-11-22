@@ -659,3 +659,33 @@ with uncompressed SHA-256
 Scaffold-bootstrap, strict-stereo and timing-distribution summaries accompany
 it. Each shard's wheel, baseline, scoring protocol and record identities were
 verified by the timed merger.
+
+### Independent macOS fixed-count result
+
+All four macOS fixed-count shards of
+[run 45026013999](https://github.com/kent-tokyo/chematic/actions/runs/45026013999)
+succeeded. The original matrix-wide CI merge was skipped following cancellation
+of a separate Linux COD shard. The macOS artifacts were locally merged against
+the original sealed manifest, verifying all identities, wheel, audit, scorer
+and strict-stereo fingerprints. This is a local reconstruction, not a CI
+merge; the wheel predates the bridging-hydrogen fix.
+
+Across all 1,243 records, reference recovery was 177 for chematic and 179 for
+RDKit. The paired difference was −0.16 percentage points and the seed-42,
+10,000-resample scaffold-cluster 95% interval was −1.065 to +0.733 percentage
+points over 802 groups. Its lower bound exceeds the prespecified −2-point
+margin. Converged-only recovery was 76 and 78, with interval −0.660 to +0.324
+percentage points. The approximately 14% absolute recovery remains low.
+No contradicted or unevaluable declared stereo was detected in 23,034
+chematic or 23,010 RDKit conformers. The no-conformer record counts were 54
+and 58. The frozen scorer recorded 58 RDKit `Bad Conformer Id` errors; these
+historical outcomes remain in the result. The platform was
+`macOS-26.7.2-arm64-arm-64bit`.
+
+The raw result is
+`validation/results/macrocycle-pdb-independent-mixed-fixed-macos-2026-11-22.json.gz`,
+with uncompressed SHA-256
+`1d46e873d1c9da16a3062eed85cb76fbfb8e76aa99c742e3818b5a0187b99161`.
+Recovery and strict-stereo summaries accompany it. The merged result was
+written directly to compressed output; the comparison does not establish a
+macOS timed or published-package result.
