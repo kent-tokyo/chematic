@@ -112,7 +112,12 @@ a specified-stereo violation. Chematic returned no candidate for one case;
 RDKit returned two for it. Another case produced 3/5 candidates. The paired
 molecule-bootstrap interval for the recovery difference was −15.63 to 0
 percentage points; this small development sample is not an independent
-noninferiority test. Protein-bound conformations are a distinct population,
+noninferiority test. Among cases with at least one returned candidate, the
+median best heavy-atom RMSD, before stereo or geometry screening, was 2.85 Å
+for chematic (31 cases) and 2.91 Å for RDKit (32 cases). Before MMFF, two RDKit
+embedded ensembles contained a candidate within 1 Å; raw chematic candidates
+were not recorded. Protein-bound
+conformations are a distinct population,
 and these numbers do not imply that either engine reproduces solution-state
 conformer distributions.
 

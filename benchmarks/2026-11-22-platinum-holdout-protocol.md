@@ -547,8 +547,15 @@ These bounds exceed the prespecified −2-point threshold on this host, but do
 not establish overall parity: the fixed run returned 41,440/41,436 candidates
 with 75/67 specified-stereo violations, while the timed run had 22/15. The
 newer stereo changes are not included. This result cannot be considered a
-fully unexposed holdout after the earlier support investigation; the original
-macOS job remains separate.
+fully unexposed holdout after the earlier support investigation. The original
+macOS job reached its six-hour limit after writing a prefix of 1,808 out of
+2,093 fixed-score records. Its saved checkpoint SHA-256 is
+`72d2ccabd7bba29105d0cc6fda9894a9826a075397a09665df8330ad9ffe4211`.
+The remaining 285 records are resumed with the same wheel and scoring
+configuration; the join rejects mismatched metadata, incomplete records and
+non-macOS-arm64 hosts. The combined fixed result spans two identified hosts,
+and the timed comparison runs separately on a third host. No macOS result is
+claimed until all records are complete and validated.
 
 On shared RDKit-embedded coordinates, the same Linux artifact reports 2,071
 force-field comparisons and 22 row errors. Maximum absolute differences were

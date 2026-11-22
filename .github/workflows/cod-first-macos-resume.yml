@@ -1,0 +1,88 @@
+name: Resume first COD macOS checkpoint
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-first-macos-resume.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  resume:
+    runs-on: macos-latest
+    timeout-minutes: 240
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify frozen wheel, checkpoint and scorer
+        run: |
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/trees/0d015702158f3e7e8d83637b65e301942acbe3f7 --jq '.tree[] | select(.path == "crates") | .sha')" = '99a9d44e7ddbe3ba8a1d797c8bd3baa5938272c1'
+          gh run download 44927371343 --repo "$GITHUB_REPOSITORY" --name parity-candidate-macos-latest-ac055be0c0262b32bfe52f7a9dd1cb3607cd1919 --dir candidate
+          gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+          gh run download 44932574044 --repo "$GITHUB_REPOSITORY" --name revised-cod-holdout-macos-latest-5ce9314de3d4c0aea42ad1aa1628d01851cc0294 --dir original
+          python -c 'import glob,hashlib,pathlib; h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest(); w=glob.glob("candidate/**/*.whl",recursive=True); assert len(w)==1 and h(w[0])=="5e1f34dab867a41a97fe66ea42d01f27199fd88325c00ae36ddf229bb9406920"; assert h("reference/cod-sample.sdf")=="6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"; assert h("original/cod-holdout-fixed.json")=="72d2ccabd7bba29105d0cc6fda9894a9826a075397a09665df8330ad9ffe4211"; assert h("original/eligible-split.json")=="58d868f02fad0c95706eed3cbf5ec5e4a00f7cb24316556d8e35a5324e7b4b21"; assert h("original/eligible-audit.json")=="f35093f043b0aaac841815744df8cc49dc6ccc517615dd6347953f8063c48b59"; assert h("scripts/validation/resume_cod_checkpoint.py")=="295575e58660efde4d030282adbc97b9347193330c4e0375bd122654872fcca7"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Score only remaining fixed candidates
+        run: |
+          python scripts/validation/resume_cod_checkpoint.py prepare --split original/eligible-split.json --audit original/eligible-audit.json --checkpoint original/cod-holdout-fixed.json --out-split resume-split.json --out-audit resume-audit.json
+          python -c 'import json; assert json.load(open("resume-split.json"))["resume"]["remaining_records"]==285'
+          python scripts/benchmarks/platinum_development_probe.py --sdf reference/cod-sample.sdf --split resume-split.json --invalid-exclusion-audit resume-audit.json --partition holdout --output resumed-fixed.json --limit 285 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/validation/resume_cod_checkpoint.py merge --split original/eligible-split.json --audit original/eligible-audit.json --checkpoint original/cod-holdout-fixed.json --resume-split resume-split.json --resumed resumed-fixed.json --output cod-holdout-fixed-combined.json
+          python scripts/benchmarks/summarize_platinum_holdout.py cod-holdout-fixed-combined.json original/eligible-split.json --output cod-holdout-fixed-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-first-macos-resumed-${{ github.sha }}
+          path: |
+            original/eligible-split.json
+            original/eligible-audit.json
+            resume-split.json
+            resume-audit.json
+            resumed-fixed.json
+            cod-holdout-fixed*.json
+          if-no-files-found: warn
+  time-and-fields:
+    needs: resume
+    runs-on: macos-latest
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install frozen wheel and reassembled results
+        run: |
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          gh run download 44927371343 --repo "$GITHUB_REPOSITORY" --name parity-candidate-macos-latest-ac055be0c0262b32bfe52f7a9dd1cb3607cd1919 --dir candidate
+          gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-first-macos-resumed-${{ github.sha }}" --dir resumed
+          python -c 'import glob,hashlib,json,pathlib,platform; w=glob.glob("candidate/**/*.whl",recursive=True); assert len(w)==1 and hashlib.sha256(pathlib.Path(w[0]).read_bytes()).hexdigest()=="5e1f34dab867a41a97fe66ea42d01f27199fd88325c00ae36ddf229bb9406920"; assert hashlib.sha256(pathlib.Path("reference/cod-sample.sdf").read_bytes()).hexdigest()=="6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"; x=json.load(open("resumed/cod-holdout-fixed-combined.json")); assert len(x["results"])==2093 and x["resume_provenance"]["completed_before_resume"]==1808; assert platform.system()=="Darwin" and platform.machine()=="arm64"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Evaluate timed candidates
+        run: |
+          python -c 'import platform; print(platform.platform())' > timed-platform.txt
+          python scripts/benchmarks/platinum_time_budget.py --sdf reference/cod-sample.sdf --baseline resumed/cod-holdout-fixed-combined.json --output cod-holdout-time.json --limit 2093 --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_time_budget.py cod-holdout-time.json --output cod-holdout-time-summary.json
+          python scripts/benchmarks/summarize_platinum_time_holdout.py cod-holdout-time.json resumed/original/eligible-split.json --output cod-holdout-time-cluster.json
+      - name: Compare force fields
+        run: |
+          python scripts/benchmarks/platinum_force_fields.py --development resumed/cod-holdout-fixed-combined.json --output cod-holdout-fields.json --checkpoint-every 50
+          python scripts/benchmarks/summarize_platinum_force_fields.py cod-holdout-fields.json --output cod-holdout-fields-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-first-macos-resumed-time-fields-${{ github.sha }}
+          path: |
+            timed-platform.txt
+            cod-holdout-time*.json
+            cod-holdout-fields*.json
+          if-no-files-found: warn
