@@ -10,13 +10,20 @@ from summarize_platinum_stereo_strict import summarize as summarize_strict_stere
 HERE = Path(__file__).resolve().parent
 
 
-def fingerprints():
+def fingerprints(profile='corrected'):
+    wrappers = {
+        'corrected': ('platinum_time_strict.py', 'platinum_development_strict.py'),
+        'mixed_checked': ('platinum_time_mixed_strict.py', 'platinum_mixed_checked_development.py'),
+    }
+    if profile not in wrappers:
+        raise ValueError('unsupported conformer profile')
+    time_wrapper, fixed_wrapper = wrappers[profile]
     return {name: digest((HERE / filename).read_bytes()) for name, filename in (
         ('timed_sharder_sha256', 'shard_platinum_time.py'),
         ('fixed_sharder_sha256', 'shard_platinum_holdout.py'),
         ('time_scorer_sha256', 'platinum_time_budget.py'),
-        ('time_stereo_wrapper_sha256', 'platinum_time_strict.py'),
-        ('fixed_stereo_wrapper_sha256', 'platinum_development_strict.py'),
+        ('time_stereo_wrapper_sha256', time_wrapper),
+        ('fixed_stereo_wrapper_sha256', fixed_wrapper),
         ('stereo_verifier_sha256', 'platinum_stereo_strict.py'),
         ('strict_summary_sha256', 'summarize_platinum_stereo_strict.py'),
         ('fixed_scorer_sha256', 'platinum_development_probe.py'),
@@ -31,7 +38,8 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
     fixed = json.loads(manifest_bytes)
     baseline_bytes = baseline_path.read_bytes()
     baseline = json.loads(baseline_bytes)
-    fingerprints_now = fingerprints()
+    profile = fixed['protocol']['profile']
+    fingerprints_now = fingerprints(profile)
     if (fingerprints_now['fixed_sharder_sha256'] != fixed['sharder_sha256']
             or fingerprints_now['fixed_scorer_sha256'] != fixed['scorer_sha256']
             or fingerprints_now['geometry_sha256'] != fixed['geometry_sha256']
@@ -68,6 +76,10 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
                           'seed_schedule': '42 * (attempt + 1)'},
              'selection': 'fixed-count shard membership; SHA256(name) order within each shard',
              'fingerprints': fingerprints_now, 'shards': []}
+    if profile == 'mixed_checked':
+        timed['profile'] = profile
+        timed['protocol']['profile'] = profile
+        timed['protocol']['gradient_schedule'] = 'first floor(max_candidates / 2) compatible, remainder corrected'
     for shard in fixed['shards']:
         subset = dict(baseline)
         subset['results'] = [by_index[r['index']] for r in shard['records']]
@@ -81,7 +93,7 @@ def prepare(fixed_manifest_path, baseline_path, output_dir):
 
 def seal(manifest_path, index, wheel_path, baseline_path, result_path):
     manifest = json.loads(manifest_path.read_bytes())
-    if fingerprints() != manifest['fingerprints']:
+    if fingerprints(manifest.get('profile', 'corrected')) != manifest['fingerprints']:
         raise ValueError('scorer or helper fingerprint mismatch')
     if index < 0 or index >= manifest['shard_count']:
         raise ValueError('invalid shard index')
@@ -114,7 +126,7 @@ def seal(manifest_path, index, wheel_path, baseline_path, result_path):
 def merge(manifest_path, shard_paths, output_path):
     raw_manifest = manifest_path.read_bytes()
     manifest = json.loads(raw_manifest)
-    if fingerprints() != manifest['fingerprints']:
+    if fingerprints(manifest.get('profile', 'corrected')) != manifest['fingerprints']:
         raise ValueError('scorer or helper fingerprint mismatch')
     shards = manifest['shards']
     if len(shards) != manifest['shard_count'] or len(shard_paths) != len(shards):
@@ -125,6 +137,8 @@ def merge(manifest_path, shard_paths, output_path):
     keys = ('rdkit', 'chematic', 'script_sha256', 'source_sha256', 'seconds',
             'stereo_policy', 'stereo_verifier_sha256', 'stereo_wrapper_sha256',
             'max_candidates', 'repair_iters', 'geometry_checked', 'seed_schedule', 'timing')
+    if manifest.get('profile') == 'mixed_checked':
+        keys += ('profile', 'gradient_schedule')
     common, seen, results, platforms, hashes = None, set(), [], [], []
     for path in shard_paths:
         raw = path.read_bytes()

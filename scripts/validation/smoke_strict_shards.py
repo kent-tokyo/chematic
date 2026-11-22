@@ -30,6 +30,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--wheel', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--profile', choices=('corrected', 'mixed_checked'), default='corrected')
     args = parser.parse_args()
     wheel_hash = hashlib.sha256(args.wheel.read_bytes()).hexdigest()
     with tempfile.TemporaryDirectory() as temporary:
@@ -56,13 +57,15 @@ def main():
                                          'split_sha256': fixed.digest(split.read_bytes()),
                                          'invalid_exclusion_count': 0, 'overlaps': []}))
         fixed_dir = root / 'fixed'
-        fixed.prepare(split, audit, fixed_dir, 2, wheel_hash)
+        fixed.prepare(split, audit, fixed_dir, 2, wheel_hash, args.profile)
         fixed_results = []
         for index in range(2):
             suffix = f'{index:03d}'
             result = root / f'fixed-{suffix}.json'
             shard_audit = fixed_dir / f'audit-{suffix}.json'
-            run('platinum_development_strict.py', '--sdf', sdf,
+            fixed_wrapper = ('platinum_mixed_checked_development.py' if args.profile == 'mixed_checked'
+                             else 'platinum_development_strict.py')
+            run(fixed_wrapper, '--sdf', sdf,
                 '--split', fixed_dir / f'split-{suffix}.json',
                 '--invalid-exclusion-audit', shard_audit, '--partition', 'holdout',
                 '--output', result, '--limit', 1, '--count', 20, '--seed', 42,
@@ -82,7 +85,9 @@ def main():
             suffix = f'{index:03d}'
             subset = timed_dir / f'baseline-{suffix}.json'
             result = root / f'timed-{suffix}.json'
-            run('platinum_time_strict.py', '--sdf', sdf, '--baseline', subset,
+            timed_wrapper = ('platinum_time_mixed_strict.py' if args.profile == 'mixed_checked'
+                             else 'platinum_time_strict.py')
+            run(timed_wrapper, '--sdf', sdf, '--baseline', subset,
                 '--output', result, '--limit', 1, '--seconds', 0.2,
                 '--max-candidates', 20, '--repair-iters', 400, '--geometry')
             timed.seal(timed_dir / 'manifest.json', index, args.wheel, subset, result)
@@ -93,7 +98,7 @@ def main():
             raise RuntimeError('synthetic timed scoring failed')
         run('summarize_platinum_time_holdout.py', timed_merged, split, '--output', root / 'timed-summary.json', '--bootstrap', 100)
         run('summarize_platinum_stereo_strict.py', timed_merged, '--output', root / 'timed-stereo.json')
-        report = {'rdkit_version': rdBase.rdkitVersion, 'platform': platform.platform(),
+        report = {'rdkit_version': rdBase.rdkitVersion, 'platform': platform.platform(), 'profile': args.profile,
                   'wheel_sha256': wheel_hash, 'synthetic_records': 2,
                   'fixed_stereo': json.loads((root / 'fixed-stereo.json').read_text()),
                   'timed_stereo': json.loads((root / 'timed-stereo.json').read_text()),

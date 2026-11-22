@@ -11,6 +11,7 @@ from rdkit import Chem, rdBase
 from rdkit.Chem import AllChem
 
 from platinum_development_probe import graph_matches, rms_values
+from platinum_geometry import check_geometry, prepare_geometry_checks
 from platinum_stereo_strict import stereo_violations_strict
 
 
@@ -31,6 +32,7 @@ def main():
     other = chematic.from_smiles(row["smiles"]).add_hydrogens()
     if not graph_matches(other, mol):
         raise ValueError("atom-indexed molecular graphs differ")
+    checks = prepare_geometry_checks(mol)
     result = subprocess.run(
         [str(args.binary.resolve())], input=json.dumps({
             "smiles": row["smiles"],
@@ -61,7 +63,13 @@ def main():
     output = {
         "name": args.name, "rdkit": rdBase.rdkitVersion, "seed": 42,
         "macrocycle_torsions": not args.disable_macrocycle_torsions,
-        "macrocycle_14": not args.disable_macrocycle_14, "sources": {},
+        "macrocycle_14": not args.disable_macrocycle_14,
+        "geometry_reference": {
+            "bonds_supported": len(checks[0]), "bonds_total": mol.GetNumBonds(),
+            "angles_supported": len(checks[1]),
+            "angles_total": sum(a.GetDegree() * (a.GetDegree() - 1) // 2 for a in mol.GetAtoms()),
+        },
+        "sources": {},
     }
     for label, coordinates in (("chematic", source["coords"]), ("rdkit", rdkit_coords)):
         records = []
@@ -87,6 +95,7 @@ def main():
                 "chematic_status": cstatus, "rdkit_status": rstatus,
                 "chematic_energy": cenergy, "rdkit_energy": renergy,
                 "stereo": stereo_violations_strict(mol, [initial, ccoords, rcoords]),
+                "geometry": [check_geometry(coords, checks) for coords in (initial, ccoords, rcoords)],
             })
         output["sources"][label] = records
     args.output.write_text(json.dumps(output, indent=2, allow_nan=False) + "\n")

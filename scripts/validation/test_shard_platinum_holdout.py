@@ -12,6 +12,46 @@ spec.loader.exec_module(sharding)
 
 
 class HoldoutShardingTest(unittest.TestCase):
+    def test_mixed_profile_fingerprints_and_protocol(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            split = {'source_sha256': 'a' * 64, 'invalid_exclusions': [],
+                     'rows': [{'index': 0, 'name': 'mol', 'split': 'holdout',
+                               'scaffold_sha256': 'b' * 64}]}
+            split_path = root / 'split.json'
+            split_path.write_bytes(sharding.encoded(split))
+            audit_path = root / 'audit.json'
+            audit_path.write_bytes(sharding.encoded({
+                'split_sha256': sharding.digest(split_path.read_bytes()),
+                'source_sha256': split['source_sha256'],
+                'invalid_exclusion_count': 0, 'overlaps': [],
+            }))
+            wheel = root / 'candidate.whl'
+            wheel.write_bytes(b'synthetic wheel')
+            manifest = sharding.prepare(split_path, audit_path, root / 'shards', 1,
+                                        sharding.digest(wheel.read_bytes()), 'mixed_checked')
+            wrapper = MODULE.with_name('platinum_mixed_checked_development.py')
+            self.assertEqual(manifest['stereo_wrapper_sha256'], sharding.digest(wrapper.read_bytes()))
+            self.assertEqual(manifest['protocol']['profile'], 'mixed_checked')
+            shard = manifest['shards'][0]
+            result = dict(manifest['protocol'], chematic='test', platform='test',
+                          script_sha256=manifest['scorer_sha256'], source_sha256=split['source_sha256'],
+                          stereo_verifier_sha256=manifest['stereo_verifier_sha256'],
+                          stereo_wrapper_sha256=manifest['stereo_wrapper_sha256'],
+                          split_sha256=shard['split_sha256'],
+                          results=[dict(r, status='ok') for r in shard['records']])
+            result_path = root / 'result.json'
+            result_path.write_bytes(sharding.encoded(result))
+            sharding.seal(root / 'shards' / 'manifest.json', 0, wheel,
+                          root / 'shards' / 'audit-000.json', result_path)
+            merged = sharding.merge(root / 'shards' / 'manifest.json', [result_path], root / 'merged.json')
+            self.assertEqual(merged['profile'], 'mixed_checked')
+            altered = json.loads(result_path.read_text())
+            altered['profile'] = 'corrected'
+            result_path.write_bytes(sharding.encoded(altered))
+            with self.assertRaises(ValueError):
+                sharding.merge(root / 'shards' / 'manifest.json', [result_path], root / 'bad.json')
+
     def test_complete_and_tampered_shards(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

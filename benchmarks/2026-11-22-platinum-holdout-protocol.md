@@ -1732,6 +1732,48 @@ This selected sample is development evidence. Raw data are
 `validation/results/cod-discordant-61-macos-mixed-checked-2026-11-22.json.gz`,
 uncompressed SHA-256
 `dc3092e93c8894b3c4e348a0d59bd54a3122edfbb958bbcb5ace1b73e3a10c0b`.
+The Linux run on the same selected 61 records used source commit
+`fc4011fd696344d70b1677342fb85a2baee041dd` and wheel SHA-256
+`503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`.
+It recovered 28 / 35 for chematic / RDKit, with 1,219 chematic candidates
+and no contradicted or unevaluable declared stereo. These cases were selected
+from earlier Linux outcomes and are not an unbiased population estimate.
+No same-wheel corrected Linux comparison was run on these 61 records.
+Raw output is
+`validation/results/cod-discordant-61-linux-mixed-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`6b85ed535817567a33999265f677994d0621089e364846634f034fbdda369a38`.
+The Linux mixed-profile run on the 52 exposed empty-candidate records
+recovered 39 / 40 for chematic / RDKit. Chematic returned 980 candidates,
+with zero contradicted or unevaluable declarations and three records with
+no candidate. Raw data are
+`validation/results/cod-exposed-52-linux-mixed-checked-2026-11-22.json.gz`,
+uncompressed SHA-256
+`c4f6f1f3f6dede4559071c26d37da8ee9eb3ff5caaeb4226a64e6407c05da0c9`.
+These records are selected development cases.
+The mixed profile was also measured on 224 of the 225 macOS development
+records. One unusually slow case, `GLXXKJHHLMSUAD-NPTIBEEQSA-N`, was omitted
+from this separate run while its other evaluation continued. Recovery was
+162 / 163 for chematic / RDKit. Against corrected on the same 224 records,
+two chematic recoveries were gained and one lost. All 4,160 returned
+chematic candidates had evaluable and consistent declared stereo; RDKit
+RMSD arrays matched the corrected run. This incomplete exposed comparison
+does not establish noninferiority. Raw output is
+`validation/results/cod-development-224-macos-mixed-checked-2026-11-22.json.gz`
+with uncompressed SHA-256
+`daa41df1ab0f948f0062caece868543f5ecc230a56c09dc14bb319be82a91b11`;
+the derived split is `validation/results/cod-development-224-mixed-split-2026-11-22.json.gz`
+with uncompressed SHA-256
+`5c4e0262614a2157d2b2c8e7cb53004519b7e8e32c598e2897945cc4d89d5749`.
+The fixed-count shard pipeline now accepts the mixed profile and verifies its
+own scorer fingerprint and settings. The timed wrapper uses compatibility
+for the first ten of at most 20 single-candidate attempts and corrected for
+the remainder, preserving the fixed run's seed and gradient schedule. The
+deadline admits only completed attempts; calls are not interrupted. Synthetic
+two-molecule fixed and timed shard preparation, sealing, merging and summaries
+passed for both profiles on macOS with the mixed wheel. The report is
+`validation/results/mixed-shard-pipeline-smoke-macos-2026-11-22.json`;
+this is not holdout evidence.
 
 ### Proposed fresh COD evaluation
 
@@ -1779,4 +1821,24 @@ audit has no overlaps and SHA-256
 The sample manifest, prior-scaffold inputs, selected split and both audits
 are stored under `validation/results/cod-fresh-*` and
 `validation/results/{cod,macrocycle}-prior-scaffolds-*`. No conformer
-outcome from this sample has been inspected.
+outcome from this sample had been inspected when the split was fixed.
+
+The mixed-profile macOS development run used the previously recorded
+`55ff3b6f14d01d7da5af6b00e35ded4ef2df03d22bfd7a4d803f2dc36f51f49b`
+wheel and RDKit 2026.09.2. Of 213 development records, 23 were unsupported
+by RDKit. Both engines recovered 144 records under the fixed-count screened
+metric. Chematic returned 3,779 conformers with no contradicted or unevaluable
+declared stereo. This development run does not score the 2,102 holdout
+records. Raw output is
+`validation/results/cod-fresh-development-macos-mixed-2026-11-22.json.gz`,
+uncompressed SHA-256
+`56cb9676230a3486487faf53adb11d5ab3e33a2a14dc6b07e06d7e7120b9773c`.
+On the same 213 records the corrected macOS wheel recovered 145 / 144 for
+chematic / RDKit, with 3,779 chematic candidates and no contradicted or
+unevaluable declared stereo. Compared with corrected, mixed gained one
+recovery and lost two; all RDKit RMSD arrays matched. The corrected run used
+wheel `a23175f9ef80635d7d568023fd2bfadca68abbf9e850ad4c2106305152dbb9fc`.
+Raw output is
+`validation/results/cod-fresh-development-macos-corrected-2026-11-22.json.gz`,
+uncompressed SHA-256
+`60868500327dba35da537c411a460749f216438e45f90a69d15cf95a0d123f4a`.

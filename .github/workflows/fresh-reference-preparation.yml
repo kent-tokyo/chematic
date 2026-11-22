@@ -1,0 +1,81 @@
+name: Prepare fresh reference and verify mixed shard pipeline
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/fresh-reference-preparation.yml'
+      - 'scripts/benchmarks/shard_platinum_holdout.py'
+      - 'scripts/benchmarks/shard_platinum_time.py'
+      - 'scripts/benchmarks/platinum_time_mixed_strict.py'
+      - 'scripts/validation/smoke_strict_shards.py'
+
+permissions:
+  contents: read
+
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Reconstruct frozen reference sample
+        run: |
+          curl --fail --location --retry 3 --max-time 1200 --output reference.tar https://bits.csb.pitt.edu/files/cod.tgz
+          echo 'e1d6191fd665dbcc8ce5a24731fefe6ecf6460e0d25f5e290e264646543a16a2  reference.tar' | sha256sum --check
+          python scripts/validation/select_cod_reference_sample.py reference.tar --sample-size 12000 --offset 12000 --sdf reference.sdf --manifest reference-manifest.json
+          echo '6e2f93fb05c8ff49aff24577aa62d3f04f6531b505e12a9f711c9b79cf3ba008  reference.sdf' | sha256sum --check
+          echo '20f3d482d1078e22d54cd45580ca342ca89614ef927cfa269cf445c428a3ddd4  reference-manifest.json' | sha256sum --check
+          gzip -dc validation/results/cod-fresh-scaffold-split-2026-11-22.json.gz > split.json
+          echo 'c9d185e075f83dacc48620d1b843727cbaf6729406aee0568fada9e30bfbff9d  split.json' | sha256sum --check
+          cp validation/results/cod-fresh-invalid-audit-final-2026-11-22.json audit.json
+          echo '03111f28aa56e26a0e895d9f55128c2e29fce6060502fbaa123f6f4f9c9e3f63  audit.json' | sha256sum --check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: fresh-cod-reference-${{ github.event.pull_request.head.sha }}
+          path: |
+            reference.sdf
+            reference-manifest.json
+            split.json
+            audit.json
+          if-no-files-found: error
+
+  wheel-and-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+      - run: cargo test --locked --release -p chematic-3d --lib corrected_ensemble_tests
+      - run: maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out candidate
+      - name: Test fixed and timed shard pipelines
+        run: |
+          python -m pip install --force-reinstall --no-deps candidate/*.whl
+          python -m unittest scripts.validation.test_shard_platinum_holdout scripts.validation.test_shard_platinum_time scripts.validation.test_platinum_time_mixed
+          python scripts/validation/smoke_strict_shards.py --wheel candidate/*.whl --profile corrected --output corrected-smoke.json
+          python scripts/validation/smoke_strict_shards.py --wheel candidate/*.whl --profile mixed_checked --output mixed-smoke.json
+          python -c 'import hashlib,pathlib; w=list(pathlib.Path("candidate").glob("*.whl")); assert len(w)==1; pathlib.Path("candidate/wheel-sha256.txt").write_text(hashlib.sha256(w[0].read_bytes()).hexdigest()+"\n")'
+          git rev-parse HEAD > candidate/source-commit.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: fresh-evaluation-wheel-${{ matrix.os }}-${{ github.event.pull_request.head.sha }}
+          path: |
+            candidate/
+            corrected-smoke.json
+            mixed-smoke.json
+          if-no-files-found: warn

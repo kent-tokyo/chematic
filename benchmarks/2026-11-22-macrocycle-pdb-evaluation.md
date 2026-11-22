@@ -511,3 +511,25 @@ establish macrocycle noninferiority. Raw output is
 `validation/results/macrocycle-pdb-macos-development-compatible-checked-32-2026-11-22.json.gz`,
 uncompressed SHA-256
 `1f6182c019c41a2e04e00e10d4f33916fd0cbd150814dc93a8715f6ae6ba0022`.
+
+As an exposed development ablation, all seven of the 32 records with
+corrected-profile minimum RMSD above 1 Å and at most 1.6 Å were tested with
+either macrocycle torsions or macrocycle 1–4 bounds disabled. Each setting
+used 20 chematic starting structures and 200 MMFF iterations. Neither
+setting produced a 1 Å recovery that passed the strict stereo and geometry
+screens for any of the seven; all tested bond and angle checks had reference
+parameters. Raw per-candidate results are
+`validation/results/macrocycle-near-miss-ablation-macos-2026-11-22.json.gz`,
+uncompressed SHA-256
+`1ba1ed8818cc5dc08671ca5ca54aad2de222fca24b7e5337891d919dc4b3ecae`.
+This selected analysis does not establish the effect on the full population.
+
+The experimental mixed-gradient wheel
+`55ff3b6f14d01d7da5af6b00e35ded4ef2df03d22bfd7a4d803f2dc36f51f49b`
+also recovered 3 / 4 on the same 32 macOS development records. Recovery was
+unchanged for each record relative to corrected; 604 / 606 returned
+chematic / RDKit candidates had consistent and evaluable declared stereo.
+This exposed sample does not establish macrocycle noninferiority. Raw data are
+`validation/results/macrocycle-pdb-macos-development-mixed-checked-32-2026-11-22.json.gz`,
+uncompressed SHA-256
+`0694f6ea4747e5044bd71eafa14b3ec78b2aa072fd3c89dcb2c7a225e683b3ff`.

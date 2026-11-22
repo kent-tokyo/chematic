@@ -18,7 +18,11 @@ def encoded(value):
     return (json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + '\n').encode()
 
 
-def prepare(split_path, audit_path, output_dir, count, wheel_sha256):
+def prepare(split_path, audit_path, output_dir, count, wheel_sha256, profile='corrected'):
+    wrappers = {'corrected': 'platinum_development_strict.py',
+                'mixed_checked': 'platinum_mixed_checked_development.py'}
+    if profile not in wrappers:
+        raise ValueError('unsupported conformer profile')
     split_bytes = split_path.read_bytes()
     audit_bytes = audit_path.read_bytes()
     split, audit = json.loads(split_bytes), json.loads(audit_bytes)
@@ -50,10 +54,10 @@ def prepare(split_path, audit_path, output_dir, count, wheel_sha256):
                 'summarizer_sha256': digest(Path(__file__).with_name('summarize_platinum_holdout.py').read_bytes()),
                 'summary_helper_sha256': digest(Path(__file__).with_name('summarize_platinum_probe.py').read_bytes()),
                 'stereo_verifier_sha256': digest(Path(__file__).with_name('platinum_stereo_strict.py').read_bytes()),
-                'stereo_wrapper_sha256': digest(Path(__file__).with_name('platinum_development_strict.py').read_bytes()),
+                'stereo_wrapper_sha256': digest(Path(__file__).with_name(wrappers[profile]).read_bytes()),
                 'strict_summary_sha256': digest(Path(__file__).with_name('summarize_platinum_stereo_strict.py').read_bytes()),
                 'selection': 'SHA256(name) order, round-robin shards',
-                'protocol': {'rdkit': '2026.09.2', 'profile': 'corrected', 'geometry_checked': True,
+                'protocol': {'rdkit': '2026.09.2', 'profile': profile, 'geometry_checked': True,
                              'stereo_policy': 'rdkit-declared-stereo-strict-v1',
                              'repair_iters': 400, 'candidate_limit': 20,
                              'mmff_iterations': 200, 'seed': 42}, 'shards': []}
@@ -82,6 +86,11 @@ def prepare(split_path, audit_path, output_dir, count, wheel_sha256):
 
 def seal(manifest_path, shard_index, wheel_path, audit_path, result_path):
     manifest = json.loads(manifest_path.read_bytes())
+    wrappers = {'corrected': 'platinum_development_strict.py',
+                'mixed_checked': 'platinum_mixed_checked_development.py'}
+    wrapper = wrappers.get(manifest['protocol']['profile'])
+    if wrapper is None:
+        raise ValueError('unsupported conformer profile')
     if shard_index < 0 or shard_index >= manifest['shard_count']:
         raise ValueError('invalid shard index')
     shard = manifest['shards'][shard_index]
@@ -91,7 +100,7 @@ def seal(manifest_path, shard_index, wheel_path, audit_path, result_path):
                       ('scorer_sha256', Path(__file__).with_name('platinum_development_probe.py')),
                       ('geometry_sha256', Path(__file__).with_name('platinum_geometry.py')),
                       ('stereo_verifier_sha256', Path(__file__).with_name('platinum_stereo_strict.py')),
-                      ('stereo_wrapper_sha256', Path(__file__).with_name('platinum_development_strict.py')),
+                      ('stereo_wrapper_sha256', Path(__file__).with_name(wrapper)),
                       ('strict_summary_sha256', Path(__file__).with_name('summarize_platinum_stereo_strict.py'))):
         if digest(path.read_bytes()) != manifest[key]:
             raise ValueError(f'{key} mismatch')
@@ -194,6 +203,7 @@ def main():
     p.add_argument('--output-dir', type=Path, required=True)
     p.add_argument('--shards', type=int, required=True)
     p.add_argument('--wheel-sha256', required=True)
+    p.add_argument('--profile', choices=('corrected', 'mixed_checked'), default='corrected')
     p = commands.add_parser('seal')
     p.add_argument('--manifest', type=Path, required=True)
     p.add_argument('--index', type=int, required=True)
@@ -206,7 +216,7 @@ def main():
     p.add_argument('shard_results', type=Path, nargs='+')
     args = parser.parse_args()
     if args.command == 'prepare':
-        result = prepare(args.split, args.audit, args.output_dir, args.shards, args.wheel_sha256)
+        result = prepare(args.split, args.audit, args.output_dir, args.shards, args.wheel_sha256, args.profile)
         print(f"Prepared {sum(s['count'] for s in result['shards'])} records in {result['shard_count']} shards")
     elif args.command == 'seal':
         seal(args.manifest, args.index, args.wheel, args.audit, args.result)
