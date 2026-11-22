@@ -10,6 +10,14 @@ fn with_collection(line: &str) -> String {
 fn stereo_collection_rejects_invalid_group_ids_and_members() {
     for (line, expected) in [
         (
+            "MDLV30/STERELx ATOMS=(1 1)",
+            "OR group id is not an integer",
+        ),
+        (
+            "MDLV30/STERACx ATOMS=(1 1)",
+            "AND group id is not an integer",
+        ),
+        (
             "MDLV30/STEBRELx BONDS=(1 1)",
             "OR group id is not an integer",
         ),
@@ -46,4 +54,19 @@ fn repeated_absolute_collection_lines_merge_and_deduplicate_members() {
         report.mol.stereo_group_bond_indices(0).unwrap(),
         [chematic_core::BondIdx(0)]
     );
+}
+
+#[test]
+fn malformed_rgroup_lists_are_reported() {
+    let input = with_collection("MDLV30/STEABS ATOMS=(1 1)");
+    for (property, expected) in [("RGROUPS=(x 7)", "RGROUPS property lacks a valid count")] {
+        let molecule = input.replace(
+            "M  V30 1 C 0 0 0 0\n",
+            &format!("M  V30 1 C 0 0 0 0 {property}\n"),
+        );
+        let error = read_mol_v3000_with_diagnostics(&molecule)
+            .err()
+            .expect("invalid RGROUPS");
+        assert!(error.to_string().contains(expected), "{property}: {error}");
+    }
 }
