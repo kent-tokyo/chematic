@@ -11,20 +11,9 @@ pub fn compute_mmff94_aromatic_view(
     if rings.is_empty() {
         return Ok(mol.clone());
     }
-    // RDKit's MMFF pass consumes RingInfo in size/insertion order. The
-    // symmetrized SSSR canonicalizes its public ring list, so restore the
-    // equivalent compatibility order here: smaller rings first and, within
-    // one size, the earliest atom encountered by the input graph. This is
-    // deliberately local to the RDKit-compatibility layer; general ring
-    // perception remains atom-order independent.
-    //
-    // RDKit's pass stops once every ring atom has been looked at, so a ring
-    // deferred until its neighbours are typed is decided by where it sits in
-    // that order. Rings RDKit lists are taken in RDKit's own order
-    // (`rdkit_sssr_ring_order`, a port of its `findSSSR`/`symmetrizeSSSR`);
-    // the size/first-atom order above is the fallback.
-    // The caller passes RDKit's own ring list where the port has it, so the
-    // input order is RDKit's; the sort below only orders a fallback list.
+    // Ring iteration order affects when the pass resolves fused atoms.
+    // Preserve the caller's relevant-cycle order; it does not exactly match
+    // RingDecomposerLib in every fused system.
     let rdkit_position: std::collections::HashMap<Vec<u32>, usize> = rings
         .iter()
         .cloned()

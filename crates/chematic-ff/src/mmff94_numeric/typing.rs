@@ -64,11 +64,6 @@ pub fn assign_mmff94_numeric_types_with_view(
 ) -> Result<(Vec<u8>, Molecule), NumericTypeError> {
     let n = mol.atom_count();
     let mut types = vec![0u8; n];
-    // MMFF94's aromaticity loop follows RDKit's ordered RingInfo semantics,
-    // including the large-cycle representatives that control when charged
-    // fused rings become resolved. `compute_mmff94_aromatic_view` restores
-    // the compatibility-specific processing order without changing the
-    // general perception API's canonical ring ordering.
     // RDKit 2026.09 consumes relevant cycles. Their order also affects its
     // MMFF aromaticity pass; our enumeration is not an exact port of
     // RingDecomposerLib's order. Preserve the previous bounded fallback.

@@ -1274,5 +1274,37 @@ JSON outputs; the passing targeted assertions remain in the job log. A later
 workflow corrects the artifact path. Local exploratory checks also found the
 MMFF torsion builder incorrectly included SP2D central atoms, and that the
 empirical torsion rule used MMFFProp aromatic flags instead of the separate
-MMFFArom type set. Both changes have fixed-coordinate tests; wheel and broader
-regression results are pending. These exposed checks do not establish parity.
+MMFFArom type set. The [MMFF non-tetrahedral Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44983825231) passed its fixed-coordinate cases, the force-field library suite and selected shared-coordinate outlier assertions. The subsequent aromatic-torsion comparison is described below. These exposed checks do not establish parity.
+
+The remaining selected first-split MMFF energy/gradient outlier has six bonds
+whose MMFF aromatic status differs from RDKit. The relevant-cycle sets match,
+but their iteration order differs, and the fused-ring aromaticity pass is
+order dependent. A local trial sorting fused-ring centers after peripheral
+rings failed the existing `DEZSLFWYSCQUHD-QUMXLFQESA-N` atom-type regression;
+that heuristic was not adopted. Reproducing RingDecomposerLib's ordering, not
+just its cycle set, remains an open compatibility problem.
+
+The finite-difference outliers were also checked locally against RDKit
+2026.09.2 itself, using ETKDGv3 seed 42 and six sampled Cartesian components.
+For `YEBDEXSGHHFXMC-FNCQTZNRSA-N`, RDKit UFF's largest sampled difference
+between its analytic gradient and central energy difference at step 1e-5 was
+253,964.55, with analytic component magnitude 11,053.00; RDKit MMFF94's
+corresponding maximum was 302,088.59. These macOS-embedded coordinates differ
+from the Linux CI coordinates. This establishes that the discrepancy can also
+occur in RDKit on this exposed structure; it neither explains its cause nor
+establishes stability or derivative accuracy for either implementation.
+
+The [aromatic-torsion Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44984248482)
+passed the force-field library and all targeted tests and shared-coordinate
+assertions. The tested merge commit was
+`22578e3829bfee7aaab03b4c1bd829e580c3a8fe`, with Linux wheel SHA-256
+`9b43183d8fd7889520a1b166fcfb1cbb7e59c44b893910f6855b9ffeafaaa8ac`.
+Among the selected 57 second-split development records, one RDKit embedding
+failed; all 56 remaining records had reported zero energy and maximum
+component gradient difference for MMFF94, MMFF94s and UFF. Among 51 selected
+first-split records, one MMFF94/MMFF94s outlier remains, with maximum energy
+difference 4.958 kcal/mol and gradient-component difference 49.682 kcal/mol/Å;
+UFF differences were reported as zero. These selected and exposed inputs are
+not independent acceptance evidence. Full outputs:
+`validation/results/cod-first-fields-aromatic-torsion-development-2026-11-22.json.gz`
+and `validation/results/cod-second-fields-aromatic-torsion-development-2026-11-22.json.gz`.
