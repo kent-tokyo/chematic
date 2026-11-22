@@ -2316,3 +2316,45 @@ The revised timed manifest also pins the independent-engine error policy;
 sealing and merging reject an absent or different policy, and the merged
 result retains it. This prevents mixing results from the earlier shared-error
 scorer with the revised scorer.
+
+### Predeclared direct timed evaluation after engine isolation
+
+Before observing any conformer outcome under the revised scorer, evaluate all
+3,579 records of the previously sealed `cod-unused-force-field-holdout`
+population on Linux and macOS. This population is scaffold-disjoint from the
+known earlier development and first holdout sets, but its structures and
+common-coordinate force-field results were already exposed; unknown earlier
+exposure also cannot be excluded. The candidate and parameters are fixed:
+use the post-bridge-fix source `261e520ab4d0fce681b23c168bee0888c2103b0a`,
+Linux wheel SHA-256
+`cb9d6b6df61db6b6f4abb3326f315f122ceb80afdc9ef2de909800c689dbeba6`,
+macOS wheel SHA-256
+`83eaf6994439b98647c65d34322ccb50489d6d537f0b396cba4674be6b14d20c`,
+RDKit 2026.09.2, eight deterministic SHA256(name) round-robin shards,
+0.2-second acceptance deadline per engine, at most 20 attempts, seed schedule
+`42 * (attempt + 1)`, the mixed profile, bounded 400-iteration retry, strict
+declared stereo and the existing geometry and 1 Å recovery screens. Calls
+are not interrupted. Report all records, per-engine errors and missing scores,
+accepted candidates, no-candidate cases, convergence, elapsed distributions,
+and recovery using paired 10,000-resample seed-42 scaffold-cluster intervals.
+Apply the −2 percentage-point lower-bound criterion and zero contradicted or
+unevaluable declared stereo to each OS separately; this is a scoped test, not
+an assertion of broad parity. The existing strict-stereo summary's
+`records_with_no_conformers` includes rows lacking an engine result; read it
+with the engine-error and missing-record counts.
+
+This is a direct timed experiment and does not fabricate a fixed-count
+baseline. The audited split and SDF-derived input identities are verified
+before deterministic sharding, and the manifest binds each baseline, wheel,
+scorer, strict verifier, summary helpers and independent-engine error policy.
+The timed scorer SHA-256 is
+`486b3bd4b7f66fbffde935e9f0a3ec9e53ae05aaf89ef8d14d24abf197bc4ef6`;
+the direct planner SHA-256 is
+`b584818759c4c2b25f5036a6eb7ebcc037965e1b4402d06b83912de98aa20447`,
+and the timed sharder SHA-256 is
+`4ec31a36449ea8967960a06fa0714ecc93035f795db418cf1cc65bd87aac278b`.
+A local dry run with RDKit 2025.09.3 prepared all 3,579 input rows with no
+parse errors and exercised the plan, but it is not evaluation evidence or the
+pinned RDKit environment. Synthetic tests verified complete population,
+sealing, merging and rejection of an altered identity. No outcome from this
+revised timed experiment is available before the run.
