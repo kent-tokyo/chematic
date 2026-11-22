@@ -1066,3 +1066,18 @@ The raw result is `validation/results/cod-second-fields-v8-development-2026-11-2
 with uncompressed SHA-256
 `0f077e7eebaae5824b05cda0d8c0e73dd2f92832530e5ff90588060f08f0f4a5`.
 Neither follow-up is independent evidence for v8 or a later candidate.
+
+For the exposed finite-difference outlier YEBDEXSGHHFXMC-FNCQTZNRSA-N, a
+[frozen-v8 diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44975074988)
+recreated the geometry independently on each OS. Its angle (atoms 10–9–0) was
+179.99832° on Linux and 179.99879° on macOS. For the sampled component, the
+MMFF94 compatibility gradient was 39,499.68 and −11,138.73 kcal/mol/Å,
+matching RDKit; the central differences at 1e−9 Å were 46,440.73 and
+−13,637.32. The optional consistent-plane gradients were 46,440.79 and
+−13,637.15. UFF analytic and 1e−9 Å difference were similarly close on these
+coordinates, while 1e−5 Å gave dramatically different values. These are two
+near-singular geometries, and small-step subtraction has its own rounding error;
+they do not establish general gradient correctness. The checked optimizer
+still uses its RDKit-compatible gradient, not the optional consistent-plane
+one. Both raw records are in
+`validation/results/near-linear-second-cod-{linux,macos}-v8-development-2026-11-22.json`.
