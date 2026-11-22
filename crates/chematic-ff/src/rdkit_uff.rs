@@ -1381,6 +1381,40 @@ mod tests {
 mod geometry_boundary_contract_tests {
     use super::*;
 
+    #[test]
+    fn bridging_hydrogen_matches_rdkit_energy_and_gradient() {
+        for json in [
+            include_str!("../../../validation/rdkit-2026.09.2-uff-bridging-hydrogen.json"),
+            include_str!("../../../validation/rdkit-2026.09.2-uff-bridging-hydrogen-exposed.json"),
+        ] {
+            let fixture: serde_json::Value = serde_json::from_str(json).unwrap();
+            let mol = chematic_chem::add_hydrogens(
+                &chematic_smiles::parse(fixture["smiles"].as_str().unwrap()).unwrap(),
+            );
+            let coords: Vec<[f64; 3]> = fixture["coords"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|point| {
+                    [
+                        point[0].as_f64().unwrap(),
+                        point[1].as_f64().unwrap(),
+                        point[2].as_f64().unwrap(),
+                    ]
+                })
+                .collect();
+            assert_eq!(mol.atom_count(), coords.len());
+            let field = RdkitUffField::new(&mol, &coords, 10.0, true);
+            let pos = coords.as_flattened();
+            assert!((field.energy(pos) - fixture["energy"].as_f64().unwrap()).abs() < 1e-8);
+            let mut gradient = vec![0.0; pos.len()];
+            field.gradient(pos, &mut gradient);
+            for (actual, expected) in gradient.iter().zip(fixture["gradient"].as_array().unwrap()) {
+                assert!((actual - expected.as_f64().unwrap()).abs() < 1e-7);
+            }
+        }
+    }
+
     fn matches_native(actual: f64, expected: &serde_json::Value) -> bool {
         match expected.as_str() {
             Some("nan") => actual.is_nan(),

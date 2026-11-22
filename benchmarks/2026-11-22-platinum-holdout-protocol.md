@@ -1926,6 +1926,23 @@ This holdout is now exposed and must not be reused as fresh independent
 evidence for a fix selected from its outliers. Other platform and macrocycle
 field results remain in progress.
 
+The exposed UFF outlier was reproduced on separately generated macOS
+coordinates: RDKit energy was 401.4506 kcal/mol and the prior chematic energy
+was 42,943,972.7872 kcal/mol. The gradient difference was concentrated on
+the two boron atoms and their bridging H+. RDKit assigns the two-coordinate
+H+ SP hybridization, whereas the previous chematic SMARTS hybridization
+assigned S; this made the UFF angle use the wrong functional form. The source
+now assigns SP for two-coordinate H+, including isotopic hydrogen. A small
+synthetic boron-hydride bridge and the exposed 98-atom molecule both match
+RDKit 2026.09.2 UFF energy and every gradient component at their recorded
+coordinates in local Rust tests. The SMARTS and force-field library suites
+passed locally (259 and 292 tests respectively). Fixtures are
+`validation/rdkit-2026.09.2-uff-bridging-hydrogen.json` and
+`validation/rdkit-2026.09.2-uff-bridging-hydrogen-exposed.json`.
+The latter is development evidence because the holdout revealed the case;
+the running holdout jobs still use the pre-fix frozen wheel. A newly
+independent population is required to assess the modified source.
+
 The previously exposed 225-record development comparison completed on Linux
 using the wheel from commit `fc4011fd696344d70b1677342fb85a2baee041dd`
 (SHA-256 `503fa846417852e07bf6c4ea38189c8747d322b692a2267507dba431ea279345`).
