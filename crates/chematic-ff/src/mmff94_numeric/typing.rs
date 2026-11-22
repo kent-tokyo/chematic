@@ -194,7 +194,8 @@ struct BondInfo {
 }
 
 /// The atom's bonds in bond-index order (the order a scan of `mol.bonds()`
-/// gives), from its adjacency list rather than a scan of every bond.
+/// gives), from its adjacency list rather than a scan of every bond. SMILES
+/// directional bonds are chemically single bonds for MMFF atom typing.
 fn bonds_of(mol: &Molecule, idx: AtomIdx) -> Vec<BondInfo> {
     let mut nbrs: Vec<(u32, BondInfo)> = mol
         .neighbors(idx)
@@ -203,7 +204,10 @@ fn bonds_of(mol: &Molecule, idx: AtomIdx) -> Vec<BondInfo> {
                 b.0,
                 BondInfo {
                     neighbor: nb,
-                    order: mol.bond(b).order,
+                    order: match mol.bond(b).order {
+                        BondOrder::Up | BondOrder::Down => BondOrder::Single,
+                        order => order,
+                    },
                 },
             )
         })
