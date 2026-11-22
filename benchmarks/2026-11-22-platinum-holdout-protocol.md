@@ -2427,3 +2427,13 @@ membership does not establish a common cause, and these measurements do not
 separate embedding from minimization. Any profiling or optimization based on
 these cases is development work and requires a new unused cohort for a
 subsequent performance claim.
+
+For diagnosis only, `profile_exposed_cod_tail.py` separately times compatible
+ETKDG embedding and MMFF optimization for exposed record 3425 on the frozen
+Linux candidate and RDKit 2026.09.2, with seed 42 and 200 MMFF iterations.
+It verifies the reference, graph identity and wheel, warms both engines and
+checkpoints completed phases. This is not an exact replay of the checked mixed
+profile: stereo checks, final-gradient screening and nitrogen repair are not
+included. The diagnostic cannot establish a performance claim or a hard
+deadline. The job has a 45-minute CI limit and preserves any completed phase
+if cancelled. Its outcome is pending.
