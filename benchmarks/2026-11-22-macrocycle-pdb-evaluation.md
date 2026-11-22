@@ -415,3 +415,20 @@ the strict verifier. Its result is
 the macOS wheel SHA-256 was
 `637154a74bd4eb7000a284c5a6fe2420833dc87d1c9e7de2fb9b50b8569f7b2e`.
 Both wheels came from merge commit `f8c48c8b44321e14f4648b94ec03035ad5ae099d`.
+
+The [Linux fallback repeat on 32 exposed development references](https://github.com/kent-tokyo/chematic/actions/runs/44993494986)
+completed with all 32 records evaluated. Recovery remained 2 / 4
+(chematic / RDKit). Chematic returned 605 candidates versus RDKit's 607;
+neither engine had contradicted or unevaluable declared stereo, and neither
+had a record with no candidate. Compared with the earlier corrected-profile
+run on this host, chematic's RMSD arrays changed only for the 208-atom case,
+where its count rose from zero to two. Their reference RMSDs were 6.80 and
+6.35 Å, so this did not recover that reference; both were unfinished. All 32
+RDKit RMSD arrays matched the earlier run. The fixed candidate limit is 20,
+but fallback can spend 20 additional embedding attempts; the result is not an
+equal-work comparison. The raw result is
+`validation/results/macrocycle-pdb-linux-development-fallback-32-strict-2026-11-22.json.gz`,
+uncompressed SHA-256
+`6d8590234425b725893b598c93b9c670950aa8934ad2d717120332bb614d5331`;
+recovery and strict-stereo summaries are alongside it. This exposed sample is
+not independent acceptance evidence.

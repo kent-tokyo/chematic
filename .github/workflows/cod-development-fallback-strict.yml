@@ -2,7 +2,7 @@ name: Strict stereo COD fallback development comparison
 
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/cod-development-fallback-strict.yml'
 
