@@ -2105,3 +2105,21 @@ analytic difference was -9,754.04 at a 1e-7 angstrom step and -9,754.30 at
 against its scale and numerical precision. Index 11977 did not reproduce the
 Linux outlier after macOS re-embedding. These observations do not identify the
 cause of the persistent MMFF difference or establish the Linux error's cause.
+
+On the saved macOS coordinates for index 2615, enabling one RDKit MMFF term
+at a time isolates almost all of the difference to the out-of-plane term:
+its analytic component was -3,734.92 and its 1e-7 central difference was
+-13,489.20 kcal/mol/angstrom. The torsion term's difference was 0.24 and the
+remaining isolated terms were below 0.001 in magnitude at that step. The term
+breakdown is recorded in
+`validation/results/cod-unused-bridge-fix-mmff-term-diagnostic-2026-11-22.json`.
+
+For the same molecule and coordinates, the existing chematic Python API's
+RDKit-compatible total gradient component was -67,351.51, while
+`gradient_with_consistent_planes()` returned -77,105.82. The total energy's
+central difference was -77,105.81 at a 1e-8 angstrom step. Thus this exposed
+near-singular example is consistent with the existing plane-normal floor in
+the compatibility gradient; this observation does not establish a general
+accuracy bound, or explain the separately re-embedded Linux maximum. The
+binary hash used for this additional local comparison is recorded with the
+term breakdown rather than attributed to either frozen holdout wheel.
