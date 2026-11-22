@@ -143,3 +143,17 @@ fn inversion_flags_cover_retain_invert_remove_create_and_unmapped_atoms() {
     let removed = ReactionStereo::new("[C@@H:1](F)(Cl)Br", "[C:1](F)(Cl)Br").unwrap();
     assert_eq!(removed.flags[0][0], Some(3));
 }
+
+#[test]
+fn parser_cleanup_applies_nitro_charge_and_bond_edits_without_mutating_input() {
+    use chematic_core::{AtomIdx, BondIdx, BondOrder};
+    let original = chematic_smiles::parse("CN(=O)=O").unwrap();
+    let cleanup = rdkit_parse_cleanup(&original);
+    let result = cleanup.as_ref().as_ref().expect("nitro requires cleanup");
+    assert_eq!(result.atom(AtomIdx(1)).charge, 1);
+    assert_eq!(result.atom(AtomIdx(2)).charge, -1);
+    assert_eq!(result.bond(BondIdx(1)).order, BondOrder::Single);
+    assert_eq!(original.atom(AtomIdx(1)).charge, 0);
+    assert_eq!(original.atom(AtomIdx(2)).charge, 0);
+    assert_eq!(original.bond(BondIdx(1)).order, BondOrder::Double);
+}
