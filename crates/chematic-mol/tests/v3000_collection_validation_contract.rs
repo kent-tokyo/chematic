@@ -30,3 +30,20 @@ fn stereo_collection_rejects_invalid_group_ids_and_members() {
         assert!(error.to_string().contains(expected), "{line}: {error}");
     }
 }
+
+#[test]
+fn repeated_absolute_collection_lines_merge_and_deduplicate_members() {
+    let input = with_collection(
+        "MDLV30/STEABS ATOMS=(2 2 1)\nM  V30 MDLV30/STEABS ATOMS=(1 1)\nM  V30 MDLV30/STEBABS BONDS=(1 1)\nM  V30 MDLV30/STEBABS BONDS=(1 1)",
+    );
+    let report = read_mol_v3000_with_diagnostics(&input).unwrap();
+    assert_eq!(report.mol.stereo_groups().len(), 1);
+    assert_eq!(
+        report.mol.stereo_groups()[0].atom_indices,
+        [chematic_core::AtomIdx(0), chematic_core::AtomIdx(1)]
+    );
+    assert_eq!(
+        report.mol.stereo_group_bond_indices(0).unwrap(),
+        [chematic_core::BondIdx(0)]
+    );
+}
