@@ -39,3 +39,12 @@ fn tripos_substructure_cleanup_matches_rdkit_reference() {
         assert_eq!(result.smiles, expected, "{types:?}");
     }
 }
+
+#[test]
+fn tripos_cat_carbon_without_two_nitrogens_is_rejected() {
+    // RDKit 2025.09.3 returns no molecule when this substructure cleanup is enabled.
+    let error = rdkit_mol_from_mol2_block(&make(&["C.cat", "N.pl3"]), true, true, true)
+        .err()
+        .unwrap();
+    assert!(error.to_string().contains("cleanup"), "{error}");
+}
