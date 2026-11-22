@@ -104,3 +104,35 @@ fn mol2_reader_reports_truncated_query_and_index_failures() {
         "unspecified",
     );
 }
+
+#[test]
+fn pdb_conect_repetitions_encode_bond_order_in_either_direction() {
+    use chematic_core::BondOrder;
+    let atoms = [
+        pdb_atom(1, "C1", "LIG", ' ', "0.000", "C"),
+        pdb_atom(2, "C2", "LIG", ' ', "1.300", "C"),
+    ]
+    .join("\n");
+    for (multiplicity, expected) in [
+        (1, BondOrder::Single),
+        (2, BondOrder::Double),
+        (3, BondOrder::Triple),
+        (4, BondOrder::Quadruple),
+    ] {
+        for reversed in [false, true] {
+            let (src, dst) = if reversed { (2, 1) } else { (1, 2) };
+            let forward = format!("CONECT{src:>5}{}", format!("{dst:>5}").repeat(multiplicity));
+            let reverse = format!("CONECT{dst:>5}{}", format!("{src:>5}").repeat(multiplicity));
+            let text = format!("{atoms}\n{forward}\n{reverse}\nEND\n");
+            let parsed = rdkit_mol_from_pdb_block(&text, false, false, 0, false)
+                .unwrap()
+                .unwrap();
+            assert_eq!(parsed.molecule.bond_count(), 1);
+            assert_eq!(
+                parsed.molecule.bonds().next().unwrap().1.order,
+                expected,
+                "{text}"
+            );
+        }
+    }
+}
