@@ -32,25 +32,11 @@ fn bond_order_between(mol: &Molecule, a: usize, b: usize) -> BondOrder {
     }
 }
 
-/// True if ALL of `atoms` belong to a single common SSSR ring of exactly
-/// `size` atoms (not just individually each in *some* ring of that size —
-/// e.g. an exocyclic substituent atom on a ring must not count).
-fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize) -> bool {
-    rings
-        .iter()
-        .any(|ring| ring.len() == size && atoms.iter().all(|&a| ring.contains(&AtomIdx(a as u32))))
-}
-
-/// `isAngleInRingOfSize3or4` (`AtomTyper.cpp`, pinned commit): LOCAL bond
-/// adjacency, NOT SSSR-based -- deliberately distinct from
-/// [`atoms_share_ring_of_size`] above, which IS SSSR-based and feeds angle
-/// *type* classification. RDKit's real empirical-rule ring gate and its real
-/// angle-type ring gate are two different, independently-defined mechanisms
-/// (confirmed by direct source read, issue #227 Stage C). Returns 3 if `i`
+/// RDKit 2026.09.2 `isAngleInRingOfSize3or4`: local bond adjacency,
+/// used for both angle typing and empirical parameters. Returns 3 if `i`
 /// and `k` are directly bonded (i-j-k-i, a 3-ring), 4 if `i` and `k` share a
 /// common neighbor other than `j` (a 4-ring through that neighbor), else 0.
-/// `i`/`k` are assumed already bonded to `j` (true for every call site,
-/// which only ever iterates real `mol.neighbors(j)` pairs).
+/// `i` and `k` must both be bonded to `j`; otherwise returns zero.
 ///
 /// `pub` so downstream coverage-checkers (e.g. `chematic-3d`'s independent
 /// MMFF94 coverage measurement) can pass the same `ring_size` into
@@ -58,21 +44,20 @@ fn atoms_share_ring_of_size(rings: &[Vec<AtomIdx>], atoms: &[usize], size: usize
 /// `angle_energy`/`stretch_bend_energy` use, instead of hand-copying this
 /// logic and risking drift (same rationale as [`OOP_SP2_TYPES`]).
 pub fn is_angle_in_ring_of_size_3_or_4(mol: &Molecule, i: usize, j: usize, k: usize) -> u8 {
+    if mol.bond_between(AtomIdx(i as u32), AtomIdx(j as u32)).is_none()
+        || mol.bond_between(AtomIdx(j as u32), AtomIdx(k as u32)).is_none()
+    {
+        return 0;
+    }
     if mol
         .bond_between(AtomIdx(i as u32), AtomIdx(k as u32))
         .is_some()
     {
         return 3;
     }
-    let j = j as u32;
-    let i_neighbors: std::collections::HashSet<u32> = mol
-        .neighbors(AtomIdx(i as u32))
-        .map(|(nb, _)| nb.0)
-        .filter(|&n| n != j)
-        .collect();
-    let shares_neighbor = mol
-        .neighbors(AtomIdx(k as u32))
-        .any(|(nb, _)| nb.0 != j && i_neighbors.contains(&nb.0));
+    let shares_neighbor = mol.neighbors(AtomIdx(i as u32)).any(|(nb, _)| {
+        nb.0 != j as u32 && mol.bond_between(nb, AtomIdx(k as u32)).is_some()
+    });
     if shares_neighbor { 4 } else { 0 }
 }
 
@@ -116,8 +101,9 @@ pub fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
 /// Determine the MMFF94 angle-type index (Halgren 1996, types 0-8).
 ///
 /// `bt_sum` = sum of the two flanking bonds' [`bond_type_for`] indices (0-2).
-/// Ring-embedded angles (i,j,k all in one common 3- or 4-membered SSSR ring)
-/// get dedicated types; everything else uses `bt_sum` directly:
+/// Angles on a local three- or four-bond cycle get dedicated types;
+/// everything else uses `bt_sum` directly. `rings` is retained for API
+/// compatibility and is not consulted.
 ///
 /// | ring   | bt_sum=0 | bt_sum=1 | bt_sum=2 |
 /// |--------|----------|----------|----------|
@@ -143,7 +129,7 @@ pub fn bond_type_for(ti: u8, tj: u8, order: BondOrder) -> u8 {
 /// θ0≈93° — i.e. 3-ring/4-ring are not swapped.
 pub fn angle_type_for(
     mol: &Molecule,
-    rings: &[Vec<AtomIdx>],
+    _rings: &[Vec<AtomIdx>],
     i: usize,
     j: usize,
     k: usize,
@@ -153,14 +139,15 @@ pub fn angle_type_for(
     let bt_jk = bond_type_for(types[j], types[k], bond_order_between(mol, j, k));
     let bt_sum = bt_ij + bt_jk;
 
-    if atoms_share_ring_of_size(rings, &[i, j, k], 3) {
+    let ring_size = is_angle_in_ring_of_size_3_or_4(mol, i, j, k);
+    if ring_size == 3 {
         return match bt_sum {
             0 => 3,
             1 => 5,
             _ => 6,
         };
     }
-    if atoms_share_ring_of_size(rings, &[i, j, k], 4) {
+    if ring_size == 4 {
         return match bt_sum {
             0 => 4,
             1 => 7,

@@ -17,17 +17,8 @@ use crate::fmath::DetMath;
 use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
+#[cfg(test)]
 use chematic_perception::find_sssr;
-
-// RDKit 2026.09 uses relevant cycles for RingInfo, including all equally
-// minimal rings in symmetric cages. Bound enumeration as for MMFF charges;
-// very large ring families retain the existing SSSR fallback.
-fn mmff_parameter_rings(mol: &Molecule) -> std::sync::Arc<Vec<Vec<AtomIdx>>> {
-    mol.derived(chematic_core::DerivedSlot::MmffParameterRings, || {
-        chematic_perception::relevant_cycles(mol, 10_000)
-            .unwrap_or_else(|_| find_sssr(mol).rings().to_vec())
-    })
-}
 use rayon::prelude::*;
 
 use crate::mmff94_energy::{

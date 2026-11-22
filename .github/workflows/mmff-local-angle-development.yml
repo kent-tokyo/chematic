@@ -1,0 +1,61 @@
+name: MMFF local angle development
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/mmff-local-angle-development.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+      - name: Test local rings and force-field regressions
+        run: |
+          cargo test --locked -p chematic-core --lib
+          cargo test --locked -p chematic-ff --test mmff94_relevant_cage_angles
+          cargo test --locked -p chematic-ff --test uff_macrocycle_aromatic
+          cargo test --locked -p chematic-ff --lib
+      - name: Build candidate and fetch v9
+        run: |
+          python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+          git rev-parse HEAD > local-angle-source-commit.txt
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/candidate
+          sha256sum dist/candidate/*.whl > local-angle-wheel.sha256
+          gh run download 44976994215 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v9-ubuntu-latest-563825ef03c305fc2fa772dbd94db016cba7f8d1 --dir wheel9
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("wheel9/**/*.whl",recursive=True); assert len(p)==1 and hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="bffb1cd496eef80f842ad26e9c036ba7cd46075204aa99374d1909a3a1642002"'
+          python -m pip install --no-deps --target candidates/v9 wheel9/dist/candidate-wheel/*.whl
+          python -m pip install --no-deps --target candidates/local dist/candidate/*.whl
+      - name: Check exposed cage and field outliers
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/local" python scripts/validation/mmff_cage_angle_diagnostic.py
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/local" python scripts/benchmarks/platinum_force_fields.py --development validation/results/cod-second-field-outliers-development-2026-11-22.json --output local-angle-fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py local-angle-fields.json --output local-angle-fields-summary.json
+          python -c 'import json; d=json.load(open("local-angle-fields.json")); names={"SAWYAYVQRLIVEW-UHFFFAOYSA-P","FFDBWJMOMIIWCE-JNLZMNOBSA-N"}; r=[x for x in d["results"] if x["name"] in names]; assert len(r)==2; assert all("error" not in x and x["fields"]["UFF"]["energy_absolute_error"]<1e-5 and max(x["fields"]["UFF"]["gradient_absolute_errors"])<1e-4 for x in r),r'
+      - name: Compare repeated construction with v9
+        run: |
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/v9" python scripts/validation/mmff_construction_timing.py timing-v9-a.json
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/local" python scripts/validation/mmff_construction_timing.py timing-local-b.json
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/local" python scripts/validation/mmff_construction_timing.py timing-local-c.json
+          PYTHONPATH="$GITHUB_WORKSPACE/candidates/v9" python scripts/validation/mmff_construction_timing.py timing-v9-d.json
+          BASE_LABEL=v9 CANDIDATE_LABEL=local python scripts/validation/summarize_mmff_construction_timing.py timing-v9-a.json timing-local-b.json timing-local-c.json timing-v9-d.json timing-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: mmff-local-angle-development-${{ github.sha }}
+          path: |
+            local-angle-source-commit.txt
+            local-angle-wheel.sha256
+            mmff-cage-angle-diagnostic.json
+            local-angle-fields*.json
+            timing-*.json
+          if-no-files-found: warn

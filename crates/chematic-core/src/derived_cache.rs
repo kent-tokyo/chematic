@@ -75,11 +75,9 @@ pub enum DerivedSlot {
     /// Optional sanitized model shared by scalar callbacks; `chematic-smiles`.
     /// Stores `Option<Molecule>`; generic model callbacks do not use it.
     RdkitScalarModel = 18,
-    /// Bounded relevant-cycle set for MMFF angle parameterization.
-    MmffParameterRings = 19,
 }
 
-const SLOT_COUNT: usize = 20;
+const SLOT_COUNT: usize = 19;
 
 /// Scalar descriptor slots owned by `chematic-chem`. Keeping their f64
 /// values inline avoids allocation, reference counting and type erasure

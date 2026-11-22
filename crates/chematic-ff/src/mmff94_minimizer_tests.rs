@@ -13,16 +13,36 @@ mod tests {
     use chematic_core::{Atom, BondOrder, Element};
 
     #[test]
-    fn mmff_parameter_ring_cache_reuses_and_invalidates_on_edit() {
-        let mut mol = chematic_smiles::parse("C1CCCCC1").unwrap();
-        let first = mmff_parameter_rings(&mol);
-        let again = mmff_parameter_rings(&mol);
-        assert!(std::sync::Arc::ptr_eq(&first, &again));
-        assert_eq!(first.len(), 1);
-        mol.add_atom(Atom::new(Element::C));
-        let edited = mmff_parameter_rings(&mol);
-        assert!(!std::sync::Arc::ptr_eq(&first, &edited));
-        assert_eq!(*first, *edited);
+    fn chorded_four_cycle_uses_local_mmff_angle_type() {
+        // RDKit 2026.09.2: C12C3C4C1C234 has four relevant triangular
+        // cycles, but angle 0-1-2 lies on a local four-cycle whose edge set
+        // is the sum of those triangles and is absent from relevant cycles.
+        let mut builder = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..5)
+            .map(|_| builder.add_atom(Atom::new(Element::C)))
+            .collect();
+        for (i, j) in [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (4, 0),
+            (4, 1),
+            (4, 2),
+            (4, 3),
+        ] {
+            builder
+                .add_bond(atoms[i], atoms[j], BondOrder::Single)
+                .unwrap();
+        }
+        let mol = builder.build();
+        let rings = chematic_perception::relevant_cycles(&mol, 100).unwrap();
+        assert!(rings.iter().all(|ring| ring.len() == 3));
+        let types = [22; 5];
+        assert_eq!(angle_type_for(&mol, &rings, 0, 1, 2, &types), 4);
+        assert_eq!(angle_type_for(&mol, &[], 0, 1, 2, &types), 4);
+        assert_eq!(angle_type_for(&mol, &rings, 0, 1, 4, &types), 3);
+        assert_eq!(is_angle_in_ring_of_size_3_or_4(&mol, 0, 2, 1), 0);
     }
 
     #[test]

@@ -40,12 +40,11 @@ pub(crate) fn rdkit_angle_parts(
     MinimizerError,
 > {
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
-    let rings = mmff_parameter_rings(mol);
-    let angles = build_angle_terms_with(&mmff_mol, &types, &rings, adj)
+    let angles = build_angle_terms_with(&mmff_mol, &types, &[], adj)
         .into_iter()
         .map(|a| (a.i, a.j, a.k, a.params.theta0, a.params.ka, a.linear))
         .collect();
-    let stbn = build_stretch_bend_terms_with(&mmff_mol, &types, &rings, adj)
+    let stbn = build_stretch_bend_terms_with(&mmff_mol, &types, &[], adj)
         .into_iter()
         .map(|t| {
             (
