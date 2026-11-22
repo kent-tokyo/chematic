@@ -972,7 +972,9 @@ P, UFF, terminal-carbon, phosphorus-bond and directional-bond fixes.
 
 Thus the preregistered −2 pp lower-bound criterion failed on both platforms
 for fixed count and passed on both for the timed condition. The fixed run
-returned no candidates for 63 chematic and 11 RDKit inputs on each platform.
+returned no chematic candidates for 63 inputs on each platform; 52 of those
+had RDKit candidates, while RDKit returned an error for the other 11. These
+11 errors have no recorded RDKit candidate count, rather than a count of zero.
 Linux checked 40,532 / 41,551 chematic / RDKit minimized candidates and found
 0 / 65 stereo violations; macOS checked 40,538 / 41,548 and found 0 / 70.
 Only 18,829 / 19,535 of these Linux candidates and 18,781 / 19,563 of the
