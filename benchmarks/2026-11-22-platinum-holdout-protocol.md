@@ -2054,3 +2054,35 @@ not independent holdout evidence. The raw result is
 `validation/results/cod-development-linux-mixed-225-2026-11-22.json.gz`,
 uncompressed SHA-256
 `8b9812be41262d74b14859463456d86ec1c4bff2b2b7497646f316cdaf9e2d90`.
+
+### Post-bridge-fix independent force-field holdout: Linux
+
+GitHub Actions run `45035566273` completed all four Linux comparison shards
+for the frozen `261e520a` wheel (SHA-256
+`cb9d6b6df61db6b6f4abb3326f315f122ceb80afdc9ef2de909800c689dbeba6`).
+The sealed manifest and every shard's wheel, probe, input, version, seed and
+record identity were verified by `merge_force_field_holdout.py`. The complete
+3,579-record merged result has uncompressed SHA-256
+`623f74f8b590547b698bb196ea09e4a54dad39f06bc604144f155e30f509f5d3`
+and is stored as
+`validation/results/cod-unused-bridge-fix-force-fields-linux-2026-11-22.json.gz`;
+the summary SHA-256 is
+`1fc9c964ab0b27f4ceb7758d46f6cd9ff0ea4001e865669ea6f0942970fc9204`.
+
+RDKit embedding failed for 47 records. Among the remaining 3,532 common
+coordinate sets, MMFF94 and MMFF94s were comparable for 3,280 molecules;
+UFF was comparable for all 3,532. No comparable molecule exceeded an absolute
+energy difference of 1e-4 kcal/mol or a maximum gradient-component difference
+of 1e-3 kcal/mol/angstrom. The largest MMFF gradient-component difference was
+1.43e-14; UFF energy and gradient differences were zero in this run. These
+figures establish agreement on this holdout and these coordinates, not a
+universal force-field guarantee.
+
+The separate sampled central finite-difference diagnostic at 1e-5 angstrom
+had large maximum discrepancies: 350,849.82 for MMFF94/MMFF94s and 383,985.39
+for UFF, both on `KESWAXGJMSZDTG-UHFFFAOYSA-N` (source index 11977). These
+remain unexplained and require investigation; common-coordinate agreement with
+RDKit does not establish that the shared analytic gradient is accurate. The
+macOS shards and CI merge were still running when this Linux result was
+recorded. Independence is limited to the exposure and scaffold checks described
+above; unknown earlier exposures cannot be excluded.
