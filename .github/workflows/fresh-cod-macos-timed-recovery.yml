@@ -1,0 +1,116 @@
+name: macOS COD timed holdout recovery
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/fresh-cod-macos-timed-recovery.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify fixed-count baseline and prepare timed plan
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name fresh-plan-cod-macos-latest-45026013999 --dir original
+          for i in 0 1 2 3; do
+            gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name "fresh-fixed-cod-macos-latest-$i-45026013999" --dir "part-$i"
+          done
+          echo 'b0509182dd9dd9abba31ecd7070865f971f80eb3cb1c3030280b7a84df9d4394  original/plan/manifest.json' | shasum -a 256 --check
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python scripts/benchmarks/shard_platinum_holdout.py merge --manifest original/plan/manifest.json --output fixed.json part-{0,1,2,3}/result.json
+          echo '7200e610500e0cd51c65a13faeb5229fa29e6a32461195cb1ace6b1203703be2  fixed.json' | shasum -a 256 --check
+          python scripts/benchmarks/shard_platinum_time.py prepare --fixed-manifest original/plan/manifest.json --baseline fixed.json --output-dir timed-plan
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-macos-timed-plan-${{ github.run_id }}
+          path: timed-plan/
+          if-no-files-found: error
+
+  timed:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
+    runs-on: macos-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Restore frozen inputs
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh macos-latest cod
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-macos-timed-plan-$GITHUB_RUN_ID" --dir timed-plan
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$(cat evaluation/wheel-path.txt)"
+      - name: Score and seal timed shard
+        run: |
+          index='${{ matrix.shard }}'
+          suffix=$(printf '%03d' "$index")
+          count=$(python -c 'import json,sys; print(json.load(open("timed-plan/manifest.json"))["shards"][int(sys.argv[1])]["count"])' "$index")
+          python scripts/benchmarks/platinum_time_mixed_strict.py --sdf evaluation/reference/reference.sdf --baseline "timed-plan/baseline-$suffix.json" --output result.json --limit "$count" --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/shard_platinum_time.py seal --manifest timed-plan/manifest.json --index "$index" --wheel "$(cat evaluation/wheel-path.txt)" --baseline "timed-plan/baseline-$suffix.json" --result result.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-macos-timed-${{ matrix.shard }}-${{ github.run_id }}
+          path: result.json
+          if-no-files-found: warn
+
+  merge:
+    needs: timed
+    runs-on: macos-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Merge and summarize timed results
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh macos-latest cod
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-macos-timed-plan-$GITHUB_RUN_ID" --dir timed-plan
+          for i in 0 1 2 3; do gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-macos-timed-$i-$GITHUB_RUN_ID" --dir "part-$i"; done
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python scripts/benchmarks/shard_platinum_time.py merge --manifest timed-plan/manifest.json --output timed.json part-{0,1,2,3}/result.json
+          python scripts/benchmarks/summarize_platinum_time_holdout.py timed.json evaluation/reference/split.json --output timed-summary.json
+          python scripts/benchmarks/summarize_platinum_stereo_strict.py timed.json --output timed-stereo.json
+          python scripts/benchmarks/summarize_platinum_timing_details.py timed.json --output timed-details.json
+          python scripts/benchmarks/summarize_platinum_time_budget.py timed.json --output timed-engine-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-macos-timed-merged-${{ github.run_id }}
+          path: |
+            timed.json
+            timed-summary.json
+            timed-stereo.json
+            timed-details.json
+            timed-engine-summary.json
+          if-no-files-found: error

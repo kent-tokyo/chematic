@@ -2389,3 +2389,14 @@ with uncompressed SHA-256
 `7200e610500e0cd51c65a13faeb5229fa29e6a32461195cb1ace6b1203703be2`.
 The paired recovery and strict-stereo summaries are alongside it. The merge
 was written directly to compressed output to avoid a second uncompressed copy.
+
+The macOS COD time-budget recovery workflow reconstructs the four original
+fixed-count shards and requires the uncompressed merged SHA-256
+`7200e610500e0cd51c65a13faeb5229fa29e6a32461195cb1ace6b1203703be2` before
+planning timed shards. It uses the original macOS wheel and mixed profile,
+with the revised independent-engine error policy pinned in the timed manifest.
+Because the scorer was repaired after examining Linux results on this
+population, the macOS timed run is a post-hoc follow-up on an exposed set, not
+a fresh independent test of the revised scorer. Its data and errors will be
+reported separately from the earlier Linux shared-error result. No outcome is
+available before this run.
