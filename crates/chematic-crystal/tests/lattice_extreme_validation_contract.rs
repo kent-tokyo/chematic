@@ -13,3 +13,17 @@ fn fractional_coordinates_report_nonfinite_input_before_wrapping() {
     assert!(!coord.is_finite());
     assert!(!coord.wrapped().is_finite());
 }
+
+#[test]
+fn orthorhombic_cell_reports_the_nonpositive_axis() {
+    for (lengths, expected_axis) in [
+        ([0.0, 3.0, 4.0], "a"),
+        ([2.0, -1.0, 4.0], "b"),
+        ([2.0, 3.0, 0.0], "c"),
+    ] {
+        let error = Lattice::orthorhombic(lengths[0], lengths[1], lengths[2]).unwrap_err();
+        assert!(
+            matches!(error, CrystalError::NonPositiveLength { axis, .. } if axis == expected_axis)
+        );
+    }
+}
