@@ -764,6 +764,12 @@ tested source, fingerprinted on both platforms, and checked again on all 225
 development inputs before any prospective follow-up on that holdout. Any
 such follow-up is related to the already-running v4 assessment and must report
 the complete set of candidate results, rather than select a favorable one.
+The [v5 build](https://github.com/kent-tokyo/chematic/actions/runs/44965786491)
+uses merge commit `acc79a611d5c3bac571a7b1a6f274700b20f534e`, crates tree
+`ebe322bf287fd58e9731bee836f682b19efd7a7e`, and benchmark tree
+`00a8c3615c849288c7d31f718a502bbd40da4fdc`. Its Linux CPython 3.12 wheel
+SHA-256 is `e113e7f74b6e5018a03913836824c203d2366e34189264c0d85291fbd663b7b3`;
+the macOS build and the development comparisons remain in progress.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
