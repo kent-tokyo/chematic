@@ -625,6 +625,19 @@ that development structure; the result is
 `validation/results/mmff-phosphaalkene-development-2026-11-22.json`. This
 change is not included in the frozen v6 wheel or the running v4 holdout.
 
+The largest sampled v5 finite-difference discrepancy occurred on an exposed
+structure with a 179.998-degree bond angle. In the separate
+[Linux diagnostic](https://github.com/kent-tokyo/chematic/actions/runs/44969777281),
+the RDKit-compatible native and RDKit gradients on the worst sampled component
+were both −166.015 kcal/mol/Å. Central differences changed from 113.118 at a
+1e−5 Å step to 106.337 at 1e−7 Å; the existing opt-in consistent-plane
+gradient was 106.338. Most of the analytic discrepancy was in the out-of-plane
+term. These are one geometry and one component near a singular configuration,
+not a broad claim that all default gradients are inaccurate. The compatible
+optimizer still uses the RDKit-compatible gradient; the consistent-plane
+gradient is currently diagnostic only. Full term and step-sweep results are
+`validation/results/mmff-near-linear-gradient-development-2026-11-22.json`.
+
 ## Second COD scaffold split for the silicon-corrected candidate
 
 After the first COD support audit exposed a holdout molecule, a second split

@@ -1,7 +1,7 @@
 name: MMFF gradient singularity development diagnostic
 on:
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, reopened]
     paths:
       - '.github/workflows/mmff-gradient-singularity-development.yml'
 permissions:
