@@ -607,7 +607,14 @@ Per-record output is retained as
 `df7958d0379175bccf9b9d228ee9cfa0f27916918d9e7db730d90470b4a4a6f6`).
 Some of the MMFF energy outliers exposed a missing one-neighbor carbon
 type-60 branch, which has a subsequent development fix and regression job;
-that fix is not included in the v5 results.
+that fix is not included in the v5 results. In the subsequent
+[Linux regression](https://github.com/kent-tokyo/chematic/actions/runs/44967041251),
+three exposed structures matched RDKit 2026.09.2 in atom types, partial
+charges, MMFF energy and gradient on the tested coordinates. The previous
+wheel's energy differences on those structures were approximately 27.84,
+33.14 and 57.67 kcal/mol. The combined phosphorus and UFF development checks
+also passed; this is targeted evidence, not a general MMFF claim. The result
+is `validation/results/mmff-terminal-carbon-development-2026-11-22.json`.
 
 ## Second COD scaffold split for the silicon-corrected candidate
 
@@ -783,7 +790,11 @@ uses merge commit `acc79a611d5c3bac571a7b1a6f274700b20f534e`, crates tree
 `ebe322bf287fd58e9731bee836f682b19efd7a7e`, and benchmark tree
 `00a8c3615c849288c7d31f718a502bbd40da4fdc`. Its Linux CPython 3.12 wheel
 SHA-256 is `e113e7f74b6e5018a03913836824c203d2366e34189264c0d85291fbd663b7b3`;
-the macOS build and the development comparisons remain in progress.
+its macOS arm64 wheel SHA-256 is
+`402918d1553f4760d87eb5e3f1602f91bc3c37c164c8b01ac7cb048f4deeb464`.
+The v5 development comparisons remain in progress. A v6 wheel including the
+terminal-carbon fix is being frozen separately before inspecting any
+second-COD holdout conformer scores, and requires its own development rerun.
 
 The uncompressed result SHA-256 is
 `7419b7cbc20f5514699ba44ecb2c2eeb9a7f3624acaa2a3619a4d32aa72acaec`.
