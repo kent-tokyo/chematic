@@ -119,7 +119,7 @@ def main():
         "repair_iters": args.repair_iters,
         "geometry_checked": args.geometry,
         "seed_schedule": "42 * (attempt + 1)",
-        "timing": "single-candidate API calls, accept only calls completed before the deadline; fallback calls can perform two embedding attempts; scoring excluded",
+        "timing": "single-candidate API calls, accept only calls completed before the deadline; calls are not interrupted and may overrun, fallback calls can perform two embedding attempts; scoring excluded",
         "results": [],
     }
     warm_mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))
