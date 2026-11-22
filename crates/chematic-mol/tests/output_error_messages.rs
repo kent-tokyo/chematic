@@ -25,3 +25,15 @@ fn oversized_grid_error_reports_count_and_limit() {
     assert!(message.contains("1000000000000 points"), "{message}");
     assert!(message.contains("100000000-point limit"), "{message}");
 }
+
+#[test]
+fn gaussian_writer_error_reports_invalid_electronic_state() {
+    use chematic_core::Element;
+    use chematic_mol::{GjfCoordinateUnits, GjfWriteOptions, write_gjf_cartesian};
+    let options = GjfWriteOptions::new(0, 0, GjfCoordinateUnits::Angstrom);
+    let error = write_gjf_cartesian(&[Element::C], &[[0.; 3]], &[None], &options).unwrap_err();
+    assert_eq!(
+        error.to_string(),
+        "GJF Cartesian output: multiplicity must be positive"
+    );
+}
