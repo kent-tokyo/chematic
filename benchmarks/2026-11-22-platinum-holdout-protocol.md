@@ -1957,6 +1957,27 @@ Raw results and summary are
 the uncompressed result SHA-256 is
 `cfcc6515976be51d48f67871693a75c95042f79a6d4dca1aed9786b253075444`.
 
+The macOS macrocycle field shards also completed. Of 1,243 records, 92 failed
+RDKit reference embedding and 1,151 were comparable for each field. None
+exceeded either diagnostic threshold. Maximum energy and gradient-component
+differences were `3.27e-10` kcal/mol and `1.32e-5` kcal/mol/angstrom for
+MMFF94 and MMFF94s, and `1.26e-12` and `5.82e-7` for UFF. The largest
+sampled finite-difference discrepancies, however, were 140.56 for MMFF94 and
+234.48 for UFF, both on `6z55__Ligand_peptide_PQ5_A_519`. On a separate
+macOS re-embedding with RDKit 2026.09.2 and the same seed, RDKit's own
+analytic gradients showed differences of 140.557 and 234.478 at step 1e-5
+on coordinate 24. At step 1e-7 those differences fell to 0.0138 and 0.0230.
+This diagnostic supports step-size sensitivity on that re-embedding; it
+does not establish derivative correctness for every molecule. The previously
+held-out case is now exposed. The diagnostic script and result are
+`scripts/validation/diagnose_macrocycle_fd_outlier.py` and
+`validation/results/macrocycle-fd-exposed-outlier-macos-2026-11-22.json`.
+Raw macrocycle results and summary are
+`validation/results/macrocycle-holdout-macos-fields-2026-11-22.json.gz` and
+`validation/results/macrocycle-holdout-macos-fields-summary-2026-11-22.json`;
+the uncompressed result SHA-256 is
+`346a684dce181bc1c1e82623e94e061e2e458a2e4193026c60692dfda6c7a88b`.
+
 The exposed UFF outlier was reproduced on separately generated macOS
 coordinates: RDKit energy was 401.4506 kcal/mol and the prior chematic energy
 was 42,943,972.7872 kcal/mol. The gradient difference was concentrated on
