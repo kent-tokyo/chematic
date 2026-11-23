@@ -2,11 +2,12 @@
 
 The [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
 tracks completed changes. The [validation report](validation.md) records
-published v1.2.2 and links the dated evidence.
+published v1.2.3 and links the dated evidence.
 
 ## Release and compatibility
 
-- Check the v1.2.3 source and bindings against the v1.2.2 tag. Verify [Rust Cleanup compatibility](cleanup-migration.md) against v1.2.2.
+- Compare the v1.2.4 candidate's Rust, Python and WASM public APIs against
+  v1.2.3, including the [Cleanup contract](cleanup-migration.md).
 - Qualify the exact release artifacts across Rust, Python and WASM. Preserve
   comparator versions and typed refusals when reporting results.
 
@@ -55,6 +56,9 @@ broaden the supported domain.
 - Those inspected rows are historical evaluation data. Use newly selected
   development rows for MCS and multi-conformer work; do not rewrite the frozen
   score.
+- Repeat the checked-ensemble and force-field evaluations on exact published
+  v1.2.4 artifacts. Keep the recorded candidate-wheel results and their
+  unsupported inputs, stereo outcomes and scorer limitations separate.
 - Evaluate typing, energy, gradient, convergence, stereo, clash, conformer
   quality, time, and memory separately on unused data.
 

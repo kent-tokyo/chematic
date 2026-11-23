@@ -12,7 +12,7 @@ WebAssembly, without a chematic backend.</p>
   <a class="chm-btn chm-btn-secondary" href="getting_started/installation/">Install chematic</a>
 </div>
 
-<p class="chm-links-row">Current release: <strong>v1.2.3</strong> · <a href="changelog/">release notes</a></p>
+<p class="chm-links-row">Current release: <strong>v1.2.4</strong> · <a href="changelog/">release notes</a></p>
 
 </div>
 
@@ -85,8 +85,8 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 
 ## Release verification
 
-The [validation report](reference/validation.md) links v1.2.2 registry checks,
-wheel tests, and benchmarks. See the [compatibility scope](reference/compatibility-scope.md)
+The [validation report](reference/validation.md) links v1.2.3 publication
+checks, wheel tests, and versioned benchmarks. See the [compatibility scope](reference/compatibility-scope.md)
 for supported inputs and the [Cleanup migration note](reference/cleanup-migration.md)
 for checked Cleanup error handling.
 

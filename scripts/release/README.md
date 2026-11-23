@@ -6,7 +6,10 @@ tagged source, builds and publishes packages, and creates the GitHub Release.
 ## Before tagging
 
 1. Compare public Rust, Python, WASM declarations and shared JSON contracts
-   with the previous published tag. For v1.2.3, use `v1.2.2`. Check the checked Cleanup path and the retained Rust signature. See [Cleanup migration](../../docs/reference/cleanup-migration.md).
+   with the previous published tag. For v1.2.4, use `v1.2.3`. Check
+   Cleanup and the new checked conformer bindings against their documented
+   contracts. See [Cleanup migration](../../docs/reference/cleanup-migration.md)
+   and [checked ensembles](../../docs/reference/checked-conformer-ensembles.md).
 2. Synchronize workspace and package versions, dependency pins, lockfiles,
    citation metadata and release examples. Move the relevant Unreleased notes
    into the versioned CHANGELOG section. Run the
@@ -31,7 +34,8 @@ against the same tag and, where possible, the original artifacts. If the
 PyPI JSON API shows the files before pip's index does, wait for index
 propagation before rerunning install tests. The
 [v1.2.2 channel record](../../validation/results/release-channel-verification-v1.2.2.json)
-shows the evidence to retain.
+shows the evidence to retain. The v1.2.3 record still needs its
+post-publication results; see the [validation report](../../docs/reference/validation.md).
 
 Keep generated metadata, provenance, and SBOM files with the release
 artifacts. Follow the [release key custody guide](../../docs/reference/release-key-custody.md)
