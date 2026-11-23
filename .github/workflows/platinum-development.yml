@@ -33,9 +33,16 @@ jobs:
           sha256sum dist/platinum-wheel/chematic-*.whl > platinum-wheel.sha256
       - name: Fetch Platinum Diverse 2017 reference structures
         run: |
-          curl --fail --location --retry 3 --max-time 120 --output platinum.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-diverse-dataset-2017-01-sdf.zip
-          echo 'e65e7d6a8ca55c55d1d1dda9e8805251714f45859c10998dfabe4752831bc212  platinum.zip' | sha256sum --check
-          unzip -q platinum.zip
+          if curl --fail --location --retry 3 --max-time 120 --output platinum.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-diverse-dataset-2017-01-sdf.zip; then
+            echo 'e65e7d6a8ca55c55d1d1dda9e8805251714f45859c10998dfabe4752831bc212  platinum.zip' | sha256sum --check
+            unzip -q platinum.zip
+          else
+            # CONFORGE benchmarking datasets, Zenodo record 8137603 (CC BY 4.0).
+            curl --fail --location --retry 3 --max-time 120 --output benchmark-data.tar.gz https://zenodo.org/api/records/8137603/files/benchmarking_datasets_and_code.tar.gz/content
+            echo '30a5218e80e442a7e5f9129433d307b7b11dd569930d33244fd9fbd26fbf173b  benchmark-data.tar.gz' | sha256sum --check
+            tar -xOzf benchmark-data.tar.gz benchmarking_datasets_and_code/datasets/platinum_diverse_dataset_2017_01.sdf > platinum_diverse_dataset_2017_01.sdf
+          fi
+          echo '1f2385a3d1e77bd7416d5fa213f3a3705c8823a04dded5ea942063f2a255f92b  platinum_diverse_dataset_2017_01.sdf' | sha256sum --check
       - name: Measure development quality
         run: |
           python scripts/benchmarks/platinum_development_probe.py --sdf platinum_diverse_dataset_2017_01.sdf --split validation/results/platinum-diverse-scaffold-split-strict-2026-11-21.json --output platinum-development.json --limit 444 --profile corrected --geometry --repair-iters 400
