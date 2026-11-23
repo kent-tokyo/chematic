@@ -43,5 +43,7 @@ do not establish correctness for every possible stereochemical specification.
 MMFF iterations when attempting to repair a near-linear three-coordinate
 nitrogen; a repair is retained only if its checks pass. The example uses 400
 to match the ongoing evaluation, not as a universally optimal setting.
-See the [evaluation protocol](https://github.com/kent-tokyo/chematic/blob/d3051520/benchmarks/2026-11-22-platinum-holdout-protocol.md)
-for the candidate, datasets, screens and current evidence.
+The [evaluation protocol](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-platinum-holdout-protocol.md)
+and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-macrocycle-pdb-evaluation.md)
+record the tested candidates, datasets, screens and results. The 0.2-second
+acceptance deadline used in timed evaluations does not interrupt an attempt.

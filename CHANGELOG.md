@@ -8,6 +8,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.2.4] - 2026-11-23
+
+### Added
+
+- Added opt-in checked Python conformer ensembles, including a mixed
+  compatibility/corrected torsion-gradient profile, declared-stereo checks
+  and bounded near-linear nitrogen repair. See the
+  [checked ensemble guide](docs/reference/checked-conformer-ensembles.md).
+
+### Fixed
+
+- Corrected aromatic substituent placement, ETKDG ring-bond handling and
+  DREIDING X–H bond parameters for either atom order (#1287).
+- Corrected hybridization of two-coordinate cationic hydrogen for UFF
+  bridging-hydrogen cases (#1282).
+- Isolated generation and scoring errors by engine in the timed conformer
+  evaluator. Previously unscored outputs require new measurements (#1282).
+
+### Validation
+
+- Recorded Linux and macOS source-wheel development and holdout evaluations
+  for conformer recovery and common-coordinate force-field comparisons.
+  The [evaluation index](benchmarks/README.md) links each protocol and
+  its limitations. These measurements are tied to their recorded candidate
+  wheels and hosts.
+
+
 ## [1.2.3] - 2026-11-22
 
 ### Compatibility

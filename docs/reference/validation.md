@@ -18,13 +18,25 @@ The [published Python benchmark](https://github.com/kent-tokyo/chematic/blob/mai
 uses exact wheels on one macOS arm64 host. It reports descriptor, fingerprint
 and bounded MCS results with their output checks.
 
-## v1.2.3 preparation
+## v1.2.3 published release
 
-Candidate Cleanup results are tied to their measured source or local wheel in
-the [row audit](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-21-cleanup-v122-regression-audit.md).
-The draft API and its compatibility implications are in
-[Cleanup migration](cleanup-migration.md). Use new release artifacts to
-establish v1.2.3 package results.
+The tag points to `f63733dec7ae8a63262e9ec0c29cd916b2e7954b`.
+The [release workflow](https://github.com/kent-tokyo/chematic/actions/runs/45008595311)
+completed successfully on its second attempt after PyPI index propagation.
+It verified the hashes of 25 wheels and one source distribution, three runtime
+lanes and chemistry comparisons on Linux, Windows and both macOS architectures.
+The GitHub Release, npm and 20 crates were also published. The checked-in
+[channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.2.3.json)
+still records the pre-publication state.
+
+## v1.2.4 source candidate
+
+The checked conformer methods and 3D fixes are in the source after v1.2.3.
+The [checked ensemble guide](checked-conformer-ensembles.md) defines their
+options and error handling. Source-wheel results and their limitations are in
+the [holdout protocol](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-platinum-holdout-protocol.md)
+and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-macrocycle-pdb-evaluation.md).
+They cannot establish results for a future published wheel.
 
 ## Retained package and source evidence
 
