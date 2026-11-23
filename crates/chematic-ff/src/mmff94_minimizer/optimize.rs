@@ -24,11 +24,8 @@ pub fn minimize_mmff94_full(
 
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
-    // Ring membership is a topology fact, not a geometry one: compute SSSR
-    // once per minimization run rather than once per finite-difference probe
-    // (`compute_gradient` alone calls `total_energy` ~6n times per step).
-    let ring_set = find_sssr(mol);
-    let rings = ring_set.rings();
+    // MMFF angle classification uses local bond adjacency; no SSSR is needed.
+    let rings: &[Vec<AtomIdx>] = &[];
 
     let n = mol.atom_count();
     let initial = coords.to_vec();

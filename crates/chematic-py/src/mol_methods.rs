@@ -24,6 +24,7 @@ mod atom_environment;
 mod bond_fragment;
 mod core_replacement;
 mod descriptors;
+mod ensemble_checked;
 mod extended;
 mod fingerprints;
 mod geometry_check;

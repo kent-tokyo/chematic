@@ -1,0 +1,26 @@
+{
+  "rdkit": "2026.09.2",
+  "cases": [
+    {
+      "name": "BIHFVVRTTQNXMU-UHFFFAOYSA-N",
+      "type_mismatches": [],
+      "max_charge_error": 0.0,
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0
+    },
+    {
+      "name": "CSSSZUOEJPLMJD-UHFFFAOYSA-M",
+      "type_mismatches": [],
+      "max_charge_error": 0.0,
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0
+    },
+    {
+      "name": "OCRDFSOMVZHDRK-UHFFFAOYSA-N",
+      "type_mismatches": [],
+      "max_charge_error": 0.0,
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0
+    }
+  ]
+}

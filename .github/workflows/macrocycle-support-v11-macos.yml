@@ -1,0 +1,51 @@
+name: PDB macrocycle macOS chemistry support audit
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/macrocycle-support-v11-macos.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  development:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch and verify frozen wheel and structural sample
+        run: |
+          python -c 'import hashlib,pathlib; p={"scripts/benchmarks/platinum_development_probe.py":"eecbf2c8a12d9cfb75daac79ebde3a2504f87f0b267e7a196737951f6c73f9a8","scripts/benchmarks/platinum_geometry.py":"56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22","scripts/validation/cod_support_probe.py":"606d5d3f8b2a8cb17a3fe5534f9a1b9f09257eb4e8a9ae16c32e41fc7d474dcc","scripts/validation/macrocycle_uff_support_probe.py":"2c5c0b33842bc49799bb9dcfa1222d2dd180bbefe2fb8633f3556b8b1ad1877c"}; assert all(hashlib.sha256(pathlib.Path(k).read_bytes()).hexdigest()==v for k,v in p.items())'
+          gh run download 44984753739 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v11-macos-latest-54780e156da34198ed3ae0d76b5efe8b76d02ae2 --dir candidate
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="fa33b33382589fd46124131525e5efabc06150bca33eba7153a4f551c9d985d6"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Fetch verified macrocycle references
+        run: |
+          gh run download 44955399937 --repo "$GITHUB_REPOSITORY" --name macrocycle-pdb-prepared-3b3a5f827788c39195ccc58608e854e6ab543557 --dir macrocycle
+          python -c 'import hashlib,pathlib; p={"macrocycle/macrocycle-prepared.sdf":"71bf05a54cd402146e8892acd88969ec52fd45d2a02c4194b7aa905fe900222d","macrocycle/macrocycle-prepared-split.json":"ffb256b0a9dbc779a5c6b3dd2ac96deec6174dc25408dc1d0691efcef8c4c4ff"}; assert all(hashlib.sha256(pathlib.Path(k).read_bytes()).hexdigest()==v for k,v in p.items())'
+      - name: Audit holdout chemistry without conformer scoring
+        run: |
+          python scripts/validation/cod_support_probe.py macrocycle/macrocycle-prepared.sdf macrocycle/macrocycle-prepared-split.json --partition holdout --output macrocycle-holdout-support.json
+      - name: Compare UFF all-atom parameter availability
+        run: |
+          shasum -a 256 scripts/validation/macrocycle_uff_support_probe.py > macrocycle-uff-support-script.sha256
+          python scripts/validation/macrocycle_uff_support_probe.py macrocycle/macrocycle-prepared.sdf macrocycle-holdout-support.json --output macrocycle-uff-support.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: macrocycle-support-v11-macos-${{ github.sha }}
+          path: |
+            macrocycle-holdout-support.json
+            macrocycle-uff-support.json
+            macrocycle-uff-support-script.sha256
+          if-no-files-found: warn

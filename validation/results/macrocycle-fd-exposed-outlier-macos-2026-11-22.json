@@ -1,0 +1,74 @@
+{
+  "name": "6z55__Ligand_peptide_PQ5_A_519",
+  "index": 1845,
+  "axis": 24,
+  "input_sha256": "f75e57c6633d8b4fcec1aa3631a7e9d04bbd2f996a5f58dcfb78fba619ac44c5",
+  "coordinates_sha256": "6e3b2b5de033779ff87d3385d182d9049a9f81a7a16a80ce41154ba3bfb2cc4f",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "rdkit_version": "2026.09.2",
+  "seed": 42,
+  "fields": {
+    "MMFF94": {
+      "rdkit_analytic": -7593.463148694788,
+      "chematic_analytic": -7593.4631487085635,
+      "steps": [
+        {
+          "step": 0.0001,
+          "finite_difference": 39857.80377372791,
+          "absolute_error": 47451.2669224227
+        },
+        {
+          "step": 1e-05,
+          "finite_difference": -7452.905800634823,
+          "absolute_error": 140.55734805996508
+        },
+        {
+          "step": 1e-06,
+          "finite_difference": -7592.090565410103,
+          "absolute_error": 1.372583284684879
+        },
+        {
+          "step": 1e-07,
+          "finite_difference": -7593.449411160691,
+          "absolute_error": 0.013737534097344906
+        },
+        {
+          "step": 1e-08,
+          "finite_difference": -7593.460655641593,
+          "absolute_error": 0.002493053195394168
+        }
+      ]
+    },
+    "UFF": {
+      "rdkit_analytic": -8208.220393941567,
+      "chematic_analytic": -8208.220393940366,
+      "steps": [
+        {
+          "step": 0.0001,
+          "finite_difference": 48678.80929623425,
+          "absolute_error": 56887.02969017581
+        },
+        {
+          "step": 1e-05,
+          "finite_difference": -7973.74262425734,
+          "absolute_error": 234.4777696842266
+        },
+        {
+          "step": 1e-06,
+          "finite_difference": -8205.92463861658,
+          "absolute_error": 2.2957553249871125
+        },
+        {
+          "step": 1e-07,
+          "finite_difference": -8208.197446037957,
+          "absolute_error": 0.0229479036097473
+        },
+        {
+          "step": 1e-08,
+          "finite_difference": -8208.22011888822,
+          "absolute_error": 0.0002750533458311111
+        }
+      ]
+    }
+  }
+}

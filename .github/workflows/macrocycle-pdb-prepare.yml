@@ -1,0 +1,54 @@
+name: Prepare PDB macrocycle references
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/macrocycle-pdb-prepare.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install pinned scaffold toolkit
+        run: python -m pip install 'rdkit==2026.9.1' 'numpy<3'
+      - name: Verify preparation scripts and split
+        run: |
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          python -c 'import hashlib,pathlib; x={"scripts/validation/prepare_macrocycle_reference.py":"335000e795ef0eced008d8c814c7c9e0e465c45083f9d7a0ea6d5d8d7cc615b2", "scripts/benchmarks/platinum_invalid_exclusion_audit.py":"7307a2744c9463971f12a7c2ddda4e3123128bfda1caf2f41e99c9ab10ee296c", "validation/results/macrocycle-pdb-invalid-exclusion-audit-2026-11-22.json":"1293b264be555e2802edb0a1067ec5e35fcfb5cc979935fdc2cf51ca9902c855"}; assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==v for p,v in x.items())'
+          gzip -dc validation/results/macrocycle-pdb-scaffold-split-2026-11-22.json.gz > macrocycle-split.json
+          echo 'cd50ed3f5460e15b7e8a8dc0e33075884490d0e3c090d7a1ee7d39a81bd361c2  macrocycle-split.json' | sha256sum --check
+          python -m unittest scripts.tests.test_prepare_macrocycle_reference
+      - name: Fetch immutable source and attribution
+        run: |
+          curl --fail --location --retry 3 --max-time 180 --output macrocycle-index.csv https://raw.githubusercontent.com/dptech-corp/MacroCycle-Benchmark/6afbb010770f8adaadb9db7f83f7a86538757a62/benchmark_index.csv
+          echo 'cf408bbcbeed78fe8862f8f1ccf48a2714f18dcaad5b9ac1fa6c482f4d7155dc  macrocycle-index.csv' | sha256sum --check
+          curl --fail --location --retry 3 --max-time 180 --output macrocycle-source-LICENSE.txt https://raw.githubusercontent.com/dptech-corp/MacroCycle-Benchmark/6afbb010770f8adaadb9db7f83f7a86538757a62/LICENSE
+          curl --fail --location --retry 3 --max-time 180 --output macrocycle-source-CITATION.cff https://raw.githubusercontent.com/dptech-corp/MacroCycle-Benchmark/6afbb010770f8adaadb9db7f83f7a86538757a62/CITATION.cff
+          curl --fail --location --retry 2 --max-time 1200 --output macrocycle-source.tar.gz https://codeload.github.com/dptech-corp/MacroCycle-Benchmark/tar.gz/6afbb010770f8adaadb9db7f83f7a86538757a62
+      - name: Prepare and audit reference inputs without scoring
+        run: |
+          python scripts/validation/prepare_macrocycle_reference.py macrocycle-source.tar.gz macrocycle-index.csv macrocycle-split.json validation/results/macrocycle-pdb-invalid-exclusion-audit-2026-11-22.json --sdf macrocycle-prepared.sdf --prepared-split macrocycle-prepared-split.json --report macrocycle-input-report.json
+          python scripts/benchmarks/platinum_invalid_exclusion_audit.py macrocycle-prepared.sdf macrocycle-prepared-split.json --output macrocycle-prepared-invalid-audit.json
+          python -c 'import json; x=json.load(open("macrocycle-prepared-invalid-audit.json")); assert not x["overlaps"]'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: macrocycle-pdb-prepared-${{ github.sha }}
+          path: |
+            macrocycle-index.csv
+            macrocycle-source-LICENSE.txt
+            macrocycle-source-CITATION.cff
+            macrocycle-prepared.sdf
+            macrocycle-prepared-split.json
+            macrocycle-input-report.json
+            macrocycle-prepared-invalid-audit.json
+          if-no-files-found: warn

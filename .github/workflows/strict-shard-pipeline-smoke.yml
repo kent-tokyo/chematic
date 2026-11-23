@@ -1,0 +1,57 @@
+name: Strict shard pipeline smoke
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/strict-shard-pipeline-smoke.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            wheel_sha: 0052c7ad06ce6fe92ddf919fc0e2a15869b7d683c530f794c62a052edf0d1603
+          - os: macos-latest
+            platform: macos
+            wheel_sha: fa33b33382589fd46124131525e5efabc06150bca33eba7153a4f551c9d985d6
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PARITY_OS: ${{ matrix.os }}
+      PARITY_PLATFORM: ${{ matrix.platform }}
+      PARITY_WHEEL_SHA: ${{ matrix.wheel_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify and install frozen candidate
+        run: |
+          python -c 'import hashlib,pathlib; p={"scripts/validation/smoke_strict_shards.py":"9b28fa772731ec57a53f53cc6ccd26be7ea56e189db54754da21743b76121b58","scripts/benchmarks/shard_platinum_holdout.py":"8de4f6baf6c05e5dc6e407c9ee59a169567061ab7581038cdafd25852e3d16e6","scripts/benchmarks/shard_platinum_time.py":"c5f5158e493baf9857ba05fb6d0cb6993397e9187ca27eaf8dd6fdbaa0d7e7ff","scripts/benchmarks/platinum_stereo_strict.py":"3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132"}; assert all(hashlib.sha256(pathlib.Path(k).read_bytes()).hexdigest()==v for k,v in p.items())'
+          gh run download 44984753739 --repo "$GITHUB_REPOSITORY" --name "parity-candidate-v11-$PARITY_OS-54780e156da34198ed3ae0d76b5efe8b76d02ae2" --dir candidate
+          python -c 'import glob,hashlib,os,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()==os.environ["PARITY_WHEEL_SHA"]; assert pathlib.Path("candidate/candidate-source-commit.txt").read_text().strip()=="22578e3829bfee7aaab03b4c1bd829e580c3a8fe"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Reproduce the pre-score holdout partition
+        run: |
+          gh run download 44955399937 --repo "$GITHUB_REPOSITORY" --name macrocycle-pdb-prepared-3b3a5f827788c39195ccc58608e854e6ab543557 --dir macrocycle
+          python scripts/benchmarks/shard_platinum_holdout.py prepare --split macrocycle/macrocycle-prepared-split.json --audit macrocycle/macrocycle-prepared-invalid-audit.json --output-dir shards --shards 16 --wheel-sha256 "$PARITY_WHEEL_SHA"
+          gzip -dc "validation/results/macrocycle-shard-manifest-v11-$PARITY_PLATFORM-2026-11-22.json.gz" > pinned-manifest.json
+          cmp pinned-manifest.json shards/manifest.json
+      - name: Run synthetic strict fixed and timed pipelines
+        run: |
+          python -m unittest scripts.validation.test_platinum_stereo_strict scripts.validation.test_audit_declared_stereo scripts.validation.test_shard_platinum_holdout scripts.validation.test_shard_platinum_time
+          wheel=$(python -c 'import glob; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; print(p[0])')
+          python scripts/validation/smoke_strict_shards.py --wheel "$wheel" --output strict-shard-smoke.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: strict-shard-smoke-${{ matrix.os }}-${{ github.sha }}
+          path: strict-shard-smoke.json
+          if-no-files-found: warn

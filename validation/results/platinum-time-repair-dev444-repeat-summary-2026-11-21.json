@@ -1,0 +1,33 @@
+{
+  "rows": 444,
+  "seconds": 0.2,
+  "errors": 0,
+  "recovery_difference": 0.05630630630630631,
+  "paired_bootstrap_95_percentile_interval": [
+    0.03153153153153153,
+    0.08108108108108109
+  ],
+  "converged_recovery": {
+    "chematic": 172,
+    "rdkit": 157,
+    "difference": 0.033783783783783786,
+    "paired_bootstrap_95_percentile_interval": [
+      0.013513513513513514,
+      0.05405405405405406
+    ]
+  },
+  "chematic": {
+    "recovered": 224,
+    "median_accepted": 8.0,
+    "reached_candidate_cap": 87,
+    "stereo_violations": 0,
+    "converged": 2833
+  },
+  "rdkit": {
+    "recovered": 199,
+    "median_accepted": 4.0,
+    "reached_candidate_cap": 10,
+    "stereo_violations": 0,
+    "converged": 1683
+  }
+}

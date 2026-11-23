@@ -349,8 +349,17 @@ fn mmff_torsion_terms(
             })
     };
     let sp2_or_sp3 = |atom: usize| {
-        matches!(
-            chematic_smarts::rdkit_hybridization(view, AtomIdx(atom as u32)),
+        let idx = AtomIdx(atom as u32);
+        // RDKit treats these stereo-tagged atoms as SP2D, SP3D or SP3D2,
+        // none of which is eligible as a central MMFF torsion atom.
+        !matches!(
+            view.atom(idx).chirality,
+            chematic_core::Chirality::SquarePlanar(_)
+                | chematic_core::Chirality::SquarePlanarUnnumbered
+                | chematic_core::Chirality::TrigonalBipyramidal(_)
+                | chematic_core::Chirality::Octahedral(_)
+        ) && matches!(
+            chematic_smarts::rdkit_hybridization(view, idx),
             Some(2) | Some(3)
         )
     };
@@ -555,13 +564,29 @@ impl RdkitMmffField {
     /// `ForceField::calcGrad(pos, grad)`: adds every contribution's gradient
     /// to `grad` (unscaled).
     pub fn gradient(&self, pos: &[f64], grad: &mut [f64]) {
-        self.gradient_with_distance_fn(pos, grad, |i, j| distance(pos, i, j));
+        self.gradient_with_distance_fn(pos, grad, false, false, |i, j| distance(pos, i, j));
+    }
+
+    /// Evaluate MMFF gradients with a torsion derivative consistent with the
+    /// torsion energy away from its zero-plane cutoff. Other terms retain
+    /// their RDKit-compatible gradients. Inside that cutoff the torsion
+    /// energy is constant and its gradient contribution is zero.
+    pub fn gradient_with_consistent_torsions(&self, pos: &[f64], grad: &mut [f64]) {
+        self.gradient_with_distance_fn(pos, grad, true, false, |i, j| distance(pos, i, j));
+    }
+
+    /// Evaluate torsion and out-of-plane gradients without the compatibility
+    /// floors on their plane normals. Other terms keep their existing behavior.
+    pub fn gradient_with_consistent_planes(&self, pos: &[f64], grad: &mut [f64]) {
+        self.gradient_with_distance_fn(pos, grad, true, true, |i, j| distance(pos, i, j));
     }
 
     fn gradient_with_distance_fn(
         &self,
         pos: &[f64],
         grad: &mut [f64],
+        consistent_torsions: bool,
+        consistent_oop: bool,
         mut pair_distance: impl FnMut(usize, usize) -> f64,
     ) {
         if self.terms[0] {
@@ -574,10 +599,10 @@ impl RdkitMmffField {
             self.stbn_grad(pos, grad, &mut pair_distance);
         }
         if self.terms[3] {
-            self.oop_grad(pos, grad);
+            self.oop_grad(pos, grad, consistent_oop);
         }
         if self.terms[4] {
-            self.torsion_grad(pos, grad);
+            self.torsion_grad(pos, grad, consistent_torsions);
         }
         if self.terms[5] || self.terms[6] {
             self.nonbonded_grad(pos, grad, &mut pair_distance);
@@ -780,7 +805,7 @@ impl RdkitMmffField {
         total
     }
 
-    fn oop_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn oop_grad(&self, pos: &[f64], grad: &mut [f64], consistent: bool) {
         let c2 = MDYNE_A_TO_KCAL_MOL * DEG2RAD * DEG2RAD;
         for &(i, j, k, l, koop) in &self.oops {
             let (ip, jp, kp, lp) = (
@@ -815,15 +840,24 @@ impl RdkitMmffField {
             );
             let chi = RAD2DEG * sin_chi.asin();
             let cos_theta = clip_to_one(rji.dot(rjk));
-            let sin_theta_sq = smax(1.0 - cos_theta * cos_theta, 1.0e-8);
-            let sin_theta = smax(
-                if sin_theta_sq > 0.0 {
-                    sin_theta_sq.sqrt()
-                } else {
-                    0.0
-                },
-                1.0e-8,
-            );
+            let sin_theta_sq = if consistent {
+                let cross = rji.cross(rjk);
+                cross.dot(cross)
+            } else {
+                smax(1.0 - cos_theta * cos_theta, 1.0e-8)
+            };
+            let sin_theta = if consistent {
+                sin_theta_sq.sqrt()
+            } else {
+                smax(
+                    if sin_theta_sq > 0.0 {
+                        sin_theta_sq.sqrt()
+                    } else {
+                        0.0
+                    },
+                    1.0e-8,
+                )
+            };
             let de_dchi = RAD2DEG * c2 * koop * chi;
             let t1 = rjl.cross(rjk);
             let t2 = rji.cross(rjl);
@@ -885,7 +919,7 @@ impl RdkitMmffField {
         total
     }
 
-    fn torsion_grad(&self, pos: &[f64], grad: &mut [f64]) {
+    fn torsion_grad(&self, pos: &[f64], grad: &mut [f64], consistent: bool) {
         for &(i, j, k, l, v1, v2, v3) in &self.torsions {
             let (p1, p2, p3, p4) = (
                 P3::at(pos, i),
@@ -899,10 +933,21 @@ impl RdkitMmffField {
             let r2 = r1.neg();
             let r3 = p4.sub(p3);
             let mut t0 = r0.cross(r1);
-            let d0 = smax(t0.length(), 1.0e-5);
-            t0 = t0.div(d0);
             let mut t1 = r2.cross(r3);
-            let d1 = smax(t1.length(), 1.0e-5);
+            if consistent && (is_double_zero(t0.length()) || is_double_zero(t1.length())) {
+                continue;
+            }
+            let d0 = if consistent {
+                t0.length()
+            } else {
+                smax(t0.length(), 1.0e-5)
+            };
+            t0 = t0.div(d0);
+            let d1 = if consistent {
+                t1.length()
+            } else {
+                smax(t1.length(), 1.0e-5)
+            };
             t1 = t1.div(d1);
             let dp = t0.dot(t1);
             let cos_phi = smax(-1.0, if 1.0 < dp { 1.0 } else { dp });
@@ -915,12 +960,16 @@ impl RdkitMmffField {
             let sin2 = 2.0 * sin_phi * cos_phi;
             let sin3 = 3.0 * sin_phi - 4.0 * sin_phi * sin_phi_sq;
             let de_dphi = 0.5 * (-v1 * sin_phi + 2.0 * v2 * sin2 - 3.0 * v3 * sin3);
-            let sin_term = -de_dphi
-                * (if is_double_zero(sin_phi) {
-                    1.0 / cos_phi
-                } else {
-                    1.0 / sin_phi
-                });
+            let sin_term = if consistent {
+                0.5 * (v1 - 4.0 * v2 * cos_phi + v3 * (12.0 * cos_phi * cos_phi - 3.0))
+            } else {
+                -de_dphi
+                    * (if is_double_zero(sin_phi) {
+                        1.0 / cos_phi
+                    } else {
+                        1.0 / sin_phi
+                    })
+            };
             let dc = [
                 1.0 / d0 * (t1.x - cos_phi * t0.x),
                 1.0 / d0 * (t1.y - cos_phi * t0.y),
@@ -1067,7 +1116,7 @@ impl RdkitMmffField {
         }
         let mut cache = cache.borrow_mut();
         cache.prepare(pos);
-        self.gradient_with_distance_fn(pos, grad, |i, j| cache.get(pos, i, j));
+        self.gradient_with_distance_fn(pos, grad, false, false, |i, j| cache.get(pos, i, j));
         crate::rdkit_bfgs::scale_gradient(grad)
     }
 
@@ -1403,79 +1452,4 @@ pub(crate) mod tests {
 }
 
 #[cfg(test)]
-mod nonbonded_collision_boundary_tests {
-    use super::*;
-
-    #[test]
-    fn public_default_field_matches_native_ionic_pairs_and_collision_guards() {
-        let fixture: serde_json::Value = serde_json::from_str(include_str!(
-            "../../../validation/rdkit-2026.03.1-mmff-nonbonded-boundary.json"
-        ))
-        .unwrap();
-        assert_eq!(fixture["rdkit_version"], "2026.03.1");
-        for row in fixture["rows"].as_array().unwrap() {
-            let source = row["smiles"].as_str().unwrap();
-            let mol = chematic_smiles::parse(source).unwrap();
-            let types = crate::mmff94_numeric::assign_mmff94_numeric_types(&mol).unwrap();
-            let charges = crate::mmff94_numeric::mmff94_charges_numeric(&mol).unwrap();
-            for i in 0..2 {
-                assert_eq!(
-                    u64::from(types[i]),
-                    row["atom_types"][i].as_u64().unwrap(),
-                    "{source}"
-                );
-                assert!(
-                    (charges[i] - row["charges"][i].as_f64().unwrap()).abs() < 1e-12,
-                    "{source}"
-                );
-            }
-            let distance = row["distance"].as_f64().unwrap();
-            let ignore = row["ignore_interfrag"].as_bool().unwrap();
-            let coords = [[0., 0., 0.], [distance, 0., 0.]];
-            let field = RdkitMmffField::new(&mol, &coords, 100., ignore).unwrap();
-            assert_eq!(field.num_atoms(), 2);
-            let pos = [0., 0., 0., distance, 0., 0.];
-            let energy = field.energy(&pos);
-            let expected = row["energy"].as_f64().unwrap();
-            assert!(
-                energy.is_finite() && (energy - expected).abs() < 1e-8 + expected.abs() * 1e-10,
-                "{source},d={distance},ignore={ignore}: {energy} != {expected}"
-            );
-            let mut gradient = [0.; 6];
-            field.gradient(&pos, &mut gradient);
-            for (axis, value) in row["gradient"].as_array().unwrap().iter().enumerate() {
-                let expected = value.as_f64().unwrap();
-                assert!(
-                    gradient[axis].is_finite()
-                        && (gradient[axis] - expected).abs() < 1e-9 + expected.abs() * 1e-10,
-                    "{source},d={distance},ignore={ignore},axis={axis}: {} != {expected}",
-                    gradient[axis]
-                );
-            }
-            for axis in 0..3 {
-                assert!((gradient[axis] + gradient[axis + 3]).abs() < 1e-12);
-            }
-            if ignore {
-                assert_eq!(energy, 0.);
-                assert_eq!(gradient, [0.; 6]);
-            }
-            // At exactly coincident centres RDKit returns a deterministic
-            // guard vector, not the derivative of a differentiable geometry.
-            if distance >= 1. && !ignore {
-                for axis in 0..6 {
-                    let mut plus = pos;
-                    let mut minus = pos;
-                    plus[axis] += 1e-5;
-                    minus[axis] -= 1e-5;
-                    let finite_difference = (field.energy(&plus) - field.energy(&minus)) / (2e-5);
-                    assert!(
-                        (gradient[axis] - finite_difference).abs()
-                            < 1e-4 + gradient[axis].abs() * 2e-6,
-                        "{source},d={distance},axis={axis}"
-                    );
-                }
-            }
-        }
-        assert_eq!(fixture["rows"].as_array().unwrap().len(), 104);
-    }
-}
+mod nonbonded_collision_boundary_tests;

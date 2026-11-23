@@ -9,6 +9,131 @@ mod tests {
         parse(s).unwrap_or_else(|e| panic!("parse '{s}': {e:?}"))
     }
 
+    #[test]
+    fn phosphorus_and_sulfur_stereo_matches_rdkit_and_mirrors() {
+        let fixtures = [
+            (include_str!("stereo_constraints_ps_oracle.json"), 17),
+            (include_str!("stereo_constraints_ps_controls.json"), 20),
+        ];
+        for (fixture, expected) in fixtures {
+            let fixture: serde_json::Value = serde_json::from_str(fixture).unwrap();
+            let rows = fixture["rows"].as_array().unwrap();
+            assert_eq!(rows.len(), expected);
+            for row in rows {
+                let molecule = chematic_chem::add_hydrogens(&mol(row["smiles"].as_str().unwrap()));
+                let center = AtomIdx(row["center"].as_u64().unwrap() as u32);
+                let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+                assert_eq!(points.len(), molecule.atom_count());
+                let coords = Coords3D {
+                    points: points
+                        .iter()
+                        .map(|&[x, y, z]| Point3::new(x, y, z))
+                        .collect(),
+                };
+                let mirror = Coords3D {
+                    points: points
+                        .iter()
+                        .map(|&[x, y, z]| Point3::new(-x, y, z))
+                        .collect(),
+                };
+                let original_report = verify_stereo(&molecule, &coords);
+                assert_eq!(original_report.n_violations(), 0, "{}", row["name"]);
+                assert_eq!(original_report.n_unevaluable(), 0, "{}", row["name"]);
+                let status = |geometry: &Coords3D| {
+                    verify_stereo(&molecule, geometry)
+                        .tetrahedral
+                        .into_iter()
+                        .find(|report| report.atom == center)
+                        .unwrap()
+                        .status
+                };
+                assert_eq!(status(&coords), StereoStatus::Satisfied, "{}", row["name"]);
+                assert_eq!(status(&mirror), StereoStatus::Violated, "{}", row["name"]);
+            }
+        }
+    }
+
+    #[test]
+    fn unverified_four_coordinate_sulfur_remains_unevaluable() {
+        let molecule = chematic_chem::add_hydrogens(&mol("C[S@](=NC)(O)CC"));
+        assert!(molecule.atom(AtomIdx(1)).chirality.is_tetrahedral());
+        assert!(matches!(
+            tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+            Err(StereoRejectionReason::UnsupportedCoordination)
+        ));
+    }
+
+    #[test]
+    fn unverified_sulfur_double_bond_pair_remains_unevaluable() {
+        let molecule = chematic_chem::add_hydrogens(&mol("C[S@](=O)(=O)CC"));
+        assert!(molecule.atom(AtomIdx(1)).chirality.is_tetrahedral());
+        assert!(matches!(
+            tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+            Err(StereoRejectionReason::UnsupportedCoordination)
+        ));
+    }
+
+    #[test]
+    fn sulfoxide_parity_matches_rdkit_coordinates_and_repair() {
+        // RDKit 2026.09.2 ETKDG, seed 42, C[S@](=O)CC.
+        let m = mol("C[S@](=O)CC");
+        let opposite = mol("C[S@@](=O)CC");
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        for (i, point) in [
+            [2.1873, -0.2531, -0.1457],
+            [0.5095, -0.9180, -0.0778],
+            [0.1373, -1.6378, -1.3669],
+            [-0.5588, 0.5257, 0.1932],
+            [-1.5, 1.5, 0.4],
+        ]
+        .iter()
+        .enumerate()
+        {
+            coords.set(AtomIdx(i as u32), Point3::new(point[0], point[1], point[2]));
+        }
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+        assert_eq!(
+            verify_stereo(&opposite, &coords).tetrahedral[0].status,
+            StereoStatus::Violated
+        );
+        let repaired = repair_stereo(&opposite, &coords).expect("sulfoxide repair should succeed");
+        assert_eq!(
+            verify_stereo(&opposite, &repaired.coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+    }
+
+    #[test]
+    fn phosphoryl_tetrahedral_parity_matches_rdkit_coordinates() {
+        // RDKit 2026.09.2 ETKDGv3, seed 42, O=[P@](F)(Cl)Br; RDKit S.
+        let m = mol("O=[P@](F)(Cl)Br");
+        let opposite = mol("O=[P@@](F)(Cl)Br");
+        let mut coords = Coords3D::new_zeroed(m.atom_count());
+        for (i, point) in [
+            [-0.281553, 0.721104, 1.413827],
+            [-0.039448, 0.154520, 0.041940],
+            [-0.108940, 1.353457, -1.124199],
+            [-1.489760, -1.310310, -0.263919],
+            [1.919700, -0.918771, -0.067649],
+        ]
+        .iter()
+        .enumerate()
+        {
+            coords.set(AtomIdx(i as u32), Point3::new(point[0], point[1], point[2]));
+        }
+        assert_eq!(
+            verify_stereo(&m, &coords).tetrahedral[0].status,
+            StereoStatus::Satisfied
+        );
+        assert_eq!(
+            verify_stereo(&opposite, &coords).tetrahedral[0].status,
+            StereoStatus::Violated
+        );
+    }
+
     // -------------------------------------------------------------------------
     // Sign-convention empirical verification, against an EXTERNAL oracle (RDKit),
     // not internal hand-derived math.
@@ -409,6 +534,49 @@ mod tests {
         c.set(AtomIdx(2), Point3::new(0.67, 0.0, 0.0));
         c.set(AtomIdx(3), Point3::new(1.5, 0.5, 0.0)); // same side -> cis/Z
         c
+    }
+
+    #[test]
+    fn ez_near_linear_substituents_are_unevaluable_at_either_end() {
+        let m = mol("C/C=C/C");
+        for scale in [0.1, 1.0, 10.0] {
+            for atom in [0, 3] {
+                let mut c = Coords3D::new_zeroed(m.atom_count());
+                c.set(AtomIdx(0), Point3::new(-scale, 0.5 * scale, 0.0));
+                c.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+                c.set(AtomIdx(2), Point3::new(scale, 0.0, 0.0));
+                c.set(AtomIdx(3), Point3::new(2.0 * scale, -0.5 * scale, 0.0));
+                let x = if atom == 0 { -scale } else { 2.0 * scale };
+                c.set(AtomIdx(atom), Point3::new(x, 0.01 * scale, 0.0));
+                let report = verify_stereo(&m, &c);
+                assert_eq!(
+                    report.double_bond[0].status,
+                    StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry)
+                );
+                assert!(debug_double_bond(&m, &c, report.double_bond[0].bond).is_none());
+            }
+        }
+    }
+
+    #[test]
+    fn ez_keeps_marked_substituent_when_other_arm_is_not_near_axis() {
+        let m = chematic_chem::add_hydrogens(&mol("F/C=C/F"));
+        let h = m
+            .neighbors(AtomIdx(1))
+            .map(|(neighbor, _)| neighbor)
+            .find(|&neighbor| m.atom(neighbor).element.atomic_number() == 1)
+            .unwrap();
+        let mut c = Coords3D::new_zeroed(m.atom_count());
+        c.set(AtomIdx(0), Point3::new(-1.0, 0.01, 0.0));
+        c.set(AtomIdx(1), Point3::new(0.0, 0.0, 0.0));
+        c.set(AtomIdx(2), Point3::new(1.0, 0.0, 0.0));
+        c.set(AtomIdx(3), Point3::new(2.0, -1.0, 0.0));
+        c.set(h, Point3::new(0.0, -1.0, 0.0));
+        let report = verify_stereo(&m, &c);
+        assert_eq!(report.double_bond[0].status, StereoStatus::Satisfied);
+        let debug = debug_double_bond(&m, &c, report.double_bond[0].bond).unwrap();
+        assert_eq!(debug.sub1, AtomIdx(0));
+        assert_eq!(debug.status, StereoStatus::Satisfied);
     }
 
     #[test]
@@ -899,6 +1067,66 @@ mod tests {
             set.unsupported[0].1,
             StereoRejectionReason::AmbiguousDirection
         );
+    }
+
+    #[test]
+    fn constraint_set_terminal_hydrogens_and_isotopes_match_rdkit() {
+        // RDKit 2026.09.2 reports only the second double bond as E here. The
+        // terminal CH2 must remain unspecified after explicit H expansion.
+        let m = chematic_chem::add_hydrogens(&mol("C=C/C=C/C"));
+        let set = build_stereo_constraints(&m);
+        assert_eq!(set.double_bond.len(), 1);
+        assert_eq!(set.double_bond[0].bond, BondIdx(2));
+        assert!(set.unsupported.is_empty(), "{:?}", set.unsupported);
+
+        // RDKit recognizes E/Z when H and 2H differ, and also distinguishes
+        // an unspecified H from explicitly labelled 1H.
+        for smiles in [
+            r"[2H]/C([H])=C(/F)Cl",
+            r"[2H]/C([H])=C(\F)Cl",
+            r"[1H]/C([H])=C(/F)Cl",
+        ] {
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), 1, "{smiles}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{smiles}: {set:?}");
+        }
+    }
+
+    #[test]
+    fn constraint_set_adjacent_marked_alkenes_match_rdkit() {
+        // In each exposed COD development example, RDKit 2026.09.2 reports
+        // one specified alkene. A marker on that bond is also adjacent to an
+        // unspecified double bond and must not make the latter unsupported.
+        for smiles in [
+            "COc1ccccc1N/C=C1/C=CC=C(O)C1=O",
+            "O=C1C=CC(Br)=C/C1=C/Nc1ccccc1O",
+        ] {
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), 1, "{smiles}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{smiles}: {set:?}");
+        }
+    }
+
+    #[test]
+    fn constraint_set_cod_adjacent_marker_development_corpus() {
+        let fixture: serde_json::Value = serde_json::from_str(include_str!(
+            "../tests/fixtures/cod-adjacent-stereo-development.json"
+        ))
+        .unwrap();
+        assert_eq!(fixture["rdkit_version"], "2026.09.2");
+        let records = fixture["records"].as_array().unwrap();
+        assert_eq!(records.len(), 12);
+        for record in records {
+            let smiles = record["smiles"].as_str().unwrap();
+            let name = record["name"].as_str().unwrap();
+            let expected = record["specified_ez"].as_u64().unwrap() as usize;
+            let m = chematic_chem::add_hydrogens(&mol(smiles));
+            let set = build_stereo_constraints(&m);
+            assert_eq!(set.double_bond.len(), expected, "{name}: {set:?}");
+            assert!(set.unsupported.is_empty(), "{name}: {set:?}");
+        }
     }
 
     #[test]

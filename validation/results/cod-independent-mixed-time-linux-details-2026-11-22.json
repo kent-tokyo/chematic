@@ -1,0 +1,60 @@
+{
+  "rows": 2102,
+  "platform": [
+    "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43"
+  ],
+  "seconds": 0.2,
+  "max_candidates": 20,
+  "timing": "individual embedding and minimization attempts, accept only attempts completed before the deadline; scoring excluded",
+  "errors": 175,
+  "engines": {
+    "chematic": {
+      "records": 1927,
+      "missing_records": 175,
+      "attempted": {
+        "min": 1,
+        "median": 4,
+        "p95": 18,
+        "max": 20
+      },
+      "accepted": {
+        "min": 0,
+        "median": 3,
+        "p95": 17,
+        "max": 20
+      },
+      "elapsed_seconds": {
+        "min": 0.045455858999957854,
+        "median": 0.2228898590000199,
+        "p95": 0.3648464289999822,
+        "max": 617.197321481
+      },
+      "elapsed_over_budget": 1853,
+      "reached_attempt_cap": 82
+    },
+    "rdkit": {
+      "records": 2002,
+      "missing_records": 100,
+      "attempted": {
+        "min": 1,
+        "median": 4.0,
+        "p95": 14,
+        "max": 20
+      },
+      "accepted": {
+        "min": 0,
+        "median": 3.0,
+        "p95": 13,
+        "max": 20
+      },
+      "elapsed_seconds": {
+        "min": 0.0743461860000707,
+        "median": 0.22669626050000602,
+        "p95": 0.372878519999972,
+        "max": 646.8770254369999
+      },
+      "elapsed_over_budget": 1961,
+      "reached_attempt_cap": 48
+    }
+  }
+}

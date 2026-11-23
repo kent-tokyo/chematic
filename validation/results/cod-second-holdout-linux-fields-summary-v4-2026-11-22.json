@@ -1,0 +1,39 @@
+{
+  "rows": 2098,
+  "row_errors": 22,
+  "fields": {
+    "MMFF94": {
+      "evaluated": 2076,
+      "rdkit_supported": 2076,
+      "chematic_supported": 2076,
+      "comparable": 2076,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 271.6008093535563,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 513.7845733064148,
+      "finite_difference_absolute_error_max": 141917.78283780106
+    },
+    "MMFF94s": {
+      "evaluated": 2076,
+      "rdkit_supported": 2076,
+      "chematic_supported": 2076,
+      "comparable": 2076,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 271.60058510912245,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 513.7845733064148,
+      "finite_difference_absolute_error_max": 141917.78283780106
+    },
+    "UFF": {
+      "evaluated": 2076,
+      "rdkit_supported": 2076,
+      "chematic_supported": 2076,
+      "comparable": 2076,
+      "energy_absolute_error_p95": 0.0,
+      "energy_absolute_error_max": 35.77435552004002,
+      "gradient_absolute_error_p95": 0.0,
+      "gradient_absolute_error_max": 633.6477358148388,
+      "finite_difference_absolute_error_max": 113681.79576559894
+    }
+  }
+}

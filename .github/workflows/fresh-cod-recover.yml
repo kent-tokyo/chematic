@@ -1,0 +1,118 @@
+name: Recover interrupted COD holdout shard
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/fresh-cod-recover.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Restore and verify frozen inputs
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh ubuntu-latest cod
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name fresh-plan-cod-ubuntu-latest-45026013999 --dir original
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name fresh-fixed-cod-ubuntu-latest-3-45026013999 --dir checkpoint
+          echo '70276bbeb65bdb5e1de4528b148daf258a2a49e75e88e036af16fd326109e5d5  original/plan/manifest.json' | sha256sum -c
+          echo '04d98b442ab03b276a81d41b6427583a0f037f18578fd38ec47c1f8439139ec2  checkpoint/result.json' | sha256sum -c
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python scripts/benchmarks/recover_platinum_shard.py prepare --manifest original/plan/manifest.json --index 3 --split original/plan/split-003.json --audit original/plan/audit-003.json --checkpoint checkpoint/result.json --directory recovery --parts 8
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-recovery-plan-${{ github.run_id }}
+          path: recovery/
+          if-no-files-found: error
+
+  fixed:
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Restore frozen inputs
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh ubuntu-latest cod
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-recovery-plan-$GITHUB_RUN_ID" --dir recovery
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps "$(cat evaluation/wheel-path.txt)"
+      - name: Score and seal remaining subshard
+        run: |
+          index='${{ matrix.shard }}'
+          suffix=$(printf '%03d' "$index")
+          count=$(python -c 'import json,sys; print(json.load(open("recovery/plan/manifest.json"))["shards"][int(sys.argv[1])]["count"])' "$index")
+          python scripts/benchmarks/platinum_mixed_checked_development.py --sdf evaluation/reference/reference.sdf --split "recovery/plan/split-$suffix.json" --invalid-exclusion-audit "recovery/plan/audit-$suffix.json" --partition holdout --output result.json --limit "$count" --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/shard_platinum_holdout.py seal --manifest recovery/plan/manifest.json --index "$index" --wheel "$(cat evaluation/wheel-path.txt)" --audit "recovery/plan/audit-$suffix.json" --result result.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-recovery-fixed-${{ matrix.shard }}-${{ github.run_id }}
+          path: result.json
+          if-no-files-found: warn
+
+  merge:
+    needs: fixed
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Verify and combine original and recovered shards
+        run: |
+          git show 87151e43a9c2483ec298fa7936d17cdc35a3d55b:scripts/benchmarks/platinum_development_probe.py > scripts/benchmarks/platinum_development_probe.py
+          bash scripts/validation/fetch_mixed_holdout_inputs.sh ubuntu-latest cod
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name fresh-plan-cod-ubuntu-latest-45026013999 --dir original
+          gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name fresh-fixed-cod-ubuntu-latest-3-45026013999 --dir checkpoint
+          gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-recovery-plan-$GITHUB_RUN_ID" --dir recovery
+          for index in 0 1 2 3 4 5 6 7; do gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name "cod-recovery-fixed-$index-$GITHUB_RUN_ID" --dir "part-$index"; done
+          for index in 0 1 2; do gh run download 45026013999 --repo "$GITHUB_REPOSITORY" --name "fresh-fixed-cod-ubuntu-latest-$index-45026013999" --dir "original-$index"; done
+          echo '70276bbeb65bdb5e1de4528b148daf258a2a49e75e88e036af16fd326109e5d5  original/plan/manifest.json' | sha256sum -c
+          echo '04d98b442ab03b276a81d41b6427583a0f037f18578fd38ec47c1f8439139ec2  checkpoint/result.json' | sha256sum -c
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python scripts/benchmarks/recover_platinum_shard.py finish --manifest original/plan/manifest.json --index 3 --split original/plan/split-003.json --audit original/plan/audit-003.json --checkpoint checkpoint/result.json --directory recovery --wheel "$(cat evaluation/wheel-path.txt)" --output recovered.json part-{0,1,2,3,4,5,6,7}/result.json
+          python scripts/benchmarks/shard_platinum_holdout.py merge --manifest original/plan/manifest.json --output fixed.json original-{0,1,2}/result.json recovered.json
+          python scripts/benchmarks/summarize_platinum_holdout.py fixed.json evaluation/reference/split.json --output fixed-summary.json
+          python scripts/benchmarks/summarize_platinum_stereo_strict.py fixed.json --output fixed-stereo.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-recovered-fixed-linux-${{ github.run_id }}
+          path: |
+            recovered.json
+            fixed.json
+            fixed-summary.json
+            fixed-stereo.json
+            recovery/remaining-merged.json
+          if-no-files-found: error

@@ -1,0 +1,48 @@
+{
+  "rows": 2098,
+  "statuses": {
+    "ok": 2098
+  },
+  "bootstrap_seed": 42,
+  "bootstrap_samples": 10000,
+  "stages": {
+    "minimized": {
+      "chematic_recovered": 1586,
+      "rdkit_recovered": 1625,
+      "difference": -0.018589132507149667,
+      "paired_bootstrap_95_percentile_interval": [
+        -0.028598665395614873,
+        -0.00905624404194471
+      ]
+    },
+    "minimized_lowest_energy": {
+      "chematic_recovered": 945,
+      "rdkit_recovered": 971,
+      "difference": -0.012392755004766444,
+      "paired_bootstrap_95_percentile_interval": [
+        -0.023355576739752144,
+        -0.0014299332697807435
+      ]
+    }
+  },
+  "chematic": {
+    "raw": {
+      "conformers_checked": 0,
+      "stereo_violations": 0
+    },
+    "minimized": {
+      "conformers_checked": 40538,
+      "stereo_violations": 0
+    }
+  },
+  "rdkit": {
+    "raw": {
+      "conformers_checked": 41548,
+      "stereo_violations": 1
+    },
+    "minimized": {
+      "conformers_checked": 41548,
+      "stereo_violations": 70
+    }
+  }
+}

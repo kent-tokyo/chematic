@@ -1,0 +1,47 @@
+{
+  "rdkit_version": "2026.09.2",
+  "platform": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
+  "wheel_sha256": "0052c7ad06ce6fe92ddf919fc0e2a15869b7d683c530f794c62a052edf0d1603",
+  "synthetic_records": 2,
+  "fixed_stereo": {
+    "rows": 2,
+    "stereo_policy": "rdkit-declared-stereo-strict-v1",
+    "engines": {
+      "chematic": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      },
+      "rdkit": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      }
+    }
+  },
+  "timed_stereo": {
+    "rows": 2,
+    "stereo_policy": "rdkit-declared-stereo-strict-v1",
+    "engines": {
+      "chematic": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      },
+      "rdkit": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      }
+    }
+  },
+  "script_sha256": "9b28fa772731ec57a53f53cc6ccd26be7ea56e189db54754da21743b76121b58"
+}

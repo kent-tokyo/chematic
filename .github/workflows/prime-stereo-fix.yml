@@ -1,0 +1,49 @@
+name: Prime development stereo regression
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/prime-stereo-fix.yml'
+      - 'crates/chematic-3d/src/rdkit_embed/**'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # stable
+      - name: Check Rust regression and existing checked-profile tests
+        run: |
+          cargo test --locked -p chematic-3d --lib ez_near_linear_substituents_are_unevaluable_at_either_end -- --nocapture
+          cargo test --locked -p chematic-3d --lib ez_keeps_marked_substituent_when_other_arm_is_not_near_axis -- --nocapture
+          cargo test --locked -p chematic-3d --lib corrected_checked_ensemble_preserves_macrocycle_double_bond_stereo -- --nocapture
+          cargo test --locked -p chematic-3d --lib corrected_ -- --nocapture
+          cargo test --locked -p chematic-3d --lib constraint_set_terminal_hydrogens_and_isotopes_match_rdkit -- --nocapture
+          cargo test --locked -p chematic-3d --lib constraint_set_adjacent_marked_alkenes_match_rdkit -- --nocapture
+          cargo test --locked -p chematic-3d --lib constraint_set_cod_adjacent_marker_development_corpus -- --nocapture
+      - name: Build Python candidate
+        run: |
+          python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/prime-stereo
+          python -m pip install --force-reinstall --no-deps dist/prime-stereo/*.whl
+      - name: Verify candidate stereo independently with RDKit
+        run: |
+          python scripts/validation/prime_stereo_diagnostic.py
+          python -c 'import json; x=json.load(open("prime-stereo-diagnostic.json")); assert x["count"]==44; assert not x["observations"]'
+          python scripts/validation/cod_charged_stereo_diagnostic.py
+          python -c 'import json; x=json.load(open("cod-charged-stereo-diagnostic.json")); assert len(x["chematic"])==20; assert all(not c["violations"]["atoms"] and not c["violations"]["bonds"] for c in x["chematic"]); assert any(c["violations"]["bonds"] for c in x["rdkit_optimized"])'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: prime-stereo-fix-${{ github.sha }}
+          path: |
+            prime-stereo-diagnostic.json
+            cod-charged-stereo-diagnostic.json
+          if-no-files-found: warn

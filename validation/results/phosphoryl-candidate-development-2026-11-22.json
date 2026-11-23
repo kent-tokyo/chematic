@@ -1,0 +1,183 @@
+{
+  "rdkit": "2026.09.2",
+  "results": [
+    {
+      "name": "VJUNGNXBONODDR-UHFFFAOYSA-N",
+      "baseline_count": 0,
+      "candidate_count": 20,
+      "unfinished": 11,
+      "violations": 0,
+      "details": [
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        }
+      ]
+    },
+    {
+      "name": "HRPUQROAFUIJQN-UHFFFAOYSA-N",
+      "baseline_count": 0,
+      "candidate_count": 20,
+      "unfinished": 20,
+      "violations": 0,
+      "details": [
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        },
+        {
+          "atoms": [],
+          "bonds": []
+        }
+      ]
+    }
+  ]
+}

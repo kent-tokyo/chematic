@@ -137,8 +137,7 @@ const PHANTOM_BOND_LENGTH: f64 = 1.0;
 pub enum StereoRejectionReason {
     /// The atom's declared-neighbor-order shape isn't a plain 4-substituent
     /// tetrahedral center (wrong neighbor count, more than one implicit-H sentinel,
-    /// an inconsistent implicit-H count, or a non-single/up/down bond among its
-    /// neighbors -- e.g. an allene/axial-chirality atom, not a simple tetrahedral one).
+    /// an inconsistent implicit-H count, or an unsupported bond arrangement).
     UnsupportedCoordination,
     /// The signed volume (tetrahedral) or dihedral (E/Z) is within its epsilon of
     /// zero/undefined -- a coplanar or otherwise degenerate 3D arrangement.
@@ -534,13 +533,44 @@ fn tetrahedral_positions(
 
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
-/// geometry check inline (kept behavior-identical on purpose: this is a pure
-/// extraction, see the PR that introduced [`TetrahedralConstraint`] for the
-/// before/after test evidence). Only a plain tetrahedral center (single/up/down
-/// bonds only) is in scope -- mirrors `stereo3d.rs`'s `assign_stereo_from_3d` gate,
-/// excluding e.g. allene central atoms (which declare axial chirality via bond
-/// directions, not `Atom::chirality`, and are handled by the double-bond path
-/// instead).
+/// geometry check inline. Plain tetrahedral centers and explicitly supported
+/// phosphorus and sulfur coordination are in scope. Allene central atoms,
+/// which declare axial chirality via bond directions rather than
+/// `Atom::chirality`, are handled by the double-bond path instead.
+fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
+    let atom = mol.atom(idx);
+    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
+    // S+ with three single bonds, have a stereochemically active lone pair.
+    // Represent it by the direction opposite the three unit bond vectors.
+    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
+        && atom.charge == 0
+        && mol.neighbors(idx).count() == 3
+        && mol
+            .neighbors(idx)
+            .filter(|(n, b)| {
+                mol.bond(*b).order == BondOrder::Double
+                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
+            })
+            .count()
+            == 1
+        && mol.neighbors(idx).all(|(_, b)| {
+            matches!(
+                mol.bond(b).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
+            )
+        })
+        && mol
+            .neighbors(idx)
+            .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+            .count()
+            == 1;
+    let sulfonium_lone_pair = atom.element.atomic_number() == 16
+        && atom.charge == 1
+        && mol.neighbors(idx).count() == 3
+        && all_single_ish;
+    neutral_sulfur_lone_pair || sulfonium_lone_pair
+}
+
 fn tetrahedral_constraint_for(
     mol: &Molecule,
     idx: AtomIdx,
@@ -569,18 +599,49 @@ fn tetrahedral_constraint_for(
             BondOrder::Single | BondOrder::Up | BondOrder::Down
         )
     });
-    if !all_single_ish {
+    // Preserve the existing one-double-bond phosphorus case and admit the
+    // observed P(-)(=N)(=S) and neutral S(=N)(=O) geometries. Their four
+    // actual neighbor positions define tetrahedral parity.
+    let double_bonds = mol
+        .neighbors(idx)
+        .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
+        .count();
+    let has_double_to = |element| {
+        mol.neighbors(idx).any(|(n, b)| {
+            mol.bond(b).order == BondOrder::Double && mol.atom(n).element.atomic_number() == element
+        })
+    };
+    let supported_four_coordinate = match (atom.element.atomic_number(), atom.charge, double_bonds)
+    {
+        (15, _, 1) => true,
+        (15, -1, 2) => has_double_to(7) && has_double_to(16),
+        (16, 0, 2) => has_double_to(7) && has_double_to(8),
+        _ => false,
+    };
+    let four_coordinate_ps = mol.neighbors(idx).count() == 4
+        && supported_four_coordinate
+        && mol.neighbors(idx).all(|(_, b)| {
+            matches!(
+                mol.bond(b).order,
+                BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
+            )
+        });
+    let sulfur_lone_pair = sulfur_has_stereo_lone_pair(mol, idx, all_single_ish);
+    if !all_single_ish && !four_coordinate_ps && !sulfur_lone_pair {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
-    let Some(order) = declared_neighbor_order(mol, idx) else {
+    let Some(mut order) = declared_neighbor_order(mol, idx) else {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     };
+    if sulfur_lone_pair && order.len() == 3 {
+        order.push(STEREO_H_SENTINEL);
+    }
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
-    if n_sentinels == 1 && implicit_hcount(mol, idx) != 1 {
+    if n_sentinels == 1 && !sulfur_lone_pair && implicit_hcount(mol, idx) != 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
@@ -676,11 +737,57 @@ fn has_any_direction_marker(mol: &Molecule, alkene_end: AtomIdx, other_end: Atom
     })
 }
 
-/// `true` when `atom_idx` has at least one heavy-atom neighbor other than
-/// `other_end` -- i.e. it's a genuine, non-terminal alkene end that could plausibly
-/// carry its own substituent-direction marker.
+/// Reject a terminal alkene end with no substituents or two identical explicit
+/// hydrogen isotopes. Hydrogen isotopes with distinct labels must remain
+/// distinguishable, including an unspecified H versus explicitly labelled 1H.
 fn has_real_substituent(mol: &Molecule, atom_idx: AtomIdx, other_end: AtomIdx) -> bool {
-    mol.neighbors(atom_idx).any(|(nb, _)| nb != other_end)
+    let mut neighbors = mol.neighbors(atom_idx).filter(|(nb, _)| *nb != other_end);
+    let Some((first, _)) = neighbors.next() else {
+        return false;
+    };
+    let Some((second, _)) = neighbors.next() else {
+        return true;
+    };
+    if neighbors.next().is_some() {
+        return true;
+    }
+    let first = mol.atom(first);
+    let second = mol.atom(second);
+    !(first.element.atomic_number() == 1
+        && second.element.atomic_number() == 1
+        && first.isotope == second.isotope)
+}
+
+/// A single directional bond can describe the adjacent double bond instead of
+/// the bond currently being inspected. Only attribute it elsewhere when every
+/// marker at this end connects to another doubly marked, evaluable alkene.
+fn markers_belong_to_adjacent_alkene(mol: &Molecule, end: AtomIdx, other: AtomIdx) -> bool {
+    let mut found = false;
+    for (neighbor, marker) in mol.neighbors(end) {
+        if neighbor == other
+            || !matches!(
+                mol.bond_direction(marker).unwrap_or(mol.bond(marker).order),
+                BondOrder::Up | BondOrder::Down
+            )
+        {
+            continue;
+        }
+        found = true;
+        let belongs_elsewhere = mol.neighbors(neighbor).any(|(next, double)| {
+            next != end
+                && mol.bond(double).order == BondOrder::Double
+                && has_real_substituent(mol, neighbor, next)
+                && has_real_substituent(mol, next, neighbor)
+                && !is_cumulated(mol, neighbor, double)
+                && !is_cumulated(mol, next, double)
+                && marked_substituent(mol, neighbor, next).is_some()
+                && marked_substituent(mol, next, neighbor).is_some()
+        });
+        if !belongs_elsewhere {
+            return false;
+        }
+    }
+    found
 }
 
 /// Declared-parity-only prefix of double-bond verification, needing no geometry --
@@ -727,8 +834,16 @@ fn double_bond_constraint_for(
         return None;
     }
 
-    if !has_any_direction_marker(mol, a1, a2) && !has_any_direction_marker(mol, a2, a1) {
+    let first_marked = has_any_direction_marker(mol, a1, a2);
+    let second_marked = has_any_direction_marker(mol, a2, a1);
+    if !first_marked && !second_marked {
         return None; // no declared E/Z on this double bond
+    }
+
+    if (first_marked && !second_marked && markers_belong_to_adjacent_alkene(mol, a1, a2))
+        || (second_marked && !first_marked && markers_belong_to_adjacent_alkene(mol, a2, a1))
+    {
+        return None;
     }
 
     if is_cumulated(mol, a1, bond_idx) || is_cumulated(mol, a2, bond_idx) {
@@ -766,13 +881,55 @@ fn verify_double_bond(
         Err(reason) => return Some(StereoStatus::Unevaluable(reason)),
     };
 
-    Some(verify_double_bond_constraint(coords, &constraint))
+    Some(verify_double_bond_constraint(mol, coords, &constraint))
+}
+
+fn geometry_constraint(
+    mol: &Molecule,
+    coords: &Coords3D,
+    constraint: &DoubleBondConstraint,
+) -> Option<DoubleBondConstraint> {
+    // A dihedral is numerically defined for almost-collinear substituents but
+    // does not provide a reliable E/Z assignment when all substituents at an
+    // end are nearly collinear. Use a scale-free five-degree check, retaining
+    // the marked substituent and its parity if another arm is well separated.
+    let end1 = coords.get(constraint.end1);
+    let end2 = coords.get(constraint.end2);
+    let axis = end2.sub(&end1);
+    let axis_norm = axis.norm();
+    let near_axis = |sub: Point3, end: Point3| {
+        let arm = sub.sub(&end);
+        let arm_norm = arm.norm();
+        axis_norm < 1e-10
+            || arm_norm < 1e-10
+            || arm.cross(&axis).norm() < axis_norm * arm_norm * 0.087_155_742_747_658_17
+    };
+    for (end, other, sub) in [
+        (constraint.end1, constraint.end2, constraint.sub1),
+        (constraint.end2, constraint.end1, constraint.sub2),
+    ] {
+        if !near_axis(coords.get(sub), coords.get(end)) {
+            continue;
+        }
+        let has_usable_alternative = mol
+            .neighbors(end)
+            .filter(|(neighbor, _)| *neighbor != other && *neighbor != sub)
+            .any(|(neighbor, _)| !near_axis(coords.get(neighbor), coords.get(end)));
+        if !has_usable_alternative {
+            return None;
+        }
+    }
+    Some(*constraint)
 }
 
 fn verify_double_bond_constraint(
+    mol: &Molecule,
     coords: &Coords3D,
     constraint: &DoubleBondConstraint,
 ) -> StereoStatus {
+    let Some(constraint) = geometry_constraint(mol, coords, constraint) else {
+        return StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+    };
     let Some(angle) = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
         coords.get(constraint.end2),
@@ -831,6 +988,8 @@ pub fn debug_double_bond(
     bond_idx: BondIdx,
 ) -> Option<DoubleBondDebugInfo> {
     let constraint = double_bond_constraint_for(mol, bond_idx)?.ok()?;
+    let constraint = geometry_constraint(mol, coords, &constraint)?;
+    let status = verify_double_bond_constraint(mol, coords, &constraint);
 
     let angle = crate::stereo3d::dihedral(
         coords.get(constraint.end1),
@@ -839,11 +998,6 @@ pub fn debug_double_bond(
         coords.get(constraint.sub2),
     )?;
     let actual_same_side = angle.abs() < std::f64::consts::FRAC_PI_2;
-    let status = if actual_same_side == constraint.same_side {
-        StereoStatus::Satisfied
-    } else {
-        StereoStatus::Violated
-    };
     let boundary_deg = 90.0;
     let angle_deg = angle.to_degrees();
     let margin_from_boundary_deg = (angle_deg.abs() - boundary_deg).abs();
@@ -967,8 +1121,9 @@ fn repair_tetrahedral_center(
     coords: &mut Coords3D,
     idx: AtomIdx,
 ) -> Result<RepairedElement, RepairRejectionReason> {
-    let order = declared_neighbor_order(mol, idx)
-        .expect("already validated Some by verify_stereo before repair was attempted");
+    let order = tetrahedral_constraint_for(mol, idx)
+        .expect("already validated by verify_stereo before repair was attempted")
+        .order;
     let real_neighbors: Vec<u32> = order
         .iter()
         .copied()

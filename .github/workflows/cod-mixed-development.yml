@@ -1,0 +1,112 @@
+name: Mixed-gradient development comparison
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-mixed-development.yml'
+      - 'crates/chematic-3d/src/rdkit_embed/**'
+      - 'crates/chematic-py/src/mol_methods/identity.rs'
+      - 'scripts/benchmarks/platinum_mixed_checked_development.py'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - run: cargo test --locked --release -p chematic-3d --lib corrected_ensemble_tests
+      - run: python -m pip install 'maturin==1.13.3'
+      - run: maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out candidate
+      - name: Record wheel identity
+        run: |
+          git rev-parse HEAD > candidate/source-commit.txt
+          sha256sum candidate/*.whl > candidate/wheel-sha256.txt
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: mixed-development-wheel-${{ github.event.pull_request.head.sha }}
+          path: candidate/
+          if-no-files-found: error
+
+  compare:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        dataset: [cod-52, cod-61, cod-225, macrocycle-32]
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: mixed-development-wheel-${{ github.event.pull_request.head.sha }}
+          path: candidate
+      - name: Install pinned engines
+        run: |
+          test "$(cat candidate/source-commit.txt)" = "${{ github.event.pull_request.head.sha }}"
+          sha256sum -c candidate/wheel-sha256.txt
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/*.whl
+          python -m unittest scripts.validation.test_platinum_stereo_strict
+      - name: Fetch reference and select development cases
+        run: |
+          if [ '${{ matrix.dataset }}' = macrocycle-32 ]; then
+            gh run download 44955399937 --repo "$GITHUB_REPOSITORY" --name macrocycle-pdb-prepared-3b3a5f827788c39195ccc58608e854e6ab543557 --dir reference
+            echo '71bf05a54cd402146e8892acd88969ec52fd45d2a02c4194b7aa905fe900222d  reference/macrocycle-prepared.sdf' | sha256sum --check
+            echo 'ffb256b0a9dbc779a5c6b3dd2ac96deec6174dc25408dc1d0691efcef8c4c4ff  reference/macrocycle-prepared-split.json' | sha256sum --check
+            cp reference/macrocycle-prepared.sdf reference.sdf
+            cp reference/macrocycle-prepared-split.json split.json
+            echo 32 > limit.txt
+          else
+            gh run download 44930127544 --repo "$GITHUB_REPOSITORY" --name cod-reference-sample-914f4df10743b1d484d0be76974ba256985822a4 --dir reference
+            echo '6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74  reference/cod-sample.sdf' | sha256sum --check
+            cp reference/cod-sample.sdf reference.sdf
+            case '${{ matrix.dataset }}' in
+              cod-52)
+                python scripts/validation/select_cod_exposed_empty_v4.py split.json
+                echo 'ae789fb069210844d698e907a732af2520fbff6beb8940f3fa9b1eabb82fbc06  split.json' | sha256sum --check
+                echo 52 > limit.txt ;;
+              cod-61)
+                cp validation/results/cod-discordant-61-selection-2026-11-22.json split.json
+                echo '1fab3aca3294035b18bf9d18730a871f4108e8dfc7482c418a92c41ea75b8da2  split.json' | sha256sum --check
+                echo 61 > limit.txt ;;
+              cod-225)
+                gzip -dc validation/results/cod-round2-scaffold-split-2026-11-22.json.gz > split.json
+                echo 'b12af9cb05683735ab8fad725dcf38e0f8e8f51bdef8e4aa3db22e87590109c3  split.json' | sha256sum --check
+                echo 225 > limit.txt ;;
+            esac
+          fi
+      - name: Compare development conformers
+        run: |
+          python scripts/benchmarks/platinum_mixed_checked_development.py --sdf reference.sdf --split split.json --output result.json --partition development --limit "$(cat limit.txt)" --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py result.json --output summary.json
+          python scripts/benchmarks/summarize_platinum_stereo_strict.py result.json --output stereo-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: mixed-development-${{ matrix.dataset }}-${{ github.event.pull_request.head.sha }}
+          path: |
+            candidate/source-commit.txt
+            candidate/wheel-sha256.txt
+            split.json
+            result.json
+            summary.json
+            stereo-summary.json
+          if-no-files-found: warn

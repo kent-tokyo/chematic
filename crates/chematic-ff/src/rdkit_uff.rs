@@ -64,10 +64,21 @@ fn params_for(label: &str) -> Option<AtomicParams> {
 }
 
 /// RDKit hybridization (`Atom::HybridizationType`) as chematic's SMARTS
-/// `^n` code: 0 S, 1 SP, 2 SP2, 3 SP3, 4 SP3D, 5 SP3D2; `None` unspecified.
+/// `^n` code: 0 S, 1 SP, 2 SP2, 3 SP3, 4 SP3D, 5 SP3D2;
+/// 6 represents SP2D, which has no SMARTS `^n` code; `None` is unspecified.
 fn hybridization(mol: &Molecule) -> Vec<Option<u8>> {
     (0..mol.atom_count())
-        .map(|i| chematic_smarts::rdkit_hybridization(mol, AtomIdx(i as u32)))
+        .map(|i| {
+            let idx = AtomIdx(i as u32);
+            // RDKit assigns non-tetrahedral hybridization from the stereo tag.
+            match mol.atom(idx).chirality {
+                chematic_core::Chirality::SquarePlanar(_)
+                | chematic_core::Chirality::SquarePlanarUnnumbered => Some(6),
+                chematic_core::Chirality::TrigonalBipyramidal(_) => Some(4),
+                chematic_core::Chirality::Octahedral(_) => Some(5),
+                _ => chematic_smarts::rdkit_hybridization(mol, idx),
+            }
+        })
         .collect()
 }
 
@@ -159,6 +170,7 @@ fn atom_label(mol: &Molecule, i: usize, hyb: Option<u8>, conjugated: bool) -> St
                 Some(3) => key.push('3'),
                 Some(4) => key.push('5'),
                 Some(5) => key.push('6'),
+                Some(6) => key.push('4'),
                 _ => {}
             },
         }
@@ -711,7 +723,8 @@ impl InversionTerm {
         let cos_theta = clip_to_one(r_ji.dot(r_jk));
         let sin_theta_sq = 1.0 - cos_theta * cos_theta;
         let sin_theta = smax(sin_theta_sq.sqrt(), 1.0e-8);
-        let de_dw = -self.force_constant * (self.c1 * cos_y - 4.0 * self.c2 * cos_y * sin_y);
+        // RDKit corrected the sign of the C2 term in 2026.03.2 (issue #9229).
+        let de_dw = -self.force_constant * (self.c1 * cos_y + 4.0 * self.c2 * cos_y * sin_y);
         let t1 = r_jl.cross(r_jk);
         let t2 = r_ji.cross(r_jl);
         let t3 = r_jk.cross(r_ji);
@@ -1367,6 +1380,40 @@ mod tests {
 #[cfg(test)]
 mod geometry_boundary_contract_tests {
     use super::*;
+
+    #[test]
+    fn bridging_hydrogen_matches_rdkit_energy_and_gradient() {
+        for json in [
+            include_str!("../../../validation/rdkit-2026.09.2-uff-bridging-hydrogen.json"),
+            include_str!("../../../validation/rdkit-2026.09.2-uff-bridging-hydrogen-exposed.json"),
+        ] {
+            let fixture: serde_json::Value = serde_json::from_str(json).unwrap();
+            let mol = chematic_chem::add_hydrogens(
+                &chematic_smiles::parse(fixture["smiles"].as_str().unwrap()).unwrap(),
+            );
+            let coords: Vec<[f64; 3]> = fixture["coords"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .map(|point| {
+                    [
+                        point[0].as_f64().unwrap(),
+                        point[1].as_f64().unwrap(),
+                        point[2].as_f64().unwrap(),
+                    ]
+                })
+                .collect();
+            assert_eq!(mol.atom_count(), coords.len());
+            let field = RdkitUffField::new(&mol, &coords, 10.0, true);
+            let pos = coords.as_flattened();
+            assert!((field.energy(pos) - fixture["energy"].as_f64().unwrap()).abs() < 1e-8);
+            let mut gradient = vec![0.0; pos.len()];
+            field.gradient(pos, &mut gradient);
+            for (actual, expected) in gradient.iter().zip(fixture["gradient"].as_array().unwrap()) {
+                assert!((actual - expected.as_f64().unwrap()).abs() < 1e-7);
+            }
+        }
+    }
 
     fn matches_native(actual: f64, expected: &serde_json::Value) -> bool {
         match expected.as_str() {

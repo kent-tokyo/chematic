@@ -1,0 +1,60 @@
+{
+  "rows": 1243,
+  "platform": [
+    "Linux-7.0.0-1020-azure-x86_64-with-glibc2.43"
+  ],
+  "seconds": 0.2,
+  "max_candidates": 20,
+  "timing": "individual embedding and minimization attempts, accept only attempts completed before the deadline; scoring excluded",
+  "errors": 0,
+  "engines": {
+    "chematic": {
+      "records": 1243,
+      "missing_records": 0,
+      "attempted": {
+        "min": 1,
+        "median": 1,
+        "p95": 4,
+        "max": 18
+      },
+      "accepted": {
+        "min": 0,
+        "median": 0,
+        "p95": 3,
+        "max": 17
+      },
+      "elapsed_seconds": {
+        "min": 0.20011280099998885,
+        "median": 0.4768176160000053,
+        "p95": 3.203029949000012,
+        "max": 9.367213667999977
+      },
+      "elapsed_over_budget": 1243,
+      "reached_attempt_cap": 0
+    },
+    "rdkit": {
+      "records": 1243,
+      "missing_records": 0,
+      "attempted": {
+        "min": 1,
+        "median": 1,
+        "p95": 3,
+        "max": 12
+      },
+      "accepted": {
+        "min": 0,
+        "median": 0,
+        "p95": 2,
+        "max": 11
+      },
+      "elapsed_seconds": {
+        "min": 0.2000844799999868,
+        "median": 0.5610660940000116,
+        "p95": 3.076266222000015,
+        "max": 12.000746885000012
+      },
+      "elapsed_over_budget": 1243,
+      "reached_attempt_cap": 0
+    }
+  }
+}

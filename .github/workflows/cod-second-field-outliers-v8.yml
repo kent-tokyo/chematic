@@ -1,0 +1,37 @@
+name: COD second exposed force-field outliers on v8
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/cod-second-field-outliers-v8.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install fixed candidate and check exposed inputs
+        run: |
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          gh run download 44971533548 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v8-ubuntu-latest-98a270e4ba39c7f7db61a0e1980bfa29fd55f615 --dir candidate
+          python -c 'import glob,hashlib,pathlib; h=lambda p:hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest(); w=glob.glob("candidate/**/*.whl",recursive=True); assert len(w)==1 and h(w[0])=="8305fd27765c4d10670fa2a0900f3b86b286d35a711f3f2eecb5c412f96613ac"; assert h("validation/results/cod-second-field-outliers-development-2026-11-22.json")=="b4e3ae5fd6ee673746b05245b727fdac6b45f5275aa9c57249624be2efe41c2c"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Compare exposed inputs on common coordinates
+        run: |
+          python scripts/benchmarks/platinum_force_fields.py --development validation/results/cod-second-field-outliers-development-2026-11-22.json --output cod-second-fields-v8.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py cod-second-fields-v8.json --output cod-second-fields-v8-summary.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: cod-second-fields-v8-${{ github.sha }}
+          path: cod-second-fields-v8*.json
+          if-no-files-found: warn

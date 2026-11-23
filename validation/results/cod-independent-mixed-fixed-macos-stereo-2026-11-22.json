@@ -1,0 +1,20 @@
+{
+  "rows": 2102,
+  "stereo_policy": "rdkit-declared-stereo-strict-v1",
+  "engines": {
+    "chematic": {
+      "conformers": 37719,
+      "contradicted": 0,
+      "unevaluable": 0,
+      "invalid_either": 0,
+      "records_with_no_conformers": 209
+    },
+    "rdkit": {
+      "conformers": 37759,
+      "contradicted": 27,
+      "unevaluable": 34,
+      "invalid_either": 61,
+      "records_with_no_conformers": 207
+    }
+  }
+}

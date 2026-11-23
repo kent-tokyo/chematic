@@ -1,0 +1,60 @@
+name: PDB macrocycle force-field candidate pilot
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/macrocycle-pdb-development-v11.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch and verify frozen wheel and structural sample
+        run: |
+          test "$(git rev-parse HEAD:scripts/benchmarks)" = '00a8c3615c849288c7d31f718a502bbd40da4fdc'
+          gh run download 44984753739 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v11-ubuntu-latest-54780e156da34198ed3ae0d76b5efe8b76d02ae2 --dir candidate
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="0052c7ad06ce6fe92ddf919fc0e2a15869b7d683c530f794c62a052edf0d1603"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Fetch verified macrocycle references
+        run: |
+          gh run download 44955399937 --repo "$GITHUB_REPOSITORY" --name macrocycle-pdb-prepared-3b3a5f827788c39195ccc58608e854e6ab543557 --dir macrocycle
+          echo '71bf05a54cd402146e8892acd88969ec52fd45d2a02c4194b7aa905fe900222d  macrocycle/macrocycle-prepared.sdf' | sha256sum --check
+          echo 'ffb256b0a9dbc779a5c6b3dd2ac96deec6174dc25408dc1d0691efcef8c4c4ff  macrocycle/macrocycle-prepared-split.json' | sha256sum --check
+      - name: Audit holdout chemistry without conformer scoring
+        run: |
+          echo '606d5d3f8b2a8cb17a3fe5534f9a1b9f09257eb4e8a9ae16c32e41fc7d474dcc  scripts/validation/cod_support_probe.py' | sha256sum --check
+          python scripts/validation/cod_support_probe.py macrocycle/macrocycle-prepared.sdf macrocycle/macrocycle-prepared-split.json --partition holdout --output macrocycle-holdout-support.json
+      - name: Compare 32 development references
+        run: |
+          set +e
+          timeout --signal=TERM 100m python scripts/benchmarks/platinum_development_probe.py --sdf macrocycle/macrocycle-prepared.sdf --split macrocycle/macrocycle-prepared-split.json --output macrocycle-development-pilot.json --partition development --limit 32 --count 20 --seed 42 --profile corrected --geometry --repair-iters 400
+          result=$?
+          set -e
+          printf 'probe_exit_code=%s\n' "$result" > macrocycle-development-pilot-status.txt
+          if [ -f macrocycle-development-pilot.json ]; then
+            python scripts/benchmarks/summarize_platinum_probe.py macrocycle-development-pilot.json --output macrocycle-development-pilot-summary.json
+          fi
+          exit "$result"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: macrocycle-pdb-development-v11-${{ github.sha }}
+          path: |
+            macrocycle-holdout-support.json
+            macrocycle-development-pilot*.json
+            macrocycle-development-pilot-status.txt
+          if-no-files-found: warn

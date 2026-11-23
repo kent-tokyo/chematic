@@ -1,0 +1,61 @@
+{
+  "classification": "exposed second-COD holdout, development only",
+  "selection": "Linux frozen v8 MMFF energy absolute error > 1e-4 kcal/mol",
+  "results": [
+    {
+      "name": "MPNGGXLLXDBUNV-UHFFFAOYSA-N",
+      "index": 143,
+      "smiles": "CC(C)c1cccc(C(C)C)c1-[n+]1cc2cccc3c[n+](-c4c(C(C)C)cccc4C(C)C)[p@SP1]1[n+]23"
+    },
+    {
+      "name": "UURPMXLGHWPFLL-UHFFFAOYSA-O",
+      "index": 670,
+      "smiles": "CCCCCCc1cc2c(s1)-c1nc-2nc2[nH]c(nc3[n-]c(nc4[nH+]c(n1)-c1cc(CCCCCC)sc1-4)c1cc(CCCCCC)sc31)c1cc(CCCCCC)sc21"
+    },
+    {
+      "name": "HHVSZPBWYSYHPA-NQCZCJPMSA-N",
+      "index": 977,
+      "smiles": "O=C1c2ccccc2C(=O)[C@H]2[C@@H]1[C@]1(c3ccccc3)C(=O)[C@@]2(c2ccccc2)c2c1c1ccccc1c1ccccc21"
+    },
+    {
+      "name": "XTULIPKREBMLNM-XHGUTPRISA-N",
+      "index": 1310,
+      "smiles": "COC(=O)[C@]12[C@@H]3[C@@H]4[C@H]1[C@@H]1[C@H]2[C@H]3[C@]41COC(=O)C(Cl)(Cl)Cl"
+    },
+    {
+      "name": "NMRCPJXHOHBRSD-UHFFFAOYSA-N",
+      "index": 2815,
+      "smiles": "[C-3]Oc1[c-][c-][c-]c(P(c2[c-][c-][c-][c-][c-]2)c2[c-][c-][c-][c-][c-]2)c1N1[C-2]C([n+]2[c-][c-][c-][c-][c-]2)=C=C=[C-]1"
+    },
+    {
+      "name": "MKLIKYIPTNXTNK-UHFFFAOYSA-N",
+      "index": 3123,
+      "smiles": "c1ccc(Cn2cc(-c3ccccc3)c3c2c2ccccc2c2cccc[n+]23)cc1"
+    },
+    {
+      "name": "MSOXXGSICAQJBM-UHFFFAOYSA-N",
+      "index": 4137,
+      "smiles": "CCc1c([O-])c(=O)n2c3ccccc3c3cc[n+](CC)c1c32"
+    },
+    {
+      "name": "SPGGIFLVQFHPFG-LTKUFQEZSA-N",
+      "index": 6031,
+      "smiles": "O=C1[C@]2(c3ccccc3)c3c(-c4ccccc4)c(-c4ccccc4)c(-c4ccccc4)c(-c4ccccc4)c3[C@@]1(c1ccccc1)c1c2c2cccnc2c2ccccc12"
+    },
+    {
+      "name": "OXBMFCGRQJNAOY-TWXUZQDTSA-N",
+      "index": 9107,
+      "smiles": "COC(=O)[C@]12[C@@H]3[C@@H]4[C@H]1[C@@H]1[C@H]2[C@H]3[C@]41C(=O)OC"
+    },
+    {
+      "name": "WWDTYJJTIMSSDO-UHFFFAOYSA-N",
+      "index": 11401,
+      "smiles": "Cc1cc2[nH]c3nc(-c4ccccc4)[n-][n+]3c2cc1C"
+    },
+    {
+      "name": "UUGPTWNTETYOMZ-ACKIGEAWSA-N",
+      "index": 11779,
+      "smiles": "CCOC(=O)[C@@]1(O)C[C@H]2C[C@@H](CC)C(=O)N3CCc4c(n(c5ccccc45)C1=O)[C@@H]23"
+    }
+  ]
+}

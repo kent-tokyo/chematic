@@ -342,9 +342,13 @@ fn rdkit_hybridization_uncached(f: &Facts, idx: AtomIdx) -> Option<u8> {
     if atom.wildcard || z == 0 {
         return None;
     }
-    // A plain terminal H is what RDKit's `AddHs` adds, with no hybridization;
-    // an H RDKit keeps from SMILES (`[2H]`, `[H+]`, `[H][H]`) is S.
+    // A two-coordinate H+ (for example a boron-hydride bridge) is SP in
+    // RDKit. A plain terminal H added by `AddHs` is unspecified, while
+    // terminal or isolated H retained from SMILES is S.
     if z == 1 {
+        if atom.charge == 1 && mol.degree(idx) == 2 {
+            return Some(1);
+        }
         let plain = atom.isotope.is_none() && atom.charge == 0 && mol.degree(idx) == 1 && {
             let (nb, _) = mol.neighbors(idx).next().unwrap();
             mol.atom(nb).element.atomic_number() != 1
@@ -438,6 +442,8 @@ mod tests {
             ("CC#N", "311"),
             ("C[N+](C)(C)C", "33333"),
             ("[2H]C", "03"),
+            ("[H+]([B-](F)(F)F)[B-](F)(F)F", "133333333"),
+            ("[2H+]([B-](F)(F)F)[B-](F)(F)F", "133333333"),
             // Below an octet radical electrons count as orbitals (RDKit
             // `assignRadicals` on bracket atoms).
             (

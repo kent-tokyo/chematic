@@ -1,0 +1,48 @@
+{
+  "rows": 52,
+  "statuses": {
+    "ok": 52
+  },
+  "bootstrap_seed": 42,
+  "bootstrap_samples": 10000,
+  "stages": {
+    "minimized": {
+      "chematic_recovered": 39,
+      "rdkit_recovered": 40,
+      "difference": -0.019230769230769232,
+      "paired_bootstrap_95_percentile_interval": [
+        -0.09615384615384616,
+        0.038461538461538464
+      ]
+    },
+    "minimized_lowest_energy": {
+      "chematic_recovered": 18,
+      "rdkit_recovered": 17,
+      "difference": 0.019230769230769232,
+      "paired_bootstrap_95_percentile_interval": [
+        0.0,
+        0.057692307692307696
+      ]
+    }
+  },
+  "chematic": {
+    "raw": {
+      "conformers_checked": 0,
+      "stereo_violations": 0
+    },
+    "minimized": {
+      "conformers_checked": 980,
+      "stereo_violations": 0
+    }
+  },
+  "rdkit": {
+    "raw": {
+      "conformers_checked": 1016,
+      "stereo_violations": 35
+    },
+    "minimized": {
+      "conformers_checked": 1016,
+      "stereo_violations": 55
+    }
+  }
+}

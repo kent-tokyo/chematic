@@ -1,0 +1,38 @@
+name: COD charged stereo development diagnostic
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/cod-charged-stereo-diagnostic.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.12'
+      - name: Install frozen development candidate
+        run: |
+          test "$(gh api repos/$GITHUB_REPOSITORY/git/trees/a9d9205ea12875bb3afb45c9a7a087c050d16505 --jq '.tree[] | select(.path == "crates") | .sha')" = '1c8c06ddd74f06762e969948f2c08042aafd484f'
+          gh run download 44950293868 --repo "$GITHUB_REPOSITORY" --name parity-candidate-v3-ubuntu-latest-9db581ac6d2cab75a9fb5809fae1a5ee60870054 --dir candidate
+          python -c 'import glob,hashlib,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()=="3db87234071e820b55c2acfce0b61d42f2edf870094f840d4d22ff9acd725957"'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Examine exposed COD development case
+        run: |
+          python scripts/validation/cod_charged_stereo_diagnostic.py
+          python scripts/validation/prime_linear_stereo_diagnostic.py
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: cod-charged-stereo-diagnostic-${{ github.sha }}
+          path: |
+            cod-charged-stereo-diagnostic.json
+            prime-linear-stereo-diagnostic.json
+          if-no-files-found: error

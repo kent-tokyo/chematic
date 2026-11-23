@@ -1,0 +1,47 @@
+{
+  "rdkit_version": "2026.09.2",
+  "platform": "macOS-26.7.2-arm64-arm-64bit",
+  "wheel_sha256": "fa33b33382589fd46124131525e5efabc06150bca33eba7153a4f551c9d985d6",
+  "synthetic_records": 2,
+  "fixed_stereo": {
+    "rows": 2,
+    "stereo_policy": "rdkit-declared-stereo-strict-v1",
+    "engines": {
+      "chematic": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      },
+      "rdkit": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      }
+    }
+  },
+  "timed_stereo": {
+    "rows": 2,
+    "stereo_policy": "rdkit-declared-stereo-strict-v1",
+    "engines": {
+      "chematic": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      },
+      "rdkit": {
+        "conformers": 40,
+        "contradicted": 0,
+        "unevaluable": 0,
+        "invalid_either": 0,
+        "records_with_no_conformers": 0
+      }
+    }
+  },
+  "script_sha256": "9b28fa772731ec57a53f53cc6ccd26be7ea56e189db54754da21743b76121b58"
+}

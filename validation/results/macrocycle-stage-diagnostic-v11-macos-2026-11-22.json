@@ -1,0 +1,72 @@
+{
+  "name": "5vk0__Ligand_phospholipids_ALA_L_4",
+  "smiles_sha256": "6f1b89f377b63b0276f151bd423f55733dd127229ec19b1a2b09ed3e36d7b75e",
+  "atoms": 208,
+  "rdkit_version": "2026.09.2",
+  "chematic_version": "1.2.2",
+  "platform": "macOS-26.7.2-arm64-arm-64bit",
+  "wheel_sha256": "fa33b33382589fd46124131525e5efabc06150bca33eba7153a4f551c9d985d6",
+  "script_sha256": "f9735c7bdcb51c08abe73621687f242719558fb6eb53dca98647ea4d7e53eb3f",
+  "seed": 42,
+  "attempts": 20,
+  "mmff_iterations": 200,
+  "repair_iterations": 400,
+  "stages": {
+    "chematic_raw": {
+      "count": 2,
+      "seconds": 4.246668374999999,
+      "stereo": {
+        "conformers": 2,
+        "contradicted": 0,
+        "unevaluable": 0
+      }
+    },
+    "chematic_compatible": {
+      "count": 2,
+      "seconds": 3.814847999999998,
+      "stereo": {
+        "conformers": 2,
+        "contradicted": 0,
+        "unevaluable": 0
+      },
+      "statuses": [
+        1,
+        1
+      ]
+    },
+    "chematic_corrected": {
+      "count": 1,
+      "seconds": 4.4560918749999985,
+      "stereo": {
+        "conformers": 1,
+        "contradicted": 0,
+        "unevaluable": 0
+      },
+      "statuses": [
+        1
+      ]
+    },
+    "rdkit_raw": {
+      "count": 2,
+      "seconds": 12.161459417000003,
+      "stereo": {
+        "conformers": 2,
+        "contradicted": 0,
+        "unevaluable": 0
+      }
+    },
+    "rdkit_optimized": {
+      "count": 2,
+      "statuses": [
+        1,
+        1
+      ],
+      "seconds_including_embedding": 13.610155416999987,
+      "stereo": {
+        "conformers": 2,
+        "contradicted": 0,
+        "unevaluable": 0
+      }
+    }
+  }
+}

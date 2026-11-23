@@ -11,20 +11,9 @@ pub fn compute_mmff94_aromatic_view(
     if rings.is_empty() {
         return Ok(mol.clone());
     }
-    // RDKit's MMFF pass consumes RingInfo in size/insertion order. The
-    // symmetrized SSSR canonicalizes its public ring list, so restore the
-    // equivalent compatibility order here: smaller rings first and, within
-    // one size, the earliest atom encountered by the input graph. This is
-    // deliberately local to the RDKit-compatibility layer; general ring
-    // perception remains atom-order independent.
-    //
-    // RDKit's pass stops once every ring atom has been looked at, so a ring
-    // deferred until its neighbours are typed is decided by where it sits in
-    // that order. Rings RDKit lists are taken in RDKit's own order
-    // (`rdkit_sssr_ring_order`, a port of its `findSSSR`/`symmetrizeSSSR`);
-    // the size/first-atom order above is the fallback.
-    // The caller passes RDKit's own ring list where the port has it, so the
-    // input order is RDKit's; the sort below only orders a fallback list.
+    // Ring iteration order affects when the pass resolves fused atoms.
+    // Preserve the caller's relevant-cycle order; it does not exactly match
+    // RingDecomposerLib in every fused system.
     let rdkit_position: std::collections::HashMap<Vec<u32>, usize> = rings
         .iter()
         .cloned()
@@ -57,6 +46,11 @@ pub fn compute_mmff94_aromatic_view(
     // own double bonds.
     let rdkit_view = chematic_perception::apply_aromaticity_rdkit_parity_experimental(mol).ok();
     let base: &Molecule = rdkit_view.as_ref().unwrap_or(mol);
+    // RDKit's MMFF pass reads the hybridization assigned by sanitization,
+    // which persists when the aromatic graph is Kekulized.
+    let hybridization: Vec<_> = (0..base.atom_count())
+        .map(|i| chematic_smarts::rdkit_hybridization(base, AtomIdx(i as u32)))
+        .collect();
     let kmol = match chematic_core::kekulize(base) {
         Ok(kek) if kek.is_empty() => base.clone(),
         Ok(kek) => {
@@ -68,7 +62,7 @@ pub fn compute_mmff94_aromatic_view(
             // pass rejects keeps its double bonds, so it falls through.
             if let Some(rings_of_systems) = isolated_aromatic_rings(base, &rings) {
                 let kmol = chematic_core::apply_kekule(base, &kek);
-                let (view, accepted) = mmff_aromatic_pass(&kmol, &rings);
+                let (view, accepted) = mmff_aromatic_pass(&kmol, &rings, &hybridization);
                 if rings_of_systems.iter().all(|&r| accepted[r]) {
                     return Ok(view);
                 }
@@ -87,7 +81,7 @@ pub fn compute_mmff94_aromatic_view(
         }
     };
 
-    Ok(mmff_aromatic_pass(&kmol, &rings).0)
+    Ok(mmff_aromatic_pass(&kmol, &rings, &hybridization).0)
 }
 
 /// For each aromatic system of `base` (connected aromatic bonds), the index
@@ -139,9 +133,13 @@ fn isolated_aromatic_rings(base: &Molecule, rings: &[Vec<AtomIdx>]) -> Option<Ve
 
 /// RDKit's `setMMFFAromaticity` on a kekulized molecule: the MMFF view and,
 /// per ring, whether the ring itself passed.
-fn mmff_aromatic_pass(kmol: &Molecule, rings: &[Vec<AtomIdx>]) -> (Molecule, Vec<bool>) {
+fn mmff_aromatic_pass(
+    kmol: &Molecule,
+    rings: &[Vec<AtomIdx>],
+    hybridization: &[Option<u8>],
+) -> (Molecule, Vec<bool>) {
     let mut pass = MmffAromaticityPass::new(kmol.atom_count(), rings.len());
-    pass.resolve(kmol, rings);
+    pass.resolve(kmol, rings, hybridization);
     let view = build_mmff_aromatic_view(kmol, rings, &pass.aromatic, &pass.ring_accepted);
     (view, pass.ring_accepted)
 }
@@ -161,7 +159,7 @@ impl MmffAromaticityPass {
         }
     }
 
-    fn resolve(&mut self, mol: &Molecule, rings: &[Vec<AtomIdx>]) {
+    fn resolve(&mut self, mol: &Molecule, rings: &[Vec<AtomIdx>], hybridization: &[Option<u8>]) {
         let mut previous = None;
         for _ in 0..rings.len() + 2 {
             let resolved_before = self.resolved_count(rings);
@@ -170,7 +168,7 @@ impl MmffAromaticityPass {
             }
             previous = Some(resolved_before);
             for (ring_index, ring) in rings.iter().enumerate() {
-                let Some(accepted) = self.evaluate_ring(mol, rings, ring) else {
+                let Some(accepted) = self.evaluate_ring(mol, rings, ring, hybridization) else {
                     continue;
                 };
                 for atom in ring {
@@ -195,12 +193,13 @@ impl MmffAromaticityPass {
         mol: &Molecule,
         rings: &[Vec<AtomIdx>],
         ring: &[AtomIdx],
+        hybridization: &[Option<u8>],
     ) -> Option<bool> {
         let (mut electrons, contains_nos, exocyclic_double) =
             self.ring_pi_electrons(mol, rings, ring)?;
         if !ring.iter().all(|&atom| {
             !matches!(mol.atom(atom).element, Element::C | Element::N)
-                || total_degree(mol, atom) <= 3
+                || hybridization[atom.0 as usize] == Some(2)
         }) {
             return Some(false);
         }

@@ -1,0 +1,62 @@
+{
+  "case": "VDCLBUQGYUHKMX-JXAWBTAJSA-O",
+  "index": 2615,
+  "axis": 43,
+  "step": 1e-07,
+  "fields": {
+    "Bond": {
+      "energy": 67.36358365994667,
+      "gradient": -77.33373923149009,
+      "finite_difference": -77.33373905693952,
+      "delta": 1.7455056422477355e-07
+    },
+    "Angle": {
+      "energy": 149.12591074182308,
+      "gradient": 11.1042991598426,
+      "finite_difference": 11.103716275329134,
+      "delta": -0.0005828845134665528
+    },
+    "StretchBend": {
+      "energy": -16.929976093077048,
+      "gradient": -53.16097116538135,
+      "finite_difference": -53.160912116823056,
+      "delta": 5.9048558291863174e-05
+    },
+    "Oop": {
+      "energy": 0.5251434511340789,
+      "gradient": -3734.924822699185,
+      "finite_difference": -13489.203588544775,
+      "delta": -9754.278765845589
+    },
+    "Torsion": {
+      "energy": 4.590336977627141,
+      "gradient": -63487.42072356108,
+      "finite_difference": -63487.18310941415,
+      "delta": 0.23761414692853577
+    },
+    "VdW": {
+      "energy": 77.12592926119275,
+      "gradient": -2.0513623545964994,
+      "finite_difference": -2.051362386623623,
+      "delta": -3.2027123619826625e-08
+    },
+    "Ele": {
+      "energy": 29.78516215406116,
+      "gradient": -7.723348993746118,
+      "finite_difference": -7.723348858235113,
+      "delta": 1.3551100508379932e-07
+    }
+  },
+  "coordinate_source_uncompressed_sha256": "9feeca996ca618777153267e8f5fe6ef216c24d3a88695d75b8b0c9ef21efdd6",
+  "chematic_binary_sha256": "fd2ea9368f59962c202ae25b504161423a157d99f69ccf03ba60ba6e45d28447",
+  "chematic_compatible_gradient": -67351.51066881731,
+  "chematic_consistent_torsions_gradient": -67351.51066881731,
+  "chematic_consistent_planes_gradient": -77105.8192672618,
+  "chematic_finite_difference_by_step": {
+    "1e-5": -74444.6148935765,
+    "1e-6": -77079.09228429344,
+    "1e-7": -77105.553372121,
+    "1e-8": -77105.8111865841,
+    "1e-9": -77105.84497999662
+  }
+}

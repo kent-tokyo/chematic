@@ -1,0 +1,1470 @@
+{
+  "source_sha256": "28fc27d7bd33c7df5ab4ff63acb320cd5216ae91262d1288cd1fe18a045adbdb",
+  "rdkit_version": "2026.09.1",
+  "excluded_manifests_sha256": {
+    "validation/manifests/platinum-diverse-2017-exposure.json": "e0bc31d2f661eef6783611b124a6db19588b3e2c2fda18dfe7631a108470288f",
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_a.json": "6a478ea0f5d4ef067a4d1739e77a7209e8f76ecaa837e3f487c723dd6f465d6b",
+    "validation/manifests/pipeline_v2_vs_rdkit_etkdgv3_tier_b.json": "ec93ac160aa91c3c4416d57d3000d6e344e0b75cdf5c122211364c7495dce239",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v1.json": "d6015adee5d5202a0edec1b498ef6d442e39c50cab95a2181d7d8401cd8641b9",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v2.json": "641d2a7e52e5ff658b35eca067ced8fcf5d44bd4c148c3a03e14c60037b4446c",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v3.json": "a2962ce0f33fc10523cf33e642714772a708d19468814a7bd6bb551026050608",
+    "validation/manifests/mmff94_stereo_safe_post_freeze_holdout_v4.json": "2c97a2e07eca4718a04af357d1883611699caf9cea2dd0b95e97a6fd4ab2afe9",
+    "scripts/fixtures/chembl_accuracy_corpus_4999.smi": "1c47371dcbe37f4e0a141bf545b72bf238de2761fa3894fa251a552d84728d3e",
+    "scripts/fixtures/nci_first_5k_smiles_only.smi": "1d9fa413f33c4d2e2f2da9742cdbd7ce8f39d33b0b9fd78ce012a0b7f24e031d",
+    "validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi": "f48777e96f74738336f47f682fbff5af6775a3474fe25daa28b595340feee95f",
+    "validation/trust_holdouts/v1/stereo-3d.jsonl": "25a803506fb997ae12eff622cb4e932d0e4d673e134edcbacbb1f761c3341e86",
+    "validation/trust_holdouts/v2/stereo-3d.jsonl": "f8e0d6e0e1575c2df97113d8234ee054e72c99200abca4265c70732a6619093b"
+  },
+  "invalid_exclusions": [
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "O[Hg]C1=CC=CC=C1.[O-][N+](=O)(=O)[Hg]C2=CC=CC=C2"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "O=C1O[Al]23(OC1=O)(OC(=O)C(=O)O2)OC(=O)C(=O)O3"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "NC(N)=[O+][Al+3]([O+]=C(N)N)([O+]=C(N)N)([O+]=C(N)N)([O+]=C(N)N)[O+]=C(N)N.[O-]S([O-])(=O)=O.I[I]I"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "CCCCNCCCC.F[Si](F)(F)(F)(F)F"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "CCO1=O=C1C2=CC=C(O2)C(C)(C)C"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "CC1=[O+][Al]23([O+]=C(C)C1)([O+]=C(C)CC(=[O+]2)C)[O+]=C(C)CC(=[O+]3)C"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "CC1=[O+][Be]2([O+]=C(C)C1)[O+]=C(C)CC(=[O+]2)C"
+    },
+    {
+      "path": "scripts/fixtures/nci_first_5k_smiles_only.smi",
+      "smiles": "CCCCCCCCCCCCCCCC[N+](C)(C)CC1=CC=CC=C1.F[P](F)(F)(F)(F)F"
+    }
+  ],
+  "rule": "Exclude listed scaffolds, then SHA-256 of non-chiral canonical Murcko scaffold, first 32 bits modulo 5; zero is development, others holdout; empty scaffolds remain together",
+  "counts": {
+    "holdout": 188,
+    "development": 31,
+    "excluded_known_scaffold": 16
+  },
+  "rows": [
+    {
+      "index": 0,
+      "name": "AAGGAG10",
+      "scaffold_sha256": "25b4dfdf665e46d8ea31594f21c8cc04e49001eabe6b00680cca5626401beb02",
+      "split": "holdout"
+    },
+    {
+      "index": 1,
+      "name": "ACOPUF",
+      "scaffold_sha256": "3ecf1043539c48c69e3bc609d9a791e0b2fbdc8955dd67d5686673a6b1e722c5",
+      "split": "holdout"
+    },
+    {
+      "index": 2,
+      "name": "ADEZIU",
+      "scaffold_sha256": "fbbd4e61c5cb981787c33cb513d1d95204d0544557c223cdc8a44dcdb871450e",
+      "split": "development"
+    },
+    {
+      "index": 3,
+      "name": "AFUTOL",
+      "scaffold_sha256": "1981aaa2d496598df377e13646d034627b6c138e754c1456d884cdfd93e7c718",
+      "split": "holdout"
+    },
+    {
+      "index": 4,
+      "name": "AGAJIB",
+      "scaffold_sha256": "8c308a2e92567fdc47976a36fdf1cb1a9dcbbe5ebf5e2302655bea286bb96704",
+      "split": "holdout"
+    },
+    {
+      "index": 5,
+      "name": "AJILUA",
+      "scaffold_sha256": "fa167f3985b1ff9c5f2a6c74d069acc91c5b01c2d0afda9be1214edbcae17ba4",
+      "split": "holdout"
+    },
+    {
+      "index": 6,
+      "name": "BAMGOL10",
+      "scaffold_sha256": "4358d4c338b82ae4938e74434094ee2a417a03d2856c4b0c8a1281377f7fc3df",
+      "split": "holdout"
+    },
+    {
+      "index": 7,
+      "name": "BANROX",
+      "scaffold_sha256": "ad6c37a29a19e515a0350e80e264edb78301bd0195b6d4eaff32095ff2b2ec97",
+      "split": "holdout"
+    },
+    {
+      "index": 8,
+      "name": "BARYOI",
+      "scaffold_sha256": "90737fc186fdacafb84c9916693f391425218b897ecc3a08c0c5e37eff718ea7",
+      "split": "holdout"
+    },
+    {
+      "index": 9,
+      "name": "BAYSOJ",
+      "scaffold_sha256": "58081d532ada9c8def2f9ccc0fdac29d373ab904d1e47b51e46fc10104560120",
+      "split": "holdout"
+    },
+    {
+      "index": 10,
+      "name": "BIHYAS10",
+      "scaffold_sha256": "c7a833bde90b655f380b29d017bfcd53a0e68a53160735d7bd73ddd6613efec8",
+      "split": "holdout"
+    },
+    {
+      "index": 11,
+      "name": "CAMVES01",
+      "scaffold_sha256": "455d2d7d949c99237bdddcefc353a99594feb7b0d9e31941ad40d7fe4c8ef524",
+      "split": "holdout"
+    },
+    {
+      "index": 12,
+      "name": "CAPINC",
+      "scaffold_sha256": "7e3cb79521d3a4760cc7184b2b2a977d8cdebca4b8573c9b7889210bf298aa9e",
+      "split": "holdout"
+    },
+    {
+      "index": 13,
+      "name": "CAZVEF",
+      "scaffold_sha256": "ad2bc8a81c6f071fe9db7dbb6b2541d70f665fd603b52b4fce2af1605a4078e4",
+      "split": "holdout"
+    },
+    {
+      "index": 14,
+      "name": "CHMADP",
+      "scaffold_sha256": "fbc525a89d0ec56471c07d73af5df7aa6663c63900fd9721eecdf0ddd52724cb",
+      "split": "holdout"
+    },
+    {
+      "index": 15,
+      "name": "COFKAK",
+      "scaffold_sha256": "5b3c037a74376defa4a241422c1d1f6e54b2301d59c84e9d915821149111739b",
+      "split": "holdout"
+    },
+    {
+      "index": 16,
+      "name": "CPDPSC",
+      "scaffold_sha256": "bbc79a04b824134a3a48807fc0ca97163e6af4b96630fcf5a81e4c9e256448d2",
+      "split": "holdout"
+    },
+    {
+      "index": 17,
+      "name": "CUQYUI",
+      "scaffold_sha256": "8e13fa1f4a9d65dc54da4bae2ab5afac4e06d5910e13822e6d43d43310519623",
+      "split": "holdout"
+    },
+    {
+      "index": 18,
+      "name": "CUZQUJ",
+      "scaffold_sha256": "f600ef8b6ceae96e7041cdb4f61d6a6d106cff4512732f3e27fd29970336389a",
+      "split": "holdout"
+    },
+    {
+      "index": 19,
+      "name": "CYDECO",
+      "scaffold_sha256": "9252d4f29fed7440885105a13d0120201cb89de0781a368c2ce592534075f950",
+      "split": "holdout"
+    },
+    {
+      "index": 20,
+      "name": "DAFKUR",
+      "scaffold_sha256": "4c0a9af018dac58bff7b585c15519c8456ca356f5a729b60bcab65e492dd3249",
+      "split": "development"
+    },
+    {
+      "index": 21,
+      "name": "DAZGEQ01",
+      "scaffold_sha256": "5b792e9cff9c632f497681f4d0d04e1e61788a66d1250cc3b79b3087b9594bec",
+      "split": "holdout"
+    },
+    {
+      "index": 22,
+      "name": "DEMHUY01",
+      "scaffold_sha256": "3b3077ab94d36e940f50c28b4d3eb70d284d9acf037dcab6dc797e87ea31e4ce",
+      "split": "holdout"
+    },
+    {
+      "index": 23,
+      "name": "DEMJAG10",
+      "scaffold_sha256": "a1676fca577a0d994abc275f6cb534f33b519e31fa7898857d1b71d40dbf9590",
+      "split": "holdout"
+    },
+    {
+      "index": 24,
+      "name": "DETHAL",
+      "scaffold_sha256": "78174d995b4ec5e3fbd63f5fbcb77d50f3e025987c44bc51cf8e578b473d839e",
+      "split": "holdout"
+    },
+    {
+      "index": 25,
+      "name": "DEWCOY",
+      "scaffold_sha256": "723a0c43b85b59a42a8c9f2a709968d757cd339badbb97637c55a4c3b6b7938d",
+      "split": "holdout"
+    },
+    {
+      "index": 26,
+      "name": "DOVXUI",
+      "scaffold_sha256": "d6e521f9aee1b4e33a10ceb5eb8dfebf1f5414e63fd3e139759b3b6c1b13bdd6",
+      "split": "development"
+    },
+    {
+      "index": 27,
+      "name": "DOZWUL",
+      "scaffold_sha256": "0ebb01550d3bc12abd445a0873805f1c121db6ea1a0feef3f218ccf8155596d5",
+      "split": "holdout"
+    },
+    {
+      "index": 28,
+      "name": "DUBQUN",
+      "scaffold_sha256": "43f126d661b9717257da70146dec6d6c1ff3dfcaec5ce43e3555a671c4981d27",
+      "split": "development"
+    },
+    {
+      "index": 29,
+      "name": "DUPKEE",
+      "scaffold_sha256": "949248ce37d6d37fae434a8c6b6456a50cfa65e9d1f6de2b6149fbf69262193b",
+      "split": "holdout"
+    },
+    {
+      "index": 30,
+      "name": "DUVGOQ10",
+      "scaffold_sha256": "d6ab9a3a3137328f1c1a9c1ec695fe90218ced3f8de1a0fbd9000b6477000ecc",
+      "split": "holdout"
+    },
+    {
+      "index": 31,
+      "name": "DZCDON",
+      "scaffold_sha256": "f64328c46e4f6b3825b9b5c0f9485b4eef0be125ac6f0f6fe4a67fa5c959f2a7",
+      "split": "holdout"
+    },
+    {
+      "index": 32,
+      "name": "FIMKAO",
+      "scaffold_sha256": "cf7cb00c2514a7769869d8ea819e20d1f0226e39450f984b57585639bc62f969",
+      "split": "holdout"
+    },
+    {
+      "index": 33,
+      "name": "FIWZEQ",
+      "scaffold_sha256": "5895199018a0973bb7e3536c075a225ed773b9aa3d473df305a9f3819496e1b6",
+      "split": "holdout"
+    },
+    {
+      "index": 34,
+      "name": "FOKCUE",
+      "scaffold_sha256": "e730dbd2f6f8be8acd71e528b5391a991ae63900be447aba4d72d76232e82370",
+      "split": "holdout"
+    },
+    {
+      "index": 35,
+      "name": "GLSARM",
+      "scaffold_sha256": "9a9eb35afde64f31aee6293029c38231c9bf73fe857aef1b9b14dbdbb2917233",
+      "split": "holdout"
+    },
+    {
+      "index": 36,
+      "name": "GOBSIZ",
+      "scaffold_sha256": "616b1f16f88f598aa5f01e815540e509dffd0191fdde6a78f183620dbc11c538",
+      "split": "holdout"
+    },
+    {
+      "index": 37,
+      "name": "GOKREE",
+      "scaffold_sha256": "57e0b4521562e69a51fe02380f14672d918899141e6f207b9a16178de4c3b829",
+      "split": "holdout"
+    },
+    {
+      "index": 38,
+      "name": "GUGWOV",
+      "scaffold_sha256": "d256b80d6048834025e524712e44e5d96dd2813c0276893fae07d1410af1080c",
+      "split": "holdout"
+    },
+    {
+      "index": 39,
+      "name": "HEBHUR",
+      "scaffold_sha256": "46dfaef9c2c695cfc327254a3a02d43930374687479a6c23112d23a4661b0c4e",
+      "split": "holdout"
+    },
+    {
+      "index": 40,
+      "name": "HEBLIJ",
+      "scaffold_sha256": "854e411599d1669338be9c4346c3a526ae9b0967ce89025ac96188d3df45f3fc",
+      "split": "holdout"
+    },
+    {
+      "index": 41,
+      "name": "HEGNEO",
+      "scaffold_sha256": "94344c26ea0ba59e89998cbb6ab310ff5c8dbc3c7a1c812d69092227e4e9ef60",
+      "split": "holdout"
+    },
+    {
+      "index": 42,
+      "name": "HEGNOY",
+      "scaffold_sha256": "94344c26ea0ba59e89998cbb6ab310ff5c8dbc3c7a1c812d69092227e4e9ef60",
+      "split": "holdout"
+    },
+    {
+      "index": 43,
+      "name": "HETJIA",
+      "scaffold_sha256": "94c4416df5500f5a7de6ba9e69979c49f13ddfdd993720b919e658e9814b5e78",
+      "split": "holdout"
+    },
+    {
+      "index": 44,
+      "name": "HTENTX10",
+      "scaffold_sha256": "c93f244c9285d5aa6d913cdcd58658aa26f75673b71aa440495cce8b8965ec70",
+      "split": "holdout"
+    },
+    {
+      "index": 45,
+      "name": "IDUZEN",
+      "scaffold_sha256": "67d80c3a0373ee0892f950104d162a9ea3a4052e6df317f1c835ef4702f8b27b",
+      "split": "holdout"
+    },
+    {
+      "index": 46,
+      "name": "IHOYEJ",
+      "scaffold_sha256": "0db6af1e3e57e5e3a3104d6fe6ba295b10be79b0a4be3074ed0bed394b8c362c",
+      "split": "development"
+    },
+    {
+      "index": 47,
+      "name": "IWUGUC",
+      "scaffold_sha256": "40f73cd86d9b85118bdbfe5e4bba921cb999363a8d2bf41cba576a6e06652001",
+      "split": "holdout"
+    },
+    {
+      "index": 48,
+      "name": "JECWIY",
+      "scaffold_sha256": "cb275dc399b2f4b9a0a173ca2f71813a05a5df93419731e81c45af28dfacbca3",
+      "split": "development"
+    },
+    {
+      "index": 49,
+      "name": "JEFHEH",
+      "scaffold_sha256": "4bb1b8cafd8fcf44940397fdd1b2024c8f2d3a8f81d7f0e223a767e4542386f3",
+      "split": "holdout"
+    },
+    {
+      "index": 50,
+      "name": "JELTID",
+      "scaffold_sha256": "77edda32c11e14ca33ca379c73f9ef4233d9696a2b600f47d58f039becfaaedf",
+      "split": "holdout"
+    },
+    {
+      "index": 51,
+      "name": "JILWEG",
+      "scaffold_sha256": "3e2b932e35e3511ecbe3a8037dbb937a91df182ffbc9899db703da0092f91bac",
+      "split": "holdout"
+    },
+    {
+      "index": 52,
+      "name": "JOKNEC",
+      "scaffold_sha256": "bc1cf53ae85a259f37285adcbceb0b6deb2fe3da1d995192e011732fc7ba5ed3",
+      "split": "holdout"
+    },
+    {
+      "index": 53,
+      "name": "JOKPAA",
+      "scaffold_sha256": "835598632d1b71ce7aabeeccd406081d8eaeb29ef4c077db3356332a07d7c1a4",
+      "split": "holdout"
+    },
+    {
+      "index": 54,
+      "name": "KEPNAU",
+      "scaffold_sha256": "40cb0a34d72267d57855eb3c0888314ddbb06a72d715e27168c777f5d4e8aaa3",
+      "split": "holdout"
+    },
+    {
+      "index": 55,
+      "name": "KETVAG10",
+      "scaffold_sha256": "3efbe94e2e4f329a5d45d80cfa5e95cc343419c209d46ffe47492ebb1061779d",
+      "split": "holdout"
+    },
+    {
+      "index": 56,
+      "name": "KEYBOH",
+      "scaffold_sha256": "a40e0af8e65ac37c5262db7abeede7ea2c6361fffad7444a7094d1cc2aa26c50",
+      "split": "holdout"
+    },
+    {
+      "index": 57,
+      "name": "KICVUN",
+      "scaffold_sha256": "3959ef08456cd15d6208f340924ac333643fe5443f407798e53e4a0c5801e0bf",
+      "split": "holdout"
+    },
+    {
+      "index": 58,
+      "name": "KIHWII",
+      "scaffold_sha256": "43d51fc0c3093bbae78d2669224ada77652d757182f2b0cc0266241719223f55",
+      "split": "holdout"
+    },
+    {
+      "index": 59,
+      "name": "KIVDIC",
+      "scaffold_sha256": "2fd1c873e62531e6bc0246a18d3ac870eb40d51f19e948d2195ef59e0096c978",
+      "split": "holdout"
+    },
+    {
+      "index": 60,
+      "name": "KUFPUW",
+      "scaffold_sha256": "579c483417f92169f7797389ba3616ae3f3072bfc6cb45f4bcfa337744b36b71",
+      "split": "holdout"
+    },
+    {
+      "index": 61,
+      "name": "LENPEA",
+      "scaffold_sha256": "553e4709e6d6bc43c863eecace0e6c402ee696319eb8f3a575c5be5358695626",
+      "split": "holdout"
+    },
+    {
+      "index": 62,
+      "name": "MOSFEG",
+      "scaffold_sha256": "1a5663180d0b6679ecf7b0c684b86cb55d912d7eb289ae3a069d2d7b116b84a9",
+      "split": "development"
+    },
+    {
+      "index": 63,
+      "name": "MUCYIT",
+      "scaffold_sha256": "be6399ffb0b093cf25d711db6bec97599877f513806c6457ce42aa8691b4ca08",
+      "split": "holdout"
+    },
+    {
+      "index": 64,
+      "name": "MUZZEM",
+      "scaffold_sha256": "49861548f6c01d25d3af1e9dc56cec6a929d5a8cab6ce4277ca47145f0d13d46",
+      "split": "development"
+    },
+    {
+      "index": 65,
+      "name": "NAFJEJ",
+      "scaffold_sha256": "4d0faf8843713c6475ffa2298b825288fa4064a82c6fc20ae74ca2c02a7a5227",
+      "split": "holdout"
+    },
+    {
+      "index": 66,
+      "name": "NAWLUT",
+      "scaffold_sha256": "7596285470a2ae9051ebc82738dc41eaa6036a2637fb30acfce8606b640c825f",
+      "split": "holdout"
+    },
+    {
+      "index": 67,
+      "name": "NENXOT",
+      "scaffold_sha256": "73067c8a2fbe0c3d1c7d1e652ef877b2ea69931c59ad257edfd976873043673e",
+      "split": "holdout"
+    },
+    {
+      "index": 68,
+      "name": "NIYNIS",
+      "scaffold_sha256": "f9df8ff02087339c75bcc2e4c3952a85d672564ae0e7edfbd48e102af5b76dfa",
+      "split": "development"
+    },
+    {
+      "index": 69,
+      "name": "NUJDEB",
+      "scaffold_sha256": "0520b5e3b30e671fa33bdc5933a3e6d01f3937a939f6c9d2791543e0148d0d49",
+      "split": "development"
+    },
+    {
+      "index": 70,
+      "name": "OCERET",
+      "scaffold_sha256": "9087c427fd96cea60e6db592a8b035ab32bc5fd2e21372f9baa0fdbaf3dec1e4",
+      "split": "holdout"
+    },
+    {
+      "index": 71,
+      "name": "OCUPAD",
+      "scaffold_sha256": "287c49d1366e8f3921a46207fcf37b6891e2ac5ad57dc850342a819de656e7a1",
+      "split": "holdout"
+    },
+    {
+      "index": 72,
+      "name": "ODETEW",
+      "scaffold_sha256": "ad08fd94ef47b5ecf8bd05e0679789d91707af6baa495af09ce2adeb9a02edea",
+      "split": "holdout"
+    },
+    {
+      "index": 73,
+      "name": "PAWXUG",
+      "scaffold_sha256": "4eefdeb16a91ea7822bbedc6fa5886ef054c1dd460495c290e072f2f4816c783",
+      "split": "holdout"
+    },
+    {
+      "index": 74,
+      "name": "PEZNAJ",
+      "scaffold_sha256": "4967c2104e8c82b07721dc8dfefc56f6312e84723b1c71cd609c8445b9810038",
+      "split": "holdout"
+    },
+    {
+      "index": 75,
+      "name": "PIKZEO",
+      "scaffold_sha256": "6d3e9bc287c77fe72cce5f8228fa104ea6643014d5267a6ce1cf97fde9ffa0c1",
+      "split": "development"
+    },
+    {
+      "index": 76,
+      "name": "PIZYIH",
+      "scaffold_sha256": "b0de88d2856e5f7612f9b82049e6a27b3c4866cba93f46738ecd4457be7bc9ab",
+      "split": "holdout"
+    },
+    {
+      "index": 77,
+      "name": "POGLIH",
+      "scaffold_sha256": "c4f78d2bb7c06b54412b057423dd557ffa6e6a299370509f500a55173f7b8ec6",
+      "split": "holdout"
+    },
+    {
+      "index": 78,
+      "name": "POTTEY",
+      "scaffold_sha256": "0f32c15cf28450dd2b4ac6ac433b23c7b7a6e8042d6381047de1fa281118c1b7",
+      "split": "development"
+    },
+    {
+      "index": 79,
+      "name": "POVVIF",
+      "scaffold_sha256": "fb001b6d01d0c2363005283ed7aa77c14b6ffcdc69e1b93ec6ded1eb01458b62",
+      "split": "holdout"
+    },
+    {
+      "index": 80,
+      "name": "POWYEG",
+      "scaffold_sha256": "1059c12b0300fb670fa6a3a890a94c758235198f1ff498e4fe7c55eb10acc86b",
+      "split": "holdout"
+    },
+    {
+      "index": 81,
+      "name": "PUSLAQ",
+      "scaffold_sha256": "dfa7b316ed4b121d4efa06c7ccc32012c6a6de968d8c76cbbedee4ab84f4313e",
+      "split": "holdout"
+    },
+    {
+      "index": 82,
+      "name": "QEDJOA",
+      "scaffold_sha256": "116ffd5b705b1647d028be5c484ed14e66075b8b478d35283e986dfc881a3e94",
+      "split": "holdout"
+    },
+    {
+      "index": 83,
+      "name": "QIQYEU",
+      "scaffold_sha256": "aa8e837297d300cd71b7ff6e848013efe228f13c39b75643caab4c22046cee9e",
+      "split": "holdout"
+    },
+    {
+      "index": 84,
+      "name": "QIRRUE",
+      "scaffold_sha256": "dd4057f24a55743853e6bd9de81562641d9fe5955082ee99651d664159ef4eb4",
+      "split": "holdout"
+    },
+    {
+      "index": 85,
+      "name": "QODWEM",
+      "scaffold_sha256": "72ba753e16bc82c90f7c649b9e2eb69b76208eb929ba128c67f718d578aa1377",
+      "split": "holdout"
+    },
+    {
+      "index": 86,
+      "name": "QOSNAN",
+      "scaffold_sha256": "3a11bcc97c27772714f349418848485e8be7e00d9199bc935c68b3038b294d6f",
+      "split": "holdout"
+    },
+    {
+      "index": 87,
+      "name": "RIVLUE",
+      "scaffold_sha256": "b6c1fc66cf3188cb40b48b2217917a32f1cb275f3f1be4d95173d41dd59e523b",
+      "split": "holdout"
+    },
+    {
+      "index": 88,
+      "name": "RIWYAX",
+      "scaffold_sha256": "cd456107b4e01eceba03ba5040caf9819fca456b66f096953e109752e8869939",
+      "split": "holdout"
+    },
+    {
+      "index": 89,
+      "name": "RUTXUZ",
+      "scaffold_sha256": "ee3e879d3dc9370a093806f256a66362a0fee48723c279bdd645db55d453f66d",
+      "split": "holdout"
+    },
+    {
+      "index": 90,
+      "name": "SAFVOM",
+      "scaffold_sha256": "513c0e9308c271f201f4b4e290148d129903a08d9755831a0636759d10628804",
+      "split": "holdout"
+    },
+    {
+      "index": 91,
+      "name": "SAVXUI",
+      "scaffold_sha256": "dae657e30a5163aa988d4ed8d526eaad0692d990177d383ad4e95a008f88eeaa",
+      "split": "holdout"
+    },
+    {
+      "index": 92,
+      "name": "SOTGOX",
+      "scaffold_sha256": "f351460b92b8dc18237951882f4db7876f7ae3e8fc4d093761f027c781a8887a",
+      "split": "development"
+    },
+    {
+      "index": 93,
+      "name": "SUMMOC",
+      "scaffold_sha256": "e1aeff18a28addc661b93c826965e223e52a0430ada507e157c5c0bf41a04fe5",
+      "split": "holdout"
+    },
+    {
+      "index": 94,
+      "name": "SUQJET",
+      "scaffold_sha256": "c966e12e6ae6bab3bbf33c52e9231d38c2a236026567ff2009004510b352e76f",
+      "split": "holdout"
+    },
+    {
+      "index": 95,
+      "name": "TALZUC",
+      "scaffold_sha256": "d92ab86f832c284f2c1c334f0076f1fe80435c3ccf34b62677f85321932a31f7",
+      "split": "holdout"
+    },
+    {
+      "index": 96,
+      "name": "TEGXEI",
+      "scaffold_sha256": "7926dc94b5531d02f33e0db27543c784316db5a234a88d2027bb50dc04562567",
+      "split": "holdout"
+    },
+    {
+      "index": 97,
+      "name": "TENBOD",
+      "scaffold_sha256": "77d63859c7b93d56661701be70285ca21a622d27c9a171265c0c19893944940f",
+      "split": "holdout"
+    },
+    {
+      "index": 98,
+      "name": "TERSIS",
+      "scaffold_sha256": "903fa495864eb9b4d1389289e42c34eacfdbd61826e90d5a9f3dd87ce76e7d47",
+      "split": "development"
+    },
+    {
+      "index": 99,
+      "name": "TETMOU",
+      "scaffold_sha256": "89647085cf46e70a64e222b6a93dffeefc3ef097f6375f56ff875116432d26a7",
+      "split": "holdout"
+    },
+    {
+      "index": 100,
+      "name": "TIHMUS",
+      "scaffold_sha256": "4d83205e774d8ead45750dff64dc8285c309c337fb009b154b107e54bb5ae729",
+      "split": "holdout"
+    },
+    {
+      "index": 101,
+      "name": "UDAWIG",
+      "scaffold_sha256": "6f40ee1ec56b15a7c5e2dd2697d19bb431a6a01bf8c2b16d1b3c130acf1d6405",
+      "split": "holdout"
+    },
+    {
+      "index": 102,
+      "name": "UGONEJ",
+      "scaffold_sha256": "896abd5a46198e2c240e8e60b113a1fda3a3fb8f2128c690a0721be0e9d9b72d",
+      "split": "holdout"
+    },
+    {
+      "index": 103,
+      "name": "UNDECO",
+      "scaffold_sha256": "e9400a2bde1be12111e03968c64b019b5c90d88b16ae6588820d25d0697ec10d",
+      "split": "development"
+    },
+    {
+      "index": 104,
+      "name": "UZUKUW",
+      "scaffold_sha256": "c5a7e99dc2c2d73fe72c8f15da807b30da6c5608f82e690eea65c5605b932f5c",
+      "split": "holdout"
+    },
+    {
+      "index": 105,
+      "name": "VAWTAQ",
+      "scaffold_sha256": "97183aa5b9a8ba92a3d3b3922d80131eedeb29ddcd883e6ea1b31e7ff4d6a6c4",
+      "split": "holdout"
+    },
+    {
+      "index": 106,
+      "name": "VENZOD",
+      "scaffold_sha256": "ea2190566afced5b856e33fb78da629651de99d0afe5258465c35311fb40a9ed",
+      "split": "holdout"
+    },
+    {
+      "index": 107,
+      "name": "VEVHAF",
+      "scaffold_sha256": "3947c25c75b45e604c2294fd2a391b40b8121ffc6dccc15aceca0ed542339754",
+      "split": "holdout"
+    },
+    {
+      "index": 108,
+      "name": "VORZEH",
+      "scaffold_sha256": "c0bd02521c507001090cddf6629fa4f45788afb76227af551936eddaf45ff745",
+      "split": "development"
+    },
+    {
+      "index": 109,
+      "name": "WACYAB",
+      "scaffold_sha256": "ccd69ab45d50f3e3bd671868448af78e4ad3518a69c6b5714ff6d910257904e4",
+      "split": "holdout"
+    },
+    {
+      "index": 110,
+      "name": "WAPHUR",
+      "scaffold_sha256": "115fd43e8be74de06afd47eeb0dbb3b2c4ac144f4278aab3c18491e42340d8bb",
+      "split": "holdout"
+    },
+    {
+      "index": 111,
+      "name": "WATDIE",
+      "scaffold_sha256": "563a1c106bb55839df3d7d2b1bc310c979229a529a5590da385bd0446fd32d8d",
+      "split": "holdout"
+    },
+    {
+      "index": 112,
+      "name": "WECCAI",
+      "scaffold_sha256": "3408d63ceb30431d6ca2190176ca8ae5bde2e4c960ede2bfc9ca5a0e9f2f1b05",
+      "split": "holdout"
+    },
+    {
+      "index": 113,
+      "name": "WECCUC01",
+      "scaffold_sha256": "b5ee677f837bbcb507eff034ff2a8a1c62efd428f57cf64b47e5093898dc1640",
+      "split": "holdout"
+    },
+    {
+      "index": 114,
+      "name": "WECKIY",
+      "scaffold_sha256": "40ac2c4792643ed6b7f9241c2633a73adc93be9db5ab932dab06d10413a5925d",
+      "split": "holdout"
+    },
+    {
+      "index": 115,
+      "name": "WIFNEF",
+      "scaffold_sha256": "cacb7d0354983f042451e18529b2aff35f17b2178adbd4966040bd60bd7b4d8f",
+      "split": "holdout"
+    },
+    {
+      "index": 116,
+      "name": "WIGLUT",
+      "scaffold_sha256": "4b1092c1121ed1917d337c6057118208bc3c3392749011998e3c2b07727846f9",
+      "split": "development"
+    },
+    {
+      "index": 117,
+      "name": "WISCUW01",
+      "scaffold_sha256": "e0421157d42ecb3091178e30e5d0186a81a0ef5d9aa67566dbc715a3a9c7db95",
+      "split": "holdout"
+    },
+    {
+      "index": 118,
+      "name": "WUBGAB",
+      "scaffold_sha256": "bd28c2aa4a29448bae1d0e3500f2e9625b54d33ea85b59cf598a047bb773160a",
+      "split": "holdout"
+    },
+    {
+      "index": 119,
+      "name": "WUMSON",
+      "scaffold_sha256": "b1b12dfd658f94a6d60f8cae14f00aadcec8256b04a854de8b8d982dd1762092",
+      "split": "holdout"
+    },
+    {
+      "index": 120,
+      "name": "WURVEL",
+      "scaffold_sha256": "51a09bedcfc9e7b8826f187807c9af43ad95bcb60f79d4267dac074e0d08dc21",
+      "split": "holdout"
+    },
+    {
+      "index": 121,
+      "name": "XETJUC",
+      "scaffold_sha256": "2ec5626e0596522f016b7d0c514be3bdcce7d2f8724b5f64e4ada7a95597bf61",
+      "split": "holdout"
+    },
+    {
+      "index": 122,
+      "name": "YACWIK",
+      "scaffold_sha256": "ce6e3ad4ddf9284a9b0dbe8885f646ea71ab9b706e6c52ab1460b50f3124c0ca",
+      "split": "holdout"
+    },
+    {
+      "index": 123,
+      "name": "YARFON",
+      "scaffold_sha256": "70f8afac14d0f29dff207f0fe206506e898ae797328df0aa745add8d5fee0ff4",
+      "split": "holdout"
+    },
+    {
+      "index": 124,
+      "name": "YAZKOZ",
+      "scaffold_sha256": "8d4ed69a4e1271a40e65f28c2cc7dc1d58ca40fe528bce23a1cd044b38861956",
+      "split": "holdout"
+    },
+    {
+      "index": 125,
+      "name": "YITZIK",
+      "scaffold_sha256": "f3e1c98b8e13a0b324d1bfd5d5451cf3418da6991f83c67d8d9a6e4c05c0ee17",
+      "split": "holdout"
+    },
+    {
+      "index": 126,
+      "name": "YIWHOB01",
+      "scaffold_sha256": "de92b9d2381b857d2e75152c7a18eab7317cc3bd2c2b1b366c272c696cdf092d",
+      "split": "holdout"
+    },
+    {
+      "index": 127,
+      "name": "YUPHIA",
+      "scaffold_sha256": "e74039e6a5ba892ffdbdcb54338bcaf2d147d6acf8e315b79b4d7d5e2d91b763",
+      "split": "holdout"
+    },
+    {
+      "index": 128,
+      "name": "ZOYJEC",
+      "scaffold_sha256": "92d8661e76d7d9fd3963d52ef12a7bc8b3cb6013b0ab24f30f0c77803454ce11",
+      "split": "holdout"
+    },
+    {
+      "index": 129,
+      "name": "ZZZMZM01",
+      "scaffold_sha256": "eb79a5e5135f473f20031770fc1891e38aed0d19b54d78ad5e747b71400a9cae",
+      "split": "development"
+    },
+    {
+      "index": 130,
+      "name": "PRD_000187",
+      "scaffold_sha256": "eb385a9d1bdbb740eb2efdefb75cbaa08589d86b429ad0a24bd848f6102f94a4",
+      "split": "holdout"
+    },
+    {
+      "index": 131,
+      "name": "PRD_000214",
+      "scaffold_sha256": "9b1198b78844e17794a4d4299ecff2676ba88bbb978e3e3a267d43fad04dfa52",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 132,
+      "name": "PRD_000407",
+      "scaffold_sha256": "fe180788ff978d6affe37c3dea54396ae81d1b01a22765be54d77405f6b0e7ff",
+      "split": "holdout"
+    },
+    {
+      "index": 133,
+      "name": "PRD_000464",
+      "scaffold_sha256": "5a233c26cc86733d1400fe04ceba21926be89a3689765cc6b9889b607c89e54c",
+      "split": "holdout"
+    },
+    {
+      "index": 134,
+      "name": "PRD_000485",
+      "scaffold_sha256": "365ba1bcac2c5168f0c657874ad02248c6e19361773fb497dfa170a96defee08",
+      "split": "holdout"
+    },
+    {
+      "index": 135,
+      "name": "PRD_000491",
+      "scaffold_sha256": "4a04dff56e2085f96d6d591af8d4d939037221e77ed26faf65e52a8fee7a6752",
+      "split": "holdout"
+    },
+    {
+      "index": 136,
+      "name": "PRD_000571",
+      "scaffold_sha256": "a1029ad49bdd42e299e158bcafcd0ee68a059d227822469328ea37e4654e3d62",
+      "split": "holdout"
+    },
+    {
+      "index": 137,
+      "name": "PRD_000766",
+      "scaffold_sha256": "40cb0a34d72267d57855eb3c0888314ddbb06a72d715e27168c777f5d4e8aaa3",
+      "split": "holdout"
+    },
+    {
+      "index": 138,
+      "name": "PRD_000776",
+      "scaffold_sha256": "6c7dcd81354cc4003f03e1534abcb97dd2f251a5c493ca59c5fb0aa3512f73dd",
+      "split": "holdout"
+    },
+    {
+      "index": 139,
+      "name": "PRD_000785",
+      "scaffold_sha256": "848fcee60357388797c728f484ad571173e673e90c2b758060ecd0441d63a795",
+      "split": "holdout"
+    },
+    {
+      "index": 140,
+      "name": "PRD_000822",
+      "scaffold_sha256": "8e13fa1f4a9d65dc54da4bae2ab5afac4e06d5910e13822e6d43d43310519623",
+      "split": "holdout"
+    },
+    {
+      "index": 141,
+      "name": "PRD_000897",
+      "scaffold_sha256": "a943a0298d4cb03cfe6714fba52850857a113d6958ef197ffadebb3f652a5ed6",
+      "split": "holdout"
+    },
+    {
+      "index": 142,
+      "name": "PRD_001059",
+      "scaffold_sha256": "4435cda8448542d2695580df8ca6e312a222dde35e5b163c7921226692d701f0",
+      "split": "holdout"
+    },
+    {
+      "index": 143,
+      "name": "PRD_001124",
+      "scaffold_sha256": "a8f2356969b82eb2f362d8979c610033cfdd1b1ff67d25e23045ab492f8187b8",
+      "split": "holdout"
+    },
+    {
+      "index": 144,
+      "name": "PRD_001142",
+      "scaffold_sha256": "27066192e4565d31587a9cec594f7b2472d8c5c8106188ff34f868d80280ebd9",
+      "split": "holdout"
+    },
+    {
+      "index": 145,
+      "name": "PRD_001166",
+      "scaffold_sha256": "677c85f49952d8e1506a4921dfdeb6c8082980da6c1b5337ed8711de768b1159",
+      "split": "holdout"
+    },
+    {
+      "index": 146,
+      "name": "PRD_001184",
+      "scaffold_sha256": "b670f9a71b8b4d042e2223b83c8cc64e848cedafca4535bd3c5706afe5502ad8",
+      "split": "development"
+    },
+    {
+      "index": 147,
+      "name": "PRD_001212",
+      "scaffold_sha256": "d9c997bc501e921b5c51c043e1ce893bfe90652f28818efcada01ec562fe19c7",
+      "split": "holdout"
+    },
+    {
+      "index": 148,
+      "name": "2F3E_AXQ",
+      "scaffold_sha256": "f97347970db1cb8fdd62a927af4eac4e3c1cf61f44c5cc6f32c3282b92a21828",
+      "split": "holdout"
+    },
+    {
+      "index": 149,
+      "name": "2F3E_AXQ",
+      "scaffold_sha256": "f97347970db1cb8fdd62a927af4eac4e3c1cf61f44c5cc6f32c3282b92a21828",
+      "split": "holdout"
+    },
+    {
+      "index": 150,
+      "name": "2F3E_AXQ",
+      "scaffold_sha256": "f97347970db1cb8fdd62a927af4eac4e3c1cf61f44c5cc6f32c3282b92a21828",
+      "split": "holdout"
+    },
+    {
+      "index": 151,
+      "name": "2F3F_AXF",
+      "scaffold_sha256": "f3a3b764a04c4c74c4653999811c31a770a6fa26432d6295c947df967496358b",
+      "split": "holdout"
+    },
+    {
+      "index": 152,
+      "name": "2F3F_AXF",
+      "scaffold_sha256": "f3a3b764a04c4c74c4653999811c31a770a6fa26432d6295c947df967496358b",
+      "split": "holdout"
+    },
+    {
+      "index": 153,
+      "name": "2F3F_AXF",
+      "scaffold_sha256": "f3a3b764a04c4c74c4653999811c31a770a6fa26432d6295c947df967496358b",
+      "split": "holdout"
+    },
+    {
+      "index": 154,
+      "name": "1WUA_AP8",
+      "scaffold_sha256": "07d0ca3d4fca54d64c33306ff206831ab9119f8016c65cb418dcfc09bd10ca10",
+      "split": "holdout"
+    },
+    {
+      "index": 155,
+      "name": "3DV1_AR9",
+      "scaffold_sha256": "29b3e248b3b5916888a88e61440c20f3ddad51ce6d8b234df914ccb31f8a65b1",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 156,
+      "name": "3DV1_AR9",
+      "scaffold_sha256": "29b3e248b3b5916888a88e61440c20f3ddad51ce6d8b234df914ccb31f8a65b1",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 157,
+      "name": "3DV1_AR9",
+      "scaffold_sha256": "29b3e248b3b5916888a88e61440c20f3ddad51ce6d8b234df914ccb31f8a65b1",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 158,
+      "name": "3K5C_0BI",
+      "scaffold_sha256": "5d425cecfda4c52fc7d21cf3a3ad1c225c3dee7cafb83702c4d23b46721e9062",
+      "split": "holdout"
+    },
+    {
+      "index": 159,
+      "name": "3K5C_0BI",
+      "scaffold_sha256": "5d425cecfda4c52fc7d21cf3a3ad1c225c3dee7cafb83702c4d23b46721e9062",
+      "split": "holdout"
+    },
+    {
+      "index": 160,
+      "name": "3K5C_0BI",
+      "scaffold_sha256": "5d425cecfda4c52fc7d21cf3a3ad1c225c3dee7cafb83702c4d23b46721e9062",
+      "split": "holdout"
+    },
+    {
+      "index": 161,
+      "name": "1MRL_DOL",
+      "scaffold_sha256": "24e14740235c55ea1647c4b793b8679ff2d0b66e4d55785e267f81a6f6312232",
+      "split": "holdout"
+    },
+    {
+      "index": 162,
+      "name": "1MRL_DOL",
+      "scaffold_sha256": "24e14740235c55ea1647c4b793b8679ff2d0b66e4d55785e267f81a6f6312232",
+      "split": "holdout"
+    },
+    {
+      "index": 163,
+      "name": "1MRL_DOL",
+      "scaffold_sha256": "24e14740235c55ea1647c4b793b8679ff2d0b66e4d55785e267f81a6f6312232",
+      "split": "holdout"
+    },
+    {
+      "index": 164,
+      "name": "2QZK_I21",
+      "scaffold_sha256": "cd0732c85176197247616954ae74092dbe28c2dd5aa6150bdaf10d11aa205735",
+      "split": "holdout"
+    },
+    {
+      "index": 165,
+      "name": "3DV5_BAV",
+      "scaffold_sha256": "7bca2d5569b9efe132d6af3554587a4c35600e1f60056e6537d4edb7598c4261",
+      "split": "development"
+    },
+    {
+      "index": 166,
+      "name": "3DV5_BAV",
+      "scaffold_sha256": "7bca2d5569b9efe132d6af3554587a4c35600e1f60056e6537d4edb7598c4261",
+      "split": "development"
+    },
+    {
+      "index": 167,
+      "name": "3DV5_BAV",
+      "scaffold_sha256": "7bca2d5569b9efe132d6af3554587a4c35600e1f60056e6537d4edb7598c4261",
+      "split": "development"
+    },
+    {
+      "index": 168,
+      "name": "2GPL_BIQ",
+      "scaffold_sha256": "0204b04b43cd35d4c38fe7e71ccd949d2d674fade025ea9a937f32e11c7cad21",
+      "split": "holdout"
+    },
+    {
+      "index": 169,
+      "name": "2GPL_BIQ",
+      "scaffold_sha256": "0204b04b43cd35d4c38fe7e71ccd949d2d674fade025ea9a937f32e11c7cad21",
+      "split": "holdout"
+    },
+    {
+      "index": 170,
+      "name": "1OSF_KOS",
+      "scaffold_sha256": "2d7870eca919cf2c0696bb71b4cc72c599f1efe33b5eca0dddb402a5d8a865e3",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 171,
+      "name": "1QZ5_KAB",
+      "scaffold_sha256": "05b10dda394a118362353edb166022fa9956d7a84dd40c4d828b8b983849ba86",
+      "split": "holdout"
+    },
+    {
+      "index": 172,
+      "name": "1YND_SFA",
+      "scaffold_sha256": "0dd5b57f40d95ee3b4d8d466d801296e7aa3fb6d41057d66b00b26d02c6b7187",
+      "split": "holdout"
+    },
+    {
+      "index": 173,
+      "name": "1YND_SFA",
+      "scaffold_sha256": "0dd5b57f40d95ee3b4d8d466d801296e7aa3fb6d41057d66b00b26d02c6b7187",
+      "split": "holdout"
+    },
+    {
+      "index": 174,
+      "name": "2ASO_SPX",
+      "scaffold_sha256": "33b1e32f6d9ca99f2b25b179bc4121a844aa8e8c4ec23e61489ef53611529c11",
+      "split": "holdout"
+    },
+    {
+      "index": 175,
+      "name": "1FKI_SB1",
+      "scaffold_sha256": "ca0f5aa77df2eeedbd6940538ecf6612ba2deedb09fdb5ef5331037eb1bf53c7",
+      "split": "holdout"
+    },
+    {
+      "index": 176,
+      "name": "1FKI_SB1",
+      "scaffold_sha256": "ca0f5aa77df2eeedbd6940538ecf6612ba2deedb09fdb5ef5331037eb1bf53c7",
+      "split": "holdout"
+    },
+    {
+      "index": 177,
+      "name": "1NMK_SFM",
+      "scaffold_sha256": "1d881db0e3b8afb2187fce4728a3bcbffe649fdc65aa988a68aedbb7af1731dc",
+      "split": "development"
+    },
+    {
+      "index": 178,
+      "name": "1NMK_SFM",
+      "scaffold_sha256": "1d881db0e3b8afb2187fce4728a3bcbffe649fdc65aa988a68aedbb7af1731dc",
+      "split": "development"
+    },
+    {
+      "index": 179,
+      "name": "1YXQ_SWI",
+      "scaffold_sha256": "a6686feff6500d24b6fbeb509de9ad4dd1f45ad640dbb3ba545eb80fb662fa08",
+      "split": "development"
+    },
+    {
+      "index": 180,
+      "name": "2OTJ_13T",
+      "scaffold_sha256": "f7b18945b618a58321ce4bbc0937e1e0452bbb746f3b9c30fe68a7b874fc6053",
+      "split": "development"
+    },
+    {
+      "index": 181,
+      "name": "2WHW_1D4",
+      "scaffold_sha256": "7a77868decc3e8ff80812becdf5b3fae8152b2425ad536bc863f9da11ce6258c",
+      "split": "holdout"
+    },
+    {
+      "index": 182,
+      "name": "2WHW_1D4",
+      "scaffold_sha256": "7a77868decc3e8ff80812becdf5b3fae8152b2425ad536bc863f9da11ce6258c",
+      "split": "holdout"
+    },
+    {
+      "index": 183,
+      "name": "1FKJ_FK5",
+      "scaffold_sha256": "68056eb835bf594d3b5bceeca518c70d2aed8cc892679c699c0f6ba7a6a06f8f",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 184,
+      "name": "3ABA_FLI",
+      "scaffold_sha256": "bd3511ac09b0bf9ba1ca0b41c2f3a5a2cb5b6c2039a94e911d6bebe6beb00705",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 185,
+      "name": "1A7X_FKA",
+      "scaffold_sha256": "838ad4999346d1405fc279b7ba053223b6805c9d4c1fdb4a5a48cb6dbfba898e",
+      "split": "holdout"
+    },
+    {
+      "index": 186,
+      "name": "1YET_GDM",
+      "scaffold_sha256": "2d7870eca919cf2c0696bb71b4cc72c599f1efe33b5eca0dddb402a5d8a865e3",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 187,
+      "name": "1SKX_RFP",
+      "scaffold_sha256": "48005368c53986d9c61d2a4769547069d6b349257db9c6eb8b4ea1e7f023e44f",
+      "split": "holdout"
+    },
+    {
+      "index": 188,
+      "name": "1FKL_RAP",
+      "scaffold_sha256": "53e8605ab8da8243ce8497709f88145f4af2ca399301d28280aad5c738dae97c",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 189,
+      "name": "2DG4_RAP_1",
+      "scaffold_sha256": "53e8605ab8da8243ce8497709f88145f4af2ca399301d28280aad5c738dae97c",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 190,
+      "name": "2ASP_RGC",
+      "scaffold_sha256": "33b1e32f6d9ca99f2b25b179bc4121a844aa8e8c4ec23e61489ef53611529c11",
+      "split": "holdout"
+    },
+    {
+      "index": 191,
+      "name": "2ASM_RGA",
+      "scaffold_sha256": "33b1e32f6d9ca99f2b25b179bc4121a844aa8e8c4ec23e61489ef53611529c11",
+      "split": "holdout"
+    },
+    {
+      "index": 192,
+      "name": "1NSG_RAD",
+      "scaffold_sha256": "53e8605ab8da8243ce8497709f88145f4af2ca399301d28280aad5c738dae97c",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 193,
+      "name": "2VYP_RH9",
+      "scaffold_sha256": "ad94afef85a596741fab62011f6eaec2b1f2a81375728b9a45229b8d8af44d9a",
+      "split": "development"
+    },
+    {
+      "index": 194,
+      "name": "2C7X_NRB",
+      "scaffold_sha256": "82323c7826f63960605ae9e5fad11c46174e27b90a7abb6ae99dabefbfc854a4",
+      "split": "development"
+    },
+    {
+      "index": 195,
+      "name": "2VZM_NRB",
+      "scaffold_sha256": "82323c7826f63960605ae9e5fad11c46174e27b90a7abb6ae99dabefbfc854a4",
+      "split": "development"
+    },
+    {
+      "index": 196,
+      "name": "1KHR_VIR",
+      "scaffold_sha256": "f1e6a9e4bda5b2069042dcc68927b87fa78b66c12748d3f8d7f118968287c42b",
+      "split": "holdout"
+    },
+    {
+      "index": 197,
+      "name": "1KHR_VIR",
+      "scaffold_sha256": "f1e6a9e4bda5b2069042dcc68927b87fa78b66c12748d3f8d7f118968287c42b",
+      "split": "holdout"
+    },
+    {
+      "index": 198,
+      "name": "1KHR_VIR",
+      "scaffold_sha256": "f1e6a9e4bda5b2069042dcc68927b87fa78b66c12748d3f8d7f118968287c42b",
+      "split": "holdout"
+    },
+    {
+      "index": 199,
+      "name": "1QZ6_JAS",
+      "scaffold_sha256": "ab3308f8a57010e515c3e85552ed32692ac208f24bc3f9ce1073606ef8ebc449",
+      "split": "holdout"
+    },
+    {
+      "index": 200,
+      "name": "1QPL_587",
+      "scaffold_sha256": "75b1e864b4afe9d5ed39ebe1755534b619b89c030fc751a0f9392c4f7d2d869a",
+      "split": "holdout"
+    },
+    {
+      "index": 201,
+      "name": "1QPL_587",
+      "scaffold_sha256": "75b1e864b4afe9d5ed39ebe1755534b619b89c030fc751a0f9392c4f7d2d869a",
+      "split": "holdout"
+    },
+    {
+      "index": 202,
+      "name": "3M6G_LO3",
+      "scaffold_sha256": "d2ab64511dc4efcd53fb85fe0abe0d82b84c585814ee417637dd013266e4727d",
+      "split": "holdout"
+    },
+    {
+      "index": 203,
+      "name": "3M6G_LO3",
+      "scaffold_sha256": "d2ab64511dc4efcd53fb85fe0abe0d82b84c585814ee417637dd013266e4727d",
+      "split": "holdout"
+    },
+    {
+      "index": 204,
+      "name": "1ESV_LAR",
+      "scaffold_sha256": "7a278e4713c8d096cf1b97395a013f7bc35729c6f4e6e514adca9ecf6fdf1e99",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 205,
+      "name": "3KEE_30B",
+      "scaffold_sha256": "d1352eae09c9f314f8ddad93811be7bce800ed74f2818dd19487021a426a7902",
+      "split": "holdout"
+    },
+    {
+      "index": 206,
+      "name": "3KEE_30B",
+      "scaffold_sha256": "d1352eae09c9f314f8ddad93811be7bce800ed74f2818dd19487021a426a7902",
+      "split": "holdout"
+    },
+    {
+      "index": 207,
+      "name": "3KEE_30B",
+      "scaffold_sha256": "d1352eae09c9f314f8ddad93811be7bce800ed74f2818dd19487021a426a7902",
+      "split": "holdout"
+    },
+    {
+      "index": 208,
+      "name": "3KEE_30B",
+      "scaffold_sha256": "d1352eae09c9f314f8ddad93811be7bce800ed74f2818dd19487021a426a7902",
+      "split": "holdout"
+    },
+    {
+      "index": 209,
+      "name": "2PH8_35A",
+      "scaffold_sha256": "d8dc29b1c0b4bdfadd69f46432338fb1629abc7e9144e5fffe76cde74cc0739c",
+      "split": "holdout"
+    },
+    {
+      "index": 210,
+      "name": "2IYA_ZIO",
+      "scaffold_sha256": "6991e413c4e82e2a9c660a26c5ac67ffe2e3cac625fd2e08a414566b42731163",
+      "split": "holdout"
+    },
+    {
+      "index": 211,
+      "name": "2IYA_ZIO",
+      "scaffold_sha256": "6991e413c4e82e2a9c660a26c5ac67ffe2e3cac625fd2e08a414566b42731163",
+      "split": "holdout"
+    },
+    {
+      "index": 212,
+      "name": "1QPF_858",
+      "scaffold_sha256": "75b1e864b4afe9d5ed39ebe1755534b619b89c030fc751a0f9392c4f7d2d869a",
+      "split": "holdout"
+    },
+    {
+      "index": 213,
+      "name": "1QPF_858",
+      "scaffold_sha256": "75b1e864b4afe9d5ed39ebe1755534b619b89c030fc751a0f9392c4f7d2d869a",
+      "split": "holdout"
+    },
+    {
+      "index": 214,
+      "name": "1FKD_818",
+      "scaffold_sha256": "68056eb835bf594d3b5bceeca518c70d2aed8cc892679c699c0f6ba7a6a06f8f",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 215,
+      "name": "1NT1_T76",
+      "scaffold_sha256": "23d885a9d591d271bedae40d6ca539e0d40c119cb2ade332d55e2e15e76317f9",
+      "split": "holdout"
+    },
+    {
+      "index": 216,
+      "name": "2WEA_PP6",
+      "scaffold_sha256": "d9166994447c494e453468f195083666b7f277c7b5abd07fbcbf1bac463ae3b8",
+      "split": "holdout"
+    },
+    {
+      "index": 217,
+      "name": "2Q0R_PXT",
+      "scaffold_sha256": "ed849f8c8f781dc3427ccd2e4632ed947c9560f26faf11351cc9a9fc34c544aa",
+      "split": "holdout"
+    },
+    {
+      "index": 218,
+      "name": "2C6H_PXI",
+      "scaffold_sha256": "e3d29c4437b4d0fcd87f2ac4fd7a79c5d5b5223ae8544cfed9e4ba444b1e5be3",
+      "split": "holdout"
+    },
+    {
+      "index": 219,
+      "name": "2C6H_PXI",
+      "scaffold_sha256": "e3d29c4437b4d0fcd87f2ac4fd7a79c5d5b5223ae8544cfed9e4ba444b1e5be3",
+      "split": "holdout"
+    },
+    {
+      "index": 220,
+      "name": "1BXO_PP7",
+      "scaffold_sha256": "39bb9e7d5d1d5d11d3743b1179ff6fbfc09591a0b4935598092acb98a360451a",
+      "split": "holdout"
+    },
+    {
+      "index": 221,
+      "name": "1E9W",
+      "scaffold_sha256": "6279c5a526f564f974ff84f68f6936db075e297f84631d8a2ad772db95c9aafe",
+      "split": "holdout"
+    },
+    {
+      "index": 222,
+      "name": "1NWX_773",
+      "scaffold_sha256": "28faca59a4a7934820b6383a8682c3ae87d2b8fd87b6a6779f697a34855eb083",
+      "split": "holdout"
+    },
+    {
+      "index": 223,
+      "name": "3EKS_CY9",
+      "scaffold_sha256": "71cdc6ee514981cee5ed6f9fe84d16cd31f563d3baac87e9d4925ecd4423ea6e",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 224,
+      "name": "1PKF_EPD",
+      "scaffold_sha256": "50b5281ca754888d3a3bccaeda0fb64bd1addfc4af8048dfcf0cbed85b4cf3f9",
+      "split": "holdout"
+    },
+    {
+      "index": 225,
+      "name": "2IYF_ERY",
+      "scaffold_sha256": "6fd648c26d7f813bc1c19a4e886314137e57afb6eb1b350ef589a843afa612e3",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 226,
+      "name": "1BZL_GCG",
+      "scaffold_sha256": "a81a05bad4b179222873b0634cd3591ba2cef03b21d0207dd8557e0b98010433",
+      "split": "development"
+    },
+    {
+      "index": 227,
+      "name": "3I6O_GR6",
+      "scaffold_sha256": "bdd3ea8858be86aa7b98c29b8dc7a7e4e4f022f88652094802734ca1367836a9",
+      "split": "development"
+    },
+    {
+      "index": 228,
+      "name": "1XS7_MMI",
+      "scaffold_sha256": "65737c591dfd1f8fa94b9678348322ee6fc6399ba94b8053a01a6b0b5ee9e9c9",
+      "split": "holdout"
+    },
+    {
+      "index": 229,
+      "name": "2DG4_RAP_2",
+      "scaffold_sha256": "53e8605ab8da8243ce8497709f88145f4af2ca399301d28280aad5c738dae97c",
+      "split": "excluded_known_scaffold"
+    },
+    {
+      "index": 230,
+      "name": "1S22_ULA",
+      "scaffold_sha256": "ab3308f8a57010e515c3e85552ed32692ac208f24bc3f9ce1073606ef8ebc449",
+      "split": "holdout"
+    },
+    {
+      "index": 231,
+      "name": "2XBK_XBK",
+      "scaffold_sha256": "14faf58319c4d9b64030c951422a9a7ab2bb17b43f2c6c823cc3ca44e4a78f79",
+      "split": "holdout"
+    },
+    {
+      "index": 232,
+      "name": "1EHL_CHAIN_A",
+      "scaffold_sha256": "7209535aa71afa21f193171c4e6fb9e46ac0d43f50d03ef98cf67208a92e697f",
+      "split": "holdout"
+    },
+    {
+      "index": 233,
+      "name": "1KEG_CHAIN_A",
+      "scaffold_sha256": "3a757bdd1982e9ee073f2f3573a24bb7f9c03dff83ffa437c73622cc1879acee",
+      "split": "holdout"
+    },
+    {
+      "index": 234,
+      "name": "1TPS_CHAIN_B",
+      "scaffold_sha256": "eb385a9d1bdbb740eb2efdefb75cbaa08589d86b429ad0a24bd848f6102f94a4",
+      "split": "holdout"
+    }
+  ]
+}

@@ -17,6 +17,7 @@ use crate::fmath::DetMath;
 use std::collections::{HashMap, VecDeque};
 
 use chematic_core::{AtomIdx, BondOrder, Molecule};
+#[cfg(test)]
 use chematic_perception::find_sssr;
 use rayon::prelude::*;
 

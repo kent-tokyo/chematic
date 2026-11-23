@@ -1,0 +1,46 @@
+name: MMFF N5M atom-order regression
+
+on:
+  pull_request:
+    types: [opened, reopened]
+    paths:
+      - '.github/workflows/mmff-n5m-atom-order.yml'
+      - 'scripts/validation/check_n5m_atom_order.py'
+      - 'scripts/fixtures/mmff94-n5m-atom-order-2026-11-22.json'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  oracle:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact: parity-candidate-ubuntu-latest-ac055be0c0262b32bfe52f7a9dd1cb3607cd1919
+            wheel_sha: 046fd444e4131fbc5fabc4c1d14f5c9fe64b6525f42158abc961496f741a7898
+          - os: macos-latest
+            artifact: parity-candidate-macos-latest-ac055be0c0262b32bfe52f7a9dd1cb3607cd1919
+            wheel_sha: 5e1f34dab867a41a97fe66ea42d01f27199fd88325c00ae36ddf229bb9406920
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PARITY_ARTIFACT: ${{ matrix.artifact }}
+      PARITY_WHEEL_SHA: ${{ matrix.wheel_sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Fetch and verify candidate
+        run: |
+          test "$(git rev-parse HEAD:crates)" = '99a9d44e7ddbe3ba8a1d797c8bd3baa5938272c1'
+          gh run download 44927371343 --repo "$GITHUB_REPOSITORY" --name "$PARITY_ARTIFACT" --dir candidate
+          python -c 'import glob,hashlib,os,pathlib; p=glob.glob("candidate/**/*.whl",recursive=True); assert len(p)==1; assert hashlib.sha256(pathlib.Path(p[0]).read_bytes()).hexdigest()==os.environ["PARITY_WHEEL_SHA"]'
+          python -m pip install 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/dist/candidate-wheel/*.whl
+      - name: Check atom-order variants
+        run: python scripts/validation/check_n5m_atom_order.py

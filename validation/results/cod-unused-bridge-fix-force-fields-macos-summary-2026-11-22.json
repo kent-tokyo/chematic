@@ -1,0 +1,45 @@
+{
+  "rows": 3579,
+  "row_errors": 47,
+  "fields": {
+    "MMFF94": {
+      "evaluated": 3532,
+      "rdkit_supported": 3280,
+      "chematic_supported": 3292,
+      "comparable": 3280,
+      "energy_absolute_error_p95": 1.1368683772161603e-13,
+      "energy_absolute_error_max": 7.79891706770286e-11,
+      "molecules_energy_error_over_1e-4": 0,
+      "gradient_absolute_error_p95": 1.1723955140041653e-13,
+      "gradient_absolute_error_max": 8.706961671123281e-05,
+      "molecules_gradient_error_over_1e-3": 0,
+      "finite_difference_absolute_error_max": 7093.104224759183
+    },
+    "MMFF94s": {
+      "evaluated": 3532,
+      "rdkit_supported": 3280,
+      "chematic_supported": 3292,
+      "comparable": 3280,
+      "energy_absolute_error_p95": 1.1368683772161603e-13,
+      "energy_absolute_error_max": 7.793232725816779e-11,
+      "molecules_energy_error_over_1e-4": 0,
+      "gradient_absolute_error_p95": 1.1723955140041653e-13,
+      "gradient_absolute_error_max": 8.706961671123281e-05,
+      "molecules_gradient_error_over_1e-3": 0,
+      "finite_difference_absolute_error_max": 7093.104224764873
+    },
+    "UFF": {
+      "evaluated": 3532,
+      "rdkit_supported": 3532,
+      "chematic_supported": 3532,
+      "comparable": 3532,
+      "energy_absolute_error_p95": 2.2737367544323206e-13,
+      "energy_absolute_error_max": 0.00023651123046875,
+      "molecules_energy_error_over_1e-4": 1,
+      "gradient_absolute_error_p95": 1.4566126083082054e-13,
+      "gradient_absolute_error_max": 0.003662109375,
+      "molecules_gradient_error_over_1e-3": 2,
+      "finite_difference_absolute_error_max": 3012.9482421875
+    }
+  }
+}

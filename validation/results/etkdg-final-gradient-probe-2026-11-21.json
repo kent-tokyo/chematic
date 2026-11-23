@@ -1,0 +1,343 @@
+{
+  "smiles": "CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12",
+  "rdkit": "2026.09.2",
+  "seed": 42,
+  "results": [
+    {
+      "index": 0,
+      "status": 1,
+      "energy": 54.0478764609433,
+      "angle_degrees": 116.44739544146815,
+      "chematic_gradient_max": 0.4697274139694513,
+      "rdkit_gradient_max": 0.4697274139692932,
+      "max_component_difference": 1.7486012637846216e-13
+    },
+    {
+      "index": 1,
+      "status": 1,
+      "energy": 25.42215912827411,
+      "angle_degrees": 116.29138731081551,
+      "chematic_gradient_max": 3.45783301872359,
+      "rdkit_gradient_max": 3.457833018723718,
+      "max_component_difference": 1.9184653865522705e-13
+    },
+    {
+      "index": 2,
+      "status": 1,
+      "energy": 24.699303699803714,
+      "angle_degrees": 115.22856733464205,
+      "chematic_gradient_max": 0.005986720577069726,
+      "rdkit_gradient_max": 0.005986720577069733,
+      "max_component_difference": 2.1715962361668062e-13
+    },
+    {
+      "index": 3,
+      "status": 0,
+      "energy": 24.699302564656982,
+      "angle_degrees": 115.2290022720649,
+      "chematic_gradient_max": 0.0007576263251362347,
+      "rdkit_gradient_max": 0.0007576263251291293,
+      "max_component_difference": 1.6608936448392342e-13
+    },
+    {
+      "index": 4,
+      "status": 0,
+      "energy": 45.588967830403,
+      "angle_degrees": 115.81416043112804,
+      "chematic_gradient_max": 0.0008546542772224987,
+      "rdkit_gradient_max": 0.0008546542772420384,
+      "max_component_difference": 1.4271916981556387e-13
+    },
+    {
+      "index": 5,
+      "status": 0,
+      "energy": 48.73642349150278,
+      "angle_degrees": 113.15134328832539,
+      "chematic_gradient_max": 0.0010398197135686738,
+      "rdkit_gradient_max": 0.0010398197135655235,
+      "max_component_difference": 1.794120407794253e-13
+    },
+    {
+      "index": 6,
+      "status": 1,
+      "energy": 24.699306473327272,
+      "angle_degrees": 115.2302626062399,
+      "chematic_gradient_max": 0.007654914829569513,
+      "rdkit_gradient_max": 0.007654914829606817,
+      "max_component_difference": 1.0835776720341528e-13
+    },
+    {
+      "index": 7,
+      "status": 1,
+      "energy": 25.585834934779065,
+      "angle_degrees": 116.2545190733318,
+      "chematic_gradient_max": 3.373343956521894,
+      "rdkit_gradient_max": 3.3733439565218637,
+      "max_component_difference": 1.5543122344752192e-13
+    },
+    {
+      "index": 8,
+      "status": 1,
+      "energy": 25.131539440251096,
+      "angle_degrees": 116.2379759100523,
+      "chematic_gradient_max": 1.8163188412352613,
+      "rdkit_gradient_max": 1.8163188412352562,
+      "max_component_difference": 1.9206858326015208e-13
+    },
+    {
+      "index": 9,
+      "status": 1,
+      "energy": 172.8545669469721,
+      "angle_degrees": 179.99987184291624,
+      "chematic_gradient_max": 1200902.87287735,
+      "rdkit_gradient_max": 1200902.8743873285,
+      "max_component_difference": 0.00150997843593359,
+      "largest_gradient_component_index": 16,
+      "rdkit_terms": {
+        "Bond": {
+          "analytic": 126.93100483437279,
+          "central_difference": {
+            "1e-08": 126.9310036633442,
+            "1e-10": 126.93096351767963
+          }
+        },
+        "Angle": {
+          "analytic": 36.17176685634472,
+          "central_difference": {
+            "1e-08": 36.312118112391545,
+            "1e-10": 40.56325053625187
+          }
+        },
+        "StretchBend": {
+          "analytic": -38.76992818941051,
+          "central_difference": {
+            "1e-08": -38.7929026679501,
+            "1e-10": -39.488803338372236
+          }
+        },
+        "Oop": {
+          "analytic": 45.22028688655084,
+          "central_difference": {
+            "1e-08": 2103.568377772105,
+            "1e-10": 2102.15756237149
+          }
+        },
+        "Torsion": {
+          "analytic": -1201098.7987901324,
+          "central_difference": {
+            "1e-08": 42734.77794440872,
+            "1e-10": 42768.80628761859
+          }
+        },
+        "VdW": {
+          "analytic": 20.8753234822329,
+          "central_difference": {
+            "1e-08": 20.875323514246702,
+            "1e-10": 20.875319250990287
+          }
+        },
+        "Ele": {
+          "analytic": 5.495948933770082,
+          "central_difference": {
+            "1e-08": 5.4959485851213685,
+            "1e-10": 5.496048061104375
+          }
+        }
+      }
+    },
+    {
+      "index": 10,
+      "status": 1,
+      "energy": 24.699311553912167,
+      "angle_degrees": 115.22708538828019,
+      "chematic_gradient_max": 0.014762599483298578,
+      "rdkit_gradient_max": 0.014762599483283257,
+      "max_component_difference": 1.8318679906315083e-13
+    },
+    {
+      "index": 11,
+      "status": 1,
+      "energy": 24.95815624333366,
+      "angle_degrees": 115.98441152748471,
+      "chematic_gradient_max": 1.7198993940423117,
+      "rdkit_gradient_max": 1.7198993940423108,
+      "max_component_difference": 1.6708856520608606e-13
+    },
+    {
+      "index": 12,
+      "status": 1,
+      "energy": 24.990692976293058,
+      "angle_degrees": 115.70252671452758,
+      "chematic_gradient_max": 3.027664484771697,
+      "rdkit_gradient_max": 3.0276644847716936,
+      "max_component_difference": 1.9895196601282805e-13
+    },
+    {
+      "index": 13,
+      "status": 0,
+      "energy": 38.19853298224869,
+      "angle_degrees": 109.70056475309724,
+      "chematic_gradient_max": 0.001103166230919681,
+      "rdkit_gradient_max": 0.0011031662309292291,
+      "max_component_difference": 1.412203687323199e-13
+    },
+    {
+      "index": 14,
+      "status": 0,
+      "energy": 48.643976510193085,
+      "angle_degrees": 113.4427844924522,
+      "chematic_gradient_max": 0.0009638248463226251,
+      "rdkit_gradient_max": 0.0009638248463137156,
+      "max_component_difference": 1.8385293287792592e-13
+    },
+    {
+      "index": 15,
+      "status": 0,
+      "energy": 48.736423486939394,
+      "angle_degrees": 113.15142389720779,
+      "chematic_gradient_max": 0.0009565271914907941,
+      "rdkit_gradient_max": 0.0009565271915121104,
+      "max_component_difference": 2.2026824808563106e-13
+    },
+    {
+      "index": 16,
+      "status": 1,
+      "energy": 162.0820865980807,
+      "angle_degrees": 179.9998599186647,
+      "chematic_gradient_max": 1598895.1245233044,
+      "rdkit_gradient_max": 1598895.1245232099,
+      "max_component_difference": 4.783505573868752e-07,
+      "largest_gradient_component_index": 16,
+      "rdkit_terms": {
+        "Bond": {
+          "analytic": -151.32056211679972,
+          "central_difference": {
+            "1e-08": -151.32056141453631,
+            "1e-10": -151.3205560854658
+          }
+        },
+        "Angle": {
+          "analytic": -42.09284505566136,
+          "central_difference": {
+            "1e-08": -42.10012249927786,
+            "1e-10": -34.81723354070709
+          }
+        },
+        "StretchBend": {
+          "analytic": 12.719458409605382,
+          "central_difference": {
+            "1e-08": 12.720269726429478,
+            "1e-10": 11.908749542044461
+          }
+        },
+        "Oop": {
+          "analytic": -19.4858187875573,
+          "central_difference": {
+            "1e-08": -812.5734928108056,
+            "1e-10": -810.8769707722198
+          }
+        },
+        "Torsion": {
+          "analytic": 1599113.814885098,
+          "central_difference": {
+            "1e-08": -640.1713229742256,
+            "1e-10": -683.3610388667921
+          }
+        },
+        "VdW": {
+          "analytic": -18.16532559406765,
+          "central_difference": {
+            "1e-08": -18.165324888741452,
+            "1e-10": -18.16538031107484
+          }
+        },
+        "Ele": {
+          "analytic": -0.3452687441958213,
+          "central_difference": {
+            "1e-08": -0.34527118941696244,
+            "1e-10": -0.34518166103225667
+          }
+        }
+      }
+    },
+    {
+      "index": 17,
+      "status": 1,
+      "energy": 163.25181086070876,
+      "angle_degrees": 179.99972066071064,
+      "chematic_gradient_max": 775310.3302697747,
+      "rdkit_gradient_max": 775310.3302885331,
+      "max_component_difference": 1.8758466467261314e-05,
+      "largest_gradient_component_index": 16,
+      "rdkit_terms": {
+        "Bond": {
+          "analytic": -147.12955697630545,
+          "central_difference": {
+            "1e-08": -147.12955653806148,
+            "1e-10": -147.1295263399952
+          }
+        },
+        "Angle": {
+          "analytic": -36.83431154196807,
+          "central_difference": {
+            "1e-08": -36.847516327043195,
+            "1e-10": -38.50807672733936
+          }
+        },
+        "StretchBend": {
+          "analytic": 25.073446203097205,
+          "central_difference": {
+            "1e-08": 25.075059006951506,
+            "1e-10": 25.27777986927049
+          }
+        },
+        "Oop": {
+          "analytic": 24.855527586945417,
+          "central_difference": {
+            "1e-08": 449.05008381897204,
+            "1e-10": 449.07237939113134
+          }
+        },
+        "Torsion": {
+          "analytic": 775463.6323185797,
+          "central_difference": {
+            "1e-08": 1062.9404294970611,
+            "1e-10": 1062.2433754825522
+          }
+        },
+        "VdW": {
+          "analytic": -19.88479320043586,
+          "central_difference": {
+            "1e-08": -19.884792834545806,
+            "1e-10": -19.884822677340708
+          }
+        },
+        "Ele": {
+          "analytic": 0.6176578822457754,
+          "central_difference": {
+            "1e-08": 0.6176577471705968,
+            "1e-10": 0.6176037459226791
+          }
+        }
+      }
+    },
+    {
+      "index": 18,
+      "status": 1,
+      "energy": 25.190436811947716,
+      "angle_degrees": 116.47842700232056,
+      "chematic_gradient_max": 4.203226078626686,
+      "rdkit_gradient_max": 4.203226078626731,
+      "max_component_difference": 2.1316282072803006e-13
+    },
+    {
+      "index": 19,
+      "status": 0,
+      "energy": 48.73642348333779,
+      "angle_degrees": 113.15132526453675,
+      "chematic_gradient_max": 0.0008083014132068828,
+      "rdkit_gradient_max": 0.0008083014132019423,
+      "max_component_difference": 1.1559850299214247e-13
+    }
+  ]
+}

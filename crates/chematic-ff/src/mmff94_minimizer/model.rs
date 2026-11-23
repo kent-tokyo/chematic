@@ -197,7 +197,6 @@ impl Mmff94EnergyModel {
     ) -> Result<Self, MinimizerError> {
         let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
         let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
-        let rings = find_sssr(mol).rings().to_vec();
         let (mut vdw_pairs, mut electrostatic_pairs) = build_nonbonded_pairs(mol, &types, &charges);
         if options.ignore_interfragment_interactions {
             let frag = fragment_ids(mol);
@@ -205,8 +204,8 @@ impl Mmff94EnergyModel {
             electrostatic_pairs.retain(|p| frag[p.i] == frag[p.j]);
         }
         let bonds = build_bond_terms(&mmff_mol, &types);
-        let angles = build_angle_terms(&mmff_mol, &types, &rings);
-        let stretch_bends = build_stretch_bend_terms(&mmff_mol, &types, &rings);
+        let angles = build_angle_terms(&mmff_mol, &types, &[]);
+        let stretch_bends = build_stretch_bend_terms(&mmff_mol, &types, &[]);
         let torsions = build_torsion_terms(&mmff_mol, &types);
         let oops = build_oop_terms(&mmff_mol, &types);
         Ok(Self {
@@ -546,7 +545,6 @@ pub fn mmff94_torsion_scan(
 ) -> Result<Vec<(f64, f64)>, MinimizerError> {
     let (types, mmff_mol) = assign_mmff94_numeric_types_with_view(mol)?;
     let charges = mmff94_charges_numeric(mol).map_err(MinimizerError::ChargeCalculation)?;
-    let ring_set = find_sssr(mol);
     let n = mol.atom_count();
     let steps = steps.max(2);
 
@@ -613,7 +611,7 @@ pub fn mmff94_torsion_scan(
             }
         }
 
-        let energy = total_energy(&mmff_mol, &work, &types, &charges, ring_set.rings());
+        let energy = total_energy(&mmff_mol, &work, &types, &charges, &[]);
         results.push((angle_deg, energy));
     }
 

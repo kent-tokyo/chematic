@@ -12,6 +12,54 @@ mod tests {
     use chematic_core::molecule::MoleculeBuilder;
     use chematic_core::{Atom, BondOrder, Element};
 
+    #[test]
+    fn chorded_four_cycle_uses_local_mmff_angle_type() {
+        // RDKit 2026.09.2: C12C3C4C1C234 has four relevant triangular
+        // cycles, but angle 0-1-2 lies on a local four-cycle whose edge set
+        // is the sum of those triangles and is absent from relevant cycles.
+        let mut builder = MoleculeBuilder::new();
+        let atoms: Vec<_> = (0..5)
+            .map(|_| builder.add_atom(Atom::new(Element::C)))
+            .collect();
+        for (i, j) in [
+            (0, 1),
+            (1, 2),
+            (2, 3),
+            (3, 0),
+            (4, 0),
+            (4, 1),
+            (4, 2),
+            (4, 3),
+        ] {
+            builder
+                .add_bond(atoms[i], atoms[j], BondOrder::Single)
+                .unwrap();
+        }
+        let mol = builder.build();
+        let rings = chematic_perception::relevant_cycles(&mol, 100).unwrap();
+        assert!(rings.iter().all(|ring| ring.len() == 3));
+        let types = [22; 5];
+        assert_eq!(angle_type_for(&mol, &rings, 0, 1, 2, &types), 4);
+        assert_eq!(angle_type_for(&mol, &[], 0, 1, 2, &types), 4);
+        assert_eq!(angle_type_for(&mol, &rings, 0, 1, 4, &types), 3);
+        assert_eq!(is_angle_in_ring_of_size_3_or_4(&mol, 0, 2, 1), 0);
+    }
+
+    #[test]
+    fn phosphorus_type_75_single_bond_classification_matches_registry() {
+        // RDKit 2026.09.2: c1ccccc1P=C has a type-1 C(37)-P(75)
+        // single bond and a type-0 P(75)=C(3) double bond.
+        assert_eq!(bond_type_for(37, 75, BondOrder::Single), 1);
+        assert_eq!(bond_type_for(75, 3, BondOrder::Double), 0);
+        let registry: Vec<u8> = (1..=99)
+            .filter(|&id| {
+                crate::mmff94_numeric_type_registry::mmff94_numeric_type_info(id)
+                    .is_some_and(|info| info.single_bond_multiple_bond)
+            })
+            .collect();
+        assert_eq!(MLTB_TYPES, registry.as_slice());
+    }
+
     fn methane_mol() -> (Molecule, Vec<[f64; 3]>) {
         let mut b = MoleculeBuilder::new();
         let c = b.add_atom(Atom::new(Element::C));
@@ -709,7 +757,7 @@ mod tests {
                 "each 4-ring atom has exactly 2 ring neighbors"
             );
             let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
-            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+            if is_angle_in_ring_of_size_3_or_4(&mol, i, j, k) != 4 {
                 continue;
             }
             let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));
@@ -745,7 +793,7 @@ mod tests {
                 "each 4-ring atom has exactly 2 ring neighbors"
             );
             let (i, k) = (ring_neighbors[0], ring_neighbors[1]);
-            if !atoms_share_ring_of_size(rings.rings(), &[i, j, k], 4) {
+            if is_angle_in_ring_of_size_3_or_4(&mol, i, j, k) != 4 {
                 continue;
             }
             let bt_ij = bond_type_for(types[i], types[j], bond_order_between(&mol, i, j));

@@ -1,0 +1,38 @@
+name: Reproduce PDB macrocycle split
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/macrocycle-pdb-split-check.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  split:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install pinned scaffold toolkit
+        run: python -m pip install 'rdkit==2026.9.1' 'numpy<3'
+      - name: Verify inputs and reproduce index-only split
+        run: |
+          python -c 'import hashlib,pathlib; x={"scripts/validation/macrocycle_reference_split.py":"be13bf6d825a85668cb344b4f976cdd29509fc667987859a76239c4e1e06f96e", "scripts/validation/macrocycle_invalid_exclusion_audit.py":"4505eb4f3937e037f03c1805c94d1622198a8d141677bfc9618d3903d2334b2d", "scripts/benchmarks/platinum_invalid_exclusion_audit.py":"7307a2744c9463971f12a7c2ddda4e3123128bfda1caf2f41e99c9ab10ee296c"}; assert all(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==v for p,v in x.items())'
+          curl --fail --location --retry 3 --max-time 180 --output macrocycle-index.csv https://raw.githubusercontent.com/dptech-corp/MacroCycle-Benchmark/6afbb010770f8adaadb9db7f83f7a86538757a62/benchmark_index.csv
+          echo 'cf408bbcbeed78fe8862f8f1ccf48a2714f18dcaad5b9ac1fa6c482f4d7155dc  macrocycle-index.csv' | sha256sum --check
+          python scripts/validation/macrocycle_reference_split.py macrocycle-index.csv --exclude-split validation/results/platinum-diverse-scaffold-split-audited-2026-11-21.json --exclude-split validation/results/platinum-complete-scaffold-split-2026-11-22.json --exclude-split validation/results/prime-scaffold-split-2026-11-22.json --exclude-split validation/results/cod-round2-scaffold-split-2026-11-22.json.gz --output macrocycle-split-recomputed.json
+          echo 'cd50ed3f5460e15b7e8a8dc0e33075884490d0e3c090d7a1ee7d39a81bd361c2  macrocycle-split-recomputed.json' | sha256sum --check
+          python scripts/validation/macrocycle_invalid_exclusion_audit.py macrocycle-index.csv macrocycle-split-recomputed.json --output macrocycle-invalid-audit-recomputed.json
+          echo '1293b264be555e2802edb0a1067ec5e35fcfb5cc979935fdc2cf51ca9902c855  macrocycle-invalid-audit-recomputed.json' | sha256sum --check
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        if: always()
+        with:
+          name: macrocycle-pdb-split-check-${{ github.sha }}
+          path: |
+            macrocycle-split-recomputed.json
+            macrocycle-invalid-audit-recomputed.json
+          if-no-files-found: warn

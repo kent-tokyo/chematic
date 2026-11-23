@@ -1,0 +1,15 @@
+{
+  "rdkit": "2026.09.2",
+  "results": [
+    {
+      "name": "XTULIPKREBMLNM-XHGUTPRISA-N",
+      "energy_error": 0.0,
+      "gradient_error_max": 0.0
+    },
+    {
+      "name": "OXBMFCGRQJNAOY-TWXUZQDTSA-N",
+      "energy_error": 0.0,
+      "gradient_error_max": 0.0
+    }
+  ]
+}

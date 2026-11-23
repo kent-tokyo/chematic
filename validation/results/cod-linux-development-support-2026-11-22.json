@@ -1,0 +1,2044 @@
+{
+  "source_sha256": "6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74",
+  "split_sha256": "138fff6f10426bf4041faae25fc07717e436eb7f965e2df65c5983cde65e3449",
+  "rdkit_version": "2026.09.2",
+  "partition": "development",
+  "counts": [
+    {
+      "rdkit_mmff": true,
+      "chematic_mmff": true,
+      "records": 210
+    },
+    {
+      "rdkit_mmff": false,
+      "chematic_mmff": false,
+      "records": 12
+    },
+    {
+      "rdkit_mmff": false,
+      "chematic_mmff": true,
+      "records": 1
+    }
+  ],
+  "results": [
+    {
+      "index": 15,
+      "name": "TWBUNRWWZPORMY-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 78,
+      "name": "UEZYUDAMQBJVJP-CQVMLLNQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 124,
+      "name": "GKVOUCCEHYGRKW-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 135,
+      "name": "BTHHSOGOVXANQO-WAJMTFSTSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 226,
+      "name": "MUGYKZLFMGWBNK-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 267,
+      "name": "GCSKXNWDTIZBFI-GFCCVEGCSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 293,
+      "name": "YCRQZEOBFFUHQZ-CABCVRRESA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 318,
+      "name": "OMLDMGPCWMBPAN-YPMHNXCESA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 367,
+      "name": "VRZHLFLYMJSBSG-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 391,
+      "name": "KDLHIGLBPFBVCB-GMXVVIOVSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 418,
+      "name": "XDMWIEURHANMMV-UHFFFAOYSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 424,
+      "name": "HDSMYSHIFRYVLA-DJLDLDEBSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 461,
+      "name": "DQIBOSWPDZUOKX-HNNXBMFYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 588,
+      "name": "KWDRIKMYYYXDEQ-GXFFZTMASA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 597,
+      "name": "LWXPPVNKGPNJEG-BDAKNGLRSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 613,
+      "name": "MHKPQVLSYSABJM-OALUTQOASA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 614,
+      "name": "VVOWIRQDSLAXKL-MUBWQAHESA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 632,
+      "name": "SWXBCXVNBGHVGG-NFFSIYARSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 724,
+      "name": "QAWOBKZGQMNYBL-AATRIKPKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 747,
+      "name": "ANFCORNLZTWGRZ-PDRBTLDYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 775,
+      "name": "MQWFBXVLSIYRPQ-GARJFASQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 800,
+      "name": "FNRLHIOQUVZAMP-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 874,
+      "name": "LOHOYMKNEWMYHL-RQZCQDPDSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 931,
+      "name": "KOQREMKJXUHRRC-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1095,
+      "name": "DLMIWIDZMSLNNJ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1115,
+      "name": "OGYUNVSLQJOFQS-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1146,
+      "name": "VLDMBLQHVHKDSW-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1170,
+      "name": "XHKXUDZJNGOMQJ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1196,
+      "name": "RAWLYQNWQOHFRN-LVQVYYBASA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1216,
+      "name": "CMAMANMTJLHCKR-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1292,
+      "name": "GMRXQUJWKQSXSN-KIBWQBKSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1311,
+      "name": "UQPTYQHVLNJVPO-SDXDJHTJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1353,
+      "name": "BOODLVQDSHVCNB-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1381,
+      "name": "FIJQZCZSVMJNSI-SSRSHJHVSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1399,
+      "name": "DVUOVQGFRARTCJ-QTXCTVDDSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1425,
+      "name": "JCQBVEJXHBZLQE-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1430,
+      "name": "GYCPWDLVOLTMCQ-HXUWFJFHSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1434,
+      "name": "FIOZALZFJXWJTM-XYOKQWHBSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1548,
+      "name": "ZKYFZCQILBKYPF-GFCCVEGCSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1631,
+      "name": "RTLJKXYMMDDSMU-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1636,
+      "name": "QCOVSKCJQXCDBI-IGKIAQTJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1722,
+      "name": "JPDCQWMHEZWUAL-OGPYBGEISA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1817,
+      "name": "TUAAHAGNICDJPT-MANSERQUSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1863,
+      "name": "SVKVGHMXRORCHA-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1921,
+      "name": "SKLDVYDFQCXARY-HXUWFJFHSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 1928,
+      "name": "MPEGWTYBUBFCST-LFYBBSHMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2068,
+      "name": "QUVHKWHEWFRMPK-MROGMESDSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2114,
+      "name": "LPUBAXPDGLIMRQ-BHIFYINESA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2185,
+      "name": "YFWJFMHZSPFQHK-NVNXTCNLSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2281,
+      "name": "KMSVOMRRWUTBLI-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2335,
+      "name": "LVVMNMKIMGMAJP-QZTJIDSGSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2345,
+      "name": "KKMBHPLTLGMTMB-FJQKHHLYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2394,
+      "name": "OUWFLIPTBIMFNT-GNQXEYABSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2442,
+      "name": "OMBRRAHVIGBTFL-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2462,
+      "name": "CPVFMRQOPWDSSC-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2620,
+      "name": "OJJNXGGFSUFYMK-CYBMUJFWSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2622,
+      "name": "WITGZXQDECBURN-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 3')",
+      "chematic_uff": true
+    },
+    {
+      "index": 2681,
+      "name": "RFLRLJGGFZCPAQ-YRNVUSSQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2706,
+      "name": "VKVFCALGFJZPNH-DQSJHHFOSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2730,
+      "name": "IYMZSNBCIHPUFN-YVARQFDVSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2736,
+      "name": "MVWHDDXVOTXQPG-DWZYQQQCSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2775,
+      "name": "LQSDYPAUQADNAB-PQQNNWGCSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2952,
+      "name": "MTOQCUWIYJGHOL-RSJBSVHNSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2960,
+      "name": "HIGMLRJZBHZMSL-QMMFTLRZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 2964,
+      "name": "QWFYGTQXMSCGRD-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3055,
+      "name": "ABCUPIFJNBDJMS-OXOINMOOSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3060,
+      "name": "FWOBWSZJNMBNEV-ROUUACIJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3075,
+      "name": "XUOSSZSBUKLSGP-XUDLPTGHSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3099,
+      "name": "FBSBEEWZMWWAJP-RRGQHJHPSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": false,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(34) at atom 0')",
+      "chematic_uff": true
+    },
+    {
+      "index": 3139,
+      "name": "CGDVBRQMZRPWIC-BXVCGKIKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3162,
+      "name": "AOXZKEBKRSOYMQ-YRNVUSSQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3168,
+      "name": "PLLIGKATQBHVQS-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3185,
+      "name": "GIUHKPDPAOABII-VBXGJKEFSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3210,
+      "name": "RPGJBSMNFKYZMZ-SCTDSRPQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3223,
+      "name": "NRHXXWOXKJBYSP-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3329,
+      "name": "DACBMFVWNMDCSK-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3420,
+      "name": "UYCSKQXFQVJLBY-DYVQZXGMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3498,
+      "name": "LJUWBSBTLJFCAB-UHNVWZDZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3506,
+      "name": "QWBBDLGFNCJCGP-ZLCNAFIYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3549,
+      "name": "YQOIXGMWTVSWIN-UHFFFAOYSA-M",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3579,
+      "name": "MXRZLPMPSZVZJR-ZDUSSCGKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3580,
+      "name": "HUFVNAGYQABSCF-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3603,
+      "name": "YMXQMRDWJDOMID-OTCXFQBHSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3781,
+      "name": "NLFBRUZLSUKYGY-KDOFPFPSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3882,
+      "name": "DDBODPXWRWWDMO-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 3931,
+      "name": "FEGUMLPHNPYTPR-PKOBYXMFSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4010,
+      "name": "ILABMNINPHMMAP-BUHFOSPRSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4061,
+      "name": "WNSMBUMEIQSXGC-YBFXNURJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4069,
+      "name": "OIHPEQANXPYMFN-DJKKODMXSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4076,
+      "name": "VPRCSGCMSIKZRQ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4170,
+      "name": "UOUJUGUMEXZIHX-BUHFOSPRSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4246,
+      "name": "JZVUBOIVLRRPJN-GXIQQZJTSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4281,
+      "name": "ODYFPSTWCYRZAI-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4292,
+      "name": "UGEUMTVHERRWND-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4326,
+      "name": "FALXDFKHUANIJZ-TXEJJXNPSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4539,
+      "name": "BUVURKGJMVATJS-XVJMICLVSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4581,
+      "name": "HLOFQWQRRZYIKN-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4638,
+      "name": "XUONEHZLQOMLGP-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4661,
+      "name": "MZCMISLVGAMJJN-VWLOTQADSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4662,
+      "name": "VAPNIYYLMLVUSK-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4716,
+      "name": "BMVFPUCWTNZZSK-WCFTWNFSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4795,
+      "name": "CBQLVACGEMGVMI-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(34) at atom 4')",
+      "chematic_uff": true
+    },
+    {
+      "index": 4827,
+      "name": "ZNLIXINLPGNPIZ-CXAGYDPISA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4883,
+      "name": "GARVJRJQXDUEJD-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4909,
+      "name": "LXTGMRKXRZPUKV-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 4')",
+      "chematic_uff": true
+    },
+    {
+      "index": 4956,
+      "name": "SIMBEQIIKOXOBK-ZNHNDWKLSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 4965,
+      "name": "IHAFKAWSPFWAHW-QGZVFWFLSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5014,
+      "name": "BRYOBPSRWAMNFE-JOMMOWRJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5100,
+      "name": "RNNVZZOOKPEWBN-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5188,
+      "name": "HAEZLGLWRLMPKR-ZZLPTCMGSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5200,
+      "name": "PIZDOJMYIYUIJX-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5202,
+      "name": "XSPCACGOZSXWGQ-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(34) at atom 10')",
+      "chematic_uff": true
+    },
+    {
+      "index": 5225,
+      "name": "IJFPZAFEXHXEEI-WWNPGLIZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5240,
+      "name": "VVDCZXBKYRXTHC-AZUAARDMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5306,
+      "name": "VFOOKSLEGDHUAY-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5320,
+      "name": "QKUFVFDNIGFNAU-JTQLQIEISA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5435,
+      "name": "OANAWLZIJDDESM-XLIONFOSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5452,
+      "name": "GQDCTRKQKKYCHJ-RNJXMRFFSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5587,
+      "name": "UZWDTTNOSZSLDE-XCGNWRKASA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5666,
+      "name": "DFROSSQHIOTSFC-VLCRHTCISA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5771,
+      "name": "LOMHIEIDDHYBIV-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5788,
+      "name": "REOHFKCKWWQUSM-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5817,
+      "name": "SAHKOOROILZKKG-UZGJAOCOSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5930,
+      "name": "QFNPWCACYDUXLD-LOYHVIPDSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5949,
+      "name": "QWYDFEKBBFVMQW-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 5965,
+      "name": "YCVRIOKURDSNRO-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6041,
+      "name": "IRDVBMVOWHHRBZ-SFHVURJKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6057,
+      "name": "FHHWYBVALLGQIL-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6072,
+      "name": "FXNXPZCMRMFRBV-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6130,
+      "name": "YSJPCFCDVVHKQJ-WJOKGBTCSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6209,
+      "name": "VOKLILSQFAYLNP-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6264,
+      "name": "HBOZOPYGYJQPHV-QWRGUYRKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6365,
+      "name": "MZXBGQAYUVYKAL-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6406,
+      "name": "LVNVCBLSYVXPLG-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 18')",
+      "chematic_uff": true
+    },
+    {
+      "index": 6503,
+      "name": "GSOXXVVBLZVPBO-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6518,
+      "name": "GBZCSVRVELXVPT-VOTSOKGWSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6562,
+      "name": "NXHAGVRPEREYRM-KGENOOAVSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6642,
+      "name": "DRXRTPIWRZLTMV-UOMISXDJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6786,
+      "name": "NKKOUCYGAWRRSC-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6797,
+      "name": "JHCYUNKVVKSDTF-CVEARBPZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6810,
+      "name": "GSVBRDXXYMHWIL-VDTYLAMSSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6817,
+      "name": "VPWAAWAWLZVNGC-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 19')",
+      "chematic_uff": true
+    },
+    {
+      "index": 6837,
+      "name": "MTDSBXDACDMZEZ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 6885,
+      "name": "CCGYWZOJQOFUBN-LJQANCHMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7134,
+      "name": "KRRQAGDOZUFZQZ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7139,
+      "name": "WFVUBBAENVMURE-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 1')",
+      "chematic_uff": true
+    },
+    {
+      "index": 7164,
+      "name": "YTDFLTYDDLCFSM-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7221,
+      "name": "CAJIXULNKIFWHU-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7260,
+      "name": "AGZMFTKKLPHOMT-DKEATJHWSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7293,
+      "name": "ULIDRMKBVYYVIQ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7431,
+      "name": "IIAIHXVHHPTFSQ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7502,
+      "name": "HEJIQWUIVYNSDH-JQWIXIFHSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7518,
+      "name": "LQLDQCLUEVOVAL-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7519,
+      "name": "YNNJCFQKXXUNKC-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 31')",
+      "chematic_uff": true
+    },
+    {
+      "index": 7524,
+      "name": "YHMJWTXJAHETSE-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7682,
+      "name": "TUXNCFNRVGIFQA-AWEZNQCLSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7707,
+      "name": "PINPTHTWMPTPBN-ZCDKGFTFSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7789,
+      "name": "CDAQTCXFSFXJDT-AATRIKPKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7874,
+      "name": "ZYEFBWCABVZYQW-QFIPXVFZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 7947,
+      "name": "NZTGXTGHSZVAPQ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8002,
+      "name": "RNNJZYVDQGNDKH-HTTKSJEASA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8017,
+      "name": "YAKMEUXJPFAHIX-AOOOYVTPSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8031,
+      "name": "PQUQWZRGIKRBOC-ZGNDMVSUSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8101,
+      "name": "YDBSPMGZVICENJ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8260,
+      "name": "JDOUXHLTGXHBQV-QGZVFWFLSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8400,
+      "name": "ZVBCICMUBIRNHO-HJIKLVIJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8444,
+      "name": "UNQPDFJIGFTVFW-BHVANESWSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 28')",
+      "chematic_uff": true
+    },
+    {
+      "index": 8479,
+      "name": "OUGGQQBMZWCBGE-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8564,
+      "name": "AXVUPHSJYMYHDT-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 18')",
+      "chematic_uff": true
+    },
+    {
+      "index": 8598,
+      "name": "DREVHMXZIYPYQG-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8630,
+      "name": "JTFXAGMJBXVENS-WYQCABFXSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8648,
+      "name": "SCWFIGHGRPOHBQ-OEDYQIATSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8750,
+      "name": "GBDGOAVPCDIMFE-XMEMRUQMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8766,
+      "name": "WPHDEPITWNXZIG-UHFFFAOYSA-P",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8825,
+      "name": "BYOOSLZSEVIVJV-BBSPKAJSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8831,
+      "name": "UOIKSILGKKOMSD-RUZDIDTESA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8848,
+      "name": "YVJNFUUEUFPVNC-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8927,
+      "name": "FUSMXQBJIUSPJF-UXHICEINSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8945,
+      "name": "RHNRQULOZSWWMK-JURQTTASSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 8948,
+      "name": "UEQZFAGVRGWPDK-UHFFFAOYSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9084,
+      "name": "DTNZCBVILZRQSE-LLVKDONJSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9089,
+      "name": "ICMSSQDQECLKQY-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9238,
+      "name": "ZVVBMEQNAHBING-LBPRGKRZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9272,
+      "name": "DAEHKZDYFJFUSJ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9315,
+      "name": "VYIQMPHMXZWZEC-HDICACEKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9330,
+      "name": "JCVABABDEOOQPU-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9393,
+      "name": "NWNGEIAHZBFJOQ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9490,
+      "name": "CPLDEPCWTAENSX-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9547,
+      "name": "ZMVGTROGLNSELQ-IRLDBZIGSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9590,
+      "name": "ICKYZMGZUCFUMJ-PBXQCXKZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9615,
+      "name": "LUKDNACVDPSQDZ-KRWDZBQOSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9724,
+      "name": "DFGTXUSUGAEDOC-WTFGDDLMSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9927,
+      "name": "WXISYTWTXWRZOU-ONEGZZNKSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 9947,
+      "name": "QGVWJGRIRCBRCZ-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10002,
+      "name": "VGJNBNUZUHCBNY-UXBLZVDNSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10035,
+      "name": "CJJZZJATCPPMMW-YCIPVIBOSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10100,
+      "name": "NFCXRYYGLNAEMA-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10140,
+      "name": "UMUDCYCMHSGGEC-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10186,
+      "name": "AYRIHCMBWNWOFK-MDZDMXLPSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10205,
+      "name": "IKZITDCEGIWHLO-AREMUKBSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10255,
+      "name": "PUCMNPYSRUPCCQ-WLRTZDKTSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10383,
+      "name": "ZODOKPWVKYWMFF-UHFFFAOYSA-N",
+      "rdkit_mmff": false,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": false,
+      "chematic_mmff_error": "ValueError('MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 4')",
+      "chematic_uff": true
+    },
+    {
+      "index": 10429,
+      "name": "JQOJORCJPNQSAF-ONKUIVFESA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10503,
+      "name": "JVOCETDQZYQQRR-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10586,
+      "name": "GYRIQDXMBIBENU-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10637,
+      "name": "QKUVAAKYVALXPY-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10638,
+      "name": "XLOBKJRWPRTBIM-UHFFFAOYSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10670,
+      "name": "JYHKHRQDECDMHS-QFIPXVFZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10743,
+      "name": "OMUDWEBSOQBFST-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 10866,
+      "name": "XBDYURPMADDQPI-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11314,
+      "name": "HJJHXDNSGFSOMD-RFAWQRTRSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11318,
+      "name": "XSQLNGCYKMODSB-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11335,
+      "name": "SEVAAKIHPKTYDK-FQEVSTJZSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11411,
+      "name": "IVOMOUWHDPKRLL-KQYNXXCUSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11509,
+      "name": "DGYTUXBSWVMHIY-HHHXNRCGSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11568,
+      "name": "YXGQGCZKBKFBTD-GHTZIAJQSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11577,
+      "name": "OJKNEFBRRWICAV-NXHKRRBXSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11590,
+      "name": "ZFWBPJPGICYCIV-UHFFFAOYSA-O",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11723,
+      "name": "WAQBAMJEFBWPJW-NTZNESFSSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11821,
+      "name": "ZVDBDDZRRAYUIT-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11825,
+      "name": "KQKWEPJQTRAALV-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11872,
+      "name": "BJDGGGIAOICZCS-UHFFFAOYSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    },
+    {
+      "index": 11950,
+      "name": "MHPDDMNAUJQRSW-NRFANRHFSA-N",
+      "rdkit_mmff": true,
+      "rdkit_uff": true,
+      "graph_matches": true,
+      "chematic_mmff": true,
+      "chematic_uff": true
+    }
+  ]
+}

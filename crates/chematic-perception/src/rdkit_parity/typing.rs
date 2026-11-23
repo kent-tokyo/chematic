@@ -842,6 +842,19 @@ fn parity_ring_set(
     keep: &[bool],
     allow_ranks: bool,
 ) -> Option<Vec<Vec<AtomIdx>>> {
+    // RDKit 2026.09 uses relevant cycles for the rings consumed by its
+    // aromaticity pass. Equal minimum cycles can include small rings omitted
+    // by one SSSR, and the order in which a donor is first seen can matter.
+    // Keep the unranked shortcut's existing refusal behavior; its caller is
+    // testing a hypothetical Kekulé form and must remain recursion-free.
+    if allow_ranks && let Ok(rings) = crate::relevant_cycles(mol, 10_000) {
+        return Some(
+            rings
+                .into_iter()
+                .filter(|ring| keep[ring[0].0 as usize])
+                .collect(),
+        );
+    }
     let sssr = if allow_ranks {
         crate::sssr::find_sssr_ring_set_in_components(mol, keep)
     } else {

@@ -1,0 +1,14 @@
+{
+  "case": "5vk0__Ligand_phospholipids_ALA_L_4",
+  "platform": "Linux-7.0.0-1016-aws-x86_64-with-glibc2.43",
+  "rdkit": "2026.09.2",
+  "corrected_count": 0,
+  "fallback_count": 2,
+  "fallback_statuses": [
+    1,
+    1
+  ],
+  "stereo_checked": 2,
+  "stereo_contradicted": 0,
+  "stereo_unevaluable": 0
+}

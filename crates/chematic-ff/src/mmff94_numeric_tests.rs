@@ -37,6 +37,38 @@ mod tests {
         parse(s).unwrap()
     }
 
+    #[test]
+    fn one_neighbor_carbon_uses_rdkit_type_60() {
+        // RDKit 2026.09.2 uses total degree, including implicit hydrogens,
+        // rather than charge or bond order, for this branch.
+        for smiles in ["[C-2]=C", "[C-3]C", "[C-]#[N+]C", "[C]C", "[C-3]O"] {
+            let m = mol(smiles);
+            assert_eq!(assign_mmff94_numeric_types(&m).unwrap()[0], 60, "{smiles}");
+        }
+        assert_eq!(assign_mmff94_numeric_types(&mol("C#N")).unwrap()[0], 4);
+        assert_eq!(assign_mmff94_numeric_types(&mol("C=C")).unwrap()[0], 2);
+    }
+
+    #[test]
+    fn directional_single_bond_does_not_change_nitrone_oxygen_type() {
+        // RDKit 2026.09.2 assigns O2CM(32) for each charge-separated nitrone,
+        // regardless of the neighboring directional single bond marker.
+        for smiles in [
+            "[O-]/[N+](=C\\c1ccccc1)c1ccccc1",
+            "[O-]\\[N+](=C/c1ccccc1)c1ccccc1",
+            "[O-][N+](=Cc1ccccc1)c1ccccc1",
+        ] {
+            let m = mol(smiles);
+            let types = assign_mmff94_numeric_types(&m).unwrap();
+            assert_eq!(types[0], 32, "{smiles}");
+            assert_eq!(types[1], 67, "{smiles}");
+        }
+        assert_eq!(
+            assign_mmff94_numeric_types(&mol("[O-]N(C)C")).unwrap()[0],
+            35
+        );
+    }
+
     // ── Type assignment tests ────────────────────────────────────────────────
 
     #[test]

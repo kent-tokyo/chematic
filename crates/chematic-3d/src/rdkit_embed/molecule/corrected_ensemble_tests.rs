@@ -323,3 +323,284 @@ fn corrected_ensemble_preserves_single_seed_and_opt_in_boundary() {
     assert!(best(&selected) <= best(&compatibility));
     assert!(best(&selected) <= best(&optimized));
 }
+
+#[test]
+fn corrected_checked_ensemble_verifies_the_returned_gradient() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let original = etkdg_embed_multiple_confs_mmff_corrected(&molecule, 20, &options, 200).unwrap();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    assert_eq!(original.len(), checked.len());
+    for (before, after) in original.iter().zip(&checked) {
+        assert_eq!(before.coords, after.coords);
+        assert_eq!(before.energy, after.energy);
+        if after.status == 0 {
+            let field =
+                chematic_ff::rdkit_mmff::RdkitMmffField::new(&molecule, &after.coords, 100.0, true)
+                    .unwrap();
+            let flat = after.coords.as_flattened();
+            let mut gradient = vec![0.0; flat.len()];
+            field.gradient(flat, &mut gradient);
+            assert!(gradient.iter().all(|v| v.is_finite() && v.abs() <= 0.01));
+        }
+    }
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    assert!(
+        original
+            .iter()
+            .zip(&checked)
+            .any(|(before, after)| before.status == 0 && after.status == 1)
+    );
+}
+
+#[cfg(all(target_os = "linux", target_arch = "x86_64"))]
+#[test]
+fn corrected_checked_ensemble_preserves_macrocycle_double_bond_stereo() {
+    // Exposed Prime development case: candidate 43 crosses an E double bond
+    // during unconstrained MMFF optimization on the Linux reference runner.
+    let smiles = "CO[C@H]1C[C@H](CC[C@@H](C)[C@H](O)[C@H](C)[C@H]2OC(=O)/C=C/C(C)=C/C[C@H](O)C[C@@H]3C=CC[C@@H](C[C@H](OC)[C@@H](C)[C@@H](O)C[C@@H](O)[C@H](C)[C@@H]([C@@H](C)[C@@H](O)[C@@H](C)CC[C@H]4C[C@H](OC)C[C@H](C)O4)OC(=O)/C=C/C(C)=C\\C[C@@H](O)C[C@@H]4C=CC[C@@H](C[C@H](OC)[C@@H](C)[C@@H](O)C[C@@H](O)[C@@H]2C)O4)O3)O[C@@H](C)C1";
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+    // The ensemble seed schedule maps base 42, index 43 to 1848. Running just
+    // that seed keeps the regression fast; the Python oracle checks the full
+    // 44-candidate ensemble separately.
+    let options = RdkitEmbedOptions {
+        random_seed: 1848,
+        ..Default::default()
+    };
+    let embedded = etkdg_embed_multiple_confs_corrected(&molecule, 1, &options).unwrap();
+    let unchecked = etkdg_embed_multiple_confs_mmff_corrected(&molecule, 1, &options, 200).unwrap();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 1, &options, 200).unwrap();
+    assert_eq!(embedded.len(), 1);
+    assert_eq!(unchecked.len(), 1);
+    assert_eq!(checked.len(), 1);
+    assert!(stereo_safe_retry(&molecule, &embedded[0]));
+    assert!(!stereo_safe_retry(&molecule, &unchecked[0].coords));
+    assert_eq!(checked[0].coords, embedded[0]);
+    assert_eq!(checked[0].status, 1);
+    assert!(
+        checked
+            .iter()
+            .all(|candidate| stereo_safe_retry(&molecule, &candidate.coords))
+    );
+    let field =
+        chematic_ff::rdkit_mmff::RdkitMmffField::new(&molecule, &embedded[0], 100.0, true).unwrap();
+    assert_eq!(checked[0].energy, field.energy(embedded[0].as_flattened()));
+}
+
+#[test]
+fn corrected_repair_is_bounded_and_stereo_safe() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    let disabled =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 20, &options, 200, 0).unwrap();
+    let repaired =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 20, &options, 200, 400)
+            .unwrap();
+    assert_eq!(checked.len(), repaired.len());
+    for ((initial, no_retry), after) in checked.iter().zip(&disabled).zip(&repaired) {
+        assert_eq!(initial.coords, no_retry.coords);
+        assert_eq!(initial.energy, no_retry.energy);
+        assert_eq!(initial.status, no_retry.status);
+        if initial.coords != after.coords {
+            assert_eq!(after.status, 0);
+            assert!(after.energy <= initial.energy);
+            assert!(stereo_safe_retry(&molecule, &after.coords));
+        }
+    }
+    #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+    assert!(
+        checked
+            .iter()
+            .zip(&repaired)
+            .any(|(a, b)| a.coords != b.coords)
+    );
+}
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[test]
+fn near_linear_mmff_consistent_gradient_matches_energy_difference() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let rows =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    for index in [9, 16, 17] {
+        let coords = &rows[index].coords;
+        let field = chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+            &molecule,
+            coords,
+            chematic_ff::rdkit_mmff::MmffVariant::Mmff94,
+            100.0,
+            true,
+            [false, false, false, false, true, false, false],
+        )
+        .unwrap();
+        let mut flat = coords.as_flattened().to_vec();
+        let mut gradient = vec![0.0; flat.len()];
+        field.gradient_with_consistent_torsions(&flat, &mut gradient);
+        for axis in 0..flat.len() {
+            let step = 1e-10;
+            flat[axis] += step;
+            let plus = field.energy(&flat);
+            flat[axis] -= 2.0 * step;
+            let minus = field.energy(&flat);
+            flat[axis] += step;
+            let finite = (plus - minus) / (2.0 * step);
+            assert!(gradient[axis].is_finite() && finite.is_finite());
+            assert!(
+                (gradient[axis] - finite).abs() < 0.02 * (1.0 + finite.abs()),
+                "conformer {index} axis {axis}: analytic {} finite {}",
+                gradient[axis],
+                finite
+            );
+        }
+    }
+}
+
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+#[test]
+fn near_linear_mmff_plane_gradient_matches_energy_difference() {
+    let molecule = chematic_chem::add_hydrogens(
+        &chematic_smiles::parse("CC(C)([NH3+])CNc1nc(-c2ccncc2)cc2cnccc12").unwrap(),
+    );
+    let options = RdkitEmbedOptions::default();
+    let rows =
+        etkdg_embed_multiple_confs_mmff_corrected_checked(&molecule, 20, &options, 200).unwrap();
+    for index in [9, 16, 17] {
+        let coords = &rows[index].coords;
+        let field = chematic_ff::rdkit_mmff::RdkitMmffField::with_terms(
+            &molecule,
+            coords,
+            chematic_ff::rdkit_mmff::MmffVariant::Mmff94,
+            100.0,
+            true,
+            [false, false, false, true, false, false, false],
+        )
+        .unwrap();
+        let mut flat = coords.as_flattened().to_vec();
+        let mut gradient = vec![0.0; flat.len()];
+        field.gradient_with_consistent_planes(&flat, &mut gradient);
+        for axis in 0..flat.len() {
+            let step = 1e-8;
+            flat[axis] += step;
+            let plus = field.energy(&flat);
+            flat[axis] -= 2.0 * step;
+            let minus = field.energy(&flat);
+            flat[axis] += step;
+            let finite = (plus - minus) / (2.0 * step);
+            assert!(gradient[axis].is_finite() && finite.is_finite());
+            assert!(
+                (gradient[axis] - finite).abs() < 0.02 * (1.0 + finite.abs()),
+                "conformer {index} axis {axis}: analytic {} finite {}",
+                gradient[axis],
+                finite
+            );
+        }
+    }
+}
+
+#[test]
+fn compatible_checked_ensemble_preserves_declared_stereo() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let conformers =
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 5, &options, 200, 0).unwrap();
+    assert!(!conformers.is_empty());
+    assert!(conformers.iter().all(|candidate| {
+        candidate.energy.is_finite() && stereo_safe_retry(&molecule, &candidate.coords)
+    }));
+    assert!(
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn mixed_checked_uses_disjoint_seed_ranges_and_preserves_stereo() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CS(=O)(=O)NCC").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let compatible =
+        etkdg_embed_multiple_confs_mmff_compatible_checked(&molecule, 4, &options, 200, 0).unwrap();
+    let corrected =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 4, &options, 200, 0).unwrap();
+    let mixed =
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 4, &options, 200, 0).unwrap();
+    assert_eq!(compatible.len(), 4);
+    assert_eq!(corrected.len(), 4);
+    assert_eq!(mixed.len(), 4);
+    for index in 0..4 {
+        let expected = if index < 2 {
+            &compatible[index]
+        } else {
+            &corrected[index]
+        };
+        assert_eq!(mixed[index].coords, expected.coords);
+        assert_eq!(mixed[index].status, expected.status);
+        assert_eq!(mixed[index].energy, expected.energy);
+        assert!(stereo_safe_retry(&molecule, &mixed[index].coords));
+    }
+    let odd =
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 3, &options, 200, 0).unwrap();
+    assert_eq!(odd.len(), 3);
+    assert_eq!(odd[0].coords, compatible[0].coords);
+    assert_eq!(odd[1].coords, corrected[1].coords);
+    assert_eq!(odd[2].coords, corrected[2].coords);
+    assert!(
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+fn corrected_fallback_keeps_successful_corrected_ensemble() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let corrected =
+        etkdg_embed_multiple_confs_mmff_corrected_repair(&molecule, 2, &options, 200, 0).unwrap();
+    assert!(!corrected.is_empty());
+    let fallback =
+        etkdg_embed_multiple_confs_mmff_corrected_fallback(&molecule, 2, &options, 200, 0).unwrap();
+    assert_eq!(corrected.len(), fallback.len());
+    for (a, b) in corrected.iter().zip(&fallback) {
+        assert_eq!(a.coords, b.coords);
+        assert_eq!(a.status, b.status);
+        assert_eq!(a.energy, b.energy);
+    }
+    assert!(
+        etkdg_embed_multiple_confs_mmff_corrected_fallback(&molecule, 0, &options, 200, 0)
+            .unwrap()
+            .is_empty()
+    );
+}
+
+#[test]
+#[ignore = "large exposed macrocycle regression; run explicitly in release mode"]
+fn corrected_fallback_recovers_exposed_macrocycle() {
+    let smiles = "CC(=O)N[C@H](C(=O)N[C@@H](CO)C(=O)N[C@@H](Cc1ccccc1)C(=O)N[C@@H](C)C(=O)N[C@@H](CCC(=O)O)C(=O)N[C@@H](Cc1ccc(O)cc1)C(=O)N[C@@H](Cc1c[nH]c2ccccc12)C(=O)N[C@H]1CCCCN[C@@H](S)SC[C@@H](C(N)=O)NC(=O)[C@H](CO)NC(=O)[C@H](CC(C)C)NC(=O)[C@H](CC(C)C)NC1=O)[C@@H](C)O";
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+    let conformers = etkdg_embed_multiple_confs_mmff_corrected_fallback(
+        &molecule,
+        20,
+        &RdkitEmbedOptions::default(),
+        200,
+        400,
+    )
+    .unwrap();
+    assert!(!conformers.is_empty());
+    assert!(
+        conformers
+            .iter()
+            .all(|c| stereo_safe_retry(&molecule, &c.coords))
+    );
+}

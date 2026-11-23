@@ -1,0 +1,13 @@
+{
+  "case": "5vk0__Ligand_phospholipids_ALA_L_4",
+  "platform": "macOS-26.7.2-arm64-arm-64bit",
+  "rdkit": "2026.09.2",
+  "corrected_count": 1,
+  "fallback_count": 1,
+  "fallback_statuses": [
+    1
+  ],
+  "stereo_checked": 1,
+  "stereo_contradicted": 0,
+  "stereo_unevaluable": 0
+}

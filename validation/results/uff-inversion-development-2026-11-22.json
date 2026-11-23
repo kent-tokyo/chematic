@@ -1,0 +1,23 @@
+{
+  "rdkit": "2026.09.2",
+  "cases": [
+    {
+      "name": "LQYQIJSGWHWKOT-UUWRZZSWSA-N",
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0,
+      "p_finite_difference_error_max": 1.7454361511681782e-08
+    },
+    {
+      "name": "YRMADJRSLOCNRA-UHFFFAOYSA-N",
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0,
+      "p_finite_difference_error_max": 3.6123125823905866e-08
+    },
+    {
+      "name": "VXFCZRMFSLOXNB-UHFFFAOYSA-N",
+      "energy_abs_error": 0.0,
+      "gradient_abs_error_max": 0.0,
+      "p_finite_difference_error_max": 3.37260797067529e-08
+    }
+  ]
+}

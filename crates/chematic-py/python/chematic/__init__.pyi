@@ -213,6 +213,22 @@ class MolecularForceField:
 
     def gradient(self) -> list[list[float]]: ...
 
+    def gradient_with_consistent_torsions(self) -> list[list[float]]:
+        """Evaluate the MMFF gradient with energy-consistent torsion terms.
+
+        Other terms retain their RDKit-compatible gradients. Raises ValueError
+        for UFF fields or non-finite gradients.
+        """
+        ...
+
+    def gradient_with_consistent_planes(self) -> list[list[float]]:
+        """Evaluate MMFF torsion and out-of-plane gradients with unrounded normals.
+
+        Other terms retain their RDKit-compatible gradients. Raises ValueError
+        for UFF fields or non-finite gradients.
+        """
+        ...
+
     def energy_gradient(self) -> tuple[float, list[list[float]]]: ...
 
     def minimize_(self, max_iters: int = 200) -> tuple[int, float]: ...
@@ -423,6 +439,63 @@ class Mol:
         """Generate and MMFF94-optimize an ETKDG ensemble, returning
         ``(status, energy, iterations, gradient_test, coords)`` without an
         extra force-field evaluation."""
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_corrected(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate one corrected-gradient ensemble and optimize it with MMFF94.
+
+        A status of 0 also requires a finite final gradient with every
+        component at most 0.01 kcal/mol/angstrom in magnitude. Other
+        conformers retain a nonzero minimization status. A positive
+        ``repair_mmff_iters`` permits that many additional iterations to
+        repair a near-linear three-coordinate nitrogen geometry.
+        """
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_compatible_checked(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Generate an ensemble with the compatibility gradient and stereo checks."""
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_mixed_checked(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Split one checked ensemble between compatibility and corrected gradients."""
+        ...
+
+    def etkdg_embed_multiple_confs_mmff_corrected_fallback(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float, list[list[float]]]]:
+        """Use the stereo-checked corrected ensemble, or retry with the
+        compatibility gradient if it returns no usable candidates. The retry
+        may double the embedding and optimization work."""
         ...
 
     def etkdg_embed_multiple_confs_mmff_best_gradient(

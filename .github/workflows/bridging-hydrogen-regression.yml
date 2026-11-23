@@ -1,0 +1,26 @@
+name: Bridging hydrogen hybridization and UFF regression
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/bridging-hydrogen-regression.yml'
+      - 'crates/chematic-smarts/src/hybridization.rs'
+      - 'crates/chematic-ff/src/rdkit_uff.rs'
+      - 'validation/rdkit-2026.09.2-uff-bridging-hydrogen*.json'
+
+permissions:
+  contents: read
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Test SMARTS and force fields
+        run: |
+          cargo test --locked --release -p chematic-smarts --lib
+          cargo test --locked --release -p chematic-ff --lib

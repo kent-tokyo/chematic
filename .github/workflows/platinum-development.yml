@@ -1,0 +1,71 @@
+name: Platinum development comparison
+
+on:
+  pull_request:
+    paths:
+      - 'crates/chematic-3d/**'
+      - 'crates/chematic-ff/**'
+      - 'crates/chematic-py/**'
+      - 'scripts/benchmarks/platinum_*.py'
+      - 'scripts/benchmarks/summarize_platinum_*.py'
+      - 'validation/results/platinum-diverse-scaffold-split-strict-2026-11-21.json'
+      - '.github/workflows/platinum-development.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-development:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
+        with:
+          python-version: '3.12'
+      - name: Install comparison tools
+        run: python -m pip install 'maturin==1.13.3' 'rdkit==2026.9.2' 'numpy<3'
+      - name: Build and install source wheel
+        run: |
+          maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/platinum-wheel
+          python -m pip install --force-reinstall --no-deps dist/platinum-wheel/chematic-*.whl
+          sha256sum dist/platinum-wheel/chematic-*.whl > platinum-wheel.sha256
+      - name: Fetch Platinum Diverse 2017 reference structures
+        run: |
+          if curl --fail --location --retry 3 --max-time 120 --output platinum.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-diverse-dataset-2017-01-sdf.zip; then
+            echo 'e65e7d6a8ca55c55d1d1dda9e8805251714f45859c10998dfabe4752831bc212  platinum.zip' | sha256sum --check
+            unzip -q platinum.zip
+          else
+            # CONFORGE benchmarking datasets, Zenodo record 8137603 (CC BY 4.0).
+            curl --fail --location --retry 3 --max-time 120 --output benchmark-data.tar.gz https://zenodo.org/api/records/8137603/files/benchmarking_datasets_and_code.tar.gz/content
+            echo '30a5218e80e442a7e5f9129433d307b7b11dd569930d33244fd9fbd26fbf173b  benchmark-data.tar.gz' | sha256sum --check
+            tar -xOzf benchmark-data.tar.gz benchmarking_datasets_and_code/datasets/platinum_diverse_dataset_2017_01.sdf > platinum_diverse_dataset_2017_01.sdf
+          fi
+          echo '1f2385a3d1e77bd7416d5fa213f3a3705c8823a04dded5ea942063f2a255f92b  platinum_diverse_dataset_2017_01.sdf' | sha256sum --check
+      - name: Measure development quality
+        run: |
+          python scripts/benchmarks/platinum_development_probe.py --sdf platinum_diverse_dataset_2017_01.sdf --split validation/results/platinum-diverse-scaffold-split-strict-2026-11-21.json --output platinum-development.json --limit 444 --profile corrected --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_probe.py platinum-development.json --output platinum-development-summary.json
+      - name: Measure equal-time development sample
+        run: |
+          python scripts/benchmarks/platinum_time_budget.py --sdf platinum_diverse_dataset_2017_01.sdf --baseline platinum-development.json --output platinum-time.json --limit 100 --seconds 0.2 --max-candidates 20 --geometry --repair-iters 400
+          python scripts/benchmarks/summarize_platinum_time_budget.py platinum-time.json --output platinum-time-summary.json
+      - name: Compare force fields on common coordinates
+        run: |
+          python scripts/benchmarks/platinum_force_fields.py --development platinum-development.json --output platinum-force-fields.json
+          python scripts/benchmarks/summarize_platinum_force_fields.py platinum-force-fields.json --output platinum-force-fields-summary.json
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: platinum-development-linux-${{ github.sha }}
+          path: |
+            platinum-wheel.sha256
+            platinum-development.json
+            platinum-development-summary.json
+            platinum-time.json
+            platinum-time-summary.json
+            platinum-force-fields.json
+            platinum-force-fields-summary.json
+          if-no-files-found: warn

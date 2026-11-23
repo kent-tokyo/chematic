@@ -1,0 +1,143 @@
+{
+  "name": "PCCNTHRNUKLHFF-XDHOZWIPSA-N",
+  "rdkit": "2026.09.2",
+  "worst_sampled_axis": 21,
+  "consistent_plane_gradient": 106.33797203841826,
+  "step_sweep": [
+    {
+      "step": 0.001,
+      "native_fd": -184.42926019628203,
+      "rdkit_fd": -184.42926019628203
+    },
+    {
+      "step": 0.0001,
+      "native_fd": -361.9406822966198,
+      "rdkit_fd": -361.9406822966198
+    },
+    {
+      "step": 1e-05,
+      "native_fd": 113.11811599910014,
+      "rdkit_fd": 113.11811599910014
+    },
+    {
+      "step": 1e-06,
+      "native_fd": 106.40417085028275,
+      "rdkit_fd": 106.40417085028275
+    },
+    {
+      "step": 1e-07,
+      "native_fd": 106.33738241949686,
+      "rdkit_fd": 106.33738241949686
+    },
+    {
+      "step": 1e-08,
+      "native_fd": 106.34242073592759,
+      "rdkit_fd": 106.34242073592759
+    }
+  ],
+  "sampled_axes": [
+    {
+      "axis": 0,
+      "native_gradient": 35.41557888450499,
+      "rdkit_gradient": 35.41557888450499,
+      "native_fd": 35.41557898074643,
+      "rdkit_fd": 35.41557898074643
+    },
+    {
+      "axis": 21,
+      "native_gradient": -166.01458159941092,
+      "rdkit_gradient": -166.01458159941092,
+      "native_fd": 113.11811599910014,
+      "rdkit_fd": 113.11811599910014
+    },
+    {
+      "axis": 43,
+      "native_gradient": -4.883190089164215,
+      "rdkit_gradient": -4.883190089164215,
+      "native_fd": -4.8831901324319915,
+      "rdkit_fd": -4.8831901324319915
+    },
+    {
+      "axis": 64,
+      "native_gradient": -6.388584262058905,
+      "rdkit_gradient": -6.388584262058905,
+      "native_fd": -6.388584259298113,
+      "rdkit_fd": -6.388584259298113
+    },
+    {
+      "axis": 86,
+      "native_gradient": 0.6152300947761029,
+      "rdkit_gradient": 0.6152300947761029,
+      "native_fd": 0.6152300926487442,
+      "rdkit_fd": 0.6152300926487442
+    },
+    {
+      "axis": 107,
+      "native_gradient": -65.84283001434255,
+      "rdkit_gradient": -65.84283001434255,
+      "native_fd": -65.84282995731883,
+      "rdkit_fd": -65.84282995731883
+    }
+  ],
+  "terms": [
+    {
+      "term": "bond",
+      "native_gradient": -114.67560167906456,
+      "rdkit_gradient": -114.67560167906456,
+      "native_fd": -114.67560165527856,
+      "rdkit_fd": -114.67560165527856
+    },
+    {
+      "term": "angle",
+      "native_gradient": -88.61470637662055,
+      "rdkit_gradient": -88.61470637662055,
+      "native_fd": -88.61473017987008,
+      "rdkit_fd": -88.61473017987008
+    },
+    {
+      "term": "stretch_bend",
+      "native_gradient": 56.910944889283215,
+      "rdkit_gradient": 56.910944889283215,
+      "native_fd": 56.91094730602141,
+      "rdkit_fd": 56.91094730602141
+    },
+    {
+      "term": "oop",
+      "native_gradient": -235.16029743470713,
+      "rdkit_gradient": -235.16029743470713,
+      "native_fd": 38.10605031405768,
+      "rdkit_fd": 38.10605031405768
+    },
+    {
+      "term": "torsion",
+      "native_gradient": 235.18505624879805,
+      "rdkit_gradient": 235.18505624879805,
+      "native_fd": 241.0514274583164,
+      "rdkit_fd": 241.0514274583164
+    },
+    {
+      "term": "vdw",
+      "native_gradient": -22.07934103276738,
+      "rdkit_gradient": -22.07934103276738,
+      "native_fd": -22.079341033531815,
+      "rdkit_fd": -22.079341033531815
+    },
+    {
+      "term": "ele",
+      "native_gradient": 2.4193637856673016,
+      "rdkit_gradient": 2.4193637856673016,
+      "native_fd": 2.4193637855773886,
+      "rdkit_fd": 2.4193637855773886
+    }
+  ],
+  "angles_over_175": [
+    {
+      "atoms": [
+        5,
+        6,
+        7
+      ],
+      "degrees": 179.99813635312742
+    }
+  ]
+}

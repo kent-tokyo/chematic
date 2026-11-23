@@ -1,0 +1,24 @@
+{
+  "rows": 430,
+  "seconds": 0.2,
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 42,
+  "stages": {
+    "recovery": {
+      "difference": 0.027906976744186046,
+      "scaffold_clusters": 385,
+      "paired_scaffold_cluster_95_interval": [
+        0.00909090909090909,
+        0.0481651376146789
+      ]
+    },
+    "converged_recovery": {
+      "difference": 0.011627906976744186,
+      "scaffold_clusters": 385,
+      "paired_scaffold_cluster_95_interval": [
+        -0.004651162790697674,
+        0.027972027972027972
+      ]
+    }
+  }
+}
