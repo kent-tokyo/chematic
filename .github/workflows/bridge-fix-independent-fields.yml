@@ -30,7 +30,8 @@ jobs:
           python-version: '3.12'
       - name: Verify frozen inputs and candidate
         run: |
-          test "$(git rev-parse HEAD:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
+          git fetch --no-tags --depth=1 origin 261e520ab4d0fce681b23c168bee0888c2103b0a
+          test "$(git rev-parse 261e520ab4d0fce681b23c168bee0888c2103b0a:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
           bash scripts/validation/fetch_bridge_fix_holdout_inputs.sh '${{ matrix.os }}'
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'
           python -m pip install --force-reinstall --no-deps "$(cat bridge-input/wheel-path.txt)"
@@ -83,7 +84,8 @@ jobs:
           python-version: '3.12'
       - name: Restore sealed input and wheel
         run: |
-          test "$(git rev-parse HEAD:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
+          git fetch --no-tags --depth=1 origin 261e520ab4d0fce681b23c168bee0888c2103b0a
+          test "$(git rev-parse 261e520ab4d0fce681b23c168bee0888c2103b0a:crates)" = '0a25fe5ad1e2ffc7478417abacd90436ae001000'
           echo '4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18  scripts/benchmarks/platinum_force_fields.py' | shasum -a 256 --check
           echo '50faafc6bd55d589bc51f5be6a65567edcdf997a554fadd6f6d1d75703d43169  scripts/benchmarks/prepare_force_field_holdout.py' | shasum -a 256 --check
           bash scripts/validation/fetch_bridge_fix_holdout_inputs.sh '${{ matrix.os }}'

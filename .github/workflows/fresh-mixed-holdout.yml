@@ -31,7 +31,8 @@ jobs:
           python-version: '3.12'
       - name: Verify source tree and frozen inputs
         run: |
-          test "$(git rev-parse HEAD:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
+          git fetch --no-tags --depth=1 origin 29e37e169668903d6b01490c565b2f4a2cf63e5e
+          test "$(git rev-parse 29e37e169668903d6b01490c565b2f4a2cf63e5e:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
           bash scripts/validation/fetch_mixed_holdout_inputs.sh '${{ matrix.os }}' '${{ matrix.dataset }}'
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'
           python -m pip install --force-reinstall --no-deps "$(cat evaluation/wheel-path.txt)"
@@ -77,7 +78,8 @@ jobs:
           python-version: '3.12'
       - name: Restore inputs
         run: |
-          test "$(git rev-parse HEAD:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
+          git fetch --no-tags --depth=1 origin 29e37e169668903d6b01490c565b2f4a2cf63e5e
+          test "$(git rev-parse 29e37e169668903d6b01490c565b2f4a2cf63e5e:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
           bash scripts/validation/fetch_mixed_holdout_inputs.sh '${{ matrix.os }}' '${{ matrix.dataset }}'
           gh run download "$GITHUB_RUN_ID" --repo "$GITHUB_REPOSITORY" --name 'fresh-plan-${{ matrix.dataset }}-${{ matrix.os }}-${{ github.run_id }}' --dir parent
           python -m pip install 'rdkit==2026.9.2' 'numpy<3'

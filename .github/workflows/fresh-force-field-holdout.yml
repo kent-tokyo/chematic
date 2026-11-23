@@ -33,7 +33,8 @@ jobs:
           python-version: '3.12'
       - name: Restore frozen candidate and split
         run: |
-          test "$(git rev-parse HEAD:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
+          git fetch --no-tags --depth=1 origin 29e37e169668903d6b01490c565b2f4a2cf63e5e
+          test "$(git rev-parse 29e37e169668903d6b01490c565b2f4a2cf63e5e:crates)" = '3fbdec119699e5eb16610a6bd0ee282fa016770e'
           echo '4bbc4dcd44c1632263f97e341ed8c955efe1f9d290cb4589a1d81b0d5cdd3e18  scripts/benchmarks/platinum_force_fields.py' | shasum -a 256 --check
           echo '50faafc6bd55d589bc51f5be6a65567edcdf997a554fadd6f6d1d75703d43169  scripts/benchmarks/prepare_force_field_holdout.py' | shasum -a 256 --check
           bash scripts/validation/fetch_mixed_holdout_inputs.sh '${{ matrix.os }}' '${{ matrix.dataset }}'
