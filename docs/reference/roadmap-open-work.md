@@ -2,12 +2,12 @@
 
 The [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
 tracks completed changes. The [validation report](validation.md) records
-published v1.2.3 and links the dated evidence.
+published v1.2.4 and links the dated evidence.
 
 ## Release and compatibility
 
-- Compare the v1.2.4 candidate's Rust, Python and WASM public APIs against
-  v1.2.3, including the [Cleanup contract](cleanup-migration.md).
+- Compare the v1.2.5 candidate's Rust, Python and WASM public APIs against
+  v1.2.4, including the [Cleanup contract](cleanup-migration.md).
 - Qualify the exact release artifacts across Rust, Python and WASM. Preserve
   comparator versions and typed refusals when reporting results.
 

@@ -1,9 +1,8 @@
 # Checked conformer ensembles
 
-The source tree exposes experimental Python methods for generating and
-MMFF94-minimizing ETKDG conformers with additional checks. These methods are
-opt-in; their presence in the source does not establish that a published
-package contains them or that their output is equivalent to RDKit.
+Experimental Python methods for generating and MMFF94-minimizing ETKDG
+conformers with additional checks are available in v1.2.4 and later. They are
+opt-in and do not establish output equivalence to RDKit.
 
 ```python
 import chematic
