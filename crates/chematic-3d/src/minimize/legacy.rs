@@ -531,7 +531,7 @@ enum Hybridization {
 }
 
 fn atom_hybridization(mol: &Molecule, idx: AtomIdx) -> Hybridization {
-    if mol.atom(idx).aromatic {
+    if mol.atom(idx).aromatic || crate::dg::is_trigonal_boron(mol, idx) {
         return Hybridization::SP2;
     }
     let mut has_triple = false;

@@ -113,11 +113,21 @@ pub(crate) fn ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
 
     if has_triple {
         PI // 180°
-    } else if has_double_or_arom {
+    } else if has_double_or_arom || is_trigonal_boron(mol, center) {
         PI * 2.0 / 3.0 // 120°
     } else {
         109.5_f64.to_radians()
     }
+}
+
+/// Neutral boron with three neighbours (implicit hydrogens included): its
+/// empty p orbital makes it trigonal planar even with single bonds only, as
+/// RDKit's SP2 hybridization and UFF type `B_2` have it.
+pub(crate) fn is_trigonal_boron(mol: &Molecule, idx: AtomIdx) -> bool {
+    let atom = mol.atom(idx);
+    atom.element.atomic_number() == 5
+        && atom.charge == 0
+        && mol.degree(idx) + usize::from(mol.implicit_hydrogen_count(idx)) == 3
 }
 
 /// Bonded positions and lone pairs `(bonded, lone_pairs)` around a main-group
