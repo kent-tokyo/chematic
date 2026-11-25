@@ -273,6 +273,21 @@ pub fn build_constraints(mol: &Molecule) -> ConstraintSet {
     ConstraintSet { bonds, angles }
 }
 
+/// Add site-specific expanded-octet targets from the initial geometry.
+pub(crate) fn add_expanded_octet_constraints(
+    mol: &Molecule,
+    coords: &Coords3D,
+    constraints: &mut ConstraintSet,
+) {
+    for (center, _) in mol.atoms() {
+        for (a, b, angle) in crate::dg::expanded_octet_angle_targets(mol, center, coords) {
+            constraints
+                .angles
+                .push(AngleConstraint::new(a, center, b, angle));
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Geometric Utilities
 // ---------------------------------------------------------------------------

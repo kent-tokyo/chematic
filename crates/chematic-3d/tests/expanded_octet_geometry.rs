@@ -91,3 +91,79 @@ fn legacy_minimizer_keeps_vsepr_shape() {
         assert_shape(smiles, "minimize_uff", &angles, expected, 2.0);
     }
 }
+
+#[test]
+fn cyclic_six_coordinate_centres_keep_fluorines_separate() {
+    for smiles in ["F[P-]1(F)(F)(F)OCCO1", "O1CCO[P-]1(F)(F)(F)F"] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let (centre, _) = mol
+            .atoms()
+            .find(|(_, atom)| atom.element.atomic_number() == 15)
+            .unwrap();
+        let fluorines: Vec<_> = mol
+            .neighbors(centre)
+            .map(|(idx, _)| idx)
+            .filter(|&idx| mol.atom(idx).element.atomic_number() == 9)
+            .collect();
+        assert_eq!(fluorines.len(), 4);
+        let placed = generate_coords(&mol);
+        let etkdg = generate_coords_etkdg(&mol);
+        let minimized = minimize_uff(&mol, etkdg.clone());
+        for (stage, coords) in [
+            ("placement", placed),
+            ("etkdg", etkdg),
+            ("minimized", minimized),
+        ] {
+            for (_, bond) in mol.bonds() {
+                let length = coords.get(bond.atom1).sub(&coords.get(bond.atom2)).norm();
+                assert!(
+                    (1.0..=2.4).contains(&length),
+                    "{smiles} {stage}: bond {}-{} length {length:.4} Å",
+                    bond.atom1.0,
+                    bond.atom2.0
+                );
+            }
+            for (i, &a) in fluorines.iter().enumerate() {
+                for &b in &fluorines[i + 1..] {
+                    let distance = coords.get(a).sub(&coords.get(b)).norm();
+                    assert!(
+                        distance >= 1.0,
+                        "{smiles} {stage}: F-F distance {distance:.4} Å"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn alternate_atom_orders_keep_standard_shapes() {
+    for (smiles, expected, atomic_number) in [
+        ("S(F)(F)(F)(F)(F)F", OCTAHEDRAL, 16),
+        ("P(Cl)(Cl)(Cl)(Cl)Cl", TRIGONAL_BIPYRAMIDAL, 15),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let (centre, _) = mol
+            .atoms()
+            .find(|(_, atom)| atom.element.atomic_number() == atomic_number)
+            .unwrap();
+        let neighbors: Vec<_> = mol.neighbors(centre).map(|(n, _)| n).collect();
+        let placed = generate_coords(&mol);
+        let etkdg = generate_coords_etkdg(&mol);
+        let minimized = minimize_uff(&mol, etkdg.clone());
+        for (stage, coords, tolerance) in [
+            ("placement", placed, 1.0),
+            ("etkdg", etkdg, 1.0),
+            ("minimized", minimized, 2.0),
+        ] {
+            let mut angles = Vec::new();
+            for (i, &a) in neighbors.iter().enumerate() {
+                for &b in &neighbors[i + 1..] {
+                    angles.push(get_bond_angle_deg(&coords, a, centre, b));
+                }
+            }
+            angles.sort_by(f64::total_cmp);
+            assert_shape(smiles, stage, &angles, expected, tolerance);
+        }
+    }
+}

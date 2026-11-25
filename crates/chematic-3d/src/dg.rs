@@ -200,6 +200,88 @@ pub(crate) fn expanded_octet_directions(bonded: usize, lone_pairs: usize) -> Vec
     directions
 }
 
+/// Assign explicit neighbours to distinct VSEPR sites by minimizing the
+/// disagreement between all observed and template pair angles.
+pub(crate) fn expanded_octet_angle_targets(
+    mol: &Molecule,
+    center: AtomIdx,
+    coords: &Coords3D,
+) -> Vec<(AtomIdx, AtomIdx, f64)> {
+    let Some((bonded, lone_pairs)) = expanded_octet_domains(mol, center) else {
+        return Vec::new();
+    };
+    let neighbors: Vec<_> = mol.neighbors(center).map(|(atom, _)| atom).collect();
+    let directions = expanded_octet_directions(bonded, lone_pairs);
+    if neighbors.len() > directions.len() {
+        return Vec::new();
+    }
+    let origin = coords.get(center);
+    let observed: Vec<_> = neighbors
+        .iter()
+        .map(|&atom| coords.get(atom).sub(&origin).normalize())
+        .collect();
+    let mut best = (f64::INFINITY, Vec::new());
+    assign_expanded_sites(&observed, &directions, &mut Vec::new(), &mut best);
+    if best.1.len() != neighbors.len() {
+        return Vec::new();
+    }
+    let rings = find_sssr(mol);
+    let mut targets = Vec::new();
+    for i in 0..neighbors.len() {
+        for j in i + 1..neighbors.len() {
+            let ring_pair = rings.rings().iter().any(|ring| {
+                ring.contains(&center)
+                    && ring.contains(&neighbors[i])
+                    && ring.contains(&neighbors[j])
+                    && ring.iter().position(|&a| a == center).is_some_and(|c| {
+                        let len = ring.len();
+                        (ring[(c + 1) % len] == neighbors[i]
+                            && ring[(c + len - 1) % len] == neighbors[j])
+                            || (ring[(c + 1) % len] == neighbors[j]
+                                && ring[(c + len - 1) % len] == neighbors[i])
+                    })
+            });
+            let cosine = if ring_pair {
+                observed[i].dot(&observed[j])
+            } else {
+                directions[best.1[i]].dot(&directions[best.1[j]])
+            };
+            targets.push((neighbors[i], neighbors[j], cosine.clamp(-1.0, 1.0).dacos()));
+        }
+    }
+    targets
+}
+
+fn assign_expanded_sites(
+    observed: &[Point3],
+    directions: &[Point3],
+    assigned: &mut Vec<usize>,
+    best: &mut (f64, Vec<usize>),
+) {
+    let index = assigned.len();
+    if index == observed.len() {
+        let mut error = 0.0;
+        for i in 0..index {
+            for j in i + 1..index {
+                let delta = observed[i].dot(&observed[j])
+                    - directions[assigned[i]].dot(&directions[assigned[j]]);
+                error += delta * delta;
+            }
+        }
+        if error < best.0 {
+            *best = (error, assigned.clone());
+        }
+        return;
+    }
+    for site in 0..directions.len() {
+        if !assigned.contains(&site) {
+            assigned.push(site);
+            assign_expanded_sites(observed, directions, assigned, best);
+            assigned.pop();
+        }
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Connected components
 // ---------------------------------------------------------------------------
@@ -740,6 +822,25 @@ pub(crate) fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn expanded_octet_targets_use_distinct_sites_for_distorted_input() {
+        let mol = parse("FS(F)(F)(F)(F)F").unwrap();
+        let center = AtomIdx(1);
+        let mut coords = generate_coords(&mol);
+        coords.set(AtomIdx(3), coords.get(AtomIdx(2)));
+        let targets = expanded_octet_angle_targets(&mol, center, &coords);
+        assert_eq!(targets.len(), 15);
+        let trans = targets
+            .iter()
+            .filter(|(_, _, angle)| (*angle - PI).abs() < 1e-8)
+            .count();
+        let cis = targets
+            .iter()
+            .filter(|(_, _, angle)| (*angle - PI / 2.0).abs() < 1e-8)
+            .count();
+        assert_eq!((cis, trans), (12, 3));
+    }
 
     #[test]
     fn expanded_octet_domains_counts_bonds_and_lone_pairs() {
