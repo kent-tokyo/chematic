@@ -624,6 +624,7 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
         let sym_b = mol.atom(b).element.symbol();
         let hyb = atom_hybridization(mol, b);
         let theta0 = ideal_angle_rad(sym_b, hyb);
+        let vsepr_angles = expanded_octet_angles(mol, b);
         let pb = coords.get(b);
 
         for i in 0..neighbors.len() {
@@ -646,6 +647,7 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 
                 let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
                 let theta = cos_theta.dacos();
+                let theta0 = vsepr_angles.map_or(theta0, |angles| nearest(angles, theta));
                 let dtheta = theta - theta0;
                 energy += 0.5 * ANGLE_SPRING_CONSTANT * dtheta * dtheta;
             }
@@ -653,6 +655,31 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
     }
 
     energy
+}
+
+const TRIGONAL_BIPYRAMID_ANGLES: [f64; 3] =
+    [std::f64::consts::FRAC_PI_2, 2.0 * std::f64::consts::FRAC_PI_3, std::f64::consts::PI];
+const OCTAHEDRON_ANGLES: [f64; 2] = [std::f64::consts::FRAC_PI_2, std::f64::consts::PI];
+
+/// Ideal angles (radians) at a centre with five or six electron domains
+/// (see [`crate::dg::expanded_octet_domains`]): each angle bends towards the
+/// nearest one, as UFF's octahedral term has minima at both 90° and 180°.
+fn expanded_octet_angles(mol: &Molecule, center: AtomIdx) -> Option<&'static [f64]> {
+    crate::dg::expanded_octet_domains(mol, center).map(|(bonded, lone_pairs)| {
+        if bonded + lone_pairs == 5 {
+            &TRIGONAL_BIPYRAMID_ANGLES[..]
+        } else {
+            &OCTAHEDRON_ANGLES[..]
+        }
+    })
+}
+
+fn nearest(angles: &[f64], theta: f64) -> f64 {
+    angles
+        .iter()
+        .copied()
+        .min_by(|a, b| (a - theta).abs().total_cmp(&(b - theta).abs()))
+        .unwrap_or(theta)
 }
 
 // ---------------------------------------------------------------------------

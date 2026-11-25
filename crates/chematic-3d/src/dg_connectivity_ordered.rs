@@ -45,7 +45,8 @@ use chematic_perception::find_sssr;
 
 use crate::coords::{Coords3D, Point3};
 use crate::dg::{
-    connected_components, ideal_angle, ideal_bond_len, perpendicular_to, rotate_around_axis,
+    connected_components, expanded_octet_directions, expanded_octet_domains, ideal_angle,
+    ideal_bond_len, perpendicular_to, rotate_around_axis,
 };
 
 /// Group `rings` into ring systems: connected sets of rings sharing >= 1
@@ -619,6 +620,30 @@ fn dfs_place_connectivity_ordered(
         return;
     }
 
+    if place_expanded_octet(
+        mol,
+        current,
+        parent,
+        &unplaced_neighbors,
+        coords,
+        placed,
+        atom_to_system,
+    ) {
+        for &nb in &unplaced_neighbors {
+            dfs_place_connectivity_ordered(
+                mol,
+                nb,
+                placed,
+                coords,
+                ring_systems,
+                atom_to_system,
+                system_placed,
+                worklist,
+            );
+        }
+        return;
+    }
+
     let incoming_dir: Point3 = match parent {
         Some(p) => pos_current.sub(&coords.get(p)).normalize(),
         None => Point3::new(1.0, 0.0, 0.0),
@@ -710,6 +735,60 @@ fn dfs_place_connectivity_ordered(
             worklist,
         );
     }
+}
+
+/// Places the neighbours of a centre with five or six electron domains (SF₆,
+/// PCl₅, XeF₄, ...) on the VSEPR bipyramid or octahedron, one position
+/// pointing at the already placed `parent`. The general rule spreads unplaced
+/// neighbours at dihedrals of 0°, 120° and 240° around the incoming bond, so
+/// a fourth one would land on the first.
+///
+/// Returns `false` and places nothing for any other centre, or when more
+/// than one neighbour is already placed or a neighbour is in a ring system.
+fn place_expanded_octet(
+    mol: &Molecule,
+    current: AtomIdx,
+    parent: Option<AtomIdx>,
+    unplaced_neighbors: &[AtomIdx],
+    coords: &mut Coords3D,
+    placed: &mut [bool],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+) -> bool {
+    let Some((bonded, lone_pairs)) = expanded_octet_domains(mol, current) else {
+        return false;
+    };
+    if mol.degree(current) - unplaced_neighbors.len() > 1
+        || unplaced_neighbors
+            .iter()
+            .any(|nb| atom_to_system.contains_key(nb))
+    {
+        return false;
+    }
+    let mut directions = expanded_octet_directions(bonded, lone_pairs);
+    let pos_current = coords.get(current);
+    if let Some(parent) = parent {
+        // Rotate the template so that its first direction points at the parent.
+        let from = directions[0];
+        let to = coords.get(parent).sub(&pos_current).normalize();
+        let cross = from.cross(&to);
+        let (axis, theta) = if cross.norm() > 1e-9 {
+            (cross.normalize(), from.dot(&to).clamp(-1.0, 1.0).dacos())
+        } else if from.dot(&to) > 0.0 {
+            (perpendicular_to(from), 0.0)
+        } else {
+            (perpendicular_to(from), PI)
+        };
+        directions = directions[1..]
+            .iter()
+            .map(|&d| rotate_around_axis(d, axis, theta))
+            .collect();
+    }
+    for (&nb, direction) in unplaced_neighbors.iter().zip(directions) {
+        let bond_len = ideal_bond_len(mol, current, nb);
+        coords.set(nb, pos_current.add(&direction.scale(bond_len)));
+        placed[nb.0 as usize] = true;
+    }
+    true
 }
 
 /// Place all atoms in `component`, starting at X = `x_offset`, via the

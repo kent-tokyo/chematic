@@ -253,7 +253,9 @@ pub fn build_constraints(mol: &Molecule) -> ConstraintSet {
         let center = AtomIdx(center_idx as u32);
         let neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
 
-        if neighbors.len() < 2 {
+        // One ideal angle cannot describe a bipyramid or an octahedron (90°,
+        // 120° and 180°): the placement already puts those neighbours there.
+        if neighbors.len() < 2 || crate::dg::expanded_octet_domains(mol, center).is_some() {
             continue;
         }
 

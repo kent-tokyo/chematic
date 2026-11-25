@@ -120,6 +120,76 @@ pub(crate) fn ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
     }
 }
 
+/// Bonded positions and lone pairs `(bonded, lone_pairs)` around a main-group
+/// centre of period 3 or below with five or six electron domains, which VSEPR
+/// places on a trigonal bipyramid or an octahedron: SF₆, PCl₅, SF₄, ClF₃,
+/// XeF₂, XeF₄, IF₅, SiF₆²⁻. A double or triple bond is one domain, and
+/// implicit hydrogens count as bonded positions.
+///
+/// `None` for every other centre: one ideal angle then describes it.
+pub(crate) fn expanded_octet_domains(mol: &Molecule, center: AtomIdx) -> Option<(usize, usize)> {
+    let atom = mol.atom(center);
+    let valence_electrons: i32 = match atom.element.atomic_number() {
+        14 | 32 | 50 => 4,
+        15 | 33 | 51 => 5,
+        16 | 34 | 52 => 6,
+        17 | 35 | 53 => 7,
+        36 | 54 | 86 => 8,
+        _ => return None,
+    };
+    if atom.aromatic {
+        return None;
+    }
+    let hydrogens = mol.implicit_hydrogen_count(center);
+    let mut bonding_electrons = i32::from(hydrogens);
+    for (_, bidx) in mol.neighbors(center) {
+        bonding_electrons += match mol.bond(bidx).order {
+            BondOrder::Single | BondOrder::Up | BondOrder::Down => 1,
+            BondOrder::Double => 2,
+            BondOrder::Triple => 3,
+            _ => return None,
+        };
+    }
+    let nonbonding = valence_electrons - i32::from(atom.charge) - bonding_electrons;
+    if nonbonding < 0 || nonbonding % 2 != 0 {
+        return None;
+    }
+    let bonded = mol.degree(center) + usize::from(hydrogens);
+    let lone_pairs = (nonbonding / 2) as usize;
+    matches!(bonded + lone_pairs, 5 | 6).then_some((bonded, lone_pairs))
+}
+
+/// Unit directions of the `bonded` positions of a trigonal bipyramid (five
+/// domains) or an octahedron (six). Lone pairs take equatorial positions on
+/// the bipyramid and stay trans to each other on the octahedron, so the
+/// first direction is always bonded: seesaw SF₄, T-shaped ClF₃, linear XeF₂,
+/// square pyramidal IF₅, square planar XeF₄.
+pub(crate) fn expanded_octet_directions(bonded: usize, lone_pairs: usize) -> Vec<Point3> {
+    let half_root3 = 3.0_f64.sqrt() / 2.0;
+    let mut directions = if bonded + lone_pairs == 5 {
+        // Axial pair first, then the equatorial positions.
+        vec![
+            Point3::new(0.0, 0.0, 1.0),
+            Point3::new(0.0, 0.0, -1.0),
+            Point3::new(1.0, 0.0, 0.0),
+            Point3::new(-0.5, half_root3, 0.0),
+            Point3::new(-0.5, -half_root3, 0.0),
+        ]
+    } else {
+        // Trans pairs, the z pair last.
+        vec![
+            Point3::new(1.0, 0.0, 0.0),
+            Point3::new(-1.0, 0.0, 0.0),
+            Point3::new(0.0, 1.0, 0.0),
+            Point3::new(0.0, -1.0, 0.0),
+            Point3::new(0.0, 0.0, 1.0),
+            Point3::new(0.0, 0.0, -1.0),
+        ]
+    };
+    directions.truncate(bonded);
+    directions
+}
+
 // ---------------------------------------------------------------------------
 // Connected components
 // ---------------------------------------------------------------------------
@@ -660,6 +730,38 @@ pub(crate) fn rotate_around_axis(v: Point3, axis: Point3, theta: f64) -> Point3 
 mod tests {
     use super::*;
     use chematic_smiles::parse;
+
+    #[test]
+    fn expanded_octet_domains_counts_bonds_and_lone_pairs() {
+        for (smiles, expected) in [
+            ("FS(F)(F)(F)(F)F", Some((6, 0))),
+            ("ClP(Cl)(Cl)(Cl)Cl", Some((5, 0))),
+            ("FS(F)(F)F", Some((4, 1))),
+            ("FCl(F)F", Some((3, 2))),
+            ("F[Xe]F", Some((2, 3))),
+            ("F[Xe](F)(F)F", Some((4, 2))),
+            ("FI(F)(F)(F)F", Some((5, 1))),
+            ("O=[Xe](F)(F)(F)F", Some((5, 1))),
+            ("F[Si-2](F)(F)(F)(F)F", Some((6, 0))),
+            // Four domains or fewer: one ideal angle still describes them.
+            ("CS(=O)C", None),
+            ("OS(=O)(=O)O", None),
+            ("FS(=O)(=O)F", None),
+            ("ClP(Cl)(Cl)=O", None),
+            ("F[Si](F)(F)F", None),
+            ("CSC", None),
+            ("C[N+](C)(C)C", None),
+            ("FC(F)(F)F", None),
+            ("c1sccc1", None),
+        ] {
+            let mol = parse(smiles).unwrap();
+            assert_eq!(
+                expanded_octet_domains(&mol, AtomIdx(1)),
+                expected,
+                "{smiles}"
+            );
+        }
+    }
 
     #[test]
     fn generate_coords_methane() {
