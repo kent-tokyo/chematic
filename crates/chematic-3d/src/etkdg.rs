@@ -38,10 +38,11 @@ pub fn generate_coords_etkdg_with_noise(mol: &Molecule, noise_sigma_deg: f64) ->
         return coords;
     }
 
+    let mut constraints = super::constraints::build_constraints(mol);
+    super::constraints::add_expanded_octet_constraints(mol, &coords, &mut constraints);
+
     let mut prng = Prng::new();
     apply_torsion_preferences_with_noise(mol, &mut coords, noise_sigma_deg, &mut prng);
-
-    let constraints = super::constraints::build_constraints(mol);
     coords = super::constraints::satisfy_constraints(&coords, mol, &constraints, 3);
 
     // Hard-snap amide omega angles to 0° or 180° after constraint satisfaction.

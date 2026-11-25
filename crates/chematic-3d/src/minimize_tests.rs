@@ -123,9 +123,9 @@ mod tests {
         let mol = parse("CCC").unwrap();
         let coords = generate_coords(&mol);
         let result1 = minimize(&mol, coords);
-        let e1 = total_energy(&mol, &result1);
+        let e1 = total_energy(&mol, &result1, &[]);
         let result2 = minimize(&mol, result1);
-        let e2 = total_energy(&mol, &result2);
+        let e2 = total_energy(&mol, &result2, &[]);
         assert!(e2 <= e1 + 1.0, "energy increased: e1={e1:.4}, e2={e2:.4}");
     }
 

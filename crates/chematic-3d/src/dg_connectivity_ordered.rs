@@ -45,7 +45,8 @@ use chematic_perception::find_sssr;
 
 use crate::coords::{Coords3D, Point3};
 use crate::dg::{
-    connected_components, ideal_angle, ideal_bond_len, perpendicular_to, rotate_around_axis,
+    connected_components, expanded_octet_directions, expanded_octet_domains, ideal_angle,
+    ideal_bond_len, perpendicular_to, rotate_around_axis,
 };
 
 /// Group `rings` into ring systems: connected sets of rings sharing >= 1
@@ -619,6 +620,20 @@ fn dfs_place_connectivity_ordered(
         return;
     }
 
+    if expand_and_recurse(
+        mol,
+        current,
+        &unplaced_neighbors,
+        placed,
+        coords,
+        ring_systems,
+        atom_to_system,
+        system_placed,
+        worklist,
+    ) {
+        return;
+    }
+
     let incoming_dir: Point3 = match parent {
         Some(p) => pos_current.sub(&coords.get(p)).normalize(),
         None => Point3::new(1.0, 0.0, 0.0),
@@ -676,24 +691,10 @@ fn dfs_place_connectivity_ordered(
 
         let dihedral = (i as f64) * (2.0 * PI / 3.0);
         let mut dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
-        if mol.atom(current).aromatic && atom_to_system.contains_key(&current) {
-            let ring_neighbors: Vec<_> = mol
-                .neighbors(current)
-                .map(|(neighbor, _)| neighbor)
-                .filter(|neighbor| {
-                    placed[neighbor.0 as usize]
-                        && atom_to_system.get(neighbor) == atom_to_system.get(&current)
-                        && mol.atom(*neighbor).aromatic
-                })
-                .collect();
-            if ring_neighbors.len() == 2 {
-                let a = coords.get(ring_neighbors[0]).sub(&pos_current).normalize();
-                let b = coords.get(ring_neighbors[1]).sub(&pos_current).normalize();
-                let outward = a.add(&b).scale(-1.0);
-                if outward.norm() > 1e-8 {
-                    dir_final = outward.normalize();
-                }
-            }
+        if let Some(outward) =
+            aromatic_outward_direction(mol, current, placed, coords, atom_to_system)
+        {
+            dir_final = outward;
         }
         let bond_len = ideal_bond_len(mol, current, nb);
         let new_pos = pos_current.add(&dir_final.scale(bond_len));
@@ -710,6 +711,149 @@ fn dfs_place_connectivity_ordered(
             worklist,
         );
     }
+}
+
+fn aromatic_outward_direction(
+    mol: &Molecule,
+    current: AtomIdx,
+    placed: &[bool],
+    coords: &Coords3D,
+    atom_to_system: &HashMap<AtomIdx, usize>,
+) -> Option<Point3> {
+    if !mol.atom(current).aromatic || !atom_to_system.contains_key(&current) {
+        return None;
+    }
+    let ring_neighbors: Vec<_> = mol
+        .neighbors(current)
+        .map(|(neighbor, _)| neighbor)
+        .filter(|neighbor| {
+            placed[neighbor.0 as usize]
+                && atom_to_system.get(neighbor) == atom_to_system.get(&current)
+                && mol.atom(*neighbor).aromatic
+        })
+        .collect();
+    if ring_neighbors.len() != 2 {
+        return None;
+    }
+    let position = coords.get(current);
+    let a = coords.get(ring_neighbors[0]).sub(&position).normalize();
+    let b = coords.get(ring_neighbors[1]).sub(&position).normalize();
+    let outward = a.add(&b).scale(-1.0);
+    (outward.norm() > 1e-8).then(|| outward.normalize())
+}
+
+#[allow(clippy::too_many_arguments)]
+fn expand_and_recurse(
+    mol: &Molecule,
+    current: AtomIdx,
+    neighbors: &[AtomIdx],
+    placed: &mut [bool],
+    coords: &mut Coords3D,
+    ring_systems: &[Vec<Vec<AtomIdx>>],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+    system_placed: &mut [bool],
+    worklist: &mut VecDeque<AtomIdx>,
+) -> bool {
+    if !place_expanded_octet(mol, current, neighbors, coords, placed, atom_to_system) {
+        return false;
+    }
+    for &neighbor in neighbors {
+        dfs_place_connectivity_ordered(
+            mol,
+            neighbor,
+            placed,
+            coords,
+            ring_systems,
+            atom_to_system,
+            system_placed,
+            worklist,
+        );
+    }
+    true
+}
+
+/// Places the neighbours of a centre with five or six electron domains (SF₆,
+/// PCl₅, XeF₄, ...) on the VSEPR bipyramid or octahedron, one position
+/// aligned to already placed neighbours. Returns `false` when an unplaced
+/// neighbour belongs to a ring system that needs separate placement.
+fn place_expanded_octet(
+    mol: &Molecule,
+    current: AtomIdx,
+    unplaced_neighbors: &[AtomIdx],
+    coords: &mut Coords3D,
+    placed: &mut [bool],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+) -> bool {
+    let Some((bonded, lone_pairs)) = expanded_octet_domains(mol, current) else {
+        return false;
+    };
+    if unplaced_neighbors
+        .iter()
+        .any(|nb| atom_to_system.contains_key(nb))
+    {
+        return false;
+    }
+    let mut directions = expanded_octet_directions(bonded, lone_pairs);
+    let pos_current = coords.get(current);
+    let anchors: Vec<_> = mol
+        .neighbors(current)
+        .map(|(nb, _)| nb)
+        .filter(|nb| placed[nb.0 as usize])
+        .map(|nb| coords.get(nb).sub(&pos_current).normalize())
+        .collect();
+    if let Some(&first) = anchors.first() {
+        let from = directions[0];
+        let cross = from.cross(&first);
+        let (axis, theta) = if cross.norm() > 1e-9 {
+            (cross.normalize(), from.dot(&first).clamp(-1.0, 1.0).dacos())
+        } else if from.dot(&first) > 0.0 {
+            (perpendicular_to(from), 0.0)
+        } else {
+            (perpendicular_to(from), PI)
+        };
+        directions = directions
+            .iter()
+            .map(|&d| rotate_around_axis(d, axis, theta))
+            .collect();
+        directions.remove(0);
+        if let Some(&second) = anchors.get(1) {
+            let site = (0..directions.len())
+                .min_by(|&i, &j| {
+                    (directions[i].dot(&first) - second.dot(&first))
+                        .abs()
+                        .total_cmp(&(directions[j].dot(&first) - second.dot(&first)).abs())
+                })
+                .unwrap();
+            let from = directions[site]
+                .sub(&first.scale(directions[site].dot(&first)))
+                .normalize();
+            let to = second.sub(&first.scale(second.dot(&first))).normalize();
+            if from.norm() > 1e-9 && to.norm() > 1e-9 {
+                let angle = first.dot(&from.cross(&to)).atan2(from.dot(&to));
+                directions = directions
+                    .iter()
+                    .map(|&d| rotate_around_axis(d, first, angle))
+                    .collect();
+            }
+            directions.remove(site);
+        }
+        for anchor in anchors.iter().skip(2) {
+            let site = (0..directions.len())
+                .max_by(|&i, &j| {
+                    directions[i]
+                        .dot(anchor)
+                        .total_cmp(&directions[j].dot(anchor))
+                })
+                .unwrap();
+            directions.remove(site);
+        }
+    }
+    for (&nb, direction) in unplaced_neighbors.iter().zip(directions) {
+        let bond_len = ideal_bond_len(mol, current, nb);
+        coords.set(nb, pos_current.add(&direction.scale(bond_len)));
+        placed[nb.0 as usize] = true;
+    }
+    true
 }
 
 /// Place all atoms in `component`, starting at X = `x_offset`, via the

@@ -253,7 +253,9 @@ pub fn build_constraints(mol: &Molecule) -> ConstraintSet {
         let center = AtomIdx(center_idx as u32);
         let neighbors: Vec<AtomIdx> = mol.neighbors(center).map(|(nb, _)| nb).collect();
 
-        if neighbors.len() < 2 {
+        // One ideal angle cannot describe a bipyramid or an octahedron (90°,
+        // 120° and 180°): the placement already puts those neighbours there.
+        if neighbors.len() < 2 || crate::dg::expanded_octet_domains(mol, center).is_some() {
             continue;
         }
 
@@ -269,6 +271,21 @@ pub fn build_constraints(mol: &Molecule) -> ConstraintSet {
     }
 
     ConstraintSet { bonds, angles }
+}
+
+/// Add site-specific expanded-octet targets from the initial geometry.
+pub(crate) fn add_expanded_octet_constraints(
+    mol: &Molecule,
+    coords: &Coords3D,
+    constraints: &mut ConstraintSet,
+) {
+    for (center, _) in mol.atoms() {
+        for (a, b, angle) in crate::dg::expanded_octet_angle_targets(mol, center, coords) {
+            constraints
+                .angles
+                .push(AngleConstraint::new(a, center, b, angle));
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------

@@ -195,7 +195,8 @@ pub fn generate_and_minimize_dreiding(mol: &chematic_core::Molecule) -> Coords3D
 /// 4. Energy minimization with DREIDING force field (`minimize_dreiding`)
 pub fn generate_and_minimize_constrained(mol: &chematic_core::Molecule) -> Coords3D {
     let coords = generate_coords(mol);
-    let cs = build_constraints(mol);
+    let mut cs = build_constraints(mol);
+    constraints::add_expanded_octet_constraints(mol, &coords, &mut cs);
     let projected = satisfy_constraints(&coords, mol, &cs, 20);
     minimize_dreiding(mol, projected)
 }

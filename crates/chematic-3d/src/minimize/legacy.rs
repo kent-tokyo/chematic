@@ -422,15 +422,19 @@ fn minimize_generic_with_config(
     coords: Coords3D,
     config: &MinimizeConfig,
 ) -> Coords3D {
-    minimize_gradient_descent(mol, coords, config, |c| total_energy(mol, c))
+    let targets: Vec<_> = mol.atoms().flat_map(|(center, _)| {
+        crate::dg::expanded_octet_angle_targets(mol, center, &coords)
+            .into_iter().map(move |(a, b, angle)| (a, center, b, angle))
+    }).collect();
+    minimize_gradient_descent(mol, coords, config, |c| total_energy(mol, c, &targets))
 }
 
 // ---------------------------------------------------------------------------
 // Total energy
 // ---------------------------------------------------------------------------
 
-fn total_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
-    bond_energy(mol, coords) + angle_energy(mol, coords) + vdw_energy(mol, coords)
+fn total_energy(mol: &Molecule, coords: &Coords3D, targets: &[(AtomIdx, AtomIdx, AtomIdx, f64)]) -> f64 {
+    bond_energy(mol, coords) + angle_energy(mol, coords, targets) + vdw_energy(mol, coords)
 }
 
 // ---------------------------------------------------------------------------
@@ -610,7 +614,7 @@ fn bond_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 // Angle bending energy
 // ---------------------------------------------------------------------------
 
-fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
+fn angle_energy(mol: &Molecule, coords: &Coords3D, targets: &[(AtomIdx, AtomIdx, AtomIdx, f64)]) -> f64 {
     let mut energy = 0.0;
 
     for b_idx in 0..mol.atom_count() {
@@ -646,6 +650,8 @@ fn angle_energy(mol: &Molecule, coords: &Coords3D) -> f64 {
 
                 let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
                 let theta = cos_theta.dacos();
+                let theta0 = targets.iter().find(|&&(x, center, y, _)| center == b && ((x == a && y == c) || (x == c && y == a)))
+                    .map_or(theta0, |&(_, _, _, target)| target);
                 let dtheta = theta - theta0;
                 energy += 0.5 * ANGLE_SPRING_CONSTANT * dtheta * dtheta;
             }
