@@ -6433,6 +6433,19 @@ def parse_gjf_document_json(
 def parse_dlpoly_history(text: str | bytes) -> dict[str, Any]: ...
 def write_dlpoly_history(record: dict[str, Any]) -> str: ...
 
+class _TimedConformerResult(TypedDict):
+    status: Literal["ok", "timeout", "error"]
+    conformers: list[tuple[int, float | None, list[list[float]]]]
+    error: str | None
+    fallback_reason: str | None
+    elapsed: float
+
+def timed_conformer_batch(
+    smiles: Iterable[str], *, seconds: float = 0.2, num_confs: int = 1,
+    random_seed: int = 42, max_mmff_iters: int = 200, repair_mmff_iters: int = 0,
+    allow_unoptimized: bool = False,
+) -> list[_TimedConformerResult]: ...
+
 # Cartesian GEOMETRY blocks, not full NWChem calculation decks.
 def parse_nwchem_geometry(text: str | bytes) -> dict[str, Any]: ...
 def write_nwchem_geometry(record: dict[str, Any]) -> str: ...

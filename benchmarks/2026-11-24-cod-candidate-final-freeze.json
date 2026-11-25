@@ -1,0 +1,62 @@
+{
+  "created_utc": "2026-11-24T08:07:43.769720+00:00",
+  "purpose": "before candidate holdout scoring, lock derived wheel, population and scorer",
+  "population": "1197 repository-unscored COD rows from prior unused-development scaffold groups; unknown outside exposure",
+  "audit_version": "RDKit 2025.09.3",
+  "protocol": {
+    "modes": [
+      "20 fixed attempts within 30 seconds",
+      "0.2 seconds up to 20 attempts"
+    ],
+    "seed": "42 * one-based attempt",
+    "candidate": "timed_conformer_batch allow_unoptimized=True, repair_mmff_iters=400",
+    "timing_difference": "candidate includes SMILES parsing and hydrogen addition inside deadline; RDKit starts after preparation",
+    "recovery": "heavy-atom RMSD <= 1 A and strict geometry and declared stereo",
+    "convergence": "separate status-zero-only result",
+    "acceptance": "scaffold-cluster paired 95% interval lower > -0.02 and zero contradicted or unevaluable declared stereo among candidate conformers with complete coverage",
+    "bootstrap": "10000 scaffold resamples, seed 42",
+    "limitations": "single macOS host; no child memory for candidate API"
+  },
+  "files": {
+    "split": {
+      "path": "/private/tmp/chematic-goal-candidate-holdout-initial.json",
+      "sha256": "303f8e3e9d36ab5f67d49cbd6852e341d8f2dffe28c0fe6b226c7906369121f8"
+    },
+    "audit": {
+      "path": "/private/tmp/chematic-goal-candidate-audit-initial.json",
+      "sha256": "ddc418aca0dcaae20826b929d0cd5df081ca847adc0b1278a5e069d5086902cf"
+    },
+    "reference_sdf": {
+      "path": "/private/tmp/chematic-cod-reference-sample/cod-sample.sdf",
+      "sha256": "6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"
+    },
+    "candidate_wheel": {
+      "path": "/private/tmp/chematic-goal-candidate-wheels/chematic-1.2.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "e8c7d6f7b59e09866bc0ceafc32cbdf2f9c8f9e97c2844d0563233e02d357941"
+    },
+    "rdkit_wheel": {
+      "path": "/private/tmp/chematic-goal-wheels/rdkit-2026.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "3860ba53505f27cb24d05383027f78e3f82aefd6caf193c217a94d876d91b023"
+    },
+    "candidate_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_candidate_evaluation.py",
+      "sha256": "7434d28427467cdea7a4f76ac854ca0f3bdaca6dbb611a81e78feb0730ee619d"
+    },
+    "engine_and_scoring": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_hard_deadline.py",
+      "sha256": "275085bcaa3e10d544e82fef020f6cbf235e55213bc0877948ba5e7088dd4c37"
+    },
+    "stereo_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_stereo_strict.py",
+      "sha256": "3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132"
+    },
+    "geometry_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_geometry.py",
+      "sha256": "56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22"
+    },
+    "summary": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/summarize_cod_hard_deadline.py",
+      "sha256": "a9ad0e7b6b5f53505eae90ee2e2a35313f7d368c21908a390849caa38dae5f43"
+    }
+  }
+}

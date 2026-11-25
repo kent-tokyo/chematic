@@ -1,0 +1,84 @@
+{
+  "created_utc": "2026-11-24T10:17:40.368715+00:00",
+  "purpose": "freeze stereo-containment-filter candidate wheel and new disjoint archive slice before outcomes",
+  "population": "2029 COD records from archive path-hash offset 24000, after exclusion of all prior COD samples, known corpus scaffolds, and bounded invalid-graph overlap or unresolved matches; external prior use unknown",
+  "audit_version": "RDKit 2025.09.3",
+  "protocol": {
+    "modes": [
+      "20 fixed attempts within 30 seconds",
+      "0.2 seconds up to 20 attempts"
+    ],
+    "seed": "42 * one-based attempt",
+    "candidate": "timed_conformer_batch allow_unoptimized=True, repair_mmff_iters=400, filter tetrahedral centers outside ligand tetrahedron",
+    "timing_difference": "candidate includes SMILES parsing and hydrogen addition inside deadline; RDKit starts after preparation",
+    "recovery": "heavy-atom RMSD <= 1 A and strict geometry and declared stereo",
+    "convergence": "separate status-zero-only result",
+    "acceptance": "scaffold-cluster paired 95% interval lower > -0.02 and zero contradicted or unevaluable declared stereo among candidate conformers with complete coverage",
+    "bootstrap": "10000 scaffold resamples, seed 42",
+    "limitations": "single macOS host; no child memory for candidate API",
+    "scoring": "independent strict declared-stereo and geometry checks; RMSD with reverse graph-matching fallback if forward mapping fails; failed RMSD is not a recovery"
+  },
+  "files": {
+    "split": {
+      "path": "/private/tmp/chematic-goal-new-split-final.json",
+      "sha256": "178d3901a3696243730f431f065b641a6bf05f3ac5dd6cad6e8f94cdced47457"
+    },
+    "audit": {
+      "path": "/private/tmp/chematic-goal-new-audit-final.json",
+      "sha256": "6ce86a24567e2e135f662d055f36b398a5a6d7abdd7fbc4bc8a38b538c8af3fb"
+    },
+    "reference_sdf": {
+      "path": "/private/tmp/chematic-goal-new-sample.sdf",
+      "sha256": "2bef8bdd92c243f6b76eaecaee7e2371fc707971b6119f6240c8b18ad0994311"
+    },
+    "candidate_wheel": {
+      "path": "/private/tmp/chematic-goal-candidate-v3-wheels/chematic-1.2.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "005674e8664277094d2041dd26181b174958360a897eca8a9f8c41fe41f346bf"
+    },
+    "rdkit_wheel": {
+      "path": "/private/tmp/chematic-goal-wheels/rdkit-2026.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "3860ba53505f27cb24d05383027f78e3f82aefd6caf193c217a94d876d91b023"
+    },
+    "candidate_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_candidate_evaluation_v2.py",
+      "sha256": "b2f6b3eb982ebf8c05ce8ba40119e709cbfddd3d05313773ad352a80b9ba9049"
+    },
+    "engine_and_scoring": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_hard_deadline.py",
+      "sha256": "275085bcaa3e10d544e82fef020f6cbf235e55213bc0877948ba5e7088dd4c37"
+    },
+    "stereo_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_stereo_strict.py",
+      "sha256": "3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132"
+    },
+    "geometry_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_geometry.py",
+      "sha256": "56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22"
+    },
+    "summary": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/summarize_cod_candidate_v2.py",
+      "sha256": "d0bf3c30f60e6ac3e9bdbcee2091e47546bfe2c01b466d46e57e614ec6528a62"
+    },
+    "robust_scoring": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_robust_scoring.py",
+      "sha256": "661949b6d21c48182d2b32eb9f60db67847c8dafa6251b2da2dd6a7d79658bf2"
+    },
+    "archive_manifest": {
+      "path": "/private/tmp/chematic-goal-new-manifest.json",
+      "sha256": "337c3ee5a58699da25299b88a8577a0f9ba8bf16da7c30a555469044cf14edaa"
+    },
+    "selection": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/validation/select_cod_new_holdout.py",
+      "sha256": "ef6a3b651751db5f0fa31be1b7f48726312e53566696092bd4c634a961b3a4c4"
+    },
+    "bounded_audit": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/validation/audit_cod_bounded.py",
+      "sha256": "9a7a859d0a8495fcc2475a1f5ee5b89c51406dce0f830a47aeafe3d365048b21"
+    },
+    "bounded_audit_output": {
+      "path": "/private/tmp/chematic-goal-new-bounded-audit.json",
+      "sha256": "e39b544573d8f9e11aecaca3ab94b7e442b17256e03cfc076b48395b0c2a37f3"
+    }
+  },
+  "selection_notes": "4000 selected at archive offset 24000; 1831 known scaffolds, 128 unresolved or matching invalid exclusions and 12 parse failures excluded; 120 older records had unavailable sanitized scaffold, all represented by unsanitized graph exclusions"
+}

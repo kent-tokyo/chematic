@@ -1,16 +1,37 @@
 import sys
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from rdkit import Chem
 from rdkit.Chem import AllChem
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
-from platinum_development_probe import rms_values, stereo_violations
+from platinum_development_probe import rms_values, stereo_violations, score
+import platinum_development_probe as probe
 from summarize_platinum_probe import recovered
 
 
 class PlatinumScoringTest(unittest.TestCase):
+    def test_independent_scoring_runs_both_engines_when_precheck_fails(self):
+        reference = Chem.AddHs(Chem.MolFromSmiles("CCO"))
+        self.assertEqual(AllChem.EmbedMolecule(reference, randomSeed=42), 0)
+        with patch.object(AllChem, "MMFFHasAllMoleculeParams", return_value=False):
+            skipped = score(reference, 1, 42, "compatible", False, 0)
+            independent = score(reference, 1, 42, "compatible", False, 0, True)
+        self.assertEqual(skipped["status"], "rdkit_mmff_unsupported")
+        self.assertEqual(independent["status"], "ok")
+        self.assertEqual(independent["chematic_count"], 1)
+        self.assertEqual(independent["rdkit_count"], 1)
+
+    def test_independent_scoring_continues_after_chematic_parse_error(self):
+        reference = Chem.AddHs(Chem.MolFromSmiles("CCO"))
+        self.assertEqual(AllChem.EmbedMolecule(reference, randomSeed=42), 0)
+        with patch.object(probe.chematic, "from_smiles", side_effect=ValueError("parse failed")):
+            result = score(reference, 1, 42, "compatible", False, 0, True)
+        self.assertIn("parse failed", result["chematic_error"])
+        self.assertEqual(result["rdkit_count"], 1)
+
     def test_recovery_requires_valid_stereo_and_counts_failures(self):
         good = {"atoms": [], "bonds": []}
         bad = {"atoms": [1], "bonds": []}

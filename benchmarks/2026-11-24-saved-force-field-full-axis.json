@@ -1,0 +1,613 @@
+{
+  "source_sdf_sha256": "6e2f93fb05c8ff49aff24577aa62d3f04f6531b505e12a9f711c9b79cf3ba008",
+  "coordinate_file_sha256": "21c0fc8dcf01d0f8d8f18002aa807425ffecd02c6c7eeb29511422b9b521a62a",
+  "script_sha256": "131e58b6b5f6cee067b540a16183d4ce1c499e1f56f38f603e6f89e768d112cb",
+  "rdkit": "2026.09.2",
+  "chematic": "1.2.4",
+  "chematic_extension_sha256": "87e835d05154fba136953e264e50a614b67fa67a5f5cfc7f16e4c9c13f1579a3",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "steps": [
+    1e-06,
+    1e-07,
+    1e-08
+  ],
+  "cases": [
+    {
+      "index": 2615,
+      "name": "VDCLBUQGYUHKMX-JXAWBTAJSA-O",
+      "smiles": "CCOC(=O)/C(=N\\Nc1ccccc1)c1cccc[nH+]1",
+      "fields": {
+        "MMFF94": {
+          "rdkit_energy": 311.5860901527078,
+          "chematic_energy": 311.58609015270696,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 64284.41679451539,
+                "analytic": 419580.23263638356,
+                "numerical": 483864.64943089895,
+                "scaled_error": 0.13285619619065783
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 64284.416796376754,
+                "analytic": 419580.23263617064,
+                "numerical": 483864.6494325474,
+                "scaled_error": 0.1328561961940521
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 43,
+                "absolute_error": 1.961103407666087e-06,
+                "analytic": -77079.0922995559,
+                "numerical": -77079.092301517,
+                "scaled_error": 2.5442741333728584e-11
+              },
+              "consistent_planes": {
+                "axis": 44,
+                "absolute_error": 662.6689326816122,
+                "analytic": 484527.318365229,
+                "numerical": 483864.6494325474,
+                "scaled_error": 0.0013676606200810806
+              },
+              "consistent_torsions": {
+                "axis": 44,
+                "absolute_error": 64284.416796376754,
+                "analytic": 419580.23263617064,
+                "numerical": 483864.6494325474,
+                "scaled_error": 0.1328561961940521
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 64940.46733714611,
+                "analytic": 419580.23263638356,
+                "numerical": 484520.69997352967,
+                "scaled_error": 0.13403032592971556
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 64940.46730836888,
+                "analytic": 419580.23263617064,
+                "numerical": 484520.6999445395,
+                "scaled_error": 0.13403032587834177
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 42,
+                "absolute_error": 0.0016942181027843617,
+                "analytic": 42874.18289152356,
+                "numerical": 42874.18458574166,
+                "scaled_error": 3.951604255927458e-08
+              },
+              "consistent_planes": {
+                "axis": 44,
+                "absolute_error": 6.618420689483173,
+                "analytic": 484527.318365229,
+                "numerical": 484520.6999445395,
+                "scaled_error": 1.3659540832111169e-05
+              },
+              "consistent_torsions": {
+                "axis": 44,
+                "absolute_error": 64940.46730836888,
+                "analytic": 419580.23263617064,
+                "numerical": 484520.6999445395,
+                "scaled_error": 0.13403032587834177
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 64947.01418099535,
+                "analytic": 419580.23263638356,
+                "numerical": 484527.2468173789,
+                "scaled_error": 0.1340420267541203
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 64947.014223840844,
+                "analytic": 419580.23263617064,
+                "numerical": 484527.2468600115,
+                "scaled_error": 0.1340420268307536
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 45,
+                "absolute_error": 0.008512301974406,
+                "analytic": -22607.874015534435,
+                "numerical": -22607.88252783641,
+                "scaled_error": 3.765192058090826e-07
+              },
+              "consistent_planes": {
+                "axis": 44,
+                "absolute_error": 0.07150521752191707,
+                "analytic": 484527.318365229,
+                "numerical": 484527.2468600115,
+                "scaled_error": 1.475772671872705e-07
+              },
+              "consistent_torsions": {
+                "axis": 44,
+                "absolute_error": 64947.014223840844,
+                "analytic": 419580.23263617064,
+                "numerical": 484527.2468600115,
+                "scaled_error": 0.1340420268307536
+              }
+            }
+          }
+        },
+        "UFF": {
+          "rdkit_energy": 690.9616350074988,
+          "chematic_energy": 690.9616350074982,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 651.3512264392921,
+                "analytic": 414963.72004893253,
+                "numerical": 414312.36882249324,
+                "scaled_error": 0.0015696582495512733
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 651.3512223186553,
+                "analytic": 414963.720046233,
+                "numerical": 414312.3688239143,
+                "scaled_error": 0.0015696582396313716
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 16,
+                "absolute_error": 1.7053025658242404e-06,
+                "analytic": 31312.29328198515,
+                "numerical": 31312.29328369045,
+                "scaled_error": 5.4461120122187817e-11
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 6.505226439156104,
+                "analytic": 414963.72004893253,
+                "numerical": 414957.2148224934,
+                "scaled_error": 1.5676614905970594e-05
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 6.50525727722561,
+                "analytic": 414963.720046233,
+                "numerical": 414957.21478895575,
+                "scaled_error": 1.567668922117054e-05
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 44,
+                "absolute_error": 3.353762440383434e-05,
+                "analytic": 414957.2148224934,
+                "numerical": 414957.21478895575,
+                "scaled_error": 8.082188525913632e-11
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 44,
+                "absolute_error": 0.06493131531169638,
+                "analytic": 414963.72004893253,
+                "numerical": 414963.6551176172,
+                "scaled_error": 1.5647468001308566e-07
+              },
+              "compatible": {
+                "axis": 44,
+                "absolute_error": 0.06482061324641109,
+                "analytic": 414963.720046233,
+                "numerical": 414963.65522561973,
+                "scaled_error": 1.5620790472764494e-07
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 16,
+                "absolute_error": 0.0003410605131648481,
+                "analytic": 31314.902344092843,
+                "numerical": 31314.90200303233,
+                "scaled_error": 1.0891316518161992e-08
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "index": 3669,
+      "name": "KKEYKMQSFPECHD-UHFFFAOYSA-N",
+      "smiles": "Cc1cc[n+]([SiH-](C)(Br)[n+]2ccc(C)cc2)cc1",
+      "fields": {
+        "MMFF94": {
+          "rdkit_energy": 244.97733037464823,
+          "chematic_energy": 244.9773303746482,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 16,
+                "absolute_error": 6.786578410356015e-08,
+                "analytic": -30.080943912134188,
+                "numerical": -30.080943844268404,
+                "scaled_error": 2.2561055365082522e-09
+              },
+              "compatible": {
+                "axis": 16,
+                "absolute_error": 9.628743669054529e-08,
+                "analytic": -30.08094391213413,
+                "numerical": -30.080943815846695,
+                "scaled_error": 3.200944656916321e-09
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 66,
+                "absolute_error": 8.526512829121202e-08,
+                "analytic": 96.40528975296547,
+                "numerical": 96.4052898382306,
+                "scaled_error": 8.844444992000758e-10
+              },
+              "consistent_planes": {
+                "axis": 16,
+                "absolute_error": 9.628743669054529e-08,
+                "analytic": -30.08094391213413,
+                "numerical": -30.080943815846695,
+                "scaled_error": 3.200944656916321e-09
+              },
+              "consistent_torsions": {
+                "axis": 16,
+                "absolute_error": 9.628743669054529e-08,
+                "analytic": -30.08094391213413,
+                "numerical": -30.080943815846695,
+                "scaled_error": 3.200944656916321e-09
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 21,
+                "absolute_error": 9.633426500954556e-07,
+                "analytic": -38.86185868695389,
+                "numerical": -38.86185965029654,
+                "scaled_error": 2.478889736014228e-08
+              },
+              "compatible": {
+                "axis": 39,
+                "absolute_error": 1.0149200129205838e-06,
+                "analytic": -21.082558581307563,
+                "numerical": -21.08255756638755,
+                "scaled_error": 4.814026765330289e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 23,
+                "absolute_error": 9.947598300641403e-07,
+                "analytic": 39.08110286943156,
+                "numerical": 39.08110187467173,
+                "scaled_error": 2.5453729731926808e-08
+              },
+              "consistent_planes": {
+                "axis": 39,
+                "absolute_error": 1.0149200129205838e-06,
+                "analytic": -21.082558581307563,
+                "numerical": -21.08255756638755,
+                "scaled_error": 4.814026765330289e-08
+              },
+              "consistent_torsions": {
+                "axis": 39,
+                "absolute_error": 1.0149200129205838e-06,
+                "analytic": -21.082558581307563,
+                "numerical": -21.08255756638755,
+                "scaled_error": 4.814026765330289e-08
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 67,
+                "absolute_error": 1.0072100032232356e-05,
+                "analytic": 57.85977764445206,
+                "numerical": 57.85978771655209,
+                "scaled_error": 1.7407772184672232e-07
+              },
+              "compatible": {
+                "axis": 68,
+                "absolute_error": 1.0252018917356054e-05,
+                "analytic": -42.54477912835318,
+                "numerical": -42.544789380372094,
+                "scaled_error": 2.4097002398337857e-07
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 67,
+                "absolute_error": 8.526512829121202e-06,
+                "analytic": 57.85978771655209,
+                "numerical": 57.85977919003926,
+                "scaled_error": 1.4736509008452518e-07
+              },
+              "consistent_planes": {
+                "axis": 68,
+                "absolute_error": 1.0252018917356054e-05,
+                "analytic": -42.54477912835318,
+                "numerical": -42.544789380372094,
+                "scaled_error": 2.4097002398337857e-07
+              },
+              "consistent_torsions": {
+                "axis": 68,
+                "absolute_error": 1.0252018917356054e-05,
+                "analytic": -42.54477912835318,
+                "numerical": -42.544789380372094,
+                "scaled_error": 2.4097002398337857e-07
+              }
+            }
+          }
+        },
+        "UFF": {
+          "rdkit_energy": 664779686493.8715,
+          "chematic_energy": 664779686493.8715,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 15,
+                "absolute_error": 4426.0830078125,
+                "analytic": -2648207402556.339,
+                "numerical": -2648207406982.422,
+                "scaled_error": 1.6713505883800586e-09
+              },
+              "compatible": {
+                "axis": 23,
+                "absolute_error": 7357.575927734375,
+                "analytic": 1080200987637.5413,
+                "numerical": 1080200994995.1172,
+                "scaled_error": 6.81130267591323e-09
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 23,
+                "absolute_error": 9460.44921875,
+                "analytic": 1080200985534.668,
+                "numerical": 1080200994995.1172,
+                "scaled_error": 8.758045273595368e-09
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 17,
+                "absolute_error": 47880.9384765625,
+                "analytic": 2996853572724.5303,
+                "numerical": 2996853620605.4688,
+                "scaled_error": 1.5977069466238688e-08
+              },
+              "compatible": {
+                "axis": 16,
+                "absolute_error": 41809.68896484375,
+                "analytic": -448185993346.56104,
+                "numerical": -448186035156.25,
+                "scaled_error": 9.328646072220376e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 68,
+                "absolute_error": 58593.75,
+                "analytic": -4077054594116.211,
+                "numerical": -4077054535522.461,
+                "scaled_error": 1.4371588274672455e-08
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 67,
+                "absolute_error": 512907.931640625,
+                "analytic": 3649660583283.4746,
+                "numerical": 3649661096191.4062,
+                "scaled_error": 1.405357697940416e-07
+              },
+              "compatible": {
+                "axis": 67,
+                "absolute_error": 274870.82080078125,
+                "analytic": 3649660583283.476,
+                "numerical": 3649660858154.297,
+                "scaled_error": 7.531407204224139e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 67,
+                "absolute_error": 238037.109375,
+                "analytic": 3649661096191.4062,
+                "numerical": 3649660858154.297,
+                "scaled_error": 6.522170226254787e-08
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "index": 11977,
+      "name": "KESWAXGJMSZDTG-UHFFFAOYSA-N",
+      "smiles": "CC(C)OP(=S)(NC(=S)Nc1ccc2c(c1)OCCOCCOCCOCCO2)OC(C)C",
+      "fields": {
+        "MMFF94": {
+          "rdkit_energy": 185.1277605280484,
+          "chematic_energy": 185.1277605280485,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 17,
+                "absolute_error": 9.774004183782381e-08,
+                "analytic": -282.7232952586507,
+                "numerical": -282.72329535639074,
+                "scaled_error": 3.457091914361576e-10
+              },
+              "compatible": {
+                "axis": 86,
+                "absolute_error": 7.964821691075485e-08,
+                "analytic": 107.6267936156902,
+                "numerical": 107.62679353604199,
+                "scaled_error": 7.400407857095491e-10
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 67,
+                "absolute_error": 7.105427357601002e-08,
+                "analytic": -6.765238566686094,
+                "numerical": -6.765238637740367,
+                "scaled_error": 1.0502848070965106e-08
+              },
+              "consistent_planes": {
+                "axis": 86,
+                "absolute_error": 7.964821691075485e-08,
+                "analytic": 107.6267936156902,
+                "numerical": 107.62679353604199,
+                "scaled_error": 7.400407857095491e-10
+              },
+              "consistent_torsions": {
+                "axis": 86,
+                "absolute_error": 7.964821691075485e-08,
+                "analytic": 107.6267936156902,
+                "numerical": 107.62679353604199,
+                "scaled_error": 7.400407857095491e-10
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 63,
+                "absolute_error": 8.639894275574989e-07,
+                "analytic": -12.46645895204567,
+                "numerical": -12.466458088056243,
+                "scaled_error": 6.930511951156133e-08
+              },
+              "compatible": {
+                "axis": 31,
+                "absolute_error": 8.390087558041159e-07,
+                "analytic": 17.743958964047017,
+                "numerical": 17.74395812503826,
+                "scaled_error": 4.728419162285731e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 31,
+                "absolute_error": 5.684341886080801e-07,
+                "analytic": 17.74395869347245,
+                "numerical": 17.74395812503826,
+                "scaled_error": 3.203536473612242e-08
+              },
+              "consistent_planes": {
+                "axis": 31,
+                "absolute_error": 8.390087558041159e-07,
+                "analytic": 17.743958964047017,
+                "numerical": 17.74395812503826,
+                "scaled_error": 4.728419162285731e-08
+              },
+              "consistent_torsions": {
+                "axis": 31,
+                "absolute_error": 8.390087558041159e-07,
+                "analytic": 17.743958964047017,
+                "numerical": 17.74395812503826,
+                "scaled_error": 4.728419162285731e-08
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 14,
+                "absolute_error": 8.793870819090444e-06,
+                "analytic": 148.39258683972437,
+                "numerical": 148.3925956335952,
+                "scaled_error": 5.9260846415840735e-08
+              },
+              "compatible": {
+                "axis": 12,
+                "absolute_error": 7.872675638509463e-06,
+                "analytic": 73.72007436842833,
+                "numerical": 73.72006649575269,
+                "scaled_error": 1.0679147716488263e-07
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 97,
+                "absolute_error": 5.6843418860808015e-06,
+                "analytic": 8.187714684027014,
+                "numerical": 8.187708999685128,
+                "scaled_error": 6.942525607505703e-07
+              },
+              "consistent_planes": {
+                "axis": 12,
+                "absolute_error": 7.872675638509463e-06,
+                "analytic": 73.72007436842833,
+                "numerical": 73.72006649575269,
+                "scaled_error": 1.0679147716488263e-07
+              },
+              "consistent_torsions": {
+                "axis": 12,
+                "absolute_error": 7.872675638509463e-06,
+                "analytic": 73.72007436842833,
+                "numerical": 73.72006649575269,
+                "scaled_error": 1.0679147716488263e-07
+              }
+            }
+          }
+        },
+        "UFF": {
+          "rdkit_energy": 264.27221728137914,
+          "chematic_energy": 264.27221728137914,
+          "steps": {
+            "1e-06": {
+              "rdkit": {
+                "axis": 13,
+                "absolute_error": 1.4984692509045772e-07,
+                "analytic": -7.5732653706305095,
+                "numerical": -7.573265520477435,
+                "scaled_error": 1.978630284192268e-08
+              },
+              "compatible": {
+                "axis": 13,
+                "absolute_error": 2.0669021871810855e-07,
+                "analytic": -7.573265370630635,
+                "numerical": -7.5732655773208535,
+                "scaled_error": 2.729208643323823e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 0,
+                "absolute_error": 5.6843418860808015e-08,
+                "analytic": 1.9461798501652083,
+                "numerical": 1.9461797933217895,
+                "scaled_error": 2.920769057185679e-08
+              }
+            },
+            "1e-07": {
+              "rdkit": {
+                "axis": 90,
+                "absolute_error": 1.580560869740566e-06,
+                "analytic": 19.62553495755396,
+                "numerical": 19.62553653811483,
+                "scaled_error": 8.053593167610743e-08
+              },
+              "compatible": {
+                "axis": 63,
+                "absolute_error": 1.640333092467472e-06,
+                "analytic": -18.255751050278658,
+                "numerical": -18.255749409945565,
+                "scaled_error": 8.985295033602212e-08
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 0,
+                "absolute_error": 5.684341886080801e-07,
+                "analytic": 1.946179963852046,
+                "numerical": 1.9461793954178574,
+                "scaled_error": 2.920768886567851e-07
+              }
+            },
+            "1e-08": {
+              "rdkit": {
+                "axis": 94,
+                "absolute_error": 1.663147844510604e-05,
+                "analytic": 7.947239022083579,
+                "numerical": 7.947255653562024,
+                "scaled_error": 2.0927322801867683e-06
+              },
+              "compatible": {
+                "axis": 160,
+                "absolute_error": 1.3035583753762126e-05,
+                "analytic": 8.891085447226862,
+                "numerical": 8.891072411643108,
+                "scaled_error": 1.4661408701035414e-06
+              },
+              "energy_derivative_cross_engine": {
+                "axis": 2,
+                "absolute_error": 5.6843418860808015e-06,
+                "analytic": -20.554540469674976,
+                "numerical": -20.55453478533309,
+                "scaled_error": 2.7654920792158615e-07
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

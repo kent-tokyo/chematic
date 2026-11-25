@@ -1,0 +1,190 @@
+{
+  "source_sha256": "6f94d5caec1894cfb699d7d73c7dc523965d1e23ac3a4f85ad3434df700025e6",
+  "script_sha256": "40f516667e8656e95a9ec032417ae1199a34b9f8191bfcf70e13271868b52cf2",
+  "rows": 100,
+  "engines": {
+    "chematic-1.2.2": {
+      "statuses": {
+        "ok": 94,
+        "error": 5,
+        "timeout": 1
+      },
+      "input_errors": 0,
+      "scoring_errors": 0,
+      "rmsd_missing": 0,
+      "attempts": 1882,
+      "conformers": 1880,
+      "converged": 880,
+      "fixed": {
+        "recovered": 84,
+        "converged_recovered": 51
+      },
+      "timed_prefix": {
+        "recovered": 66,
+        "converged_recovered": 48
+      },
+      "elapsed_seconds": {
+        "count": 100,
+        "median": 0.4513396460097283,
+        "max": 10.003614208078943
+      },
+      "worker_peak_rss_bytes": {
+        "count": 95,
+        "median": 92815360,
+        "max": 96993280
+      },
+      "stereo": {
+        "checked": 1880,
+        "violated": 0,
+        "unevaluable": 0,
+        "coverage_missing": 0
+      }
+    },
+    "chematic-1.2.3": {
+      "statuses": {
+        "ok": 94,
+        "error": 5,
+        "timeout": 1
+      },
+      "input_errors": 0,
+      "scoring_errors": 0,
+      "rmsd_missing": 0,
+      "attempts": 1882,
+      "conformers": 1880,
+      "converged": 880,
+      "fixed": {
+        "recovered": 84,
+        "converged_recovered": 51
+      },
+      "timed_prefix": {
+        "recovered": 66,
+        "converged_recovered": 48
+      },
+      "elapsed_seconds": {
+        "count": 100,
+        "median": 0.452607958461158,
+        "max": 10.003550291992724
+      },
+      "worker_peak_rss_bytes": {
+        "count": 95,
+        "median": 92733440,
+        "max": 96763904
+      },
+      "stereo": {
+        "checked": 1880,
+        "violated": 0,
+        "unevaluable": 0,
+        "coverage_missing": 0
+      }
+    },
+    "chematic-1.2.4": {
+      "statuses": {
+        "ok": 94,
+        "error": 5,
+        "timeout": 1
+      },
+      "input_errors": 0,
+      "scoring_errors": 0,
+      "rmsd_missing": 0,
+      "attempts": 1882,
+      "conformers": 1880,
+      "converged": 880,
+      "fixed": {
+        "recovered": 84,
+        "converged_recovered": 51
+      },
+      "timed_prefix": {
+        "recovered": 67,
+        "converged_recovered": 49
+      },
+      "elapsed_seconds": {
+        "count": 100,
+        "median": 0.4487986664753407,
+        "max": 10.004005374968983
+      },
+      "worker_peak_rss_bytes": {
+        "count": 95,
+        "median": 92766208,
+        "max": 97009664
+      },
+      "stereo": {
+        "checked": 1880,
+        "violated": 0,
+        "unevaluable": 0,
+        "coverage_missing": 0
+      }
+    },
+    "rdkit": {
+      "statuses": {
+        "ok": 99,
+        "timeout": 1
+      },
+      "input_errors": 0,
+      "scoring_errors": 0,
+      "rmsd_missing": 0,
+      "attempts": 1982,
+      "conformers": 1980,
+      "converged": 881,
+      "fixed": {
+        "recovered": 84,
+        "converged_recovered": 51
+      },
+      "timed_prefix": {
+        "recovered": 62,
+        "converged_recovered": 43
+      },
+      "elapsed_seconds": {
+        "count": 100,
+        "median": 0.7590182084823027,
+        "max": 10.003176832920872
+      },
+      "worker_peak_rss_bytes": {
+        "count": 100,
+        "median": 70991872.0,
+        "max": 74973184
+      },
+      "stereo": {
+        "checked": 1980,
+        "violated": 0,
+        "unevaluable": 0,
+        "coverage_missing": 0
+      }
+    },
+    "cosmolkit": {
+      "statuses": {
+        "ok": 99,
+        "error": 1
+      },
+      "input_errors": 0,
+      "scoring_errors": 0,
+      "rmsd_missing": 0,
+      "attempts": 1980,
+      "conformers": 1980,
+      "converged": 888,
+      "fixed": {
+        "recovered": 91,
+        "converged_recovered": 55
+      },
+      "timed_prefix": {
+        "recovered": 62,
+        "converged_recovered": 46
+      },
+      "elapsed_seconds": {
+        "count": 100,
+        "median": 0.5904612499871291,
+        "max": 8.334008249919862
+      },
+      "worker_peak_rss_bytes": {
+        "count": 99,
+        "median": 94371840,
+        "max": 97632256
+      },
+      "stereo": {
+        "checked": 1980,
+        "violated": 0,
+        "unevaluable": 0,
+        "coverage_missing": 0
+      }
+    }
+  }
+}

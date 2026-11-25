@@ -1,0 +1,16 @@
+{
+  "purpose": "exposed exploratory five-wheel comparison, not a new holdout",
+  "selected_count": 100,
+  "names_sha256": "01792d3af864d1651028e1dd618b48ee4d7013038b58161ce61b63d4cfdb5fd3",
+  "script_sha256": "40f516667e8656e95a9ec032417ae1199a34b9f8191bfcf70e13271868b52cf2",
+  "summary_sha256": "612eb857da6662668617ac562b7c54bc254cb9bd70adb0502fef149dbcb7acc7",
+  "split_sha256": "178d3901a3696243730f431f065b641a6bf05f3ac5dd6cad6e8f94cdced47457",
+  "count": 20,
+  "seed": "42 * one-based attempt",
+  "fixed_timeout_seconds": 10,
+  "timed_prefix_seconds": 0.2,
+  "order": "rotate by row",
+  "success": "heavy-atom RMSD <=1 Angstrom and strict stereo plus geometry; complete all attempts for fixed mode; count all rows including errors and timeouts",
+  "limitations": "single host, selected from previously scored v3 cohort, generation startup excluded, separate single-attempt embedding not native multi-conformer search, 0.2-second prefix is post-hoc acceptance not enforced stop, not a noninferiority claim",
+  "pilot": "first run interrupted after one complete row due missing geometry support metadata; previously used pilot rows are included as exposed data"
+}

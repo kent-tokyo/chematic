@@ -1,0 +1,71 @@
+{
+  "purpose": "frozen before COD candidate outcomes; fixed-count and hard-deadline paired comparison",
+  "created_utc": "2026-11-24T04:32:02.402730+00:00",
+  "rows": 2735,
+  "fixed_count": 20,
+  "seed": 42,
+  "gradient": "corrected, 400 repair iterations",
+  "hard_timeout_seconds": 0.2,
+  "comparison_rdkit": "2026.09.2",
+  "invalid_graph_audit_rdkit": "2025.09.3",
+  "claim_limit": "sample not known to have been used in this repository; exposure outside the recorded repository history is unknown",
+  "files": {
+    "split": {
+      "path": "/private/tmp/chematic-goal-holdout.json",
+      "sha256": "fb64258cc5689591928012dc6d096e92a6485ae3450292558e3da5db79c1390b"
+    },
+    "audit": {
+      "path": "/private/tmp/chematic-goal-holdout-audit.json",
+      "sha256": "76f535dc4e4a55cc78d583b229cb4cfc6952da0cb96c31953bee6b53b46123e5"
+    },
+    "reference_sdf": {
+      "path": "/private/tmp/chematic-cod-reference-sample/cod-sample.sdf",
+      "sha256": "6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74"
+    },
+    "candidate_wheel": {
+      "path": "/private/tmp/chematic-goal-wheels/chematic-1.2.4-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "0ca7f5744124f8ff0f0b6756e1bc3770a05cbc5834ec04f55ae28b5647e305d3"
+    },
+    "rdkit_wheel": {
+      "path": "/private/tmp/chematic-goal-wheels/rdkit-2026.9.2-cp313-cp313-macosx_11_0_arm64.whl",
+      "sha256": "3860ba53505f27cb24d05383027f78e3f82aefd6caf193c217a94d876d91b023"
+    },
+    "fixed_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_development_probe.py",
+      "sha256": "a818c950c83879370c75b77835a404c9063797802388a8774d1aa5e5de4e3ec0"
+    },
+    "stereo_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_stereo_strict.py",
+      "sha256": "3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132"
+    },
+    "geometry_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/platinum_geometry.py",
+      "sha256": "56d7c529f8499f7025aafae34c027f867a9fb2ba9877471774a285de3d19fc22"
+    },
+    "timed_api": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/crates/chematic-py/python/chematic/_timed_conformers.py",
+      "sha256": "a2d374cdb2b6b1248c3417ec4101abdd111535ee86841363dce7f463c96439e3"
+    },
+    "timed_scorer": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/cod_hard_deadline.py",
+      "sha256": "275085bcaa3e10d544e82fef020f6cbf235e55213bc0877948ba5e7088dd4c37"
+    },
+    "summary": {
+      "path": "/private/tmp/chematic-goal-01a20bbe/scripts/benchmarks/summarize_cod_hard_deadline.py",
+      "sha256": "a9ad0e7b6b5f53505eae90ee2e2a35313f7d368c21908a390849caa38dae5f43"
+    }
+  },
+  "protocol": {
+    "selection": "all 2735 audited holdout rows, ordered by SHA256(name), engine order alternates",
+    "fixed": "20 independently seeded attempts per engine, timeout 30 seconds per molecule and engine, timeout counts as fixed-count failure",
+    "timed": "20 attempts maximum per engine, 0.2 seconds after both workers independently prepare, candidate receipt by deadline required, partial completions retained",
+    "seed": "42 * one-based attempt number",
+    "scoring": "RMSD <= 1 A, strict declared stereo and complete supported geometry, all selected rows in denominator",
+    "convergence": "separate status-zero-only recovery",
+    "acceptance": "paired scaffold-cluster bootstrap 95% interval lower bound > -0.02 and zero contradicted or unevaluable stereo among returned candidates with complete coverage; report each mode separately",
+    "bootstrap": "10000 scaffold resamples, RNG seed 42",
+    "population_limit": "repository-history exposure audit only; unknown external exposure",
+    "hardware_limit": "single macOS arm64 host",
+    "resource_limit": "child peak memory only as reported at completed attempts"
+  }
+}

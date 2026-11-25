@@ -82,18 +82,19 @@ def stereo_violations(mol, conformers):
     return violations
 
 
-def score(reference, count, seed, profile, geometry, repair_iters):
+def score(reference, count, seed, profile, geometry, repair_iters, independent_mmff=False):
     heavy_ref = Chem.RemoveHs(reference)
     smiles = Chem.MolToSmiles(heavy_ref, isomericSmiles=True)
     graph = Chem.MolFromSmiles(smiles)
     if graph is None or len(Chem.GetMolFrags(graph)) != 1:
         return {"status": "invalid_or_multifragment"}
     mol = Chem.AddHs(graph)
-    if not AllChem.MMFFHasAllMoleculeParams(mol):
+    if not independent_mmff and not AllChem.MMFFHasAllMoleculeParams(mol):
         return {"status": "rdkit_mmff_unsupported", "smiles": smiles}
-    other = chematic.from_smiles(smiles).add_hydrogens()
-    if not graph_matches(other, mol):
-        return {"status": "atom_graph_mismatch", "smiles": smiles}
+    if not independent_mmff:
+        other = chematic.from_smiles(smiles).add_hydrogens()
+        if not graph_matches(other, mol):
+            return {"status": "atom_graph_mismatch", "smiles": smiles}
     result = {"status": "ok", "smiles": smiles}
     checks = prepare_geometry_checks(mol) if geometry else None
     if checks is not None:
@@ -107,6 +108,10 @@ def score(reference, count, seed, profile, geometry, repair_iters):
         }
     start = time.perf_counter()
     try:
+        if independent_mmff:
+            other = chematic.from_smiles(smiles).add_hydrogens()
+            if not graph_matches(other, mol):
+                raise ValueError("indexed atom or bond graph mismatch")
         if profile == "compatible":
             raw = other.rdkit_embed_multiple_confs(count, random_seed=seed)
             result["chematic_raw_seconds"] = time.perf_counter() - start
@@ -206,6 +211,8 @@ def main():
     )
     parser.add_argument("--geometry", action="store_true")
     parser.add_argument("--repair-iters", type=int, default=0)
+    parser.add_argument("--independent-mmff", action="store_true",
+                        help="attempt and record each engine even when RDKit lacks MMFF parameters")
     args = parser.parse_args()
     if args.count < 1 or args.limit < 1 or args.repair_iters < 0:
         parser.error("count and limit must be positive and repair-iters nonnegative")
@@ -238,6 +245,7 @@ def main():
         "repair_iters": args.repair_iters,
         "candidate_limit": args.count,
         "mmff_iterations": 200,
+        "independent_mmff": args.independent_mmff,
         "seed": args.seed,
         "selection": f"{args.partition} only sorted by SHA256(name)",
         "results": [],
@@ -254,6 +262,7 @@ def main():
                 args.profile,
                 args.geometry,
                 args.repair_iters,
+                args.independent_mmff,
             )
         except Exception as exc:
             result = {"status": "error", "error": repr(exc)}
