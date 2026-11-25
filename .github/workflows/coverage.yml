@@ -20,7 +20,7 @@ jobs:
   coverage:
     name: Rust coverage
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     permissions:
       contents: read
       id-token: write

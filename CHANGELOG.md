@@ -8,23 +8,16 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-11-26
+
 ### Fixed
 
-- Reaction SVGs place each molecule by its layout's bounding box, so
-  components are no longer shifted or clipped, and centre them on the arrow
-  with equal gaps around each "+" and the arrow. The "+" uses the
-  `sans-serif` family of the atom labels, and the arrow and "+" follow the
-  dark theme.
-
-- Neutral three-coordinate boron (BF₃, trialkylboranes, boric and boronic
-  acids) is trigonal planar in rule-based 3D placement, ETKDG constraints
-  and the legacy minimizer, as RDKit's SP2 hybridization and UFF type `B_2`
-  have it, instead of tetrahedral.
-
-- Centres with five or six electron domains (SF₆, PCl₅, SF₄, ClF₃, XeF₂,
-  XeF₄, IF₅, SiF₆²⁻, SF₅ groups) get their VSEPR shape in rule-based 3D
-  placement, ETKDG and the legacy minimizer. Placement used to put a fourth
-  substituent on top of the first, and every angle aimed at 109.5°.
+- Reaction SVGs position components by their bounding boxes, with consistent
+  spacing and theme-aware arrows and plus signs (#1294).
+- Neutral three-coordinate boron uses trigonal-planar geometry in rule-based
+  placement, ETKDG constraints and the legacy minimizer (#1296).
+- Selected main-group centers with five or six electron domains use VSEPR
+  placement and suitable angle handling, including ring cases (#1297).
 
 ## [1.2.4] - 2026-11-23
 

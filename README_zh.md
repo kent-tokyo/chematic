@@ -27,9 +27,9 @@ npm install @kent-tokyo/chematic
 
 安装 Python wheel 无需 C/C++ 编译器。在浏览器中，WebAssembly 可直接在用户设备上处理分子数据。
 
-### v1.2.4 范围
+### v1.2.5 范围
 
-当前版本为 **v1.2.4**。参见[更新记录](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.4)和[发布验证](docs/reference/validation.md)。下一版本的变更见[未发布条目](CHANGELOG.md#unreleased)。
+当前版本为 **v1.2.5**。参见[更新记录](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.5)和[发布验证](docs/reference/validation.md)。下一版本的变更见[未发布条目](CHANGELOG.md#unreleased)。
 
 ## 分子搜索与分析
 

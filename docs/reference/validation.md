@@ -29,14 +29,28 @@ The GitHub Release, npm and 20 crates were also published. The checked-in
 [channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.2.3.json)
 still records the pre-publication state.
 
-## v1.2.4 source candidate
+## v1.2.4 published release
 
-The checked conformer methods and 3D fixes are in the source after v1.2.3.
-The [checked ensemble guide](checked-conformer-ensembles.md) defines their
-options and error handling. Source-wheel results and their limitations are in
-the [holdout protocol](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-platinum-holdout-protocol.md)
-and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-macrocycle-pdb-evaluation.md).
-They cannot establish results for a future published wheel.
+The tag points to `c66a7294aeb82f20c30a9365884e8e16a40bb01a`. The
+[release workflow](https://github.com/kent-tokyo/chematic/actions/runs/45158039310)
+passed on its second attempt after PyPI index propagation. It verified build
+hashes for 25 wheels and one source distribution, runtime checks, and chemistry
+comparisons on Linux, Windows and both macOS architectures. The GitHub Release,
+npm package and 20 crates were published. The checked-in
+[channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.2.4.json)
+retains its pre-publication state and is not evidence of those later checks.
+
+The [checked ensemble guide](checked-conformer-ensembles.md) describes the
+opt-in Python methods. The [holdout protocol](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-platinum-holdout-protocol.md)
+and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-11-22-macrocycle-pdb-evaluation.md)
+report source-wheel measurements for the identified candidate artifacts;
+they do not establish those results for the published wheel.
+
+## v1.2.5 preparation
+
+The unreleased source includes reaction SVG placement and 3D geometry fixes.
+Their regression tests cover selected examples; release artifact qualification
+and broader 3D quality measurements remain to be done.
 
 ## Retained package and source evidence
 
