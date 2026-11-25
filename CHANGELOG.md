@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- Reaction SVGs place each molecule by its layout's bounding box, so
+  components are no longer shifted or clipped, and centre them on the arrow
+  with equal gaps around each "+" and the arrow. The "+" uses the
+  `sans-serif` family of the atom labels, and the arrow and "+" follow the
+  dark theme.
+
 ## [1.2.4] - 2026-11-23
 
 ### Added
