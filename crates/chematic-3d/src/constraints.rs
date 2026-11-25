@@ -220,7 +220,7 @@ fn get_ideal_angle(mol: &Molecule, center: AtomIdx) -> f64 {
 
     if has_triple {
         PI // 180°
-    } else if has_double_or_arom {
+    } else if has_double_or_arom || crate::dg::is_trigonal_boron(mol, center) {
         PI * 2.0 / 3.0 // 120°
     } else {
         109.47_f64.to_radians() // sp3
