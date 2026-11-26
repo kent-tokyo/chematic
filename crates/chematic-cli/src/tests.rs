@@ -54,6 +54,25 @@ fn cxsmiles_json_preserves_mapped_wildcard_attachment_identity() {
 }
 
 #[test]
+fn cxsmiles_json_enforces_input_and_atom_limits() {
+    let oversized = "C".repeat(MAX_SMILES_INPUT_BYTES + 1);
+    assert!(
+        cxsmiles_json(&oversized)
+            .unwrap_err()
+            .contains("byte limit")
+    );
+
+    let too_many_atoms = std::iter::repeat_n("C", MAX_SMILES_ATOMS + 1)
+        .collect::<Vec<_>>()
+        .join(".");
+    assert!(
+        cxsmiles_json(&too_many_atoms)
+            .unwrap_err()
+            .contains("atom count")
+    );
+}
+
+#[test]
 fn converts_v3000_fixture_to_a_structurally_equivalent_smiles() {
     let block = include_str!("../../../benchmarks/fixtures/ethanol.v3000");
     let smiles = convert_text(block, "mol_v3000", "smiles").unwrap();
