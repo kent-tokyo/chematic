@@ -43,7 +43,7 @@ pub fn generate_coords_etkdg_with_noise(mol: &Molecule, noise_sigma_deg: f64) ->
 
     let mut prng = Prng::new();
     apply_torsion_preferences_with_noise(mol, &mut coords, noise_sigma_deg, &mut prng);
-    coords = super::constraints::satisfy_constraints(&coords, mol, &constraints, 3);
+    coords = super::constraints::satisfy_constraints_etkdg_legacy(&coords, &constraints, 3);
 
     // Hard-snap amide omega angles to 0° or 180° after constraint satisfaction.
     // Addresses RDKit issue #9266: ETKDGv3 generates twisted tertiary amides.

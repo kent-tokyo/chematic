@@ -38,9 +38,12 @@ pub use constraints::{
 pub use dg::{BoundsMatrix, ChiralSet, triangle_smooth_bounds};
 pub use embed::{EmbedArgs, EmbedError, EmbedParams, embed_initial_points, embed_points};
 pub use molecule::{
-    RdkitEmbedError, RdkitEmbedMmffError, RdkitEmbedOptions, RdkitMmffConformer,
-    RdkitMmffConformerDiagnostics, etkdg_embed_molecule_corrected,
-    etkdg_embed_multiple_confs_corrected, etkdg_embed_multiple_confs_mmff_best_gradient,
+    CheckedConformer, CheckedEnsembleDiagnostics, RdkitEmbedError, RdkitEmbedMmffError,
+    RdkitEmbedOptions, RdkitMmffConformer, RdkitMmffConformerDiagnostics,
+    etkdg_embed_molecule_corrected, etkdg_embed_multiple_confs_corrected,
+    etkdg_embed_multiple_confs_mixed_checked_diagnostics,
+    etkdg_embed_multiple_confs_mixed_checked_with_fallback,
+    etkdg_embed_multiple_confs_mmff_best_gradient,
     etkdg_embed_multiple_confs_mmff_compatible_checked, etkdg_embed_multiple_confs_mmff_corrected,
     etkdg_embed_multiple_confs_mmff_corrected_checked,
     etkdg_embed_multiple_confs_mmff_corrected_fallback,

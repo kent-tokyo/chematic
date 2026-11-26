@@ -1,0 +1,105 @@
+{
+  "source_sha256": "6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74",
+  "results": [
+    {
+      "index": 4023,
+      "name": "INWRNQZXTBBRIT-UHFFFAOYSA-N",
+      "smiles": "Cc1ccc(-c2nn(-c3ccccc3)nc2-c2ccc(C)cc2)cc1"
+    },
+    {
+      "index": 9365,
+      "name": "OWVHBWQFIIDWGN-SXOMAYOGSA-N",
+      "smiles": "COc1cccc([C@@]23C[C@@](CCl)(c4cccc(OC)c4)[N+]([O-])=C2Cc2cccc(OC)c23)c1"
+    },
+    {
+      "index": 5633,
+      "name": "VREONUZGDYDJLN-CAPFRKAQSA-N",
+      "smiles": "C(=N\\N(c1ccccc1)c1ccccc1)/c1ccccc1"
+    },
+    {
+      "index": 701,
+      "name": "HZTBEXGVPDIYFZ-UHFFFAOYSA-N",
+      "smiles": "Cc1ccc(-c2c3ccccc3nc3ccc4ccccc4c23)cc1"
+    },
+    {
+      "index": 5028,
+      "name": "JBEWUUPBDFHWRI-SJORKVTESA-N",
+      "smiles": "N#CC1(C#N)O[C@@H](c2ccccc2)O[C@@H]1c1ccc2c(c1)OCO2"
+    },
+    {
+      "index": 4643,
+      "name": "XSIACGLMXZADKC-UHFFFAOYSA-N",
+      "smiles": "COc1cc2c(cc1Br)OCCCCOc1cc(Br)c(OC)cc1/[C-]=[C-]\\2"
+    },
+    {
+      "index": 1911,
+      "name": "VOVRJEMIJVYBBQ-KNTRCKAVSA-N",
+      "smiles": "S=C(N/N=C1\\CCCc2ccccc21)Nc1ccccc1"
+    },
+    {
+      "index": 2294,
+      "name": "HHUONKOYXSHOJU-NYHFZMIOSA-N",
+      "smiles": "COC(=O)C1=C(C)NC2=C(C(=O)C[C@@H](c3ccccc3)C2)[C@H]1c1ccc(Cl)cc1Cl"
+    },
+    {
+      "index": 6181,
+      "name": "NYJZUPCCHXTRFV-RYRKJORJSA-N",
+      "smiles": "C[C-2]OC(=O)C1=C(C)N(Cc2ccccc2)[C@H]2[C@@H]1CCC[C@@H]2I"
+    },
+    {
+      "index": 4886,
+      "name": "MATWMBWLAFZGQM-UHFFFAOYSA-N",
+      "smiles": "Ic1ccc2c(c1)CN(CCN1COc3ccc(I)cc3C1)CO2"
+    },
+    {
+      "index": 1619,
+      "name": "FXPGKQDDHYLIIV-VGOFRKELSA-N",
+      "smiles": "C[C@@]1(O[Si](C)(C)C)C[C@H](c2ccccc2)c2c(c3ccccc3oc2=O)O1"
+    },
+    {
+      "index": 1794,
+      "name": "XLOJIVIFMKWXTB-UHFFFAOYSA-O",
+      "smiles": "CC(C)(C)c1cc[n+](-c2cc(O)c(O)cc2C(n2ccc(C(C)(C)C)n2)n2ccc(C(C)(C)C)n2)cc1"
+    },
+    {
+      "index": 6708,
+      "name": "CUNHGCGTIAEQRA-UHFFFAOYSA-N",
+      "smiles": "O=c1c2ccccc2sn1CO"
+    },
+    {
+      "index": 6078,
+      "name": "HWQGEJTUOLTRPM-ZYHUDNBSSA-N",
+      "smiles": "COc1ccc2c(c1)OC(C)(C)[C@H]1C(Cl)(Cl)[C@@]21Br"
+    },
+    {
+      "index": 8814,
+      "name": "OLNMOWKHJNEIEM-UHFFFAOYSA-N",
+      "smiles": "CSc1ccc(C(=Cc2cc(C=C(c3ccc(SC)cc3)c3ccc(SC)cc3)ncn2)c2ccc(SC)cc2)cc1"
+    },
+    {
+      "index": 10221,
+      "name": "IZOYWCBOQKYTDQ-GVJMRKKJSA-M",
+      "smiles": "O=C([O-])[C@]12CCC[C@H](CCC1)C2=O"
+    },
+    {
+      "index": 2930,
+      "name": "PZBPKYOVPCNPJY-CQSZACIVSA-N",
+      "smiles": "C=CCO[C@H](Cn1ccnc1)c1ccc(Cl)cc1Cl"
+    },
+    {
+      "index": 346,
+      "name": "QDFPTLBGXNBCFT-UHFFFAOYSA-N",
+      "smiles": "COc1cccc(OC)c1[P+](CCCSS(=O)(=O)[O-])(c1c(OC)cccc1OC)c1c(OC)cccc1OC"
+    },
+    {
+      "index": 9156,
+      "name": "NHLNGRQUZHMQKR-RPKYBRROSA-N",
+      "smiles": "C[Si](C)(C)c1cc2c(s1)-c1cc([Si](C)(C)C)sc1-c1cc([Si](C)(C)C)sc1-c1cc([Si](C)(C)C)sc1-2"
+    },
+    {
+      "index": 9809,
+      "name": "QSQWAPADERFFNF-UHFFFAOYSA-N",
+      "smiles": "c1ccc(-c2nc(-n3cccn3)c(-c3ccccc3)o2)cc1"
+    }
+  ]
+}

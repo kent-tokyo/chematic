@@ -534,10 +534,10 @@ fn tetrahedral_positions(
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
 /// geometry check inline. Plain tetrahedral centers and explicitly supported
-/// phosphorus and sulfur coordination are in scope. Allene central atoms,
+/// phosphorus, sulfur and three-coordinate selenonium are in scope. Allene central atoms,
 /// which declare axial chirality via bond directions rather than
 /// `Atom::chirality`, are handled by the double-bond path instead.
-fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
+fn supported_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
     let atom = mol.atom(idx);
     // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
     // S+ with three single bonds, have a stereochemically active lone pair.
@@ -564,7 +564,9 @@ fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: boo
             .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
             .count()
             == 1;
-    let sulfonium_lone_pair = atom.element.atomic_number() == 16
+    // Three-coordinate selenonium has the same tetrahedral neighbor-order
+    // convention as sulfonium for the active lone pair.
+    let sulfonium_lone_pair = matches!(atom.element.atomic_number(), 16 | 34)
         && atom.charge == 1
         && mol.neighbors(idx).count() == 3
         && all_single_ish;
@@ -626,22 +628,22 @@ fn tetrahedral_constraint_for(
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
         });
-    let sulfur_lone_pair = sulfur_has_stereo_lone_pair(mol, idx, all_single_ish);
-    if !all_single_ish && !four_coordinate_ps && !sulfur_lone_pair {
+    let stereo_lone_pair = supported_stereo_lone_pair(mol, idx, all_single_ish);
+    if !all_single_ish && !four_coordinate_ps && !stereo_lone_pair {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
     let Some(mut order) = declared_neighbor_order(mol, idx) else {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     };
-    if sulfur_lone_pair && order.len() == 3 {
+    if stereo_lone_pair && order.len() == 3 {
         order.push(STEREO_H_SENTINEL);
     }
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
-    if n_sentinels == 1 && !sulfur_lone_pair && implicit_hcount(mol, idx) != 1 {
+    if n_sentinels == 1 && !stereo_lone_pair && implicit_hcount(mol, idx) != 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 

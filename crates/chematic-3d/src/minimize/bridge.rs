@@ -573,11 +573,14 @@ fn run_dreiding_policy(
     config: &MinimizeConfig,
 ) -> Result<PolicyMinimizeResult, ForceFieldBridgeError> {
     let dreiding_types = assign_dreiding_types(mol);
-    let e_before = total_energy_dreiding(mol, &coords, &dreiding_types);
+    let targets = expanded_octet_targets(mol, &coords);
+    let angles = dreiding_angle_targets(mol, &dreiding_types, &targets);
+    let vdw = prepare_dreiding_vdw(mol, &dreiding_types);
+    let e_before = total_energy_dreiding(mol, &coords, &dreiding_types, &angles, &vdw);
     let report = minimize_gradient_descent_reporting(mol, coords, config, |candidate| {
-        total_energy_dreiding(mol, candidate, &dreiding_types)
+        total_energy_dreiding(mol, candidate, &dreiding_types, &angles, &vdw)
     });
-    let e_after = total_energy_dreiding(mol, &report.coords, &dreiding_types);
+    let e_after = total_energy_dreiding(mol, &report.coords, &dreiding_types, &angles, &vdw);
     check_minimization_soundness(
         mol,
         &coords_to_vec(&report.coords, mol.atom_count()),

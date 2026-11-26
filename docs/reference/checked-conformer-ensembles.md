@@ -27,6 +27,44 @@ fail or be discarded, so the returned list can be shorter than the requested
 count or empty. Invalid options or force-field setup failures raise
 `ValueError` in the Python binding.
 
+`etkdg_embed_multiple_confs_mixed_checked_with_fallback` uses the same
+arguments as the mixed checked method and returns `(status, energy,
+coordinates, force_field_error)`. When MMFF setup fails, stereo-checked
+embedded coordinates are returned with status `-1`, `None` energy and an
+error message. Status `0` and `1` have the same meaning as above and their
+error field is `None`. These embedded coordinates have not undergone MMFF
+optimization or an independent geometry-quality screen.
+
+`etkdg_embed_multiple_confs_mixed_checked_diagnostics` has the same options
+and returns `(conformers, embedded, force_field_error, stereo_violated,
+stereo_unevaluable, invalid_coordinates)`. When MMFF setup fails, the last
+three values count embedded candidates rejected for each reason; a candidate
+with both violated and unevaluable stereo is counted as violated. When MMFF
+setup succeeds, or no candidate is embedded, these counts are `None` because
+the optimized path does not classify all its rejections. An empty conformer
+list with an `embedded` count greater than zero can therefore be distinguished
+from a failure to embed any candidate.
+
+For a wall-clock limit around a whole Python call, use the opt-in process
+wrapper:
+
+```python
+result = chematic.generate_conformers_timed("CB(C)C", 20, timeout_seconds=5.0)
+if result["status"] == "completed":
+    print(result["conformers"], result["force_field_error"])
+```
+
+The wrapper parses the SMILES and adds explicit hydrogens in a fresh Python
+process. Its returned coordinates follow that molecule's atom order. A
+`timeout` result means the worker was killed and contains no partial
+ensemble; `error` reports an input or calculation exception and
+`worker_error` reports a failed worker. A completed result includes the same
+diagnostic counts and per-conformer status and optional energy as the
+diagnostic API above. The deadline includes process startup; process creation,
+scheduling and cleanup can make the observed elapsed time exceed it. This
+wrapper needs a Python executable that can import the same chematic package;
+the worker checks the package path and reports an error if it differs.
+
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility
 and the remainder for corrected. The two modes share the same attempt seed

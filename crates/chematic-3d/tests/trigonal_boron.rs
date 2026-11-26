@@ -2,7 +2,8 @@
 //! RDKit perceives it as SP2 and types it `B_2` for UFF, even with single bonds only.
 
 use chematic_3d::{
-    Coords3D, add_hydrogens_with_coords, generate_coords_etkdg, get_bond_angle_deg, minimize_uff,
+    Coords3D, add_hydrogens_with_coords, generate_and_minimize_dreiding, generate_coords_etkdg,
+    get_bond_angle_deg, minimize_uff,
 };
 use chematic_core::{AtomIdx, Molecule};
 
@@ -63,6 +64,19 @@ fn three_coordinate_boron_is_trigonal_planar() {
         let minimized = minimize_uff(&explicit, coords);
         let angles = boron_angles(&explicit, &minimized);
         assert_trigonal_planar(smiles, "minimize_uff with hydrogens", &angles);
+    }
+}
+
+#[test]
+fn dreiding_entry_point_preserves_trigonal_boron() {
+    for smiles in ["FB(F)F", "CB(C)C", "OB(O)O", "OB(O)c1ccccc1"] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let coords = generate_and_minimize_dreiding(&mol);
+        assert_trigonal_planar(
+            smiles,
+            "generate_and_minimize_dreiding",
+            &boron_angles(&mol, &coords),
+        );
     }
 }
 

@@ -4,16 +4,59 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import Mock
 
 import chematic
 from rdkit import Chem
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
-from platinum_time_budget import attempts
+from platinum_time_budget import attempts, hard_attempts
 from summarize_platinum_time_budget import recovered
 
 
 class TimeBudgetTest(unittest.TestCase):
+    def test_attempts_report_started_and_empty_results(self):
+        other = Mock()
+        other.etkdg_embed_multiple_confs_mmff_corrected.return_value = []
+        events = []
+        coords, record = attempts("chematic", None, other, 5.0, 2, on_event=events.append)
+        self.assertEqual(coords, [])
+        self.assertEqual(record["attempted"], 2)
+        self.assertEqual(record["no_conformer"], 2)
+        self.assertEqual(events, [("started", 1), ("no_conformer", 1),
+                                  ("started", 2), ("no_conformer", 2)])
+
+    def test_hard_deadline_terminates_an_attempt(self):
+        import time
+        start = time.perf_counter()
+        coords, record = hard_attempts("chematic", "C" * 25, 0.001, 20)
+        self.assertTrue(record["timed_out"])
+        self.assertTrue(record["attempted_is_lower_bound"])
+        self.assertEqual(record["accepted"], len(coords))
+        self.assertLess(time.perf_counter() - start, 15)
+
+    def test_hard_deadline_retains_completed_attempt(self):
+        for engine in ("chematic", "rdkit"):
+            coords, record = hard_attempts(engine, "CCO", 5.0, 1)
+            self.assertFalse(record["timed_out"])
+            self.assertEqual(record["attempted"], 1)
+            self.assertEqual(record["accepted"], 1)
+            self.assertEqual(len(coords), 1)
+
+    def test_hard_deadline_keeps_force_field_failure_reason(self):
+        coords, record = hard_attempts("chematic", "CB(C)C", 5.0, 1, profile="mixed-fallback")
+        self.assertEqual(len(coords), 1)
+        self.assertEqual(record["statuses"], [-1])
+        self.assertIn("type assignment", record["force_field_errors"][0])
+
+    def test_hard_deadline_reports_unevaluable_stereo(self):
+        smiles = "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F"
+        coords, record = hard_attempts("chematic", smiles, 5.0, 2, profile="mixed-fallback")
+        self.assertEqual(coords, [])
+        self.assertEqual(record["no_conformer"], 2)
+        self.assertEqual(record["stereo_rejected"]["unevaluable"], 2)
+        self.assertEqual(record["stereo_rejected"]["unclassified_attempts"], 0)
+
     def test_recovery_requires_screened_geometry_when_requested(self):
         row = {
             "chematic": {"rmsd": [0.5], "stereo": [{"atoms": [], "bonds": []}]},

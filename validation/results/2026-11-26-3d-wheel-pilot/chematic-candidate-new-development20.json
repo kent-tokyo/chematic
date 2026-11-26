@@ -1,0 +1,4023 @@
+{
+  "rdkit": "2026.09.2",
+  "chematic": "1.2.5",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "script_sha256": "4e2032636d6c66a9f641605a6b8b1a1805f8fc2f7df4a1d976e76fe1096813f0",
+  "source_sha256": "e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117",
+  "seconds": 0.2,
+  "max_candidates": 20,
+  "repair_iters": 400,
+  "geometry_checked": true,
+  "hard_timeout": true,
+  "profile": "mixed-fallback",
+  "engine_error_policy": "independent generation and scoring per engine",
+  "seed_schedule": "42 * (attempt + 1)",
+  "timing": "worker deadline after initialization; scoring and process startup excluded",
+  "results": [
+    {
+      "name": "CLERHCSTXLQSEE-VVLHAWIVSA-N",
+      "index": 7888,
+      "geometry_reference": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 90,
+        "angles_total": 90
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 8,
+        "accepted": 7,
+        "elapsed": 0.20221316593233496,
+        "elapsed_with_cleanup": 0.20337108289822936,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 7
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.2884852901094674,
+          0.6096468458983183,
+          1.256514741504479,
+          1.4218030654266232,
+          1.301971822131906,
+          0.17814994369611803,
+          1.256507891061041
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20207283296622336,
+        "elapsed_with_cleanup": 0.20324137504212558,
+        "statuses": [
+          0,
+          0,
+          1,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.2885137271218454,
+          1.481898648132859,
+          1.2567832514608277,
+          1.4217749592851987
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 172,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "TUHRCLUJVJVPLL-UHFFFAOYSA-N",
+      "index": 7363,
+      "geometry_reference": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 92,
+        "angles_total": 92
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20238525001332164,
+        "elapsed_with_cleanup": 0.20354120794218034,
+        "statuses": [
+          1,
+          1,
+          1,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.4477462568454815,
+          1.2930642977015845,
+          1.2655950777501153,
+          1.2657508301538714
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 8,
+        "accepted": 7,
+        "elapsed": 0.2022723329719156,
+        "elapsed_with_cleanup": 0.20344199996907264,
+        "statuses": [
+          1,
+          1,
+          1,
+          0,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 7
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.4482543880382635,
+          1.2826151064449045,
+          1.2654314969863738,
+          1.2657528071397488,
+          2.0637298181063484,
+          1.2467434945321325,
+          1.2721341543341516
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 355,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "ZVQHHBZABBTNSW-XSLAGTTESA-N",
+      "index": 1002,
+      "geometry_reference": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 72,
+        "angles_total": 72
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 10,
+        "accepted": 9,
+        "elapsed": 0.20139162498526275,
+        "elapsed_with_cleanup": 0.20251212490256876,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 9
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.9616323884487893,
+          0.9616263028034409,
+          0.9616298636638851,
+          0.9616135621912683,
+          0.9616252921725569,
+          0.9616136269814983,
+          0.9616277155221267,
+          0.9616272126877755,
+          0.9616277104707589
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.20241883292328566,
+        "elapsed_with_cleanup": 0.20358091697562486,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.9616280861704638,
+          0.9616269107639681,
+          0.9616235031274724,
+          0.9616194976454181,
+          0.9616325900202722
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 72,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 132,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "RGMKOVRBVVXBDN-MTLGCJRHSA-N",
+      "index": 5079,
+      "geometry_reference": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 85,
+        "angles_total": 85
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.2020770829403773,
+        "elapsed_with_cleanup": 0.20321149996016175,
+        "statuses": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.4121926427476752,
+          1.1169577741679264,
+          1.4121936827441977,
+          0.6276671306520807,
+          0.8416381820066164
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 11,
+        "accepted": 10,
+        "elapsed": 0.20205845800228417,
+        "elapsed_with_cleanup": 0.20316499995533377,
+        "statuses": [
+          0,
+          0,
+          0,
+          1,
+          0,
+          0,
+          0,
+          0,
+          1,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 10
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.4121910539865734,
+          1.1169613731292272,
+          1.4121938162353327,
+          0.5990759296287297,
+          0.8416370044024302,
+          0.5462832914033099,
+          0.7578155133465183,
+          1.4121922562326432,
+          0.8252089233613988,
+          1.4121932458714281
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 44,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 133,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "OWCOEXZPVKGLKV-HSZRJFAPSA-N",
+      "index": 9409,
+      "geometry_reference": {
+        "bonds_supported": 62,
+        "bonds_total": 62,
+        "angles_supported": 110,
+        "angles_total": 110
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.2020464170491323,
+        "elapsed_with_cleanup": 0.20315658405888826,
+        "statuses": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 4
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.6922104216526592,
+          2.390027118939573,
+          1.739117282798512,
+          2.0858343195776086
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20207229198422283,
+        "elapsed_with_cleanup": 0.2032466249074787,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.209102893728873,
+          2.3743700206278717,
+          1.7349699148327586
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 62,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 469,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "JAKLHEYKQHZUPZ-UHFFFAOYSA-N",
+      "index": 2655,
+      "geometry_reference": {
+        "bonds_supported": 111,
+        "bonds_total": 111,
+        "angles_supported": 203,
+        "angles_total": 203
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20285695896018296,
+        "elapsed_with_cleanup": 0.20402462501078844,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.989196360262554
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 111,
+            "bond_violations": 0,
+            "angles_checked": 203,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1093,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.2015788749558851,
+        "elapsed_with_cleanup": 0.2026809579692781,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    },
+    {
+      "name": "LTJHBMUMTKXHOC-HMMYKYKNSA-N",
+      "index": 7910,
+      "geometry_reference": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 87,
+        "angles_total": 87
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 14,
+        "accepted": 13,
+        "elapsed": 0.20117212494369596,
+        "elapsed_with_cleanup": 0.20228075003251433,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20"
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.4770291433982714,
+          2.7886249678778303,
+          2.8454205845437244,
+          2.490276144509488,
+          2.402085046948047,
+          2.6573951832436014,
+          2.2899079806898155,
+          2.346253387308113,
+          2.3165002515727577,
+          2.976591433053296,
+          2.2912204085082566,
+          2.4170497445964205,
+          2.774240828285574
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 7,
+        "accepted": 6,
+        "elapsed": 0.20209550007712096,
+        "elapsed_with_cleanup": 0.2032310829963535,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.47886081481226,
+          2.7889143311699245,
+          2.846452295359278,
+          2.4899409406669237,
+          2.4064461306192757,
+          2.6668685478618217
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 87,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 442,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "PUDPHFZVGPKAFR-UHFFFAOYSA-N",
+      "index": 8076,
+      "geometry_reference": {
+        "bonds_supported": 80,
+        "bonds_total": 80,
+        "angles_supported": 144,
+        "angles_total": 144
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.2028327500447631,
+        "elapsed_with_cleanup": 0.203990290989168,
+        "statuses": [
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.7835863370277627,
+          1.397277605507699,
+          1.2804036612938978
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20208129205275327,
+        "elapsed_with_cleanup": 0.2032023329520598,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5"
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.778387202781875,
+          1.3768258031267702,
+          1.2809846144985122,
+          1.5803214858738195
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "IIWPZSXLWQUMIP-UHFFFAOYSA-N",
+      "index": 2036,
+      "geometry_reference": {
+        "bonds_supported": 43,
+        "bonds_total": 43,
+        "angles_supported": 75,
+        "angles_total": 75
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 12,
+        "accepted": 11,
+        "elapsed": 0.2020204160362482,
+        "elapsed_with_cleanup": 0.20309066597837955,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          0,
+          1,
+          0,
+          1,
+          0,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 11
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.12703240387137293,
+          2.5825140051621878,
+          1.1868269044076756,
+          0.12847569784420482,
+          2.9950964858162976,
+          0.13019911604815051,
+          1.186826257492772,
+          2.588825101501314,
+          2.1742213900902985,
+          0.12866754759496124,
+          2.5837096463955422
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 7,
+        "accepted": 6,
+        "elapsed": 0.20206279191188514,
+        "elapsed_with_cleanup": 0.203183208941482,
+        "statuses": [
+          0,
+          1,
+          1,
+          1,
+          0,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.5078992503668478,
+          2.5839724983220083,
+          1.1932792320772563,
+          1.1776547498624852,
+          2.994929872521498,
+          0.12451519649595658
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "NOUZLRUYHBVHSY-UHFFFAOYSA-N",
+      "index": 1076,
+      "geometry_reference": {
+        "bonds_supported": 57,
+        "bonds_total": 57,
+        "angles_supported": 112,
+        "angles_total": 112
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20162191695999354,
+        "elapsed_with_cleanup": 0.20278970897197723,
+        "statuses": [
+          1,
+          1,
+          0,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.8894435705933083,
+          0.7076439798249587,
+          1.0379360564026727,
+          0.5656386139209308
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 8,
+        "accepted": 7,
+        "elapsed": 0.2020270419307053,
+        "elapsed_with_cleanup": 0.2031174999428913,
+        "statuses": [
+          1,
+          1,
+          0,
+          1,
+          1,
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 7
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.8248658513664396,
+          0.7079177918901193,
+          1.0379386748419213,
+          0.5655606784689297,
+          0.7439946030203914,
+          0.8923517558706249,
+          0.8180263517923687
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 57,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 171,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "HDWZDKYTTCDHDG-UHFFFAOYSA-O",
+      "index": 5157,
+      "geometry_reference": {
+        "bonds_supported": 154,
+        "bonds_total": 154,
+        "angles_supported": 280,
+        "angles_total": 280
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20210200001019984,
+        "elapsed_with_cleanup": 0.2032311250222847,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      },
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.2020735840778798,
+        "elapsed_with_cleanup": 0.20324850000906736,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    },
+    {
+      "name": "AQKYFIVHYUQROH-UHFFFAOYSA-N",
+      "index": 5934,
+      "geometry_reference": {
+        "bonds_supported": 84,
+        "bonds_total": 84,
+        "angles_supported": 136,
+        "angles_total": 136
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 2,
+        "elapsed": 0.20009025000035763,
+        "elapsed_with_cleanup": 0.20126108406111598,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.068540342822452,
+          1.569078128557479
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20238533290103078,
+        "elapsed_with_cleanup": 0.2034709999570623,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 3
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.2077504544543984,
+          1.5381759476295902,
+          2.149864327086221
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "VBFZWKZEFSREKB-OCFYOKIWSA-N",
+      "index": 738,
+      "geometry_reference": {
+        "bonds_supported": 64,
+        "bonds_total": 64,
+        "angles_supported": 122,
+        "angles_total": 122
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.2020498749334365,
+        "elapsed_with_cleanup": 0.20316224999260157,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 3
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.1156817160932917,
+          1.4573010009110663,
+          1.8530858512085964
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 122,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 324,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 122,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 324,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 122,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 324,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20252875005826354,
+        "elapsed_with_cleanup": 0.20368508307728916,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.12036830361879,
+          1.4648946772179545
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 122,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 324,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 122,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 324,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "LTOHTEORFZHKKM-UHFFFAOYSA-N",
+      "index": 9037,
+      "geometry_reference": {
+        "bonds_supported": 61,
+        "bonds_total": 61,
+        "angles_supported": 101,
+        "angles_total": 101
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20275549998041242,
+        "elapsed_with_cleanup": 0.20389195799361914,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.500784994864289,
+          2.0035704076053995,
+          2.5896948848785066
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 7,
+        "accepted": 6,
+        "elapsed": 0.20088520797435194,
+        "elapsed_with_cleanup": 0.20201404101680964,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 6
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.375881435073699,
+          2.0034449613629506,
+          2.5900151732618033,
+          2.480840056209389,
+          2.4096584251608038,
+          1.9842642484346993
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 101,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 532,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "TZNBRBFUJMFQKW-XDHOZWIPSA-N",
+      "index": 11601,
+      "geometry_reference": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 89,
+        "angles_total": 89
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 10,
+        "accepted": 9,
+        "elapsed": 0.20219175005331635,
+        "elapsed_with_cleanup": 0.20333299995400012,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 9
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.932438510344375,
+          1.5346734090887086,
+          1.476606958172756,
+          1.8606230055787027,
+          1.5337234747901565,
+          1.524506750668413,
+          1.7417088370616487,
+          0.9958354223739376,
+          1.6640259873208856
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.20208429207559675,
+        "elapsed_with_cleanup": 0.20323191699571908,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.9349086355416711,
+          1.5260703421669002,
+          1.4275345387834142,
+          1.8304555941410354,
+          1.7004420174320798
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 50,
+            "bond_violations": 0,
+            "angles_checked": 89,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 218,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "CYKQFMQFKGDAJQ-IQVOZAENSA-N",
+      "index": 2688,
+      "geometry_reference": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 100,
+        "angles_total": 100
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.2021101249847561,
+        "elapsed_with_cleanup": 0.20330029202159494,
+        "statuses": [
+          0,
+          0
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.314608874311002,
+          2.2593518181404524
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 232,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 232,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20204000000376254,
+        "elapsed_with_cleanup": 0.20321574993431568,
+        "statuses": [
+          0,
+          0,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 3
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.314613828036139,
+          2.2593501904974214,
+          1.3790215819686635
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 232,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 232,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 232,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "ALMADGJWFMVYIR-UHFFFAOYSA-N",
+      "index": 8243,
+      "geometry_reference": {
+        "bonds_supported": 92,
+        "bonds_total": 92,
+        "angles_supported": 155,
+        "angles_total": 155
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20208741596434265,
+        "elapsed_with_cleanup": 0.20315937499981374,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 2
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.2819610333653861,
+          0.7343178180105046
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20209112495649606,
+        "elapsed_with_cleanup": 0.20326641702558845,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.237953042598087
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "GDGMLKVKRLNOFC-UHFFFAOYSA-N",
+      "index": 8575,
+      "geometry_reference": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 103,
+        "angles_total": 103
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20266866602469236,
+        "elapsed_with_cleanup": 0.20377387502230704,
+        "statuses": [
+          0,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6897582072535348,
+          0.692413340651964,
+          0.7600458050737485,
+          0.7492659898109264
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 8,
+        "accepted": 7,
+        "elapsed": 0.20163804106414318,
+        "elapsed_with_cleanup": 0.2027496660593897,
+        "statuses": [
+          0,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 7
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6898430533462114,
+          0.6911513363291613,
+          0.7600478896715182,
+          0.7492650209203136,
+          0.48037950072547203,
+          0.692922207502921,
+          0.7601661595131727
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 103,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 380,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "VIVGKXBRHIGLTP-XGYIXMHBSA-N",
+      "index": 6650,
+      "geometry_reference": {
+        "bonds_supported": 87,
+        "bonds_total": 87,
+        "angles_supported": 167,
+        "angles_total": 167
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.2029523339588195,
+        "elapsed_with_cleanup": 0.20406862499658018,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.44773232748123915
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 87,
+            "bond_violations": 0,
+            "angles_checked": 167,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 666,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20209095801692456,
+        "elapsed_with_cleanup": 0.2032617919612676,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.45074263613684235
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 87,
+            "bond_violations": 0,
+            "angles_checked": 167,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 666,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "OIAIAXOQTXSGPJ-UMADGWCESA-N",
+      "index": 3495,
+      "geometry_reference": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 100,
+        "angles_total": 100
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20207041699904948,
+        "elapsed_with_cleanup": 0.203226541983895,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.056817908034509,
+          2.0906896073727936,
+          2.065699767361716
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.20293229108210653,
+        "elapsed_with_cleanup": 0.2040794159984216,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 5
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.0570295491724075,
+          2.088074410749555,
+          2.05465661409647,
+          2.0925272697287176,
+          2.082588754824956
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 100,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 331,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    }
+  ]
+}

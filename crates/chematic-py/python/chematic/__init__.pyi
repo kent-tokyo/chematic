@@ -472,6 +472,31 @@ class Mol:
         """Generate an ensemble with the compatibility gradient and stereo checks."""
         ...
 
+    def etkdg_embed_multiple_confs_mixed_checked_diagnostics(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> tuple[list[tuple[int, float | None, list[list[float]], str | None]], int,
+               str | None, int | None, int | None, int | None]:
+        """Return conformers and MMFF-fallback stereo rejection counts."""
+        ...
+
+    def etkdg_embed_multiple_confs_mixed_checked_with_fallback(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float | None, list[list[float]], str | None]]:
+        """Return checked coordinates even when MMFF setup fails."""
+        ...
+
     def etkdg_embed_multiple_confs_mmff_mixed_checked(
         self,
         num_confs: int,
@@ -6440,3 +6465,14 @@ def write_nwchem_geometry(record: dict[str, Any]) -> str: ...
 # Nonperiodic BIOGRF 200 records (no inferred element or formal charge).
 def parse_bgf(text: str | bytes) -> dict[str, Any]: ...
 def write_bgf(record: dict[str, Any]) -> str: ...
+
+def generate_conformers_timed(
+    smiles: str,
+    num_confs: int,
+    *,
+    timeout_seconds: float,
+    random_seed: int = 42,
+    max_iterations: int = 0,
+    max_mmff_iters: int = 200,
+    repair_mmff_iters: int = 0,
+) -> dict[str, object]: ...
