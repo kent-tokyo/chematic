@@ -441,6 +441,23 @@ mod candidate_logic_tests {
         assert!(!check([exact[0], None, exact[2], exact[3]]));
         assert!(!check([exact[0], exact[1], None, exact[3]]));
         assert!(!check([exact[0], Some(AtomIdx(0)), exact[2], exact[3]]));
+        assert!(!check([None, exact[1], exact[2], exact[3]]));
+        assert!(!check([exact[0], exact[1], exact[2], None]));
+        assert!(!check([Some(AtomIdx(3)), exact[1], exact[2], exact[3]]));
+        assert!(!check([exact[0], exact[1], exact[2], Some(AtomIdx(0))]));
+        let multiple = chematic_smiles::parse("F/C=C/F.C=C").unwrap();
+        let without_stereo = [
+            Some(AtomIdx(0)),
+            Some(AtomIdx(4)),
+            Some(AtomIdx(5)),
+            Some(AtomIdx(3)),
+        ];
+        assert!(!mapped_alkene_compatible(
+            &query,
+            &multiple,
+            &OnceLock::new(),
+            |i| without_stereo[i]
+        ));
         let unspecified = chematic_smiles::parse("FC=CF").unwrap();
         assert!(!mapped_alkene_compatible(
             &query,
