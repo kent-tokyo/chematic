@@ -125,7 +125,7 @@ def test_partial_diagnostics_do_not_report_incomplete_rejection_totals(tmp_path)
     assert result["stereo_unevaluable"] is None
     assert result["invalid_coordinates"] is None
     import json
-    assert json.loads((tmp_path / "completed.json").read_text()) == result
+    assert json.loads((tmp_path / "completed.json").read_text(encoding="utf-8")) == result
 
 
 def test_partial_checkpoint_survives_real_worker_termination(tmp_path):
