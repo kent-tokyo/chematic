@@ -86,8 +86,11 @@ incomplete final record is ignored. Atom order, individual
 conformer statuses and force-field error semantics are unchanged. The
 checkpoint has filesystem and serialization overhead; no general speed or
 accuracy improvement is implied. Worker errors are reported separately and retain the last complete checkpoint
-when one is available. An unreadable checkpoint is reported as
-`checkpoint_error` while preserving the original worker status and error.
+when one is available. If a complete journal record is malformed, the valid
+prefix is retained and `checkpoint_error` identifies the first bad line; later
+records are not used. An unreadable checkpoint is also reported as
+`checkpoint_error`. In either case the original worker status and error are
+preserved. If the first record is malformed, no checkpoint data is returned.
 
 To retain a provisional embedding even when its MMFF optimization is
 interrupted, set `return_preview=True` together with `return_partial=True`.

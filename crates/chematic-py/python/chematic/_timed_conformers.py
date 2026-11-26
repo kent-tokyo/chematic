@@ -82,7 +82,7 @@ def _attach_checkpoint(response, path):
     if path is None:
         return
     try:
-        response.update(_read_checkpoint(path))
+        response.update(_read_checkpoint(path, recover_prefix=True))
     except (OSError, ValueError) as error:
         # Preserve the worker's original failure instead of turning an
         # unreadable checkpoint into an unrelated exception.
@@ -145,23 +145,36 @@ def _apply_preview(result, entry):
         result["in_progress"]["geometry_error"] = entry.get("geometry_error")
 
 
-def _read_checkpoint(path):
+def _read_checkpoint(path, *, recover_prefix=False):
     result = _empty_checkpoint()
     counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    records_read = 0
     try:
         with open(path, "rb") as stream:
-            for line in stream:
+            for line_number, line in enumerate(stream, 1):
                 # A killed process can leave a partial final write. Only a
                 # newline-terminated record is a completed checkpoint.
                 if not line.endswith(b"\n"):
                     break
-                entry = json.loads(line)
-                if isinstance(entry, dict) and "preview_attempt" in entry:
-                    _apply_preview(result, entry)
-                else:
-                    _apply_checkpoint_entry(result, counts_known, entry)
-    except FileNotFoundError:
-        pass
+                try:
+                    entry = json.loads(line)
+                    if isinstance(entry, dict) and "preview_attempt" in entry:
+                        _apply_preview(result, entry)
+                    else:
+                        _apply_checkpoint_entry(result, counts_known, entry)
+                except ValueError as error:
+                    if not recover_prefix or records_read == 0:
+                        raise
+                    result["checkpoint_error"] = f"line {line_number}: {type(error).__name__}: {error}"
+                    break
+                records_read += 1
+    except OSError as error:
+        if isinstance(error, FileNotFoundError) and records_read == 0:
+            pass
+        elif recover_prefix and records_read:
+            result["checkpoint_error"] = f"{type(error).__name__}: {error}"
+        else:
+            raise
     return result
 
 

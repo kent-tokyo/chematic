@@ -220,6 +220,80 @@ def test_invalid_checkpoint_preserves_timeout_status(monkeypatch):
     assert "conformers" not in result
 
 
+@pytest.mark.parametrize("failure", ["timeout", "worker_error"])
+@pytest.mark.parametrize("bad_record", [b"{\n", b'{"attempt":4}\n', b'\xff\n'])
+def test_corrupt_checkpoint_keeps_verified_prefix(monkeypatch, failure, bad_record):
+    import json
+    import subprocess
+    from chematic import _timed_conformers as timed
+
+    completed = {"attempt": 1, "rows": [[1, 0.0, [[0, 0, 0]], None]], "embedded": 1,
+                 "error": None, "violated": None, "unevaluable": None, "invalid": None}
+    preview = {"preview_attempt": 2, "coordinates": [[1, 2, 3]]}
+
+    class FakeProcess:
+        returncode = 1
+
+        def communicate(self, request=None, timeout=None):
+            if request is None:
+                return "", ""
+            checkpoint = json.loads(request)["checkpoint"]
+            with open(checkpoint, "wb") as stream:
+                for record in (completed, preview):
+                    stream.write((json.dumps(record) + "\n").encode("utf-8"))
+                stream.write(bad_record)
+                stream.write((json.dumps({**completed, "attempt": 2}) + "\n").encode("utf-8"))
+            if failure == "timeout":
+                raise subprocess.TimeoutExpired("worker", timeout)
+            return "", "worker crashed"
+
+        def kill(self):
+            pass
+
+        def poll(self):
+            return self.returncode
+
+    monkeypatch.setattr(timed.subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    result = timed.generate_conformers_timed("C", 10, timeout_seconds=1,
+                                             return_partial=True, return_preview=True)
+    assert result["status"] == failure
+    assert result["attempts_completed"] == 1
+    assert result["conformers"] == completed["rows"]
+    assert result["in_progress"] == {"attempt": 2, "coordinates": [[1, 2, 3]]}
+    assert result["checkpoint_error"].startswith("line 3:")
+    if failure == "worker_error":
+        assert result["error"] == "worker crashed"
+
+
+def test_checkpoint_read_error_keeps_verified_prefix(monkeypatch):
+    import json
+    from chematic import _timed_conformers as timed
+
+    entry = {"attempt": 1, "rows": [], "embedded": 0, "error": None,
+             "violated": None, "unevaluable": None, "invalid": None}
+
+    class FailingStream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            pass
+
+        def __iter__(self):
+            yield (json.dumps(entry) + "\n").encode("utf-8")
+            raise OSError("disk read failed")
+
+    monkeypatch.setattr(timed, "open", lambda *args: FailingStream(), raising=False)
+    response = {"status": "worker_error", "error": "worker crashed"}
+    timed._attach_checkpoint(response, "ignored")
+    assert response["status"] == "worker_error"
+    assert response["error"] == "worker crashed"
+    assert response["attempts_completed"] == 1
+    assert response["checkpoint_error"] == "OSError: disk read failed"
+    with pytest.raises(OSError, match="disk read failed"):
+        timed._read_checkpoint("ignored")
+
+
 def test_partial_real_worker_error_keeps_prior_completed_attempt():
     result = chematic.generate_conformers_timed(
         "CCO", 2, random_seed=2**31 - 1, timeout_seconds=15, return_partial=True
