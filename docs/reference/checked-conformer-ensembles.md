@@ -56,7 +56,7 @@ if result["status"] == "completed":
 
 The wrapper parses the SMILES and adds explicit hydrogens in a fresh Python
 process. Its returned coordinates follow that molecule's atom order. A
-`timeout` result means the worker was killed and contains no partial
+`timeout` result means the worker was killed and, by default, contains no partial
 ensemble; `error` reports an input or calculation exception and
 `worker_error` reports a failed worker. A completed result includes the same
 diagnostic counts and per-conformer status and optional energy as the
@@ -64,6 +64,27 @@ diagnostic API above. The deadline includes process startup; process creation,
 scheduling and cleanup can make the observed elapsed time exceed it. This
 wrapper needs a Python executable that can import the same chematic package;
 the worker checks the package path and reports an error if it differs.
+
+To retain completed attempts when the deadline expires, opt in explicitly:
+
+```python
+result = chematic.generate_conformers_timed(
+    "CCCCCCCC", 20, timeout_seconds=1.0, return_partial=True
+)
+print(result["status"], result["attempts_completed"], result["conformers"])
+```
+
+This mode runs one checked attempt at a time and checkpoints each completed
+attempt in a temporary directory. On timeout, the interrupted attempt is
+excluded and `attempts_completed` counts only finished attempts, including
+those that produced no accepted conformer. A timeout before the first
+checkpoint returns an empty ensemble. Each attempt uses the corrected ETKDG
+gradient: this is a different search profile from the mixed batch, so the
+same seed and count do not imply the same ensemble. Atom order, individual
+conformer statuses and force-field error semantics are unchanged. The
+checkpoint has filesystem and serialization overhead; no general speed or
+accuracy improvement is implied. Worker errors are reported separately and
+do not return checkpoints.
 
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility

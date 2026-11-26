@@ -190,3 +190,27 @@ precision ranking. Input and per-record data are stored in
 `validation/results/2026-11-26-flexible-development/`. Future changes informed
 by these results need a new independent holdout; the reserved cohort above
 has now been observed and must not be reused as an untouched acceptance set.
+
+### Partial timeout results on the development subset
+
+The same 20 development molecules were compared using the public Python
+`generate_conformers_timed` wrapper, with 20 requested attempts and a
+0.5-second deadline including worker startup. The opt-in `return_partial`
+profile checkpoints completed, stereo-checked, corrected-gradient attempts;
+the default mixed batch discards all results on timeout. Calls alternated in
+order on a macOS 27.0.1 arm64 host (Python 3.13.6, one thread per configured
+engine). The Rust extension SHA-256 was
+`af8b3a615fc163232d6d277f11bf5829d7334b94eef5adf986dfad5f37af3893`;
+this is a local source extension, not a published wheel.
+
+All 20 calls in both modes timed out. The default returned zero conformers
+for all 20 inputs; the partial profile returned at least one conformer for
+all 20, with 110 conformers from 112 completed attempts in total. Median
+observed elapsed time including cleanup was 0.5032 and 0.5035 seconds,
+respectively. The small, non-isolated development run was not an accuracy or
+same-algorithm performance comparison: the profiles use different gradient
+schedules, and neither RMSD nor independent geometry was measured here. It
+only demonstrates retained results under this protocol. Input, results, code
+hashes and environment are in
+`validation/results/2026-11-26-flexible-development/timed-partial-0.5.json`;
+the runner is `scripts/benchmarks/timed_partial_development.py`.
