@@ -10,6 +10,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- The CDXML reader (`parse_cdxml`, `parse_cdxml_all` and their variants) sets
+  E/Z bond directions from the drawing, so double-bond geometry reaches the
+  SMILES and MOL writers, as it already did through `parse_chemdraw_block`.
+
 - The CDXML reader finds atoms and bonds whose element name is followed by a
   line break (`<n` then `id="..."` on the next line), as ChemDraw writes them;
   such files used to parse as an empty molecule without an error.
