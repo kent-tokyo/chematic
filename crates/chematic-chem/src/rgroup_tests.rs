@@ -745,3 +745,16 @@ fn cut_bond_direction_is_reversed_when_anchor_is_removed() {
         );
     }
 }
+
+#[test]
+fn labeled_core_preserves_quadruple_bond_at_attachment() {
+    let molecule = mol("[Re]$[Re]");
+    let rows = rgroup_decompose_labeled("[#75]$[*:1]", &[&molecule]).unwrap();
+    let row = rows[0].as_ref().expect("quadruple-bonded metal must match");
+    let core = mol(&row.core_smiles);
+    assert_eq!(core.bond_count(), 1);
+    assert_eq!(core.bond(BondIdx(0)).order, BondOrder::Quadruple);
+    let group = mol(&row.r_groups[&1]);
+    assert_eq!(group.bond_count(), 1);
+    assert_eq!(group.bond(BondIdx(0)).order, BondOrder::Quadruple);
+}
