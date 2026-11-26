@@ -861,6 +861,19 @@ mod tests {
     use chematic_smiles::parse;
 
     #[test]
+    fn metal_disconnection_preserves_direction_and_anchor_on_retained_bonds() {
+        use chematic_core::{AtomIdx, BondIdx, BondOrder};
+        let mut molecule = parse("[Na]O.F/C=C/F").unwrap();
+        molecule.set_bond_direction(BondIdx(1), BondOrder::Up);
+        molecule.set_bond_direction_anchor(BondIdx(1), AtomIdx(2));
+
+        let cleaned = super::disconnect_metals_for_cleanup(&molecule);
+        assert_eq!(cleaned.bond_count(), 3);
+        assert_eq!(cleaned.bond_direction(BondIdx(0)), Some(BondOrder::Up));
+        assert_eq!(cleaned.bond_direction_anchor(BondIdx(0)), Some(AtomIdx(2)));
+    }
+
+    #[test]
     fn cleanup_keeps_fused_oxido_imidazolium_when_neutralization_cannot_kekulize() {
         for input in [
             "CC1=CN2C(=N1)N=C1C(=C2[O-])N(C)C=[N+]1C[200O]CCO",
