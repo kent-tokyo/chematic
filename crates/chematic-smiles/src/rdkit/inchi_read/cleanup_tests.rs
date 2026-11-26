@@ -41,3 +41,17 @@ fn protonated_oxygen_transfer_keeps_charge_and_hydrogen() {
     );
     assert_eq!((molecule.bonds[0].bt, molecule.bonds[1].bt), (S, D));
 }
+
+#[test]
+fn protonated_oxygen_without_neutral_alternative_becomes_single_bonded() {
+    // RDKit 2025.09.3 reads the corresponding protonated InChI as C=[N+](C)O.
+    let mut molecule = graph(
+        &[(7, 0), (8, 1), (6, 0), (6, 0)],
+        &[(0, 1, D), (0, 2, D), (0, 3, S)],
+    );
+    molecule.atoms[1].num_explicit_hs = 1;
+    assert!(v5n_5(&mut molecule, 0, 8));
+    assert_eq!((molecule.atoms[0].charge, molecule.atoms[1].charge), (1, 0));
+    assert_eq!(molecule.atoms[1].num_explicit_hs, 1);
+    assert_eq!((molecule.bonds[0].bt, molecule.bonds[1].bt), (S, D));
+}
