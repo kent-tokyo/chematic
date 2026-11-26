@@ -84,3 +84,5 @@ A retained historical record is not evidence about current source.
 - [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
 
 - [Preview geometry diagnostics development comparison](2026-11-27-preview-geometry-development.md)
+
+- [Prepared embedding development comparison](2026-11-27-prepared-embedding-development.md)

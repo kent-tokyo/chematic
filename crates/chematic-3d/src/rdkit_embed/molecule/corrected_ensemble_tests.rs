@@ -753,3 +753,46 @@ fn preembedded_checked_optimization_matches_original_and_rejects_invalid_coordin
     let empty = chematic_core::MoleculeBuilder::new().build();
     assert!(optimize_embedded_checked_diagnostics(&empty, vec![vec![]], 1, 0).is_err());
 }
+
+#[test]
+fn prepared_corrected_embedding_matches_individual_attempts() {
+    for smiles in ["CCO", "CB(C)C", "F[C@](Cl)(Br)I", "CC.O"] {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let options = RdkitEmbedOptions::default();
+        let prepared = PreparedCorrectedEmbedding::new(&molecule, &options).unwrap();
+        for seed in [0, 2, 42, 84] {
+            let opts = RdkitEmbedOptions {
+                random_seed: seed,
+                ..options.clone()
+            };
+            let single = etkdg_embed_multiple_confs_corrected(&molecule, 1, &opts).unwrap();
+            assert_eq!(
+                prepared.embed(seed).unwrap(),
+                single.into_iter().next(),
+                "{smiles}, seed {seed}"
+            );
+        }
+        assert!(prepared.embed(-1).is_err());
+    }
+    let empty = chematic_core::MoleculeBuilder::new().build();
+    assert!(PreparedCorrectedEmbedding::new(&empty, &RdkitEmbedOptions::default()).is_err());
+}
+
+#[test]
+fn prepared_corrected_embedding_preserves_nondefault_options() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C1CCCCC1C").unwrap());
+    let options = RdkitEmbedOptions {
+        max_iterations: 1,
+        use_small_ring_torsions: true,
+        ..Default::default()
+    };
+    let prepared = PreparedCorrectedEmbedding::new(&molecule, &options).unwrap();
+    for seed in [0, 42, 84] {
+        let single_options = RdkitEmbedOptions {
+            random_seed: seed,
+            ..options.clone()
+        };
+        let single = etkdg_embed_multiple_confs_corrected(&molecule, 1, &single_options).unwrap();
+        assert_eq!(prepared.embed(seed).unwrap(), single.into_iter().next());
+    }
+}

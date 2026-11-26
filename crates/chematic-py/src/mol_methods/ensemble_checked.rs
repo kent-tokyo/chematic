@@ -3,6 +3,20 @@ use super::*;
 
 type FallbackConformer = (i32, Option<f64>, Vec<[f64; 3]>, Option<String>);
 type PreviewGeometry = (usize, Option<f64>, Option<f64>, usize);
+
+#[pyclass(name = "_PreparedCorrectedEmbedding", frozen)]
+struct PyPreparedCorrectedEmbedding {
+    inner: Arc<chematic_3d::rdkit_embed::PreparedCorrectedEmbedding>,
+}
+
+#[pymethods]
+impl PyPreparedCorrectedEmbedding {
+    fn embed(&self, py: Python<'_>, seed: i32) -> PyResult<Option<Vec<[f64; 3]>>> {
+        let inner = Arc::clone(&self.inner);
+        py.detach(move || inner.embed(seed))
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+}
 type FallbackDiagnostics = (
     Vec<FallbackConformer>,
     usize,
@@ -14,6 +28,29 @@ type FallbackDiagnostics = (
 
 #[pymethods]
 impl Mol {
+    /// Prepare immutable corrected-gradient embedding data for timed attempts.
+    #[pyo3(signature = (max_iterations = 0))]
+    fn _timed_prepare_corrected(
+        &self,
+        py: Python<'_>,
+        max_iterations: u32,
+    ) -> PyResult<Py<PyPreparedCorrectedEmbedding>> {
+        use chematic_3d::rdkit_embed::{PreparedCorrectedEmbedding, RdkitEmbedOptions};
+        let mol = self.inner.clone();
+        let options = RdkitEmbedOptions {
+            max_iterations,
+            ..Default::default()
+        };
+        let inner = py
+            .detach(move || PreparedCorrectedEmbedding::new(&mol, &options))
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Py::new(
+            py,
+            PyPreparedCorrectedEmbedding {
+                inner: Arc::new(inner),
+            },
+        )
+    }
     /// Prepare one corrected-gradient embedding for the timed worker.
     #[pyo3(signature = (random_seed = 42, max_iterations = 0))]
     fn _timed_embed_corrected(

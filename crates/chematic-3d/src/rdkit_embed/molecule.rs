@@ -13,6 +13,10 @@ pub use checked_fallback::{
     etkdg_embed_multiple_confs_mixed_checked_with_fallback, optimize_embedded_checked_diagnostics,
 };
 
+#[path = "molecule/prepared_corrected.rs"]
+mod prepared_corrected;
+pub use prepared_corrected::PreparedCorrectedEmbedding;
+
 mod quality_retry;
 use quality_retry::{refine_unfinished_quality_minimum, repair_linear_nitrogen, stereo_safe_retry};
 mod torsion_search;

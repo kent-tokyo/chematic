@@ -287,7 +287,8 @@ def test_preview_checkpoint_survives_termination_during_optimization(tmp_path):
 import sys, time
 from chematic._timed_conformers import _run_partial
 class SlowMol:
-    def _timed_embed_corrected(self, **kwargs): return [[0.0, 0.0, 0.0]]
+    def _timed_prepare_corrected(self, **kwargs): return self
+    def embed(self, seed): return [[0.0, 0.0, 0.0]]
     def _timed_stereo_valid(self, coords): return True
     def _timed_preview_geometry(self, coords): return (0, None, None, 0)
     def _timed_optimize_embedded(self, coords, **kwargs):
@@ -327,7 +328,10 @@ def test_preview_never_publishes_failed_stereo_check(tmp_path):
     from chematic._timed_conformers import _read_checkpoint, _run_partial
 
     class InvalidStereoMol:
-        def _timed_embed_corrected(self, **kwargs):
+        def _timed_prepare_corrected(self, **kwargs):
+            return self
+
+        def embed(self, seed):
             return [[0.0, 0.0, 0.0]]
 
         def _timed_stereo_valid(self, coords):
@@ -376,7 +380,10 @@ def test_preview_is_retained_if_geometry_diagnostics_fail(tmp_path):
     from chematic._timed_conformers import _read_checkpoint, _run_partial
 
     class GeometryFailure:
-        def _timed_embed_corrected(self, **kwargs):
+        def _timed_prepare_corrected(self, **kwargs):
+            return self
+
+        def embed(self, seed):
             return [[0.0, 0.0, 0.0]]
 
         def _timed_stereo_valid(self, coords):
@@ -427,3 +434,22 @@ def test_corrupt_preview_diagnostics_are_rejected(tmp_path):
     path.write_text(json.dumps(preview) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="invalid preview geometry diagnostics"):
         _read_checkpoint(str(path))
+
+
+@pytest.mark.parametrize("smiles", ["CCO", "CB(C)C", "F[C@](Cl)(Br)I", "CC.O"])
+def test_prepared_corrected_embedding_matches_single_attempts(smiles):
+    molecule = chematic.from_smiles(smiles).add_hydrogens()
+    prepared = molecule._timed_prepare_corrected(max_iterations=0)
+    for seed in (0, 2, 42, 84):
+        assert prepared.embed(seed) == molecule._timed_embed_corrected(random_seed=seed)
+    with pytest.raises(ValueError):
+        prepared.embed(-1)
+
+
+def test_prepared_preview_zero_seed_matches_existing_partial_mode():
+    options = {"timeout_seconds": 15, "return_partial": True, "num_confs": 3, "random_seed": 0}
+    baseline = chematic.generate_conformers_timed("CCO", **options)
+    preview = chematic.generate_conformers_timed("CCO", return_preview=True, **options)
+    assert baseline["status"] == preview["status"] == "completed"
+    assert baseline["conformers"] == preview["conformers"]
+    assert baseline["attempts_completed"] == preview["attempts_completed"] == 3

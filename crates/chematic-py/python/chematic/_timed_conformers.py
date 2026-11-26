@@ -170,13 +170,19 @@ def _run_partial(mol, request):
     # gradient. This is intentionally a separate profile from a mixed batch.
     result = _empty_checkpoint()
     counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    prepared = None
+    if request.get("return_preview") and request["num_confs"]:
+        base = request["random_seed"]
+        if not isinstance(base, int) or not 0 <= base <= 2**31 - 1:
+            raise ValueError("conformer seed outside signed 32-bit nonnegative range")
+        prepared = mol._timed_prepare_corrected(max_iterations=request["max_iterations"])
     for index in range(request["num_confs"]):
         base = request["random_seed"]
         seed = (index + 1 if base == 0 and index else base * (index + 1))
         if not isinstance(seed, int) or not 0 <= seed <= 2**31 - 1:
             raise ValueError("conformer seed outside signed 32-bit nonnegative range")
         if request.get("return_preview"):
-            coords = mol._timed_embed_corrected(random_seed=seed, max_iterations=request["max_iterations"])
+            coords = prepared.embed(seed)
             if coords is None:
                 rows, embedded, error, violated, unevaluable, invalid = [], 0, None, None, None, None
             else:

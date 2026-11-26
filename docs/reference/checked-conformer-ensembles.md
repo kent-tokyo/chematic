@@ -108,8 +108,10 @@ not a pass/fail gate and may miss or flag structures differently from other
 geometry screens, especially for unusual elements or bonding. If diagnostic
 calculation fails, `geometry` is `None` and `geometry_error` describes the
 failure; the stereo-checked preview remains available. The optimizer reuses
-the embedded coordinates rather than embedding again. Completed attempts
-replace their provisional record.
+the embedded coordinates rather than embedding again. This mode also prepares
+distance bounds and torsion knowledge once per worker and reuses them across
+attempts; preparation is included in the deadline. Completed attempts replace
+their provisional record.
 
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility
