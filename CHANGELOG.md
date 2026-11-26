@@ -16,6 +16,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   MOL writers do. A centre whose wedge was on a hydrogen that
   `remove_hydrogens` dropped is drawn with a wedge again.
 
+### Fixed
+
+- The CDXML reader finds atoms and bonds whose element name is followed by a
+  line break (`<n` then `id="..."` on the next line), as ChemDraw writes them;
+  such files used to parse as an empty molecule without an error.
+
 ## [1.2.5] - 2026-11-26
 
 ### Fixed
