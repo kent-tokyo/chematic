@@ -1007,7 +1007,7 @@ fn verify_graph(source: &Molecule, candidate: &Molecule, order: &[AtomIdx]) -> O
 
 #[cfg(test)]
 mod tests {
-    use super::verify_graph;
+    use super::*;
     use chematic_core::AtomIdx;
 
     #[test]
@@ -1018,6 +1018,58 @@ mod tests {
         for changed in ["[12CH3][NH3+]", "[13CH3]N"] {
             let candidate = chematic_smiles::parse(changed).unwrap();
             assert!(verify_graph(&source, &candidate, &order).is_none());
+        }
+    }
+
+    #[test]
+    fn corrupted_mol2_projection_metadata_is_reported_unverified() {
+        let source = "@<TRIPOS>MOLECULE\nexample\n2 1\nSMALL\nGASTEIGER\n@<TRIPOS>ATOM\n1 C1 0 0 0 C.3 1 RES 0.1\n2 O1 1 0 0 O.3 1 RES -0.1\n@<TRIPOS>BOND\n1 1 2 1\n";
+        let record = crate::parse_mol2_source_record(source).unwrap();
+        let order = [AtomIdx(0), AtomIdx(1)];
+        let charges = vec![0.1, -0.1];
+        for (metadata, graph_verified, expected) in [
+            (
+                serde_json::json!({"name":"example","properties":{"name":"example"},"partialCharges":{"GASTEIGER":[0.1,-0.1]}}),
+                true,
+                [PreservationStatus::Preserved; 3],
+            ),
+            (
+                serde_json::json!({"name":"changed","properties":{"name":"changed"},"partialCharges":{"OTHER":[0.1,-0.1]}}),
+                true,
+                [
+                    PreservationStatus::Unverified,
+                    PreservationStatus::Unverified,
+                    PreservationStatus::Unverified,
+                ],
+            ),
+            (
+                serde_json::json!({"name":"example","properties":{"name":"example"},"partialCharges":{"GASTEIGER":[0.1,-0.1]}}),
+                false,
+                [
+                    PreservationStatus::Preserved,
+                    PreservationStatus::Unverified,
+                    PreservationStatus::Preserved,
+                ],
+            ),
+        ] {
+            let mut report = mol2_conversion_report("cjson", ConversionPolicy::AllowLoss);
+            record_mol2_cjson_metadata(
+                &record,
+                &order,
+                &metadata,
+                graph_verified,
+                Some(&charges),
+                Some("GASTEIGER"),
+                true,
+                &mut report,
+            );
+            let statuses: Vec<_> = report
+                .observations
+                .iter()
+                .take(3)
+                .map(|observation| observation.status)
+                .collect();
+            assert_eq!(statuses, expected);
         }
     }
 }
