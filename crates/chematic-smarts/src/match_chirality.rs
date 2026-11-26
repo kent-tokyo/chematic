@@ -380,3 +380,27 @@ pub(crate) fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
         .sum::<usize>();
     Some(inversions.is_multiple_of(2))
 }
+
+#[cfg(test)]
+mod candidate_logic_tests {
+    use super::*;
+
+    #[test]
+    fn stereo_is_unknown_until_mapping_but_logic_can_decide() {
+        let atom = |number| AtomQuery::Primitive(AtomPrimitive::AtomicNum(number));
+        let chiral = || AtomQuery::Primitive(AtomPrimitive::Chirality(1));
+        let or = |a, b| AtomQuery::Or(Box::new(a), Box::new(b));
+        let and = |a, b| AtomQuery::And(Box::new(a), Box::new(b));
+        let eval = |query: &AtomQuery| {
+            candidate_query_result(query, |p| matches!(p, AtomPrimitive::AtomicNum(6)))
+        };
+
+        assert_eq!(eval(&or(atom(6), chiral())), Some(true));
+        assert_eq!(eval(&or(chiral(), atom(6))), Some(true));
+        assert_eq!(eval(&or(atom(7), atom(8))), Some(false));
+        assert_eq!(eval(&or(atom(7), chiral())), None);
+        assert_eq!(eval(&and(atom(7), chiral())), Some(false));
+        assert_eq!(eval(&and(atom(6), chiral())), None);
+        assert_eq!(eval(&AtomQuery::Not(Box::new(chiral()))), None);
+    }
+}
