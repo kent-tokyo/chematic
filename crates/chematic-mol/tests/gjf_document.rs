@@ -112,6 +112,24 @@ fn cumulative_budgets_cannot_reset_at_link1() {
 }
 
 #[test]
+fn zero_job_budget_rejects_a_single_complete_job() {
+    let source = SOURCE.split_once("--Link1--").unwrap().0;
+    assert_eq!(parse_gjf_source_document(source).unwrap().jobs().len(), 1);
+    let limits = GjfDocumentLimits {
+        max_jobs: 0,
+        ..Default::default()
+    };
+    assert!(matches!(
+        parse_gjf_source_document_with_limits(source, &limits),
+        Err(GaussianError::ResourceLimit {
+            resource: "jobs",
+            actual: 1,
+            limit: 0
+        })
+    ));
+}
+
+#[test]
 fn single_job_apis_still_refuse_implicit_selection() {
     assert!(parse_gjf_source_record(SOURCE).is_err());
     assert!(chematic_mol::parse_gjf_geometry(SOURCE).is_err());
