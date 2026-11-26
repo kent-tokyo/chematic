@@ -128,6 +128,29 @@ mod tests {
     }
 
     #[test]
+    fn exhausted_stereo_retries_return_the_original_failure() {
+        let molecule = parse("[*]C").unwrap();
+        let mut config = config_none();
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        let mut run = PipelineRun::new(&config);
+        let mut first = run.fail(
+            PipelineV2FailureCause::FinalStereoViolation,
+            PipelineStage::FinalStereoVerify,
+        );
+        let mut retained = Coords3D::new_zeroed(molecule.atom_count());
+        retained.set(AtomIdx(0), crate::coords::Point3::new(1.0, 2.0, 3.0));
+        first.last_known_coords = Some(retained);
+        let returned = reseed_after_final_stereo_violation(&molecule, &config, first).unwrap_err();
+        assert!(matches!(
+            returned.cause,
+            PipelineV2FailureCause::FinalStereoViolation
+        ));
+        assert_eq!(returned.stage, PipelineStage::FinalStereoVerify);
+        let point = returned.last_known_coords.unwrap().get(AtomIdx(0));
+        assert_eq!((point.x, point.y, point.z), (1.0, 2.0, 3.0));
+    }
+
+    #[test]
     fn typed_stage_failures_preserve_partial_evidence() {
         let mol = parse("CCCC").unwrap();
         let mut config = config_none();
