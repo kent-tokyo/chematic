@@ -1201,6 +1201,21 @@ mod tests {
     }
 
     #[test]
+    fn wildcard_macrocycle_bound_failure_preserves_knowledge_report() {
+        let mol = parse("[*]C").unwrap();
+        let mut config = config_none();
+        config.embed.use_macrocycle_14_bounds = true;
+        let failure = embed_pipeline_v2(&mol, &config).unwrap_err();
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::TorsionKnowledge(_)
+        ));
+        assert_eq!(failure.stage, PipelineStage::MacrocycleBoundAdjustment);
+        assert!(failure.torsion_knowledge_report.is_some());
+        assert!(failure.last_known_coords.is_none());
+    }
+
+    #[test]
     fn timeout_zero_fails_closed_with_typed_timeout() {
         let mol = parse("CCCCCCCCCC").unwrap();
         let mut config = config_none();
