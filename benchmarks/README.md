@@ -74,3 +74,5 @@ A retained historical record is not evidence about current source.
 - [COD local geometry development](2026-11-26-cod-local-geometry-development.md)
 - [Reserved COD holdout protocol](2026-11-26-cod-reserved-holdout.md)
 - [MMFF common-coordinate development](2026-11-26-mmff-common-coordinate-development.md)
+
+- [Flexible MMFF setup development comparison](2026-11-27-flexible-mmff-setup.md)

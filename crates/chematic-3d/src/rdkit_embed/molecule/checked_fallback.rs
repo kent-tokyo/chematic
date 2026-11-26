@@ -92,45 +92,50 @@ pub fn etkdg_embed_multiple_confs_mixed_checked_diagnostics(
             invalid_coordinates: None,
         });
     };
-    if let Err(error) = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true) {
-        let reason = error.to_string();
-        let (mut violated, mut unevaluable, mut invalid) = (0, 0, 0);
-        let mut conformers = Vec::new();
-        for coords in embedded {
-            if coords.len() != mh.atom_count() || coords.iter().flatten().any(|v| !v.is_finite()) {
-                invalid += 1;
-                continue;
+    let field = match chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true) {
+        Ok(field) => field,
+        Err(error) => {
+            let reason = error.to_string();
+            let (mut violated, mut unevaluable, mut invalid) = (0, 0, 0);
+            let mut conformers = Vec::new();
+            for coords in embedded {
+                if coords.len() != mh.atom_count()
+                    || coords.iter().flatten().any(|v| !v.is_finite())
+                {
+                    invalid += 1;
+                    continue;
+                }
+                let geometry = Coords3D {
+                    points: coords
+                        .iter()
+                        .map(|&[x, y, z]| Point3::new(x, y, z))
+                        .collect(),
+                };
+                let stereo = verify_stereo(mh, &geometry);
+                if stereo.n_violations() != 0 {
+                    violated += 1;
+                } else if stereo.n_unevaluable() != 0 {
+                    unevaluable += 1;
+                } else {
+                    conformers.push(CheckedConformer {
+                        coords,
+                        status: -1,
+                        energy: None,
+                        force_field_error: Some(reason.clone()),
+                    });
+                }
             }
-            let geometry = Coords3D {
-                points: coords
-                    .iter()
-                    .map(|&[x, y, z]| Point3::new(x, y, z))
-                    .collect(),
-            };
-            let stereo = verify_stereo(mh, &geometry);
-            if stereo.n_violations() != 0 {
-                violated += 1;
-            } else if stereo.n_unevaluable() != 0 {
-                unevaluable += 1;
-            } else {
-                conformers.push(CheckedConformer {
-                    coords,
-                    status: -1,
-                    energy: None,
-                    force_field_error: Some(reason.clone()),
-                });
-            }
+            return Ok(CheckedEnsembleDiagnostics {
+                conformers,
+                embedded: count,
+                force_field_error: Some(reason),
+                stereo_violated: Some(violated),
+                stereo_unevaluable: Some(unevaluable),
+                invalid_coordinates: Some(invalid),
+            });
         }
-        return Ok(CheckedEnsembleDiagnostics {
-            conformers,
-            embedded: count,
-            force_field_error: Some(reason),
-            stereo_violated: Some(violated),
-            stereo_unevaluable: Some(unevaluable),
-            invalid_coordinates: Some(invalid),
-        });
-    }
-    let mut conformers = optimize_checked_ensemble(mh, embedded, max_iters)?;
+    };
+    let mut conformers = optimize_checked_ensemble_with_field(mh, embedded, max_iters, &field)?;
     for conformer in &mut conformers {
         repair_linear_nitrogen(mh, conformer, retry_iters);
     }

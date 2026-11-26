@@ -504,7 +504,16 @@ fn optimize_checked_ensemble(
     };
     let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
-    let optimized = optimize_mmff_conformers(&field, embedded.clone(), max_iters);
+    optimize_checked_ensemble_with_field(mh, embedded, max_iters, &field)
+}
+
+fn optimize_checked_ensemble_with_field(
+    mh: &Molecule,
+    embedded: Vec<Vec<[f64; 3]>>,
+    max_iters: u32,
+    field: &chematic_ff::rdkit_mmff::RdkitMmffField,
+) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
+    let optimized = optimize_mmff_conformers(field, embedded.clone(), max_iters);
     let mut conformers = Vec::with_capacity(optimized.len());
     for (mut candidate, original) in optimized.into_iter().zip(embedded) {
         if !stereo_safe_retry(mh, &candidate.coords) {
