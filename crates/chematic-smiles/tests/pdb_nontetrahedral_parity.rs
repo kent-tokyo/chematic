@@ -178,3 +178,28 @@ fn seven_coordinate_center_does_not_receive_an_unsupported_stereo_tag() {
         chematic_core::Chirality::None
     );
 }
+
+#[test]
+fn ambiguous_opposite_ligand_pairs_are_left_untagged() {
+    // RDKit 2025.09.3 unsanitized import returns CHI_UNSPECIFIED for this geometry.
+    let mut lines = vec![atom(1, "Pt", [0.; 3])];
+    for (i, (element, point)) in [
+        ("F", [1., 0., 0.]),
+        ("Cl", [-1., 0., 0.]),
+        ("Br", [-1., 0., 0.]),
+        ("I", [0., 1., 0.]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        lines.push(atom(i + 2, element, point));
+    }
+    lines.extend(["CONECT    1    2    3    4    5".into(), "END".into()]);
+    let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        parsed.molecule.atom(chematic_core::AtomIdx(0)).chirality,
+        chematic_core::Chirality::None
+    );
+}
