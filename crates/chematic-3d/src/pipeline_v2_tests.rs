@@ -43,7 +43,17 @@ mod tests {
         ));
         assert_eq!(failure.stage, PipelineStage::StereoRepair);
         assert!(failure.last_known_coords.is_some());
-        assert!(!failure.stereo_repair.unwrap().failures.is_empty());
+        assert!(
+            failure
+                .stereo_repair
+                .unwrap()
+                .failures
+                .iter()
+                .any(|(element, reason)| {
+                    matches!(element, StereoElement::DoubleBond(_))
+                        && matches!(reason, RepairRejectionReason::NoBridgeEligibleSubstituent)
+                })
+        );
     }
 
     #[test]
