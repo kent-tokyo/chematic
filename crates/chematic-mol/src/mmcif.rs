@@ -733,17 +733,22 @@ fn parse_int(s: &str, column: &'static str) -> Result<i64, MmcifError> {
     let s = strip_esd(s).trim();
     if let Some(digits) = s.strip_suffix('+') {
         return digits
-            .parse::<i64>()
-            .map_err(|_| MmcifError::InvalidInteger {
+            .bytes()
+            .all(|digit| digit.is_ascii_digit())
+            .then(|| digits.parse::<i64>().ok())
+            .flatten()
+            .ok_or_else(|| MmcifError::InvalidInteger {
                 column,
                 raw: s.to_string(),
             });
     }
     if let Some(digits) = s.strip_suffix('-') {
         return digits
-            .parse::<i64>()
-            .map(|v| -v)
-            .map_err(|_| MmcifError::InvalidInteger {
+            .bytes()
+            .all(|digit| digit.is_ascii_digit())
+            .then(|| format!("-{digits}").parse::<i64>().ok())
+            .flatten()
+            .ok_or_else(|| MmcifError::InvalidInteger {
                 column,
                 raw: s.to_string(),
             });

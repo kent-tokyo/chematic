@@ -196,10 +196,29 @@ fn mmcif_quotes_names_and_space_group_containing_apostrophes() {
 
 #[test]
 fn mmcif_rejects_invalid_postfix_charge() {
-    for charge in ["x+", "x-"] {
+    for charge in ["x+", "x-", "-2+", "+2-", "-9223372036854775808-"] {
         let input = format!(
-            "data_bad\nloop_\n_atom_site.type_symbol\n_atom_site.pdbx_formal_charge\nC {charge}\n"
+            "data_bad\nloop_\n_atom_site.type_symbol\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.pdbx_formal_charge\nC 0 0 0 {charge}\n"
         );
-        assert!(parse_mmcif(&input).is_err(), "{charge}");
+        assert_eq!(
+            parse_mmcif(&input).unwrap_err(),
+            chematic_mol::mmcif::MmcifError::InvalidInteger {
+                column: "pdbx_formal_charge",
+                raw: charge.to_owned(),
+            },
+            "{charge}"
+        );
     }
+}
+
+#[test]
+fn mmcif_postfix_negative_integer_handles_signed_range_boundary() {
+    let input = |value: &str| {
+        format!(
+            "data_x\nloop_\n_atom_site.type_symbol\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.label_seq_id\nC 0 0 0 {value}\n"
+        )
+    };
+    let parsed = parse_mmcif(&input("9223372036854775808-")).unwrap();
+    assert_eq!(parsed.atoms[0].label_seq_id, Some(i64::MIN));
+    assert!(parse_mmcif(&input("9223372036854775809-")).is_err());
 }
