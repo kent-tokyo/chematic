@@ -131,6 +131,33 @@ fn square_planar_opposite_pairs_match_rdkit() {
 }
 
 #[test]
+fn tetrahedral_center_uses_fourth_ligand_when_first_three_are_planar() {
+    // RDKit 2025.09.3; the fourth ligand selects the parity in a planar first triplet.
+    for (z, expected) in [(1., "F[C@@](Cl)(Br)I"), (-1., "F[C@](Cl)(Br)I")] {
+        let mut lines = vec![atom(1, "C", [0.; 3])];
+        for (i, (element, point)) in [
+            ("F", [1., 0., 0.]),
+            ("Cl", [0., 1., 0.]),
+            ("Br", [-1., -1., 0.]),
+            ("I", [0., 0., z]),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            lines.push(atom(i + 2, element, point));
+        }
+        lines.extend(["CONECT    1    2    3    4    5".into(), "END".into()]);
+        let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            rdkit_smiles(&parsed.molecule, &Default::default()).unwrap(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn pdb_five_coordinate_stereo_tracks_each_axial_ligand_pair() {
     // Independent reference: RDKit 2025.09.3, unsanitized PDB import.
     let cases = [
