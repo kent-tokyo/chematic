@@ -157,3 +157,73 @@ _run_partial(SlowMol(), {"num_confs": 1000, "random_seed": 42, "max_iterations":
     result = _read_checkpoint(str(checkpoint))
     assert result["attempts_completed"] >= 1
     assert len(result["conformers"]) == result["attempts_completed"]
+
+
+@pytest.mark.parametrize("worker_output,exit_code,expected_status", [
+    ('{"status":"error","error_type":"ValueError","error":"calculation failed"}', 0, "error"),
+    ("", 1, "worker_error"),
+    ("invalid json", 0, "worker_error"),
+])
+def test_partial_worker_failures_keep_completed_results(monkeypatch, worker_output, exit_code, expected_status):
+    import json
+    from chematic import _timed_conformers as timed
+
+    class FakeProcess:
+        returncode = exit_code
+
+        def communicate(self, request=None, timeout=None):
+            if request is not None:
+                checkpoint = json.loads(request)["checkpoint"]
+                with open(checkpoint, "w", encoding="utf-8") as stream:
+                    json.dump({"conformers": [[1, 0.0, [[0, 0, 0]], None]],
+                               "attempts_completed": 1, "embedded": 1}, stream)
+            return worker_output, "worker crashed"
+
+        def poll(self):
+            return self.returncode
+
+    monkeypatch.setattr(timed.subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    result = timed.generate_conformers_timed("C", 10, timeout_seconds=1, return_partial=True)
+    assert result["status"] == expected_status
+    assert result["error"]
+    assert result["attempts_completed"] == 1
+    assert len(result["conformers"]) == 1
+
+
+def test_invalid_checkpoint_preserves_timeout_status(monkeypatch):
+    import json
+    import subprocess
+    from chematic import _timed_conformers as timed
+
+    class FakeProcess:
+        def communicate(self, request=None, timeout=None):
+            if request is None:
+                return "", ""
+            checkpoint = json.loads(request)["checkpoint"]
+            with open(checkpoint, "w", encoding="utf-8") as stream:
+                stream.write("{")
+            raise subprocess.TimeoutExpired("worker", timeout)
+
+        def kill(self):
+            pass
+
+        def poll(self):
+            return -9
+
+    monkeypatch.setattr(timed.subprocess, "Popen", lambda *args, **kwargs: FakeProcess())
+    result = timed.generate_conformers_timed("C", 10, timeout_seconds=1, return_partial=True)
+    assert result["status"] == "timeout"
+    assert "JSONDecodeError" in result["checkpoint_error"]
+    assert "conformers" not in result
+
+
+def test_partial_real_worker_error_keeps_prior_completed_attempt():
+    result = chematic.generate_conformers_timed(
+        "CCO", 2, random_seed=2**31 - 1, timeout_seconds=15, return_partial=True
+    )
+    assert result["status"] == "error"
+    assert result["error_type"] == "ValueError"
+    assert "seed" in result["error"]
+    assert result["attempts_completed"] == 1
+    assert result["embedded"] == 1
+    assert len(result["conformers"]) == 1

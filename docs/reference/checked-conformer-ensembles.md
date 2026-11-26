@@ -83,8 +83,9 @@ gradient: this is a different search profile from the mixed batch, so the
 same seed and count do not imply the same ensemble. Atom order, individual
 conformer statuses and force-field error semantics are unchanged. The
 checkpoint has filesystem and serialization overhead; no general speed or
-accuracy improvement is implied. Worker errors are reported separately and
-do not return checkpoints.
+accuracy improvement is implied. Worker errors are reported separately and retain the last complete checkpoint
+when one is available. An unreadable checkpoint is reported as
+`checkpoint_error` while preserving the original worker status and error.
 
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility

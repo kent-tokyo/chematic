@@ -18,7 +18,8 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
 
     The timeout includes interpreter startup and terminates an ongoing attempt.
     By default timeout results contain no partial ensemble. When return_partial
-    is true, completed individual corrected-gradient attempts are retained.
+    is true, completed individual corrected-gradient attempts are retained on
+    timeout or worker failure when their checkpoint is readable.
     Coordinates use the atom order
     obtained by parsing ``smiles`` and adding hydrogens in the worker.
     """
@@ -49,24 +50,39 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                 process.kill()
                 process.communicate()
                 response = {"status": "timeout"}
-                if directory is not None:
-                    response.update(_read_checkpoint(request["checkpoint"]))
+                _attach_checkpoint(response, request.get("checkpoint"))
                 response["elapsed_seconds"] = time.monotonic() - started
                 return response
             if process.returncode != 0:
-                return {"status": "worker_error", "error": stderr[-2000:],
-                        "elapsed_seconds": time.monotonic() - started}
+                response = {"status": "worker_error", "error": stderr[-2000:]}
+                _attach_checkpoint(response, request.get("checkpoint"))
+                response["elapsed_seconds"] = time.monotonic() - started
+                return response
             try:
                 response = json.loads(stdout)
             except (ValueError, TypeError) as error:
-                return {"status": "worker_error", "error": str(error),
-                        "elapsed_seconds": time.monotonic() - started}
+                response = {"status": "worker_error", "error": str(error)}
+            if not isinstance(response, dict) or response.get("status") not in ("completed", "error", "worker_error"):
+                response = {"status": "worker_error", "error": "invalid worker response"}
+            if response["status"] != "completed":
+                _attach_checkpoint(response, request.get("checkpoint"))
             response["elapsed_seconds"] = time.monotonic() - started
             return response
         finally:
             if process.poll() is None:
                 process.kill()
                 process.wait()
+
+
+def _attach_checkpoint(response, path):
+    if path is None:
+        return
+    try:
+        response.update(_read_checkpoint(path))
+    except (OSError, ValueError) as error:
+        # Preserve the worker's original failure instead of turning an
+        # unreadable checkpoint into an unrelated exception.
+        response["checkpoint_error"] = f"{type(error).__name__}: {error}"
 
 
 def _read_checkpoint(path):
