@@ -113,3 +113,58 @@ converged-recovery difference of +5.56 points (interval +1.12 to +11.11)
 over the common 90. These are small development-set intervals, not acceptance
 evidence. The audited split and support records are saved alongside the raw
 results.
+
+## Reserved evaluation: source candidate on GitHub-hosted runners
+
+The frozen candidate commit was `cbefae5d4eefa504185df29c744def7baac60be7`.
+This is a source-built development candidate, not the published 1.2.5 wheel.
+The run used RDKit 2026.09.2, at most 20 candidates, a hard 0.2-second
+per-engine generation deadline, strict declared-stereo and geometry screens,
+and a 1 Å reference RMSD threshold. The split and subgroup assignments above
+were fixed before these outcomes were inspected. The 5,193 records and their
+failures remain in the denominator. This is one reserved COD-derived sample,
+not a representative measure of all molecules or all conformer workflows.
+
+| Platform and subgroup | Records | chematic recovered | RDKit recovered | Paired difference (95% scaffold-cluster interval) |
+| --- | ---: | ---: | ---: | ---: |
+| Linux, all | 5,193 | 2,915 | 2,697 | +4.20 pp (+3.54 to +4.88) |
+| Linux, ordinary | 4,421 | 2,840 | 2,639 | +4.55 pp (+3.80 to +5.32) |
+| Linux, flexible | 630 | 53 | 40 | +2.06 pp (+0.64 to +3.51) |
+| Linux, macrocycle | 142 | 22 | 18 | +2.82 pp (-1.41 to +7.14) |
+| macOS, all | 5,193 | 2,764 | 2,295 | +9.03 pp (+8.17 to +9.89) |
+| macOS, ordinary | 4,421 | 2,705 | 2,258 | +10.11 pp (+9.16 to +11.08) |
+| macOS, flexible | 630 | 40 | 23 | +2.70 pp (+1.43 to +4.10) |
+| macOS, macrocycle | 142 | 19 | 14 | +3.52 pp (-0.71 to +8.45) |
+
+The independent MMFF support audit found 4,838 records with support in both
+engines and matching graphs, 354 outside that domain and one graph mismatch;
+there were no unknown-support records. On that common domain, converged-MMFF
+recovery was 2,023 versus 1,878 on Linux and 1,939 versus 1,648 on macOS.
+The predeclared lower-bound threshold of -2 percentage points was met for
+both all-record recovery and common-domain converged recovery in every
+subgroup on both platforms. Absolute recovery for flexible and macrocycle
+records remains low under this short budget; satisfying that relative test
+does not establish useful absolute performance or general RDKit parity.
+The intervals are paired scaffold-cluster bootstrap intervals (10,000 draws,
+seed 42), not intervals for an independently sampled population.
+
+The Linux jobs ran on a mixture of Azure and AWS x86-64 runners: 3,927 and
+1,266 records respectively. Each record's two engines ran on the same runner,
+but hardware and kernel variation prevents treating the aggregate as a
+single-host speed measurement. The macOS runner platform string was
+`macOS-26.7.2-arm64-arm-64bit-Mach-O` for all shards; individual hosted
+runners are still distinct machines. Operating systems use the same molecules,
+so their results are not independent datasets.
+
+The original [Actions run](https://github.com/kent-tokyo/chematic/actions/runs/45829103857)
+completed all 16 measurement shards. Its Linux report rejected the differing
+platform strings; the archived shards were subsequently merged with an
+explicit same-OS, same-architecture mixed-platform option that records the
+platform per record. The macOS support audit and summaries were reproduced
+locally using the exact downloaded macOS candidate wheel. Raw merged records,
+support audits, shard manifest and summaries are in
+`validation/results/2026-11-26-reserved-cod-timed/`. The wheel SHA-256 values
+were `c6c30540957cd97bf3c19a9524263bb467ca48f4611fca72580de481a4712333`
+(Linux) and `c1cde89335fc67eb505e3db8843876e228fd9431925055bc82292250bba65b5c`
+(macOS). The scorer SHA-256 was
+`3ae6bdc4941926c552fbb6f488e4afba7c73bae396889bbfa4558cf6297bc109`.

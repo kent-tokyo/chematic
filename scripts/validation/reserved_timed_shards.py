@@ -4,6 +4,7 @@
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
 
@@ -46,14 +47,14 @@ def prepare(sdf, split_path, out, shard_count):
     return manifest
 
 
-def merge(manifest_path, result_paths, out, wheel_sha256, source_commit):
+def merge(manifest_path, result_paths, out, wheel_sha256, source_commit, *, allow_mixed_platforms=False):
     manifest = json.loads(manifest_path.read_text())
     if len(result_paths) != manifest["shard_count"]:
         raise ValueError("wrong number of shards")
     records = {item["index"]: item for shard in manifest["shards"] for item in shard["records"]}
     if sum(s["count"] for s in manifest["shards"]) != len(records):
         raise ValueError("duplicate records in manifest")
-    results, template, signatures = [], None, set()
+    results, template, signatures, platforms = [], None, set(), {}
     for path in result_paths:
         data = json.loads(path.read_text())
         if (data.get("source_sha256") != manifest["source_sha256"]
@@ -75,17 +76,31 @@ def merge(manifest_path, result_paths, out, wheel_sha256, source_commit):
         if (signature[0] != sha(benchmark_dir / "platinum_time_budget.py")
                 or signature[1] != sha(benchmark_dir / "platinum_stereo_strict.py")):
             raise ValueError("scorer or stereo verifier differs from checkout")
-        signatures.add(signature)
+        signatures.add(signature if not allow_mixed_platforms else (signature[0], signature[1], signature[3]))
+        platform = data["platform"]
+        platforms[platform] = platforms.get(platform, 0) + len(data["results"])
         template = data if template is None else template
-        results.extend(data["results"])
+        results.extend([{**row, "evaluation_platform": platform} for row in data["results"]])
     if len(signatures) != 1 or len(results) != len(records):
         raise ValueError("scorer mismatch or incomplete results")
+    if len(platforms) > 1:
+        families = set()
+        for platform in platforms:
+            match = re.search(r"-(x86_64|aarch64|arm64)(?:-|$)", platform)
+            if not match or platform.split("-", 1)[0] not in ("Linux", "macOS"):
+                raise ValueError("unrecognized mixed platform")
+            families.add((platform.split("-", 1)[0], match.group(1)))
+        if len(families) != 1:
+            raise ValueError("mixed operating systems or architectures")
     observed = {row["index"]: row for row in results}
     if len(observed) != len(results) or set(observed) != set(records):
         raise ValueError("missing or duplicated result identities")
     if any(observed[i].get("name") != records[i]["name"] for i in records):
         raise ValueError("result name differs from manifest")
     template["results"] = sorted(results, key=lambda row: row["index"])
+    template["platforms"] = [{"platform": p, "records": n} for p, n in sorted(platforms.items())]
+    if len(platforms) > 1:
+        template["platform"] = "mixed; see platforms and each result evaluation_platform"
     template["split_sha256"] = manifest["split_sha256"]
     template["shard_manifest_sha256"] = sha(manifest_path)
     out.write_text(json.dumps(template, indent=2, allow_nan=False) + "\n")
@@ -105,12 +120,15 @@ def main():
     combine.add_argument("results", nargs="+", type=Path)
     combine.add_argument("--wheel-sha256", required=True)
     combine.add_argument("--source-commit", required=True)
+    combine.add_argument("--allow-mixed-platforms", action="store_true",
+                         help="allow same-OS, same-architecture runners with differing platform strings; record each result platform")
     args = parser.parse_args()
     if args.command == "prepare":
         manifest = prepare(args.sdf, args.split, args.output, args.shards)
         print(json.dumps([s["count"] for s in manifest["shards"]]))
     else:
-        merge(args.manifest, args.results, args.output, args.wheel_sha256, args.source_commit)
+        merge(args.manifest, args.results, args.output, args.wheel_sha256, args.source_commit,
+              allow_mixed_platforms=args.allow_mixed_platforms)
 
 
 if __name__ == "__main__":

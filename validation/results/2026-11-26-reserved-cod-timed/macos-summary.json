@@ -1,0 +1,111 @@
+{
+  "rows": 5193,
+  "seconds": 0.2,
+  "bootstrap_samples": 10000,
+  "bootstrap_seed": 42,
+  "stages": {
+    "recovery": {
+      "records": 5193,
+      "chematic_recovered": 2764,
+      "rdkit_recovered": 2295,
+      "difference": 0.09031388407471597,
+      "scaffold_clusters": 4991,
+      "paired_scaffold_cluster_95_interval": [
+        0.08169556840077072,
+        0.0989412897016362
+      ]
+    },
+    "converged_recovery": {
+      "records": 5193,
+      "chematic_recovered": 1939,
+      "rdkit_recovered": 1648,
+      "difference": 0.0560369728480647,
+      "scaffold_clusters": 4991,
+      "paired_scaffold_cluster_95_interval": [
+        0.04889833784306146,
+        0.06312548113933796
+      ]
+    },
+    "common_mmff_converged_recovery": {
+      "records": 4838,
+      "chematic_recovered": 1939,
+      "rdkit_recovered": 1648,
+      "difference": 0.06014882182720132,
+      "scaffold_clusters": 4649,
+      "paired_scaffold_cluster_95_interval": [
+        0.052425180598555214,
+        0.06796518856195607
+      ]
+    },
+    "ordinary_recovery": {
+      "records": 4421,
+      "chematic_recovered": 2705,
+      "rdkit_recovered": 2258,
+      "difference": 0.10110834652793485,
+      "scaffold_clusters": 4249,
+      "paired_scaffold_cluster_95_interval": [
+        0.09157009770506704,
+        0.11080835603996367
+      ]
+    },
+    "ordinary_common_mmff_converged_recovery": {
+      "records": 4125,
+      "chematic_recovered": 1931,
+      "rdkit_recovered": 1642,
+      "difference": 0.07006060606060606,
+      "scaffold_clusters": 3961,
+      "paired_scaffold_cluster_95_interval": [
+        0.06120458424774445,
+        0.07906189555125726
+      ]
+    },
+    "flexible_recovery": {
+      "records": 630,
+      "chematic_recovered": 40,
+      "rdkit_recovered": 23,
+      "difference": 0.026984126984126985,
+      "scaffold_clusters": 615,
+      "paired_scaffold_cluster_95_interval": [
+        0.014308426073131956,
+        0.04100946372239748
+      ]
+    },
+    "flexible_common_mmff_converged_recovery": {
+      "records": 576,
+      "chematic_recovered": 2,
+      "rdkit_recovered": 1,
+      "difference": 0.001736111111111111,
+      "scaffold_clusters": 564,
+      "paired_scaffold_cluster_95_interval": [
+        0.0,
+        0.005244755244755245
+      ]
+    },
+    "macrocycle_recovery": {
+      "records": 142,
+      "chematic_recovered": 19,
+      "rdkit_recovered": 14,
+      "difference": 0.035211267605633804,
+      "scaffold_clusters": 138,
+      "paired_scaffold_cluster_95_interval": [
+        -0.007142857142857143,
+        0.08450704225352113
+      ]
+    },
+    "macrocycle_common_mmff_converged_recovery": {
+      "records": 137,
+      "chematic_recovered": 6,
+      "rdkit_recovered": 5,
+      "difference": 0.0072992700729927005,
+      "scaffold_clusters": 133,
+      "paired_scaffold_cluster_95_interval": [
+        -0.014814814814814815,
+        0.03571428571428571
+      ]
+    }
+  },
+  "common_mmff_records": 4838,
+  "mmff_support_unknown_records": 0,
+  "support_sha256": "37e344140152952c9ae533f8601d397c57cff0dc60cf34c43fde2a5b31cb4181",
+  "groups_sha256": "f68f26dbb0130ccacd96f312196ff5f823928c7aa375eee0a570de6070d09329"
+}

@@ -149,7 +149,7 @@ jobs:
       - name: Audit common force-field support and report
         run: |
           python scripts/validation/cod_support_probe.py reference.sdf validation/manifests/cod-reserved-2026-11-26-split.json --partition holdout --output support.json
-          python scripts/validation/reserved_timed_shards.py merge shards/manifest.json merged.json results/result-*.json --wheel-sha256 "$(cat candidate/wheel-sha256.txt)" --source-commit "$SOURCE_COMMIT"
+          python scripts/validation/reserved_timed_shards.py merge shards/manifest.json merged.json results/result-*.json --wheel-sha256 "$(cat candidate/wheel-sha256.txt)" --source-commit "$SOURCE_COMMIT" --allow-mixed-platforms
           python scripts/benchmarks/summarize_platinum_time_holdout.py merged.json validation/manifests/cod-reserved-2026-11-26-split.json --output summary.json --support support.json --groups validation/manifests/cod-reserved-2026-11-26-groups.json --require-strict --bootstrap 10000
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
