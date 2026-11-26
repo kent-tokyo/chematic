@@ -78,9 +78,39 @@ pub fn etkdg_embed_multiple_confs_mixed_checked_diagnostics(
     max_iters: u32,
     retry_iters: u32,
 ) -> Result<CheckedEnsembleDiagnostics, RdkitEmbedMmffError> {
+    let embedded = embed_mixed(mh, num_confs, o)?;
+    optimize_embedded_checked_diagnostics_inner(mh, embedded, max_iters, retry_iters)
+}
+
+/// Optimize previously embedded coordinates with the checked MMFF fallback.
+/// Rejects invalid dimensions or nonfinite coordinates before field creation.
+pub fn optimize_embedded_checked_diagnostics(
+    mh: &Molecule,
+    embedded: Vec<Vec<[f64; 3]>>,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<CheckedEnsembleDiagnostics, RdkitEmbedMmffError> {
+    if (!embedded.is_empty() && mh.atom_count() == 0)
+        || embedded.iter().any(|coords| {
+            coords.len() != mh.atom_count() || coords.iter().flatten().any(|v| !v.is_finite())
+        })
+    {
+        return Err(RdkitEmbedError::Unsupported(
+            "invalid embedded coordinate shape or nonfinite coordinate".into(),
+        )
+        .into());
+    }
+    optimize_embedded_checked_diagnostics_inner(mh, embedded, max_iters, retry_iters)
+}
+
+fn optimize_embedded_checked_diagnostics_inner(
+    mh: &Molecule,
+    embedded: Vec<Vec<[f64; 3]>>,
+    max_iters: u32,
+    retry_iters: u32,
+) -> Result<CheckedEnsembleDiagnostics, RdkitEmbedMmffError> {
     use crate::coords::{Coords3D, Point3};
     use crate::stereo_constraints::verify_stereo;
-    let embedded = embed_mixed(mh, num_confs, o)?;
     let count = embedded.len();
     let Some(first) = embedded.first() else {
         return Ok(CheckedEnsembleDiagnostics {

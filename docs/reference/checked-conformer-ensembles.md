@@ -89,6 +89,17 @@ accuracy improvement is implied. Worker errors are reported separately and retai
 when one is available. An unreadable checkpoint is reported as
 `checkpoint_error` while preserving the original worker status and error.
 
+To retain a provisional embedding even when its MMFF optimization is
+interrupted, set `return_preview=True` together with `return_partial=True`.
+On timeout or worker failure, `result.get("in_progress")` may contain an
+`attempt` number and `coordinates`. These coordinates passed the library's
+declared-stereo check but have not completed MMFF optimization; they have no
+energy or convergence status and are not added to `conformers`. Unevaluable
+or violated declared stereo is not published as a preview. This check does
+not cover every possible stereochemical specification or establish general
+geometric quality. The optimizer reuses the embedded coordinates rather
+than embedding again. Completed attempts replace their provisional record.
+
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility
 and the remainder for corrected. The two modes share the same attempt seed

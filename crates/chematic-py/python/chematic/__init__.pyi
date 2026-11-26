@@ -6476,4 +6476,5 @@ def generate_conformers_timed(
     max_mmff_iters: int = 200,
     repair_mmff_iters: int = 0,
     return_partial: bool = False,
+    return_preview: bool = False,
 ) -> dict[str, object]: ...

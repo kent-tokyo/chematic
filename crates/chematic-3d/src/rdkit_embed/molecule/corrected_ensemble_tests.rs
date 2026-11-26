@@ -707,3 +707,49 @@ fn corrected_fallback_recovers_exposed_macrocycle() {
             .all(|c| stereo_safe_retry(&molecule, &c.coords))
     );
 }
+
+#[test]
+fn preembedded_checked_optimization_matches_original_and_rejects_invalid_coordinates() {
+    for smiles in ["CCO", "CB(C)C", "F[C@](Cl)(Br)I"] {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let options = RdkitEmbedOptions::default();
+        let embedded = etkdg_embed_multiple_confs_corrected(&molecule, 1, &options).unwrap();
+        let expected =
+            etkdg_embed_multiple_confs_mixed_checked_diagnostics(&molecule, 1, &options, 200, 0)
+                .unwrap();
+        let actual = optimize_embedded_checked_diagnostics(&molecule, embedded, 200, 0).unwrap();
+        assert_eq!(actual.embedded, expected.embedded, "{smiles}");
+        assert_eq!(
+            actual.force_field_error, expected.force_field_error,
+            "{smiles}"
+        );
+        assert_eq!(actual.stereo_violated, expected.stereo_violated, "{smiles}");
+        assert_eq!(
+            actual.stereo_unevaluable, expected.stereo_unevaluable,
+            "{smiles}"
+        );
+        assert_eq!(
+            actual.invalid_coordinates, expected.invalid_coordinates,
+            "{smiles}"
+        );
+        assert_eq!(
+            actual.conformers.len(),
+            expected.conformers.len(),
+            "{smiles}"
+        );
+        for (a, b) in actual.conformers.iter().zip(expected.conformers.iter()) {
+            assert_eq!(
+                (a.status, a.energy, &a.coords, &a.force_field_error),
+                (b.status, b.energy, &b.coords, &b.force_field_error),
+                "{smiles}"
+            );
+        }
+        assert!(
+            optimize_embedded_checked_diagnostics(&molecule, vec![vec![[0.0; 3]]], 1, 0).is_err()
+        );
+        let bad = vec![[f64::NAN, 0.0, 0.0]; molecule.atom_count()];
+        assert!(optimize_embedded_checked_diagnostics(&molecule, vec![bad], 1, 0).is_err());
+    }
+    let empty = chematic_core::MoleculeBuilder::new().build();
+    assert!(optimize_embedded_checked_diagnostics(&empty, vec![vec![]], 1, 0).is_err());
+}

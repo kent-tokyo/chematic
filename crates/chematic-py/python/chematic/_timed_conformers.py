@@ -13,13 +13,15 @@ import time
 def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                               random_seed=42, max_iterations=0,
                               max_mmff_iters=200, repair_mmff_iters=0,
-                              return_partial=False):
+                              return_partial=False, return_preview=False):
     """Generate an explicit-hydrogen mixed ensemble in an isolated process.
 
     The timeout includes interpreter startup and terminates an ongoing attempt.
     By default timeout results contain no partial ensemble. When return_partial
     is true, completed individual corrected-gradient attempts are retained on
-    timeout or worker failure when their checkpoint is readable.
+    timeout or worker failure when their checkpoint is readable. With both
+    return_partial and return_preview, a stereo-checked, unoptimized embedding
+    for an interrupted attempt may be returned separately as in_progress.
     Coordinates use the atom order
     obtained by parsing ``smiles`` and adding hydrogens in the worker.
     """
@@ -29,11 +31,13 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
         raise ValueError("num_confs must be a nonnegative integer")
     if not isinstance(timeout_seconds, (int, float)) or not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
         raise ValueError("timeout_seconds must be positive and finite")
-    if not isinstance(return_partial, bool):
-        raise TypeError("return_partial must be a bool")
+    if not isinstance(return_partial, bool) or not isinstance(return_preview, bool):
+        raise TypeError("return_partial and return_preview must be bools")
+    if return_preview and not return_partial:
+        raise ValueError("return_preview requires return_partial=True")
     request = {"smiles": smiles, "num_confs": num_confs, "random_seed": random_seed,
                "max_iterations": max_iterations, "max_mmff_iters": max_mmff_iters,
-               "repair_mmff_iters": repair_mmff_iters,
+               "repair_mmff_iters": repair_mmff_iters, "return_preview": return_preview,
                "package_file": os.path.realpath(sys.modules[__package__].__file__)}
     with tempfile.TemporaryDirectory(prefix="chematic-conformers-") if return_partial else contextlib.nullcontext() as directory:
         if directory is not None:
@@ -115,6 +119,16 @@ def _apply_checkpoint_entry(result, counts_known, entry):
         elif counts_known[key]:
             result[key] = (result[key] or 0) + value
     result["attempts_completed"] += 1
+    result.pop("in_progress", None)
+
+
+def _apply_preview(result, entry):
+    if (type(entry.get("preview_attempt")) is not int
+            or entry["preview_attempt"] != result["attempts_completed"] + 1
+            or "in_progress" in result or not isinstance(entry.get("coordinates"), list)):
+        raise ValueError("invalid preview checkpoint")
+    result["in_progress"] = {"attempt": entry["preview_attempt"],
+                             "coordinates": entry["coordinates"]}
 
 
 def _read_checkpoint(path):
@@ -127,7 +141,11 @@ def _read_checkpoint(path):
                 # newline-terminated record is a completed checkpoint.
                 if not line.endswith(b"\n"):
                     break
-                _apply_checkpoint_entry(result, counts_known, json.loads(line))
+                entry = json.loads(line)
+                if isinstance(entry, dict) and "preview_attempt" in entry:
+                    _apply_preview(result, entry)
+                else:
+                    _apply_checkpoint_entry(result, counts_known, entry)
     except FileNotFoundError:
         pass
     return result
@@ -143,19 +161,36 @@ def _run_partial(mol, request):
         seed = (index + 1 if base == 0 and index else base * (index + 1))
         if not isinstance(seed, int) or not 0 <= seed <= 2**31 - 1:
             raise ValueError("conformer seed outside signed 32-bit nonnegative range")
-        rows, embedded, error, violated, unevaluable, invalid = (
-            mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(
-                1, random_seed=seed, max_iterations=request["max_iterations"],
-                max_mmff_iters=request["max_mmff_iters"],
-                repair_mmff_iters=request["repair_mmff_iters"])
-        )
+        if request.get("return_preview"):
+            coords = mol._timed_embed_corrected(random_seed=seed, max_iterations=request["max_iterations"])
+            if coords is None:
+                rows, embedded, error, violated, unevaluable, invalid = [], 0, None, None, None, None
+            else:
+                if mol._timed_stereo_valid(coords):
+                    preview = {"preview_attempt": index + 1, "coordinates": coords}
+                    _apply_preview(result, preview)
+                    _append_checkpoint(request["checkpoint"], preview)
+                rows, embedded, error, violated, unevaluable, invalid = mol._timed_optimize_embedded(
+                    coords, max_mmff_iters=request["max_mmff_iters"],
+                    repair_mmff_iters=request["repair_mmff_iters"])
+        else:
+            rows, embedded, error, violated, unevaluable, invalid = (
+                mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(
+                    1, random_seed=seed, max_iterations=request["max_iterations"],
+                    max_mmff_iters=request["max_mmff_iters"],
+                    repair_mmff_iters=request["repair_mmff_iters"])
+            )
         entry = {"attempt": index + 1, "rows": rows, "embedded": embedded, "error": error,
                  "violated": violated, "unevaluable": unevaluable, "invalid": invalid}
         _apply_checkpoint_entry(result, counts_known, entry)
-        payload = (json.dumps(entry, allow_nan=False, separators=(",", ":")) + "\n").encode("utf-8")
-        with open(request["checkpoint"], "ab") as stream:
-            stream.write(payload)
+        _append_checkpoint(request["checkpoint"], entry)
     return result
+
+
+def _append_checkpoint(path, entry):
+    payload = (json.dumps(entry, allow_nan=False, separators=(",", ":")) + "\n").encode("utf-8")
+    with open(path, "ab") as stream:
+        stream.write(payload)
 
 
 def _main():

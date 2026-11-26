@@ -10,7 +10,7 @@ use checked_fallback::embed_mixed;
 pub use checked_fallback::{
     CheckedConformer, CheckedEnsembleDiagnostics,
     etkdg_embed_multiple_confs_mixed_checked_diagnostics,
-    etkdg_embed_multiple_confs_mixed_checked_with_fallback,
+    etkdg_embed_multiple_confs_mixed_checked_with_fallback, optimize_embedded_checked_diagnostics,
 };
 
 mod quality_retry;

@@ -13,6 +13,82 @@ type FallbackDiagnostics = (
 
 #[pymethods]
 impl Mol {
+    /// Prepare one corrected-gradient embedding for the timed worker.
+    #[pyo3(signature = (random_seed = 42, max_iterations = 0))]
+    fn _timed_embed_corrected(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> PyResult<Option<Vec<[f64; 3]>>> {
+        use chematic_3d::rdkit_embed::{RdkitEmbedOptions, etkdg_embed_multiple_confs_corrected};
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || etkdg_embed_multiple_confs_corrected(&mol, 1, &options))
+            .map(|mut values| values.pop())
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Check declared stereochemistry before publishing a timed preview.
+    fn _timed_stereo_valid(&self, coords: Vec<[f64; 3]>) -> PyResult<bool> {
+        use chematic_3d::coords::{Coords3D, Point3};
+        use chematic_3d::stereo_constraints::verify_stereo;
+        if coords.len() != self.inner.atom_count()
+            || coords.iter().flatten().any(|v| !v.is_finite())
+        {
+            return Err(PyValueError::new_err("invalid embedded coordinates"));
+        }
+        let geometry = Coords3D {
+            points: coords
+                .into_iter()
+                .map(|[x, y, z]| Point3::new(x, y, z))
+                .collect(),
+        };
+        let result = verify_stereo(&self.inner, &geometry);
+        Ok(result.n_violations() == 0 && result.n_unevaluable() == 0)
+    }
+
+    /// Optimize a previously prepared embedding without re-embedding it.
+    #[pyo3(signature = (coords, *, max_mmff_iters = 200, repair_mmff_iters = 0))]
+    fn _timed_optimize_embedded(
+        &self,
+        py: Python<'_>,
+        coords: Vec<[f64; 3]>,
+        max_mmff_iters: u32,
+        repair_mmff_iters: u32,
+    ) -> PyResult<FallbackDiagnostics> {
+        use chematic_3d::rdkit_embed::optimize_embedded_checked_diagnostics;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            optimize_embedded_checked_diagnostics(
+                &mol,
+                vec![coords],
+                max_mmff_iters,
+                repair_mmff_iters,
+            )
+        })
+        .map(|result| {
+            let rows = result
+                .conformers
+                .into_iter()
+                .map(|c| (c.status, c.energy, c.coords, c.force_field_error))
+                .collect();
+            (
+                rows,
+                result.embedded,
+                result.force_field_error,
+                result.stereo_violated,
+                result.stereo_unevaluable,
+                result.invalid_coordinates,
+            )
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
     /// Return conformers, embedded count, MMFF setup error, and counts of
     /// stereo violations, unevaluable stereo and invalid coordinates.
     /// Rejection counts are available when MMFF setup fails.

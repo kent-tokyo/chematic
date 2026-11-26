@@ -80,3 +80,5 @@ A retained historical record is not evidence about current source.
 - [Partial conformer checkpoint scaling](2026-11-27-partial-checkpoint.md)
 
 - [Element-stratified force-field development comparison](2026-11-27-forcefield-hetero-development.md)
+
+- [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)

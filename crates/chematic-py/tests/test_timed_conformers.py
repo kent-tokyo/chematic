@@ -257,3 +257,112 @@ def test_partial_checkpoint_rejects_out_of_order_records(tmp_path):
     path.write_text(json.dumps(entry) + "\n", encoding="utf-8")
     with pytest.raises(ValueError, match="invalid checkpoint entry"):
         _read_checkpoint(str(path))
+
+
+def test_preview_requires_partial_mode():
+    with pytest.raises(ValueError, match="requires return_partial"):
+        chematic.generate_conformers_timed("CCO", 1, timeout_seconds=1, return_preview=True)
+
+
+@pytest.mark.parametrize("smiles", ["CCO", "CB(C)C", "F[C@](Cl)(Br)I"])
+def test_preview_completed_attempt_matches_existing_partial_mode(smiles):
+    options = {"timeout_seconds": 15, "return_partial": True, "num_confs": 2}
+    baseline = chematic.generate_conformers_timed(smiles, **options)
+    preview = chematic.generate_conformers_timed(smiles, return_preview=True, **options)
+    assert baseline["status"] == preview["status"] == "completed"
+    assert "in_progress" not in preview
+    for key in ("conformers", "attempts_completed", "embedded", "force_field_error",
+                "stereo_violated", "stereo_unevaluable", "invalid_coordinates"):
+        assert preview[key] == baseline[key]
+
+
+def test_preview_checkpoint_survives_termination_during_optimization(tmp_path):
+    import subprocess
+    import sys
+    import time
+    from chematic._timed_conformers import _read_checkpoint
+
+    checkpoint = tmp_path / "completed.jsonl"
+    script = '''
+import sys, time
+from chematic._timed_conformers import _run_partial
+class SlowMol:
+    def _timed_embed_corrected(self, **kwargs): return [[0.0, 0.0, 0.0]]
+    def _timed_stereo_valid(self, coords): return True
+    def _timed_optimize_embedded(self, coords, **kwargs):
+        time.sleep(30)
+        return [(1, 0.0, coords, None)], 1, None, None, None, None
+_run_partial(SlowMol(), {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+    "max_mmff_iters": 200, "repair_mmff_iters": 0, "return_preview": True, "checkpoint": sys.argv[1]})
+'''
+    worker = subprocess.Popen([sys.executable, "-c", script, str(checkpoint)])
+    try:
+        deadline = time.monotonic() + 10
+        while not checkpoint.exists() and time.monotonic() < deadline and worker.poll() is None:
+            time.sleep(0.01)
+        assert checkpoint.exists(), "worker did not publish its preview"
+    finally:
+        worker.kill()
+        worker.wait()
+    result = _read_checkpoint(str(checkpoint))
+    assert result["attempts_completed"] == 0
+    assert result["conformers"] == []
+    assert result["in_progress"] == {"attempt": 1, "coordinates": [[0.0, 0.0, 0.0]]}
+
+
+def test_preview_is_withheld_for_unevaluable_stereo():
+    mol = chematic.from_smiles("O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F").add_hydrogens()
+    coords = mol._timed_embed_corrected(random_seed=42)
+    assert coords is not None
+    assert not mol._timed_stereo_valid(coords)
+    with pytest.raises(ValueError):
+        mol._timed_stereo_valid([[0.0, 0.0, 0.0]])
+
+
+def test_preview_never_publishes_failed_stereo_check(tmp_path):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class InvalidStereoMol:
+        def _timed_embed_corrected(self, **kwargs):
+            return [[0.0, 0.0, 0.0]]
+
+        def _timed_stereo_valid(self, coords):
+            return False
+
+        def _timed_optimize_embedded(self, coords, **kwargs):
+            raise RuntimeError("interrupted before optimization completed")
+
+    path = tmp_path / "journal.jsonl"
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0,
+               "return_preview": True, "checkpoint": str(path)}
+    with pytest.raises(RuntimeError, match="interrupted"):
+        _run_partial(InvalidStereoMol(), request)
+    result = _read_checkpoint(str(path))
+    assert result["attempts_completed"] == 0
+    assert "in_progress" not in result
+
+
+def test_completed_attempt_supersedes_preview_in_journal(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    preview = {"preview_attempt": 1, "coordinates": [[0.0, 0.0, 0.0]]}
+    completed = {"attempt": 1, "rows": [[0, 1.0, [[1.0, 0.0, 0.0]], None]],
+                 "embedded": 1, "error": None, "violated": None, "unevaluable": None, "invalid": None}
+    with open(path, "w", encoding="utf-8") as stream:
+        stream.write(json.dumps(preview) + "\n" + json.dumps(completed) + "\n")
+    result = _read_checkpoint(str(path))
+    assert result["attempts_completed"] == 1
+    assert "in_progress" not in result
+    assert result["conformers"] == completed["rows"]
+
+
+def test_preview_stereo_check_rejects_a_mirrored_tetrahedral_center():
+    mol = chematic.from_smiles("F[C@](Cl)(Br)I").add_hydrogens()
+    coords = mol._timed_embed_corrected(random_seed=42)
+    assert coords is not None
+    assert mol._timed_stereo_valid(coords)
+    mirrored = [[-x, y, z] for x, y, z in coords]
+    assert not mol._timed_stereo_valid(mirrored)
