@@ -80,7 +80,9 @@ excluded and `attempts_completed` counts only finished attempts, including
 those that produced no accepted conformer. A timeout before the first
 checkpoint returns an empty ensemble. Each attempt uses the corrected ETKDG
 gradient: this is a different search profile from the mixed batch, so the
-same seed and count do not imply the same ensemble. Atom order, individual
+same seed and count do not imply the same ensemble. Each completed attempt is
+appended to a temporary journal; if termination interrupts a write, its
+incomplete final record is ignored. Atom order, individual
 conformer statuses and force-field error semantics are unchanged. The
 checkpoint has filesystem and serialization overhead; no general speed or
 accuracy improvement is implied. Worker errors are reported separately and retain the last complete checkpoint

@@ -85,25 +85,58 @@ def _attach_checkpoint(response, path):
         response["checkpoint_error"] = f"{type(error).__name__}: {error}"
 
 
+def _empty_checkpoint():
+    return {"conformers": [], "attempts_completed": 0, "embedded": 0,
+            "force_field_error": None, "stereo_violated": None,
+            "stereo_unevaluable": None, "invalid_coordinates": None}
+
+
+def _apply_checkpoint_entry(result, counts_known, entry):
+    if (not isinstance(entry, dict)
+            or not {"attempt", "rows", "embedded", "error", "violated", "unevaluable", "invalid"} <= entry.keys()
+            or type(entry.get("attempt")) is not int
+            or entry["attempt"] != result["attempts_completed"] + 1
+            or not isinstance(entry.get("rows"), list)
+            or type(entry.get("embedded")) is not int or entry["embedded"] < 0
+            or (entry.get("error") is not None and not isinstance(entry["error"], str))):
+        raise ValueError("invalid checkpoint entry")
+    values = (("stereo_violated", entry.get("violated")),
+              ("stereo_unevaluable", entry.get("unevaluable")),
+              ("invalid_coordinates", entry.get("invalid")))
+    if any(value is not None and (type(value) is not int or value < 0) for _, value in values):
+        raise ValueError("invalid checkpoint rejection count")
+    result["conformers"].extend(entry["rows"])
+    result["embedded"] += entry["embedded"]
+    result["force_field_error"] = result["force_field_error"] or entry["error"]
+    for key, value in values:
+        if value is None:
+            counts_known[key] = False
+            result[key] = None
+        elif counts_known[key]:
+            result[key] = (result[key] or 0) + value
+    result["attempts_completed"] += 1
+
+
 def _read_checkpoint(path):
+    result = _empty_checkpoint()
+    counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
     try:
-        with open(path, encoding="utf-8") as stream:
-            result = json.load(stream)
-        if not isinstance(result, dict) or not isinstance(result.get("conformers"), list):
-            raise ValueError("invalid checkpoint")
-        return result
+        with open(path, "rb") as stream:
+            for line in stream:
+                # A killed process can leave a partial final write. Only a
+                # newline-terminated record is a completed checkpoint.
+                if not line.endswith(b"\n"):
+                    break
+                _apply_checkpoint_entry(result, counts_known, json.loads(line))
     except FileNotFoundError:
-        return {"conformers": [], "attempts_completed": 0, "embedded": 0,
-                "force_field_error": None, "stereo_violated": None,
-                "stereo_unevaluable": None, "invalid_coordinates": None}
+        pass
+    return result
 
 
 def _run_partial(mol, request):
     # Individual mixed-ensemble calls with one attempt use the corrected
     # gradient. This is intentionally a separate profile from a mixed batch.
-    result = {"conformers": [], "attempts_completed": 0, "embedded": 0,
-              "force_field_error": None, "stereo_violated": None,
-              "stereo_unevaluable": None, "invalid_coordinates": None}
+    result = _empty_checkpoint()
     counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
     for index in range(request["num_confs"]):
         base = request["random_seed"]
@@ -116,21 +149,12 @@ def _run_partial(mol, request):
                 max_mmff_iters=request["max_mmff_iters"],
                 repair_mmff_iters=request["repair_mmff_iters"])
         )
-        result["conformers"].extend(rows)
-        result["embedded"] += embedded
-        result["force_field_error"] = result["force_field_error"] or error
-        for key, value in (("stereo_violated", violated), ("stereo_unevaluable", unevaluable),
-                           ("invalid_coordinates", invalid)):
-            if value is None:
-                counts_known[key] = False
-                result[key] = None
-            elif counts_known[key]:
-                result[key] = (result[key] or 0) + value
-        result["attempts_completed"] += 1
-        temporary = request["checkpoint"] + ".tmp"
-        with open(temporary, "w", encoding="utf-8") as stream:
-            json.dump(result, stream, allow_nan=False)
-        os.replace(temporary, request["checkpoint"])
+        entry = {"attempt": index + 1, "rows": rows, "embedded": embedded, "error": error,
+                 "violated": violated, "unevaluable": unevaluable, "invalid": invalid}
+        _apply_checkpoint_entry(result, counts_known, entry)
+        payload = (json.dumps(entry, allow_nan=False, separators=(",", ":")) + "\n").encode("utf-8")
+        with open(request["checkpoint"], "ab") as stream:
+            stream.write(payload)
     return result
 
 

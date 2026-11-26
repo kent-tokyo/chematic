@@ -76,3 +76,5 @@ A retained historical record is not evidence about current source.
 - [MMFF common-coordinate development](2026-11-26-mmff-common-coordinate-development.md)
 
 - [Flexible MMFF setup development comparison](2026-11-27-flexible-mmff-setup.md)
+
+- [Partial conformer checkpoint scaling](2026-11-27-partial-checkpoint.md)

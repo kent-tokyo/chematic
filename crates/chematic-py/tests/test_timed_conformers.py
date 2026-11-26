@@ -76,8 +76,9 @@ def test_partial_timeout_keeps_completed_checkpoint(monkeypatch):
                 return "", ""
             path = json.loads(request)["checkpoint"]
             with open(path, "w", encoding="utf-8") as stream:
-                json.dump({"conformers": [[1, 0.0, [[0, 0, 0]], None]],
-                           "attempts_completed": 1, "embedded": 1}, stream)
+                json.dump({"attempt": 1, "rows": [[1, 0.0, [[0, 0, 0]], None]], "embedded": 1,
+                           "error": None, "violated": None, "unevaluable": None, "invalid": None}, stream)
+                stream.write("\n")
             raise subprocess.TimeoutExpired("worker", timeout)
 
         def kill(self):
@@ -125,7 +126,8 @@ def test_partial_diagnostics_do_not_report_incomplete_rejection_totals(tmp_path)
     assert result["stereo_unevaluable"] is None
     assert result["invalid_coordinates"] is None
     import json
-    assert json.loads((tmp_path / "completed.json").read_text(encoding="utf-8")) == result
+    from chematic._timed_conformers import _read_checkpoint
+    assert _read_checkpoint(str(tmp_path / "completed.json")) == result
 
 
 def test_partial_checkpoint_survives_real_worker_termination(tmp_path):
@@ -175,8 +177,9 @@ def test_partial_worker_failures_keep_completed_results(monkeypatch, worker_outp
             if request is not None:
                 checkpoint = json.loads(request)["checkpoint"]
                 with open(checkpoint, "w", encoding="utf-8") as stream:
-                    json.dump({"conformers": [[1, 0.0, [[0, 0, 0]], None]],
-                               "attempts_completed": 1, "embedded": 1}, stream)
+                    json.dump({"attempt": 1, "rows": [[1, 0.0, [[0, 0, 0]], None]], "embedded": 1,
+                               "error": None, "violated": None, "unevaluable": None, "invalid": None}, stream)
+                    stream.write("\n")
             return worker_output, "worker crashed"
 
         def poll(self):
@@ -201,7 +204,7 @@ def test_invalid_checkpoint_preserves_timeout_status(monkeypatch):
                 return "", ""
             checkpoint = json.loads(request)["checkpoint"]
             with open(checkpoint, "w", encoding="utf-8") as stream:
-                stream.write("{")
+                stream.write("{\n")
             raise subprocess.TimeoutExpired("worker", timeout)
 
         def kill(self):
@@ -227,3 +230,30 @@ def test_partial_real_worker_error_keeps_prior_completed_attempt():
     assert result["attempts_completed"] == 1
     assert result["embedded"] == 1
     assert len(result["conformers"]) == 1
+
+
+def test_partial_checkpoint_ignores_interrupted_last_write(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    entry = {"attempt": 1, "rows": [[1, 0.0, [[0, 0, 0]], None]], "embedded": 1,
+             "error": None, "violated": None, "unevaluable": None, "invalid": None}
+    with open(path, "wb") as stream:
+        stream.write((json.dumps(entry) + "\n").encode("utf-8"))
+        stream.write(b'{"attempt":2,"rows":[[1')
+    result = _read_checkpoint(str(path))
+    assert result["attempts_completed"] == 1
+    assert len(result["conformers"]) == 1
+
+
+def test_partial_checkpoint_rejects_out_of_order_records(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    entry = {"attempt": 2, "rows": [], "embedded": 0, "error": None,
+             "violated": None, "unevaluable": None, "invalid": None}
+    path.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid checkpoint entry"):
+        _read_checkpoint(str(path))
