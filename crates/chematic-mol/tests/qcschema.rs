@@ -852,3 +852,26 @@ fn invalid_result_values_report_the_precise_path() {
         matches!(parse_atomic_result(&input.to_string()), Err(QcSchemaError::WrongType { field, .. }) if field == "success")
     );
 }
+
+#[test]
+fn integer_fields_accept_integral_json_floats_and_reject_fractional_values() {
+    let mut input = water_molecule_json("qcschema_molecule");
+    input["schema_version"] = json!(1.0);
+    input["molecular_multiplicity"] = json!(1.0);
+    input["connectivity"] = json!([[0.0, 1.0, 1.0], [0.0, 2.0, 1.0]]);
+    let mol = parse_qcschema_molecule(&input.to_string()).unwrap();
+    assert_eq!(mol.molecular_multiplicity, 1);
+    assert_eq!(mol.connectivity.unwrap().len(), 2);
+
+    input["molecular_multiplicity"] = json!(1.5);
+    assert!(matches!(
+        parse_qcschema_molecule(&input.to_string()),
+        Err(QcSchemaError::WrongType { .. })
+    ));
+    input["molecular_multiplicity"] = json!(1);
+    input["connectivity"][0][0] = json!(0.5);
+    assert!(matches!(
+        parse_qcschema_molecule(&input.to_string()),
+        Err(QcSchemaError::WrongType { .. })
+    ));
+}
