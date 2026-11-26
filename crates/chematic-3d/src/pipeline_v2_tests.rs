@@ -12,6 +12,41 @@ mod tests {
     }
 
     #[test]
+    fn ring_alkene_repair_failure_retains_partial_evidence() {
+        let mol = parse("C1/C=C/CCCC1").unwrap();
+        let mut coords = Coords3D::new_zeroed(mol.atom_count());
+        for (index, (x, y)) in [
+            (-1.5, 0.5),
+            (-0.67, 0.0),
+            (0.67, 0.0),
+            (1.5, 0.5),
+            (1.0, 2.0),
+            (0.0, 3.0),
+            (-1.0, 2.0),
+        ]
+        .into_iter()
+        .enumerate()
+        {
+            coords.set(AtomIdx(index as u32), crate::coords::Point3::new(x, y, 0.0));
+        }
+        let mut config = config_none();
+        config.stereo_policy = StereoPolicy::RepairAndVerify;
+        let mut run = PipelineRun::new(&config);
+        assert!(verify_stereo(&mol, &coords).n_violations() > 0);
+        let failure = match verify_and_repair_stereo(&mol, &config, coords, &mut run) {
+            Ok(_) => panic!("ring repair must fail closed"),
+            Err(failure) => failure,
+        };
+        assert!(matches!(
+            failure.cause,
+            PipelineV2FailureCause::StereoRepairFailed
+        ));
+        assert_eq!(failure.stage, PipelineStage::StereoRepair);
+        assert!(failure.last_known_coords.is_some());
+        assert!(!failure.stereo_repair.unwrap().failures.is_empty());
+    }
+
+    #[test]
     fn pipeline_run_records_every_stage_and_enforces_budget() {
         let config = config_none();
         let mut run = PipelineRun::new(&config);
