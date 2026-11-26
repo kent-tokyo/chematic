@@ -5,6 +5,16 @@ use chematic_mol::{
 const TEXT: &str = "# original\nlattice_vector 4 1 0\nconstrain_relaxation x\nlattice_vector -1 5 2\nlattice_vector 1 0 -6\natom_frac 0.5 0.25 -0.5 Si\nconstrain_relaxation y\ninitial_charge 0.25\ninitial_moment -1.5\natom 1 2 3 Cl\n";
 
 #[test]
+fn relaxation_constraint_rejects_unknown_axes() {
+    let free = "atom 0 0 0 C\nconstrain_relaxation .false.\n";
+    assert!(parse_fhiaims(free).is_ok());
+    for invalid in ["q", "true", "1"] {
+        let text = format!("atom 0 0 0 C\nconstrain_relaxation {invalid}\n");
+        assert!(parse_fhiaims(&text).is_err(), "{invalid}");
+    }
+}
+
+#[test]
 fn fractional_basis_and_metadata_are_preserved() {
     let g = diagnostic(parse_fhiaims(TEXT)).unwrap();
     assert_eq!(g.source_text, TEXT);
