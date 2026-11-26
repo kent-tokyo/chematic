@@ -750,19 +750,15 @@ fn check_attribute_limits(
     Ok(())
 }
 
-/// True if `line` starts a CDXML `<n` atom node tag.
+/// True if `line` starts a CDXML `<n` atom node tag. ChemDraw puts a line
+/// break right after the element name (`<n` then `id="..."` on the next line).
 fn is_n_tag(line: &str) -> bool {
-    (line.starts_with("<n ") || line.starts_with("<n\t") || line == "<n>")
-        && !line.starts_with("<node") // avoid accidental match on <node>
+    crate::cdxml_document::is_open_tag(line, "n")
 }
 
-/// True if `line` starts a CDXML `<b` bond tag.
+/// True if `line` starts a CDXML `<b` bond tag (see [`is_n_tag`]).
 fn is_b_tag(line: &str) -> bool {
-    line.starts_with("<b ")
-        || line.starts_with("<b\t")
-        || line == "<b>"
-        || line.starts_with("<b/>")
-        || line.starts_with("<b>")
+    crate::cdxml_document::is_open_tag(line, "b")
 }
 
 // ---------------------------------------------------------------------------

@@ -931,7 +931,7 @@ fn check_attribute_budget(
     Ok(())
 }
 
-fn is_open_tag(line: &str, name: &str) -> bool {
+pub(crate) fn is_open_tag(line: &str, name: &str) -> bool {
     let Some(rest) = line.strip_prefix('<') else {
         return false;
     };
