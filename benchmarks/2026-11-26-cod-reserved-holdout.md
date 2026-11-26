@@ -168,3 +168,25 @@ were `c6c30540957cd97bf3c19a9524263bb467ca48f4611fca72580de481a4712333`
 (Linux) and `c1cde89335fc67eb505e3db8843876e228fd9431925055bc82292250bba65b5c`
 (macOS). The scorer SHA-256 was
 `3ae6bdc4941926c552fbb6f488e4afba7c73bae396889bbfa4558cf6297bc109`.
+
+## Subsequent flexible development probe
+
+After examining the reserved outcomes, 20 flexible molecules were selected
+from the separate development partition by the lowest SHA-256 of name, using
+the same ring and rotatable-bond classification rule. This subset may overlap
+earlier development probes. It was run once per budget on the local macOS
+arm64 host with RDKit 2026.09.2 and the earlier candidate wheel SHA-256
+`93819473dc08f988072157852d4247a82ae893685be284f9e498b80e88d39cbb`.
+Other settings matched the strict 20-candidate protocol above.
+
+| Deadline | chematic recovered | RDKit recovered | chematic median candidates | RDKit median candidates |
+| --- | ---: | ---: | ---: | ---: |
+| 0.2 s | 2/20 | 1/20 | 2 | 1 |
+| 1.0 s | 5/20 | 6/20 | 10 | 7.5 |
+
+This small, unreplicated development probe suggests that the short deadline
+limits search coverage; it does not establish a general scaling curve or a
+precision ranking. Input and per-record data are stored in
+`validation/results/2026-11-26-flexible-development/`. Future changes informed
+by these results need a new independent holdout; the reserved cohort above
+has now been observed and must not be reused as an untouched acceptance set.
