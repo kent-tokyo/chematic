@@ -693,3 +693,33 @@ fn labelled_core_refuses_when_match_cap_is_reached() {
         })
     ));
 }
+
+#[test]
+fn cut_core_remaps_atom_tags_directions_and_stereo_group_members() {
+    use chematic_core::{BondOrder, RGroupLabel, StereoGroup, StereoGroupKind};
+
+    let mut input = mol("CCCC");
+    input.set_tag(AtomIdx(2), Some(37));
+    let label = RGroupLabel::numbered(7).unwrap();
+    input.set_r_group(AtomIdx(3), label);
+    input.set_bond_direction(BondIdx(1), BondOrder::Up);
+    input.set_bond_direction_anchor(BondIdx(1), AtomIdx(2));
+    input.set_stereo_groups_with_bonds(vec![(
+        StereoGroup::new(StereoGroupKind::And(3), vec![AtomIdx(1), AtomIdx(2)]),
+        vec![BondIdx(1)],
+    )]);
+
+    let core = [AtomIdx(1), AtomIdx(2), AtomIdx(3)].into_iter().collect();
+    let output = build_core_mol(&input, &core, &[(AtomIdx(1), AtomIdx(0))], None, None);
+    assert_eq!(output.atom_tag(AtomIdx(1)).map(|tag| tag.get()), Some(37));
+    assert_eq!(output.r_group_label(AtomIdx(2)), Some(label));
+    assert_eq!(output.bond_direction(BondIdx(0)), Some(BondOrder::Up));
+    assert_eq!(output.bond_direction_anchor(BondIdx(0)), Some(AtomIdx(1)));
+    assert_eq!(output.stereo_groups().len(), 1);
+    assert_eq!(output.stereo_groups()[0].kind, StereoGroupKind::And(3));
+    assert_eq!(
+        output.stereo_groups()[0].atom_indices,
+        [AtomIdx(0), AtomIdx(1)]
+    );
+    assert_eq!(output.stereo_group_bond_indices(0), Some(&[BondIdx(0)][..]));
+}
