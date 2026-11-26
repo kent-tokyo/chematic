@@ -82,3 +82,5 @@ A retained historical record is not evidence about current source.
 - [Element-stratified force-field development comparison](2026-11-27-forcefield-hetero-development.md)
 
 - [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
+
+- [Preview geometry diagnostics development comparison](2026-11-27-preview-geometry-development.md)

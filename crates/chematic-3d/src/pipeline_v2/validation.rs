@@ -125,6 +125,42 @@ fn gross_clash_count(mol: &Molecule, coords: &Coords3D) -> usize {
     count
 }
 
+/// Coarse geometry observations for a provisional, unoptimized conformer.
+///
+/// Bond references use this crate's approximate covalent-radius model. Gross
+/// clashes count every non-bonded pair below 1.2 Å, including 1–3 and
+/// interfragment pairs. These are diagnostics, not a geometry quality gate.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PreviewGeometryDiagnostics {
+    pub bond_count: usize,
+    pub worst_bond_length: Option<f64>,
+    pub bond_violation_rate_50pct: Option<f64>,
+    pub gross_clash_count: usize,
+}
+
+/// Report coarse geometry for finite coordinates with the molecule's atom order.
+/// Returns `None` for an empty molecule, mismatched atom count, nonfinite values,
+/// or an overflow when measuring a bond length.
+pub fn preview_geometry_diagnostics(
+    mol: &Molecule,
+    coords: &Coords3D,
+) -> Option<PreviewGeometryDiagnostics> {
+    if mol.atom_count() == 0 || coords.atom_count() != mol.atom_count() || !coords.is_finite() {
+        return None;
+    }
+    let bond_count = mol.bond_count();
+    let worst_bond_length = (bond_count > 0).then(|| worst_bond_length(mol, coords));
+    if worst_bond_length.is_some_and(|length| !length.is_finite()) {
+        return None;
+    }
+    Some(PreviewGeometryDiagnostics {
+        bond_count,
+        worst_bond_length,
+        bond_violation_rate_50pct: (bond_count > 0).then(|| bond_violation_rate(mol, coords, 0.50)),
+        gross_clash_count: gross_clash_count(mol, coords),
+    })
+}
+
 fn compute_final_validation(
     mol: &Molecule,
     coords: &Coords3D,
@@ -158,3 +194,44 @@ fn compute_final_validation(
 // Tests
 // ---------------------------------------------------------------------------
 
+
+#[cfg(test)]
+mod preview_geometry_tests {
+    use super::*;
+    use crate::coords::Point3;
+
+    fn points(values: &[[f64; 3]]) -> Coords3D {
+        Coords3D {
+            points: values.iter().map(|&[x, y, z]| Point3::new(x, y, z)).collect(),
+        }
+    }
+
+    #[test]
+    fn reports_bond_and_gross_clash_observations_without_gating() {
+        let molecule = chematic_smiles::parse("CCC").unwrap();
+        let coords = points(&[[0.0, 0.0, 0.0], [1.5, 0.0, 0.0], [0.2, 0.0, 0.0]]);
+        let report = preview_geometry_diagnostics(&molecule, &coords).unwrap();
+        assert_eq!(report.bond_count, 2);
+        assert_eq!(report.worst_bond_length, Some(1.5));
+        assert_eq!(report.bond_violation_rate_50pct, Some(0.0));
+        assert_eq!(report.gross_clash_count, 1);
+
+        let stretched = points(&[[0.0, 0.0, 0.0], [1.5, 0.0, 0.0], [20.0, 0.0, 0.0]]);
+        let report = preview_geometry_diagnostics(&molecule, &stretched).unwrap();
+        assert_eq!(report.bond_violation_rate_50pct, Some(0.5));
+        assert_eq!(report.gross_clash_count, 0);
+    }
+
+    #[test]
+    fn handles_bondless_and_invalid_coordinates() {
+        let molecule = chematic_smiles::parse("[He]").unwrap();
+        let report = preview_geometry_diagnostics(&molecule, &points(&[[0.0; 3]])).unwrap();
+        assert_eq!(report.bond_count, 0);
+        assert_eq!(report.worst_bond_length, None);
+        assert_eq!(report.bond_violation_rate_50pct, None);
+        assert!(preview_geometry_diagnostics(&molecule, &points(&[])).is_none());
+        assert!(preview_geometry_diagnostics(&molecule, &points(&[[f64::NAN, 0.0, 0.0]])).is_none());
+        let bonded = chematic_smiles::parse("CC").unwrap();
+        assert!(preview_geometry_diagnostics(&bonded, &points(&[[1e308, 0.0, 0.0], [-1e308, 0.0, 0.0]])).is_none());
+    }
+}

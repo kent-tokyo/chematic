@@ -97,8 +97,19 @@ declared-stereo check but have not completed MMFF optimization; they have no
 energy or convergence status and are not added to `conformers`. Unevaluable
 or violated declared stereo is not published as a preview. This check does
 not cover every possible stereochemical specification or establish general
-geometric quality. The optimizer reuses the embedded coordinates rather
-than embedding again. Completed attempts replace their provisional record.
+geometric quality. The `in_progress.geometry` object reports `bond_count`,
+`worst_bond_length` in Å, `bond_violation_rate_50pct`, and
+`gross_clash_count`. Bond references are approximate covalent-radius estimates;
+the violation rate counts bonds whose lengths differ from those estimates by
+more than 50%. Gross clashes count non-bonded atom pairs below 1.2 Å,
+including hydrogens, 1–3 pairs and interfragment pairs. For a molecule with
+no bonds, worst length and violation rate are `None`. These indicators are
+not a pass/fail gate and may miss or flag structures differently from other
+geometry screens, especially for unusual elements or bonding. If diagnostic
+calculation fails, `geometry` is `None` and `geometry_error` describes the
+failure; the stereo-checked preview remains available. The optimizer reuses
+the embedded coordinates rather than embedding again. Completed attempts
+replace their provisional record.
 
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility

@@ -127,8 +127,22 @@ def _apply_preview(result, entry):
             or entry["preview_attempt"] != result["attempts_completed"] + 1
             or "in_progress" in result or not isinstance(entry.get("coordinates"), list)):
         raise ValueError("invalid preview checkpoint")
+    if "geometry" in entry:
+        geometry = entry["geometry"]
+        if geometry is not None:
+            if (not isinstance(geometry, dict)
+                    or set(geometry) != {"bond_count", "worst_bond_length", "bond_violation_rate_50pct", "gross_clash_count"}
+                    or any(type(geometry[key]) is not int or geometry[key] < 0 for key in ("bond_count", "gross_clash_count"))
+                    or any(value is not None and (type(value) not in (int, float) or not math.isfinite(value))
+                           for value in (geometry["worst_bond_length"], geometry["bond_violation_rate_50pct"]))):
+                raise ValueError("invalid preview geometry diagnostics")
+        if entry.get("geometry_error") is not None and not isinstance(entry["geometry_error"], str):
+            raise ValueError("invalid preview geometry error")
     result["in_progress"] = {"attempt": entry["preview_attempt"],
                              "coordinates": entry["coordinates"]}
+    if "geometry" in entry:
+        result["in_progress"]["geometry"] = entry["geometry"]
+        result["in_progress"]["geometry_error"] = entry.get("geometry_error")
 
 
 def _read_checkpoint(path):
@@ -168,6 +182,15 @@ def _run_partial(mol, request):
             else:
                 if mol._timed_stereo_valid(coords):
                     preview = {"preview_attempt": index + 1, "coordinates": coords}
+                    try:
+                        count, worst, violation_rate, clashes = mol._timed_preview_geometry(coords)
+                        preview["geometry"] = {"bond_count": count, "worst_bond_length": worst,
+                                               "bond_violation_rate_50pct": violation_rate,
+                                               "gross_clash_count": clashes}
+                        preview["geometry_error"] = None
+                    except Exception as geometry_error:
+                        preview["geometry"] = None
+                        preview["geometry_error"] = f"{type(geometry_error).__name__}: {geometry_error}"
                     _apply_preview(result, preview)
                     _append_checkpoint(request["checkpoint"], preview)
                 rows, embedded, error, violated, unevaluable, invalid = mol._timed_optimize_embedded(

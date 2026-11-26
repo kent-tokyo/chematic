@@ -2,6 +2,7 @@ use super::identity_helpers::PyRdkitMmffConformer;
 use super::*;
 
 type FallbackConformer = (i32, Option<f64>, Vec<[f64; 3]>, Option<String>);
+type PreviewGeometry = (usize, Option<f64>, Option<f64>, usize);
 type FallbackDiagnostics = (
     Vec<FallbackConformer>,
     usize,
@@ -50,6 +51,35 @@ impl Mol {
         };
         let result = verify_stereo(&self.inner, &geometry);
         Ok(result.n_violations() == 0 && result.n_unevaluable() == 0)
+    }
+
+    /// Report coarse geometry indicators for a provisional embedding.
+    fn _timed_preview_geometry(
+        &self,
+        py: Python<'_>,
+        coords: Vec<[f64; 3]>,
+    ) -> PyResult<PreviewGeometry> {
+        use chematic_3d::coords::{Coords3D, Point3};
+        use chematic_3d::pipeline_v2::preview_geometry_diagnostics;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            let geometry = Coords3D {
+                points: coords
+                    .into_iter()
+                    .map(|[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            preview_geometry_diagnostics(&mol, &geometry)
+        })
+        .map(|report| {
+            (
+                report.bond_count,
+                report.worst_bond_length,
+                report.bond_violation_rate_50pct,
+                report.gross_clash_count,
+            )
+        })
+        .ok_or_else(|| PyValueError::new_err("invalid preview coordinates"))
     }
 
     /// Optimize a previously prepared embedding without re-embedding it.

@@ -289,6 +289,7 @@ from chematic._timed_conformers import _run_partial
 class SlowMol:
     def _timed_embed_corrected(self, **kwargs): return [[0.0, 0.0, 0.0]]
     def _timed_stereo_valid(self, coords): return True
+    def _timed_preview_geometry(self, coords): return (0, None, None, 0)
     def _timed_optimize_embedded(self, coords, **kwargs):
         time.sleep(30)
         return [(1, 0.0, coords, None)], 1, None, None, None, None
@@ -307,7 +308,10 @@ _run_partial(SlowMol(), {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
     result = _read_checkpoint(str(checkpoint))
     assert result["attempts_completed"] == 0
     assert result["conformers"] == []
-    assert result["in_progress"] == {"attempt": 1, "coordinates": [[0.0, 0.0, 0.0]]}
+    assert result["in_progress"] == {"attempt": 1, "coordinates": [[0.0, 0.0, 0.0]],
+        "geometry": {"bond_count": 0, "worst_bond_length": None,
+                     "bond_violation_rate_50pct": None, "gross_clash_count": 0},
+        "geometry_error": None}
 
 
 def test_preview_is_withheld_for_unevaluable_stereo():
@@ -366,3 +370,60 @@ def test_preview_stereo_check_rejects_a_mirrored_tetrahedral_center():
     assert mol._timed_stereo_valid(coords)
     mirrored = [[-x, y, z] for x, y, z in coords]
     assert not mol._timed_stereo_valid(mirrored)
+
+
+def test_preview_is_retained_if_geometry_diagnostics_fail(tmp_path):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class GeometryFailure:
+        def _timed_embed_corrected(self, **kwargs):
+            return [[0.0, 0.0, 0.0]]
+
+        def _timed_stereo_valid(self, coords):
+            return True
+
+        def _timed_preview_geometry(self, coords):
+            raise ValueError("diagnostic unavailable")
+
+        def _timed_optimize_embedded(self, coords, **kwargs):
+            raise RuntimeError("optimizer interrupted")
+
+    path = tmp_path / "preview.jsonl"
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0,
+               "return_preview": True, "checkpoint": str(path)}
+    with pytest.raises(RuntimeError, match="optimizer interrupted"):
+        _run_partial(GeometryFailure(), request)
+    preview = _read_checkpoint(str(path))["in_progress"]
+    assert preview["coordinates"] == [[0.0, 0.0, 0.0]]
+    assert preview["geometry"] is None
+    assert preview["geometry_error"] == "ValueError: diagnostic unavailable"
+
+
+def test_preview_geometry_reports_clashes_and_stretched_bonds():
+    molecule = chematic.from_smiles("CCC")
+    count, worst, rate, clashes = molecule._timed_preview_geometry(
+        [[0.0, 0.0, 0.0], [1.5, 0.0, 0.0], [0.2, 0.0, 0.0]]
+    )
+    assert (count, worst, rate, clashes) == (2, 1.5, 0.0, 1)
+    count, worst, rate, clashes = molecule._timed_preview_geometry(
+        [[0.0, 0.0, 0.0], [1.5, 0.0, 0.0], [20.0, 0.0, 0.0]]
+    )
+    assert (count, worst, rate, clashes) == (2, 18.5, 0.5, 0)
+    with pytest.raises(ValueError):
+        molecule._timed_preview_geometry([[0.0, 0.0, 0.0]])
+    with pytest.raises(ValueError):
+        molecule._timed_preview_geometry([[float("nan"), 0.0, 0.0]] * 3)
+
+
+def test_corrupt_preview_diagnostics_are_rejected(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    preview = {"preview_attempt": 1, "coordinates": [[0.0, 0.0, 0.0]],
+               "geometry": {"bond_count": -1, "worst_bond_length": None,
+                            "bond_violation_rate_50pct": None, "gross_clash_count": 0}}
+    path.write_text(json.dumps(preview) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid preview geometry diagnostics"):
+        _read_checkpoint(str(path))
