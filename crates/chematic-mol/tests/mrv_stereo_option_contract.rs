@@ -26,3 +26,18 @@ fn disabling_stereo_omits_wedges_without_changing_connectivity() {
         [BondOrder::Single, BondOrder::Single]
     );
 }
+
+#[test]
+fn cis_trans_text_keeps_double_bonds_without_inventing_wedges() {
+    for stereo in ["C", "T"] {
+        let input = format!(
+            r#"<cml><molecule><atomArray><atom id="a1" elementType="C"/><atom id="a2" elementType="C"/></atomArray><bondArray><bond atomRefs2="a1 a2" order="2"><bondStereo>{stereo}</bondStereo></bond></bondArray></molecule></cml>"#
+        );
+        let parsed = parse_mrv(&input).unwrap();
+        assert_eq!(parsed.mol.bond_count(), 1);
+        assert_eq!(
+            parsed.mol.bond(chematic_core::BondIdx(0)).order,
+            BondOrder::Double
+        );
+    }
+}
