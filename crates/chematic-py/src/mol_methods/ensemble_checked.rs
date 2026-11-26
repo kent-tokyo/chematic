@@ -1,6 +1,16 @@
 use super::identity_helpers::PyRdkitMmffConformer;
 use super::*;
 
+type FallbackConformer = (i32, Option<f64>, Vec<[f64; 3]>, Option<String>);
+type FallbackDiagnostics = (
+    Vec<FallbackConformer>,
+    usize,
+    Option<String>,
+    Option<usize>,
+    Option<usize>,
+    Option<usize>,
+);
+
 #[pymethods]
 impl Mol {
     /// Return conformers, embedded count, MMFF setup error, and counts of
@@ -16,14 +26,7 @@ impl Mol {
         max_iterations: u32,
         max_mmff_iters: u32,
         repair_mmff_iters: u32,
-    ) -> PyResult<(
-        Vec<(i32, Option<f64>, Vec<[f64; 3]>, Option<String>)>,
-        usize,
-        Option<String>,
-        Option<usize>,
-        Option<usize>,
-        Option<usize>,
-    )> {
+    ) -> PyResult<FallbackDiagnostics> {
         use chematic_3d::rdkit_embed::{
             RdkitEmbedOptions, etkdg_embed_multiple_confs_mixed_checked_diagnostics,
         };
@@ -71,7 +74,7 @@ impl Mol {
         max_iterations: u32,
         max_mmff_iters: u32,
         repair_mmff_iters: u32,
-    ) -> PyResult<Vec<(i32, Option<f64>, Vec<[f64; 3]>, Option<String>)>> {
+    ) -> PyResult<Vec<FallbackConformer>> {
         use chematic_3d::rdkit_embed::{
             RdkitEmbedOptions, etkdg_embed_multiple_confs_mixed_checked_with_fallback,
         };
