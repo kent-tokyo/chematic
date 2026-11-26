@@ -18,3 +18,14 @@ fn nested_unlabelled_molecule_is_not_silently_discarded() {
         Err(MrvError::UnsupportedFeature { .. })
     ));
 }
+
+#[test]
+fn xml_comments_do_not_change_the_parsed_molecule() {
+    let base =
+        r#"<cml><molecule><atomArray><atom id="a1" elementType="C"/></atomArray></molecule></cml>"#;
+    let with_comment = base.replace("<atomArray>", "<atomArray><!-- carbon -->");
+    let plain = parse_mrv(base).unwrap();
+    let commented = parse_mrv(&with_comment).unwrap();
+    assert_eq!(commented.mol.atom_count(), plain.mol.atom_count());
+    assert_eq!(commented.mol.total_formula(), plain.mol.total_formula());
+}
