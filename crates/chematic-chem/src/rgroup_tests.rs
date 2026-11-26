@@ -723,3 +723,25 @@ fn cut_core_remaps_atom_tags_directions_and_stereo_group_members() {
     );
     assert_eq!(output.stereo_group_bond_indices(0), Some(&[BondIdx(0)][..]));
 }
+
+#[test]
+fn cut_bond_direction_is_reversed_when_anchor_is_removed() {
+    let mut input = mol("CC=C");
+    let core = [AtomIdx(1), AtomIdx(2)].into_iter().collect();
+    for (direction, expected) in [
+        (BondOrder::Up, BondOrder::Down),
+        (BondOrder::Down, BondOrder::Up),
+    ] {
+        input.set_bond_direction(BondIdx(0), direction);
+        input.set_bond_direction_anchor(BondIdx(0), AtomIdx(0));
+        assert_eq!(
+            cut_bond_order(&input, BondIdx(0), AtomIdx(1), &core, false),
+            expected
+        );
+        input.set_bond_direction_anchor(BondIdx(0), AtomIdx(1));
+        assert_eq!(
+            cut_bond_order(&input, BondIdx(0), AtomIdx(1), &core, false),
+            direction
+        );
+    }
+}
