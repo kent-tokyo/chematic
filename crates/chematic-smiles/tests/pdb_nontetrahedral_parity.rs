@@ -72,6 +72,65 @@ fn pdb_non_tetrahedral_stereo_tracks_each_opposite_ligand_pair() {
 }
 
 #[test]
+fn three_coordinate_square_planar_tags_follow_the_opposite_pair() {
+    // RDKit 2025.09.3 unsanitized PDB import and canonical SMILES.
+    for (first, second, expected) in [
+        (0, 1, "[F][Pt@SP1]([Cl])[Br]"),
+        (0, 2, "[F][Pt@SP3]([Cl])[Br]"),
+        (1, 2, "[F][Pt@SP2]([Cl])[Br]"),
+    ] {
+        let mut points = [[0.; 3]; 3];
+        points[first] = [1., 0., 0.];
+        points[second] = [-1., 0., 0.];
+        points[3 - first - second] = [0., 0., 1.];
+        let mut lines = vec![atom(1, "Pt", [0.; 3])];
+        for (i, element) in ["F", "Cl", "Br"].iter().enumerate() {
+            lines.push(atom(i + 2, element, points[i]));
+        }
+        lines.extend(["CONECT    1    2    3    4".into(), "END".into()]);
+        let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            rdkit_smiles(&parsed.molecule, &Default::default()).unwrap(),
+            expected
+        );
+    }
+}
+
+#[test]
+fn square_planar_opposite_pairs_match_rdkit() {
+    // RDKit 2025.09.3 unsanitized PDB import, with the plane rotated into XZ.
+    for (opposite, expected) in [
+        (1, "[F][Pt@SP2]([Cl])([Br])[I]"),
+        (2, "[F][Pt@SP1]([Cl])([Br])[I]"),
+        (3, "[F][Pt@SP3]([Cl])([Br])[I]"),
+    ] {
+        let mut points = [[0.; 3]; 4];
+        points[0] = [1., 0., 0.];
+        points[opposite] = [-1., 0., 0.];
+        let mut remaining = [[0., 0., 1.], [0., 0., -1.]].into_iter();
+        for (i, point) in points.iter_mut().enumerate().skip(1) {
+            if i != opposite {
+                *point = remaining.next().unwrap();
+            }
+        }
+        let mut lines = vec![atom(1, "Pt", [0.; 3])];
+        for (i, element) in ["F", "Cl", "Br", "I"].iter().enumerate() {
+            lines.push(atom(i + 2, element, points[i]));
+        }
+        lines.extend(["CONECT    1    2    3    4    5".into(), "END".into()]);
+        let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+            .unwrap()
+            .unwrap();
+        assert_eq!(
+            rdkit_smiles(&parsed.molecule, &Default::default()).unwrap(),
+            expected
+        );
+    }
+}
+
+#[test]
 fn pdb_five_coordinate_stereo_tracks_each_axial_ligand_pair() {
     // Independent reference: RDKit 2025.09.3, unsanitized PDB import.
     let cases = [
