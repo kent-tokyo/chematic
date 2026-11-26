@@ -292,6 +292,24 @@ fn roundtrip_atomic_result_failure() {
     assert_roundtrip_eq(&original, &out_value);
 }
 
+#[test]
+fn failed_atomic_result_preserves_error_extensions() {
+    let mut original = atomic_result_energy_json();
+    original["success"] = json!(false);
+    original.as_object_mut().unwrap().remove("return_result");
+    original["error"] = json!({
+        "error_type": "ConvergenceError",
+        "error_message": "Iteration limit reached",
+        "extras": {"iterations": 200, "residual": 0.01},
+        "vendor_detail": {"algorithm": "SCF"}
+    });
+
+    let parsed = parse_atomic_result(&original.to_string()).unwrap();
+    let written: Value = serde_json::from_str(&write_atomic_result(&parsed)).unwrap();
+    assert_eq!(written["error"], original["error"]);
+    assert_eq!(parse_atomic_result(&written.to_string()).unwrap(), parsed);
+}
+
 // ─── Cross-field invariant validation ───────────────────────────────────────
 
 #[test]
