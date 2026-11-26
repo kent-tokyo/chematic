@@ -8,6 +8,14 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Added
+
+- `stereo_depiction::with_stereo_depiction_on` draws a molecule's stereo on
+  caller-supplied coordinates (for example a file's own drawing): one wedge or
+  hash per tetrahedral centre, chosen and checked on those coordinates, as the
+  MOL writers do. A centre whose wedge was on a hydrogen that
+  `remove_hydrogens` dropped is drawn with a wedge again.
+
 ## [1.2.5] - 2026-11-26
 
 ### Fixed
