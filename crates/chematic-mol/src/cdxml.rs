@@ -45,14 +45,17 @@
 //!   -- while a directional wedge in the same situation is not ambiguous
 //!   (the narrow endpoint is the reference by CDXML's convention) and is
 //!   unaffected either way.
-//! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
+//! - E/Z double-bond stereo is derived from 2D coordinates: bond directions
+//!   via `apply_ez_directions_from_2d` (what the SMILES and MOL writers read,
+//!   as for MOL and MRV input), and the E/Z label cache via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
 
 use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel};
 use chematic_perception::{
-    apply_ctab_local_parity_from_wedges_with_diagnostics, assign_ez_from_2d,
+    apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d,
+    assign_ez_from_2d,
 };
 
 use crate::cml::parse_xml_attrs;
@@ -499,6 +502,9 @@ impl FragAccum {
             options,
         )?;
         assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
+        // The E/Z labels above are only a cache; SMILES and MOL writers read
+        // bond directions. E/Z is unchanged by the y-down mirror image.
+        apply_ez_directions_from_2d(&mut fragment.molecule, &fragment.coords);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
         Ok(())

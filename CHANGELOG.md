@@ -8,6 +8,12 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+### Fixed
+
+- The CDXML reader (`parse_cdxml`, `parse_cdxml_all` and their variants) sets
+  E/Z bond directions from the drawing, so double-bond geometry reaches the
+  SMILES and MOL writers, as it already did through `parse_chemdraw_block`.
+
 ## [1.2.5] - 2026-11-26
 
 ### Fixed
