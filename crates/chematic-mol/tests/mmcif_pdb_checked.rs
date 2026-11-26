@@ -244,3 +244,67 @@ fn inconsistent_public_documents_and_unsupported_models_fail_safely() {
 #[path = "support/upstream_diagnostics.rs"]
 mod upstream_diagnostics;
 use upstream_diagnostics::diagnostic;
+
+#[test]
+fn checked_writer_rejects_empty_oversized_and_incomplete_documents() {
+    let original = diagnostic(parse_mmcif_residues(GLYCAN)).unwrap();
+    let mut empty = original.clone();
+    empty.parsed.atoms.clear();
+    assert_eq!(
+        diagnostic(write_mmcif_pdb_checked(&empty, PdbNamespace::Author, true)).err(),
+        Some(MmcifPdbError::EmptyInput)
+    );
+
+    let mut oversized = original.clone();
+    oversized
+        .parsed
+        .atoms
+        .resize(100_000, original.parsed.atoms[0].clone());
+    assert!(matches!(
+        diagnostic(write_mmcif_pdb_checked(
+            &oversized,
+            PdbNamespace::Author,
+            true
+        )),
+        Err(MmcifPdbError::InvalidField {
+            field: "atom count",
+            ..
+        })
+    ));
+
+    let mut empty_residue = original.clone();
+    empty_residue.residues[0].atom_indices.clear();
+    assert_eq!(
+        diagnostic(write_mmcif_pdb_checked(
+            &empty_residue,
+            PdbNamespace::Author,
+            true
+        ))
+        .err(),
+        Some(MmcifPdbError::InvalidDocument)
+    );
+    let mut missing_atom = original;
+    missing_atom.residues[0].atom_indices.pop();
+    assert_eq!(
+        diagnostic(write_mmcif_pdb_checked(
+            &missing_atom,
+            PdbNamespace::Author,
+            true
+        ))
+        .err(),
+        Some(MmcifPdbError::InvalidDocument)
+    );
+}
+
+#[test]
+fn checked_writer_rejects_invalid_record_kind() {
+    let mut doc = diagnostic(parse_mmcif_residues(GLYCAN)).unwrap();
+    doc.parsed.atoms[0].group_pdb = "INVALID".into();
+    assert!(matches!(
+        diagnostic(write_mmcif_pdb_checked(&doc, PdbNamespace::Author, true)),
+        Err(MmcifPdbError::InvalidField {
+            field: "record kind",
+            ..
+        })
+    ));
+}
