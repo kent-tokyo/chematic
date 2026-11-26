@@ -119,3 +119,24 @@ fn limits_include_extension_and_programmatic_invalid_groups_are_refused() {
     )]);
     assert!(write_reaction_cxsmiles(&reaction, true).is_err());
 }
+
+#[test]
+fn writer_rejects_empty_participants_and_empty_stereo_groups() {
+    for canonical in [false, true] {
+        let mut empty = parse_reaction_cxsmiles("C>>O").unwrap();
+        empty
+            .reactants
+            .push(chematic_core::MoleculeBuilder::new().build());
+        let error = write_reaction_cxsmiles(&empty, canonical).unwrap_err();
+        assert!(
+            error.to_string().contains("empty participant molecule"),
+            "{error}"
+        );
+
+        let mut empty_group = parse_reaction_cxsmiles("C[C@H](F)Cl>>C").unwrap();
+        empty_group.reactants[0]
+            .set_stereo_groups(vec![StereoGroup::new(StereoGroupKind::And(1), vec![])]);
+        let error = write_reaction_cxsmiles(&empty_group, canonical).unwrap_err();
+        assert!(error.to_string().contains("empty stereo group"), "{error}");
+    }
+}

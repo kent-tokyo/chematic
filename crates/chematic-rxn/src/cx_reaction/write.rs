@@ -122,3 +122,36 @@ pub(super) fn write(reaction: &Reaction, canonical: bool) -> Result<String, Reac
     }
     Ok(output)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn group_remapping_rejects_incomplete_and_nonpermutation_orders() {
+        let mut mol = chematic_smiles::parse("CC").unwrap();
+        mol.set_stereo_groups(vec![StereoGroup::new(
+            StereoGroupKind::And(1),
+            vec![AtomIdx(0)],
+        )]);
+        for (order, expected) in [
+            (
+                vec![AtomIdx(0)],
+                "written atom count differs from atom order",
+            ),
+            (
+                vec![AtomIdx(0), AtomIdx(0)],
+                "writer atom order is not a permutation",
+            ),
+            (
+                vec![AtomIdx(0), AtomIdx(2)],
+                "writer atom order is not a permutation",
+            ),
+        ] {
+            let mut groups = BTreeMap::new();
+            let error = append_groups(&mol, "CC", &order, 0, &mut groups).unwrap_err();
+            assert!(error.to_string().contains(expected), "{error}");
+            assert!(groups.is_empty());
+        }
+    }
+}
