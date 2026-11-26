@@ -158,6 +158,38 @@ fn tetrahedral_center_uses_fourth_ligand_when_first_three_are_planar() {
 }
 
 #[test]
+fn non_chiral_standard_residue_does_not_inherit_geometric_tag() {
+    // RDKit 2025.09.3 clears a nonstandard stereocenter on an ATOM GLY record.
+    let center = atom(1, "C", [0.; 3])
+        .replacen("HETATM", "ATOM  ", 1)
+        .replace("LIG", "GLY");
+    let mut lines = vec![center];
+    for (i, (element, point)) in [
+        ("F", [1., 0., 0.]),
+        ("Cl", [0., 1., 0.]),
+        ("Br", [-1., -1., 0.]),
+        ("I", [0., 0., 1.]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        lines.push(
+            atom(i + 2, element, point)
+                .replacen("HETATM", "ATOM  ", 1)
+                .replace("LIG", "GLY"),
+        );
+    }
+    lines.extend(["CONECT    1    2    3    4    5".into(), "END".into()]);
+    let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+        .unwrap()
+        .unwrap();
+    assert_eq!(
+        parsed.molecule.atom(chematic_core::AtomIdx(0)).chirality,
+        chematic_core::Chirality::None
+    );
+}
+
+#[test]
 fn pdb_five_coordinate_stereo_tracks_each_axial_ligand_pair() {
     // Independent reference: RDKit 2025.09.3, unsanitized PDB import.
     let cases = [
