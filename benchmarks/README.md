@@ -67,3 +67,10 @@ A retained historical record is not evidence about current source.
 - Link every retained root-level record from this file or `archive-index.md`.
 - Run `python3 scripts/checks/check_benchmark_index.py` after changes.
 - Do not infer universal accuracy or speed from one corpus, host, or API lane.
+
+### 3D development and reserved evaluation (2026-11-26)
+
+- [Published and candidate wheel pilot](2026-11-26-3d-wheel-pilot.md)
+- [COD local geometry development](2026-11-26-cod-local-geometry-development.md)
+- [Reserved COD holdout protocol](2026-11-26-cod-reserved-holdout.md)
+- [MMFF common-coordinate development](2026-11-26-mmff-common-coordinate-development.md)
