@@ -899,3 +899,74 @@ fn alkene_without_stereo_gets_no_direction() {
     let smiles = chematic_smiles::canonical_smiles(&mol);
     assert!(!smiles.contains(['/', '\\']), "{smiles}");
 }
+
+/// ChemDraw puts each attribute on its own line, starting right after the
+/// element name (`<n` then a line break), and closes the previous element on
+/// the same line (`/><n`). Line breaks may be CRLF.
+fn chemdraw_layout(cdxml: &str, newline: &str) -> String {
+    cdxml.replace('\n', newline)
+}
+
+const CHEMDRAW_FLUOROETHENE: &str = r#"<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE CDXML SYSTEM "http://www.cambridgesoft.com/xml/cdxml.dtd" >
+<CDXML
+ CreationProgram="ChemDraw 21.0.0.28"
+><page
+ id="1"
+><fragment
+ id="2"
+><n
+ id="3"
+ p="100 100"
+ Element="9"
+/><n
+ id="4"
+ p="125.98 115"
+/><n
+ id="5"
+ p="151.96 100"
+/><b
+ id="6"
+ B="3"
+ E="4"
+/><b
+ id="7"
+ B="4"
+ E="5"
+ Order="2"
+/></fragment></page></CDXML>
+"#;
+
+#[test]
+fn line_break_after_element_name_still_reads_atoms_and_bonds() {
+    for newline in ["\n", "\r\n"] {
+        let input = chemdraw_layout(CHEMDRAW_FLUOROETHENE, newline);
+        let (mol, coords) = parse_cdxml(&input).unwrap();
+        assert_eq!(mol.atom_count(), 3, "{newline:?}");
+        assert_eq!(mol.bond_count(), 2, "{newline:?}");
+        assert_eq!(mol.atom(AtomIdx(0)).element.symbol(), "F");
+        assert_eq!(mol.bond(chematic_core::BondIdx(1)).order, BondOrder::Double);
+        assert_eq!(coords[1], (125.98, 115.0));
+    }
+}
+
+#[test]
+fn element_names_that_only_start_like_atoms_or_bonds_are_skipped() {
+    // `<node ...>` and `<bracketedgroup ...>` are not atoms or bonds.
+    let cdxml = "<CDXML><fragment>\n<n id=\"1\" p=\"0 0\"/>\n<node id=\"2\" p=\"1 1\"/>\n\
+                 <bracketedgroup id=\"3\" B=\"1\" E=\"1\"/>\n</fragment></CDXML>";
+    let (mol, _) = parse_cdxml(cdxml).unwrap();
+    assert_eq!(mol.atom_count(), 1);
+    assert_eq!(mol.bond_count(), 0);
+}
+
+#[test]
+fn wavy_carrier_leaves_alkene_unspecified() {
+    let input = difluoroethene_cdxml(false, false).replace(
+        "<b B=\"1\" E=\"2\"/>",
+        "<b B=\"1\" E=\"2\" Display=\"Wavy\"/>",
+    );
+    let (mol, _) = parse_cdxml(&input).unwrap();
+    let smiles = chematic_smiles::canonical_smiles(&mol);
+    assert!(!smiles.contains(['/', '\\']), "{smiles}");
+}

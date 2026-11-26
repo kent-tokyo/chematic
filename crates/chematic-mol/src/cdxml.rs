@@ -54,7 +54,7 @@ use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel};
 use chematic_perception::{
-    apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d,
+    apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d_ex,
     assign_ez_from_2d,
 };
 
@@ -502,9 +502,32 @@ impl FragAccum {
             options,
         )?;
         assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
-        // The E/Z labels above are only a cache; SMILES and MOL writers read
-        // bond directions. E/Z is unchanged by the y-down mirror image.
-        apply_ez_directions_from_2d(&mut fragment.molecule, &fragment.coords);
+        // A wavy carrier explicitly leaves each adjacent double bond unspecified.
+        let mut unspecified = std::collections::HashSet::new();
+        for (index, display) in self.bond_display.iter().enumerate() {
+            if display.as_deref() != Some("Wavy") {
+                continue;
+            }
+            let (begin, end) = bonds.positions[index];
+            for atom in [fragment.indices[&begin], fragment.indices[&end]] {
+                for (_, bond_index) in fragment.molecule.neighbors(atom) {
+                    if fragment.molecule.bond(bond_index).order == BondOrder::Double {
+                        unspecified.insert(bond_index);
+                    }
+                }
+            }
+        }
+        for &bond_index in &unspecified {
+            let bond = fragment.molecule.bond(bond_index);
+            let first = bond.atom1;
+            if matches!(
+                fragment.molecule.atom(first).cip_code,
+                Some(chematic_core::atom::CipCode::E | chematic_core::atom::CipCode::Z)
+            ) {
+                fragment.molecule.set_cip_code(first, None);
+            }
+        }
+        apply_ez_directions_from_2d_ex(&mut fragment.molecule, &fragment.coords, &unspecified);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
         Ok(())
@@ -756,19 +779,15 @@ fn check_attribute_limits(
     Ok(())
 }
 
-/// True if `line` starts a CDXML `<n` atom node tag.
+/// True if `line` starts a CDXML `<n` atom node tag. ChemDraw puts a line
+/// break right after the element name (`<n` then `id="..."` on the next line).
 fn is_n_tag(line: &str) -> bool {
-    (line.starts_with("<n ") || line.starts_with("<n\t") || line == "<n>")
-        && !line.starts_with("<node") // avoid accidental match on <node>
+    crate::cdxml_document::is_open_tag(line, "n")
 }
 
-/// True if `line` starts a CDXML `<b` bond tag.
+/// True if `line` starts a CDXML `<b` bond tag (see [`is_n_tag`]).
 fn is_b_tag(line: &str) -> bool {
-    line.starts_with("<b ")
-        || line.starts_with("<b\t")
-        || line == "<b>"
-        || line.starts_with("<b/>")
-        || line.starts_with("<b>")
+    crate::cdxml_document::is_open_tag(line, "b")
 }
 
 // ---------------------------------------------------------------------------
