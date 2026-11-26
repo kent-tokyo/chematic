@@ -93,6 +93,49 @@ pub fn bfgs_minimize_detailed(
     bfgs_minimize_detailed_with_cached_energy(pos, grad_tol, max_its, func, grad_fn).outcome
 }
 
+/// A cooperative optimization either finishes normally or is interrupted.
+/// On interruption `pos` remains the most recent accepted position. The
+/// initial energy is `None` if cancellation happened before it was evaluated.
+#[derive(Clone, Debug, PartialEq)]
+pub enum BfgsInterruptibleOutcome {
+    Finished(BfgsOutcome),
+    Interrupted {
+        completed_iterations: u32,
+        energy_at_position: Option<f64>,
+    },
+}
+
+/// Run BFGS while polling `should_cancel` between evaluations and iterations.
+/// An individual energy or gradient evaluation cannot itself be interrupted.
+/// With a callback that always returns false this follows the ordinary path.
+pub fn bfgs_minimize_interruptible(
+    pos: &mut [f64],
+    grad_tol: f64,
+    max_its: u32,
+    func: impl Fn(&[f64]) -> f64,
+    grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
+    mut should_cancel: impl FnMut() -> bool,
+) -> BfgsInterruptibleOutcome {
+    match bfgs_minimize_controlled(pos, grad_tol, max_its, func, grad_fn, &mut should_cancel) {
+        BfgsExecution::Complete(result) => BfgsInterruptibleOutcome::Finished(result.outcome),
+        BfgsExecution::Interrupted {
+            completed_iterations,
+            energy_at_position,
+        } => BfgsInterruptibleOutcome::Interrupted {
+            completed_iterations,
+            energy_at_position,
+        },
+    }
+}
+
+pub(crate) enum BfgsExecution {
+    Complete(BfgsCachedOutcome),
+    Interrupted {
+        completed_iterations: u32,
+        energy_at_position: Option<f64>,
+    },
+}
+
 pub(crate) struct BfgsCachedOutcome {
     pub outcome: BfgsOutcome,
     /// Energy already evaluated at the returned position. This is unavailable
@@ -124,8 +167,22 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
     func: impl Fn(&[f64]) -> f64,
     grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
 ) -> BfgsCachedOutcome {
+    match bfgs_minimize_controlled(pos, grad_tol, max_its, func, grad_fn, &mut || false) {
+        BfgsExecution::Complete(result) => result,
+        BfgsExecution::Interrupted { .. } => unreachable!("disabled cancellation"),
+    }
+}
+
+pub(crate) fn bfgs_minimize_controlled(
+    pos: &mut [f64],
+    grad_tol: f64,
+    max_its: u32,
+    func: impl Fn(&[f64]) -> f64,
+    grad_fn: impl Fn(&[f64], &mut [f64]) -> f64,
+    should_cancel: &mut impl FnMut() -> bool,
+) -> BfgsExecution {
     let done = |status: i32, stale: Option<Vec<f64>>, energy, iterations, final_gradient_test| {
-        BfgsCachedOutcome {
+        BfgsExecution::Complete(BfgsCachedOutcome {
             outcome: BfgsOutcome {
                 status,
                 stale_distance_point: stale,
@@ -133,8 +190,15 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
             energy_at_returned_position: energy,
             iterations,
             final_gradient_test,
-        }
+        })
     };
+    let interrupted = |completed_iterations, energy_at_position| BfgsExecution::Interrupted {
+        completed_iterations,
+        energy_at_position,
+    };
+    if should_cancel() {
+        return interrupted(0, None);
+    }
     const EPS: f64 = 3e-8;
     const TOLX: f64 = 4.0 * EPS;
     const MAXSTEP: f64 = 100.0;
@@ -146,18 +210,35 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
     let mut inv_hessian = vec![0.0; dim * dim];
     let mut new_pos = vec![0.0; dim];
     let mut fp = func(pos);
-    let initial_grad_scale = grad_fn(pos, &mut grad);
-    let mut final_gradient_test = Some(gradient_test(pos, fp, &grad, initial_grad_scale));
-    let mut sum = 0.0;
-    for i in 0..dim {
-        inv_hessian[i * dim + i] = 1.0;
-        xi[i] = -grad[i];
-        sum += pos[i] * pos[i];
+    if should_cancel() {
+        return interrupted(0, Some(fp));
     }
+    let initial_grad_scale = grad_fn(pos, &mut grad);
+    if should_cancel() {
+        return interrupted(0, Some(fp));
+    }
+    let mut final_gradient_test = Some(gradient_test(pos, fp, &grad, initial_grad_scale));
+    let sum = initialize_bfgs_state(pos, &grad, &mut xi, &mut inv_hessian);
     let max_step = MAXSTEP * smax(sum.sqrt(), dim as f64);
     for iteration in 1..=max_its {
-        let (status, func_val, stale) =
-            linear_search(pos, fp, &grad, &mut xi, &mut new_pos, &func, max_step);
+        if should_cancel() {
+            return interrupted(iteration - 1, Some(fp));
+        }
+        let Some((status, func_val, stale)) = linear_search_controlled(
+            pos,
+            fp,
+            &grad,
+            &mut xi,
+            &mut new_pos,
+            &func,
+            max_step,
+            should_cancel,
+        ) else {
+            return interrupted(iteration - 1, Some(fp));
+        };
+        if should_cancel() {
+            return interrupted(iteration - 1, Some(fp));
+        }
         if status < 0 {
             // RDKit's CHECK_INVARIANT("bad direction in linearSearch").
             return done(-1, None, Some(fp), iteration - 1, final_gradient_test);
@@ -177,7 +258,13 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
             let cached_energy = stale.is_none().then_some(fp);
             return done(0, stale, cached_energy, iteration, None);
         }
+        if should_cancel() {
+            return interrupted(iteration, Some(fp));
+        }
         let grad_scale = grad_fn(pos, &mut grad);
+        if should_cancel() {
+            return interrupted(iteration, Some(fp));
+        }
         test = 0.0;
         let term = smax(func_val * grad_scale, 1.0);
         for i in 0..dim {
@@ -190,50 +277,97 @@ pub(crate) fn bfgs_minimize_detailed_with_cached_energy(
         if test < grad_tol {
             return done(0, None, Some(fp), iteration, final_gradient_test);
         }
-        let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
-        for i in 0..dim {
-            let row = &inv_hessian[i * dim..(i + 1) * dim];
-            let mut h = 0.0;
-            for (iv, dg) in row.iter().zip(&dgrad) {
-                h += iv * dg;
-            }
-            hess_dgrad[i] = h;
-            fac += dgrad[i] * xi[i];
-            fae += dgrad[i] * hess_dgrad[i];
-            sum_dgrad += dgrad[i] * dgrad[i];
-            sum_xi += xi[i] * xi[i];
+        if should_cancel() {
+            return interrupted(iteration, Some(fp));
         }
-        if fac > (EPS * sum_dgrad * sum_xi).sqrt() {
-            fac = 1.0 / fac;
-            let fad = 1.0 / fae;
-            for i in 0..dim {
-                dgrad[i] = fac * xi[i] - fad * hess_dgrad[i];
-            }
-            for i in 0..dim {
-                let pxi = fac * xi[i];
-                let hdgi = fad * hess_dgrad[i];
-                let dgi = fae * dgrad[i];
-                for j in i..dim {
-                    inv_hessian[i * dim + j] += pxi * xi[j] - hdgi * hess_dgrad[j] + dgi * dgrad[j];
-                    inv_hessian[j * dim + i] = inv_hessian[i * dim + j];
-                }
-            }
-        }
-        for i in 0..dim {
-            let row = &inv_hessian[i * dim..(i + 1) * dim];
-            let mut p = 0.0;
-            for (iv, g) in row.iter().zip(&grad) {
-                p -= iv * g;
-            }
-            xi[i] = p;
+        if !update_inverse_hessian_and_direction(
+            &mut inv_hessian,
+            &mut dgrad,
+            &mut hess_dgrad,
+            &mut xi,
+            &grad,
+            should_cancel,
+        ) {
+            return interrupted(iteration, Some(fp));
         }
     }
     done(1, None, Some(fp), max_its, final_gradient_test)
 }
 
+fn initialize_bfgs_state(pos: &[f64], grad: &[f64], xi: &mut [f64], hessian: &mut [f64]) -> f64 {
+    let mut sum = 0.0;
+    for i in 0..pos.len() {
+        hessian[i * pos.len() + i] = 1.0;
+        xi[i] = -grad[i];
+        sum += pos[i] * pos[i];
+    }
+    sum
+}
+
+// Keep the Hessian update's summation order identical to the ordinary path.
+fn update_inverse_hessian_and_direction(
+    inv_hessian: &mut [f64],
+    dgrad: &mut [f64],
+    hess_dgrad: &mut [f64],
+    xi: &mut [f64],
+    grad: &[f64],
+    should_cancel: &mut impl FnMut() -> bool,
+) -> bool {
+    const EPS: f64 = 3e-8;
+    let dim = grad.len();
+    let (mut fac, mut fae, mut sum_dgrad, mut sum_xi) = (0.0, 0.0, 0.0, 0.0);
+    for i in 0..dim {
+        if i % 16 == 0 && should_cancel() {
+            return false;
+        }
+        let row = &inv_hessian[i * dim..(i + 1) * dim];
+        let mut h = 0.0;
+        for (iv, dg) in row.iter().zip(dgrad.iter()) {
+            h += iv * dg;
+        }
+        hess_dgrad[i] = h;
+        fac += dgrad[i] * xi[i];
+        fae += dgrad[i] * hess_dgrad[i];
+        sum_dgrad += dgrad[i] * dgrad[i];
+        sum_xi += xi[i] * xi[i];
+    }
+    if fac > (EPS * sum_dgrad * sum_xi).sqrt() {
+        fac = 1.0 / fac;
+        let fad = 1.0 / fae;
+        for i in 0..dim {
+            dgrad[i] = fac * xi[i] - fad * hess_dgrad[i];
+        }
+        for i in 0..dim {
+            if i % 16 == 0 && should_cancel() {
+                return false;
+            }
+            let pxi = fac * xi[i];
+            let hdgi = fad * hess_dgrad[i];
+            let dgi = fae * dgrad[i];
+            for j in i..dim {
+                inv_hessian[i * dim + j] += pxi * xi[j] - hdgi * hess_dgrad[j] + dgi * dgrad[j];
+                inv_hessian[j * dim + i] = inv_hessian[i * dim + j];
+            }
+        }
+    }
+    for i in 0..dim {
+        if i % 16 == 0 && should_cancel() {
+            return false;
+        }
+        let row = &inv_hessian[i * dim..(i + 1) * dim];
+        let mut p = 0.0;
+        for (iv, g) in row.iter().zip(grad.iter()) {
+            p -= iv * g;
+        }
+        xi[i] = p;
+    }
+    true
+}
+
 /// `BFGSOpt::linearSearch`: (resCode, newVal, last trial point when the
 /// search gave up and restored `old_pt`).
-fn linear_search(
+#[allow(clippy::too_many_arguments)]
+fn linear_search_controlled(
     old_pt: &[f64],
     old_val: f64,
     grad: &[f64],
@@ -241,7 +375,8 @@ fn linear_search(
     new_pt: &mut [f64],
     func: &impl Fn(&[f64]) -> f64,
     max_step: f64,
-) -> (i32, f64, Option<Vec<f64>>) {
+    should_cancel: &mut impl FnMut() -> bool,
+) -> Option<(i32, f64, Option<Vec<f64>>)> {
     const FUNCTOL: f64 = 1e-4;
     const MOVETOL: f64 = 1e-7;
     const MAX_ITER_LINEAR_SEARCH: u32 = 1000;
@@ -262,7 +397,7 @@ fn linear_search(
         slope += dir[i] * grad[i];
     }
     if slope >= 0.0 {
-        return (-1, new_val, None);
+        return Some((-1, new_val, None));
     }
     let mut test = 0.0;
     for i in 0..dim {
@@ -278,19 +413,22 @@ fn linear_search(
     let mut tmp_lambda;
     let mut it = 0;
     while it < MAX_ITER_LINEAR_SEARCH {
+        if should_cancel() {
+            return None;
+        }
         if lambda < lambda_min {
             // RDKit breaks out and restores the old point (keeping the last
             // trial's value as newVal).
             let trial = (it > 0).then(|| new_pt.to_vec());
             new_pt.copy_from_slice(old_pt);
-            return (1, new_val, trial);
+            return Some((1, new_val, trial));
         }
         for i in 0..dim {
             new_pt[i] = old_pt[i] + lambda * dir[i];
         }
         new_val = func(new_pt);
         if new_val - old_val <= FUNCTOL * lambda * slope {
-            return (0, new_val, None);
+            return Some((0, new_val, None));
         }
         if it == 0 {
             tmp_lambda = -slope / (2.0 * (new_val - old_val - slope));
@@ -322,12 +460,142 @@ fn linear_search(
         it += 1;
     }
     new_pt.copy_from_slice(old_pt);
-    (-1, new_val, None)
+    Some((-1, new_val, None))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+
+    #[test]
+    fn interrupted_before_initial_energy_preserves_input() {
+        let mut pos = vec![3.0, -2.0];
+        let calls = Cell::new(0);
+        let result = bfgs_minimize_interruptible(
+            &mut pos,
+            1e-4,
+            200,
+            |_| {
+                calls.set(calls.get() + 1);
+                1.0
+            },
+            |_, _| panic!("gradient must not run"),
+            || true,
+        );
+        assert_eq!(calls.get(), 0);
+        assert_eq!(pos, vec![3.0, -2.0]);
+        assert_eq!(
+            result,
+            BfgsInterruptibleOutcome::Interrupted {
+                completed_iterations: 0,
+                energy_at_position: None,
+            }
+        );
+    }
+
+    #[test]
+    fn interrupted_during_line_search_keeps_last_accepted_point_and_energy() {
+        let mut pos = vec![3.0];
+        let energy_calls = Cell::new(0);
+        let result = bfgs_minimize_interruptible(
+            &mut pos,
+            1e-4,
+            200,
+            |p| {
+                energy_calls.set(energy_calls.get() + 1);
+                (p[0] - 1.0).powi(2)
+            },
+            |p, g| {
+                g[0] = 2.0 * (p[0] - 1.0);
+                1.0
+            },
+            || energy_calls.get() >= 2,
+        );
+        assert_eq!(pos, vec![3.0]);
+        assert_eq!(
+            result,
+            BfgsInterruptibleOutcome::Interrupted {
+                completed_iterations: 0,
+                energy_at_position: Some(4.0),
+            }
+        );
+    }
+
+    #[test]
+    fn cancellation_during_initial_gradient_is_observed_even_with_zero_iterations() {
+        let mut pos = vec![3.0];
+        let cancelled = Cell::new(false);
+        let result = bfgs_minimize_interruptible(
+            &mut pos,
+            1e-4,
+            0,
+            |p| (p[0] - 1.0).powi(2),
+            |_, gradient| {
+                gradient[0] = 4.0;
+                cancelled.set(true);
+                1.0
+            },
+            || cancelled.get(),
+        );
+        assert_eq!(pos, vec![3.0]);
+        assert_eq!(
+            result,
+            BfgsInterruptibleOutcome::Interrupted {
+                completed_iterations: 0,
+                energy_at_position: Some(4.0),
+            }
+        );
+    }
+
+    #[test]
+    fn interrupted_after_accepted_step_reports_its_energy() {
+        let mut pos = vec![3.0];
+        let polls = Cell::new(0);
+        let result = bfgs_minimize_interruptible(
+            &mut pos,
+            1e-4,
+            200,
+            |p| (p[0] - 1.0).powi(2),
+            |p, g| {
+                g[0] = p[0] - 1.0;
+                1.0
+            },
+            || {
+                polls.set(polls.get() + 1);
+                polls.get() == 7
+            },
+        );
+        assert_ne!(pos, vec![3.0]);
+        assert_eq!(
+            result,
+            BfgsInterruptibleOutcome::Interrupted {
+                completed_iterations: 1,
+                energy_at_position: Some((pos[0] - 1.0).powi(2)),
+            }
+        );
+    }
+
+    #[test]
+    fn never_cancelled_path_is_identical_to_existing_optimizer() {
+        for limit in [0, 1, 200] {
+            let energy = |p: &[f64]| (p[0] - 1.0).powi(2) + 2.0 * (p[1] + 0.5).powi(2);
+            let gradient = |p: &[f64], g: &mut [f64]| {
+                g[0] = 2.0 * (p[0] - 1.0);
+                g[1] = 4.0 * (p[1] + 0.5);
+                1.0
+            };
+            let mut original = vec![3.0, -2.0];
+            let mut controlled = original.clone();
+            let expected = bfgs_minimize_detailed(&mut original, 1e-4, limit, energy, gradient);
+            let actual =
+                bfgs_minimize_interruptible(&mut controlled, 1e-4, limit, energy, gradient, || {
+                    false
+                });
+            assert_eq!(actual, BfgsInterruptibleOutcome::Finished(expected));
+            assert_eq!(original, controlled);
+        }
+    }
 
     #[test]
     fn quadratic_converges() {

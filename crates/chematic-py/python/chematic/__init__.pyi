@@ -233,6 +233,10 @@ class MolecularForceField:
 
     def minimize_(self, max_iters: int = 200) -> tuple[int, float]: ...
 
+    def minimize_with_timeout_(
+        self, timeout_seconds: float, *, max_iters: int = 200
+    ) -> dict[str, object]: ...
+
 # ---------------------------------------------------------------------------
 # Mol
 # ---------------------------------------------------------------------------
