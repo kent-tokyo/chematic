@@ -10,7 +10,7 @@ from rdkit import Chem
 from rdkit.Chem import AllChem
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "benchmarks"))
-from platinum_force_fields import compare
+from platinum_force_fields import compare, jitter_coordinates
 
 
 class ForceFieldComparisonTest(unittest.TestCase):
@@ -30,6 +30,34 @@ class ForceFieldComparisonTest(unittest.TestCase):
             result = subprocess.run(command + ["--resume"], capture_output=True)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn(b"input prefix", result.stderr)
+
+    def test_jitter_is_deterministic_and_shared_with_rdkit(self):
+        mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))
+        self.assertEqual(AllChem.EmbedMolecule(mol, randomSeed=42), 0)
+        original = [list(mol.GetConformer().GetAtomPosition(i)) for i in range(mol.GetNumAtoms())]
+        coords = jitter_coordinates(original, "ethanol", 0.35, 42)
+        self.assertEqual(coords, jitter_coordinates(original, "ethanol", 0.35, 42))
+        self.assertNotEqual(coords, jitter_coordinates(original, "ethanol", 0.35, 43))
+        self.assertNotEqual(coords, original)
+        self.assertTrue(all(abs(a - b) <= 0.35 for x, y in zip(original, coords) for a, b in zip(x, y)))
+        for index, point in enumerate(coords):
+            mol.GetConformer().SetAtomPosition(index, point)
+        other = chematic.from_smiles("CCO").add_hydrogens()
+        result = compare(mol, other, coords, "MMFF94", term_breakdown=True)
+        self.assertLess(result["energy_absolute_error"], 1e-7)
+        self.assertLess(max(result["gradient_absolute_errors"]), 1e-6)
+
+    def test_resume_rejects_changed_jitter(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "input.json"
+            output = Path(directory) / "output.json"
+            source.write_text(json.dumps({"results": [{"index": 1, "name": "ethanol", "smiles": "CCO"}]}), encoding="utf-8")
+            script = Path(__file__).resolve().parents[1] / "benchmarks" / "platinum_force_fields.py"
+            command = [sys.executable, str(script), "--development", str(source), "--output", str(output)]
+            subprocess.run(command, check=True, capture_output=True)
+            result = subprocess.run(command + ["--resume", "--coordinate-jitter", "0.35"], capture_output=True)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn(b"jitter settings differ", result.stderr)
 
     def test_common_coordinates_and_finite_differences(self):
         mol = Chem.AddHs(Chem.MolFromSmiles("CCO"))

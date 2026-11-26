@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import platform
+import random
 from pathlib import Path
 
 import chematic
@@ -13,6 +14,14 @@ from rdkit import Chem, rdBase
 from rdkit.Chem import AllChem
 
 from platinum_development_probe import graph_matches
+
+
+def jitter_coordinates(coords, name, amplitude, seed):
+    """Displace a shared coordinate set reproducibly without altering input."""
+    seed_bytes = hashlib.sha256(f"{seed}:{name}".encode()).digest()
+    generator = random.Random(int.from_bytes(seed_bytes, "big"))
+    return [[value + generator.uniform(-amplitude, amplitude) for value in point]
+            for point in coords]
 
 
 def compare(mol, other, coords, variant, term_breakdown=False):
@@ -119,9 +128,14 @@ def main():
                         help="include the explicit-hydrogen common coordinates")
     parser.add_argument("--term-breakdown", action="store_true",
                         help="compare MMFF types, charges and each force-field term")
+    parser.add_argument("--coordinate-jitter", type=float, default=0.0,
+                        help="independent uniform displacement per Cartesian coordinate in angstroms")
+    parser.add_argument("--jitter-seed", type=int, default=42)
     args = parser.parse_args()
     if args.checkpoint_every < 1:
         parser.error("checkpoint-every must be positive")
+    if not math.isfinite(args.coordinate_jitter) or args.coordinate_jitter < 0:
+        parser.error("coordinate-jitter must be finite and nonnegative")
     source = json.loads(args.development.read_text())
     output = {
         "development_sha256": hashlib.sha256(args.development.read_bytes()).hexdigest(),
@@ -129,6 +143,8 @@ def main():
         "chematic_version": getattr(chematic, "__version__", "unknown"),
         "platform": platform.platform(),
         "seed": 42,
+        "coordinate_jitter": args.coordinate_jitter,
+        "jitter_seed": args.jitter_seed,
         "results": [],
     }
     if args.store_coordinates:
@@ -148,6 +164,9 @@ def main():
         for key in ("development_sha256", "rdkit_version", "chematic_version", "platform", "seed"):
             if existing[key] != output[key]:
                 parser.error(f"resume metadata differs: {key}")
+        if (existing.get("coordinate_jitter", 0.0) != args.coordinate_jitter
+                or existing.get("jitter_seed", 42) != args.jitter_seed):
+            parser.error("resume jitter settings differ")
         previous = existing["results"]
         expected_indices = [r["index"] for r in source["results"][:len(previous)]]
         if [r["index"] for r in previous] != expected_indices:
@@ -171,6 +190,10 @@ def main():
                 list(mol.GetConformer().GetAtomPosition(i))
                 for i in range(mol.GetNumAtoms())
             ]
+            if args.coordinate_jitter:
+                coords = jitter_coordinates(coords, row["name"], args.coordinate_jitter, args.jitter_seed)
+                for index, point in enumerate(coords):
+                    mol.GetConformer().SetAtomPosition(index, point)
             if args.store_coordinates:
                 result["coordinates"] = coords
             for variant in ("MMFF94", "MMFF94s", "UFF"):

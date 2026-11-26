@@ -78,3 +78,5 @@ A retained historical record is not evidence about current source.
 - [Flexible MMFF setup development comparison](2026-11-27-flexible-mmff-setup.md)
 
 - [Partial conformer checkpoint scaling](2026-11-27-partial-checkpoint.md)
+
+- [Element-stratified force-field development comparison](2026-11-27-forcefield-hetero-development.md)
