@@ -114,6 +114,22 @@ fn multi_chain_model_altloc_fixture_round_trips_through_write_read() {
     assert_eq!(r.space_group, r2.space_group);
 }
 
+#[test]
+fn insertion_code_round_trips_without_changing_residue_number() {
+    let mut input = parse_mmcif(MULTI_CHAIN_MODEL_ALTLOC_MMCIF).unwrap();
+    input.atoms[0].icode = Some('B');
+    let written = write_mmcif(
+        &input.atoms,
+        input.cell.as_ref(),
+        input.space_group.as_deref(),
+        "INS",
+    );
+    let roundtrip = parse_mmcif(&written).unwrap();
+    assert_eq!(roundtrip.atoms[0].icode, Some('B'));
+    assert_eq!(roundtrip.atoms[0].res_seq, input.atoms[0].res_seq);
+    assert_eq!(roundtrip.atoms[0].chain_id, input.atoms[0].chain_id);
+}
+
 /// A realistic multi-chain PQR fixture (with chain-id column present),
 /// hand-authored per the APBS/PDB2PQR field layout.
 const MULTI_CHAIN_PQR: &str = "\
