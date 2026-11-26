@@ -144,3 +144,37 @@ fn overlapping_ligand_and_center_are_rejected_during_3d_stereo_assignment() {
         .unwrap();
     assert!(error.to_string().contains("zero length vector"), "{error}");
 }
+
+#[test]
+fn seven_coordinate_center_does_not_receive_an_unsupported_stereo_tag() {
+    // RDKit 2025.09.3 unsanitized import also leaves the seven-coordinate Pt untagged.
+    let mut lines = vec![atom(1, "Pt", [0., 0., 0.])];
+    for (i, (element, point)) in [
+        ("F", [1., 0., 0.]),
+        ("Cl", [-1., 0., 0.]),
+        ("Br", [0., 1., 0.]),
+        ("I", [0., -1., 0.]),
+        ("N", [0., 0., 1.]),
+        ("O", [0., 0., -1.]),
+        ("S", [1., 1., 1.]),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        lines.push(atom(i + 2, element, point));
+    }
+    lines.extend([
+        "CONECT    1    2    3    4    5".into(),
+        "CONECT    1    6    7    8".into(),
+        "END".into(),
+    ]);
+    let parsed = rdkit_mol_from_pdb_block(&lines.join("\n"), false, false, 0, false)
+        .unwrap()
+        .unwrap();
+    let center = chematic_core::AtomIdx(0);
+    assert_eq!(parsed.molecule.neighbors(center).count(), 7);
+    assert_eq!(
+        parsed.molecule.atom(center).chirality,
+        chematic_core::Chirality::None
+    );
+}
