@@ -904,6 +904,42 @@ pub fn set_topol_bounds(
 mod tests {
     use super::*;
 
+    fn forced_torsions(smiles: &str, macrocycle: bool, force_trans: bool) -> Vec<ForcedTorsion> {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let view = chematic_smiles::rdkit_mol_view(&molecule).unwrap();
+        let labels = chematic_ff::rdkit_uff::rdkit_uff_atom_labels(&molecule);
+        let mut bounds = BoundsMatrix::new(view.num_atoms());
+        init_bounds_mat(&mut bounds);
+        set_topol_bounds_with_forced_torsions(
+            &view,
+            &labels,
+            &mut bounds,
+            true,
+            macrocycle,
+            force_trans,
+        )
+        .unwrap()
+    }
+
+    #[test]
+    fn flexible_amide_and_ester_do_not_export_forced_torsions() {
+        for smiles in ["CC(=O)NC", "CC(=O)OC"] {
+            assert!(forced_torsions(smiles, false, false).is_empty(), "{smiles}");
+            assert!(!forced_torsions(smiles, false, true).is_empty(), "{smiles}");
+        }
+    }
+
+    #[test]
+    fn macrocycle_amide_torsion_does_not_depend_on_force_trans_option() {
+        let smiles = "O=C1NCCCCCCCCCC1";
+        let disabled = forced_torsions(smiles, false, true);
+        let flexible = forced_torsions(smiles, true, false);
+        let forced = forced_torsions(smiles, true, true);
+        assert!(disabled.is_empty());
+        assert_eq!(flexible, forced);
+        assert!(forced.iter().any(|t| t.atoms == [12, 1, 2, 3] && !t.cis));
+    }
+
     #[test]
     fn propane_one_three_bounds_match_rdkit_2026_09_1() {
         let molecule =
