@@ -33,9 +33,10 @@ fn mol2_rejects_empty_counts_and_truncated_atom_records() {
             "premature EOF",
         ),
     ] {
-        let error = rdkit_mol_from_mol2_block(block, false, false, false)
-            .err()
-            .expect("malformed MOL2 must fail");
+        let error = match rdkit_mol_from_mol2_block(block, false, false, false) {
+            Ok(_) => panic!("malformed MOL2 must fail"),
+            Err(error) => error,
+        };
         assert!(error.to_string().contains(expected), "{error}");
     }
 }
