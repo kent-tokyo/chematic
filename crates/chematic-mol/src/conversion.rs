@@ -1019,6 +1019,9 @@ mod tests {
             let candidate = chematic_smiles::parse(changed).unwrap();
             assert!(verify_graph(&source, &candidate, &order).is_none());
         }
+        let truncated = chematic_smiles::parse("[13CH3]").unwrap();
+        assert!(verify_graph(&source, &truncated, &order).is_none());
+        assert!(verify_graph(&source, &source, &order[..1]).is_none());
     }
 
     #[test]
