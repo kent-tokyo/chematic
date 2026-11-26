@@ -83,12 +83,17 @@ fn containment_tangency_and_duplicate_ownership() {
     assert_eq!(nested.per_atom[1], 16. * PI);
     let tangent = sasa(&mol, &[[0.; 3], [2., 0., 0.]], &[1., 1.], 0., 960).unwrap();
     assert_eq!(tangent.total, 8. * PI);
+    let error = sasa(&mol, &[[0.; 3], [0.; 3]], &[1., 1.], 0., 960).unwrap_err();
     assert_eq!(
-        sasa(&mol, &[[0.; 3], [0.; 3]], &[1., 1.], 0., 960),
-        Err(Error::Coincident {
+        error,
+        Error::Coincident {
             first: 0,
             second: 1
-        })
+        }
+    );
+    assert_eq!(
+        error.to_string(),
+        "coincident equal inflated spheres at atoms 0 and 1"
     );
 }
 
@@ -157,8 +162,10 @@ fn empty_and_resource_limits_are_explicit() {
     let xyz = (0..40)
         .map(|i| [i as f64 * 0.01, 0., 0.])
         .collect::<Vec<_>>();
+    let error = sasa(&atoms(40), &xyz, &[1.; 40], 0., 65536).unwrap_err();
+    assert_eq!(error, Error::WorkLimit);
     assert_eq!(
-        sasa(&atoms(40), &xyz, &[1.; 40], 0., 65536),
-        Err(Error::WorkLimit)
+        error.to_string(),
+        "checked SASA exceeds 50000000 potential point-neighbor checks"
     );
 }

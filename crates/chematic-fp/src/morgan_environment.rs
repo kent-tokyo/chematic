@@ -292,6 +292,18 @@ mod tests {
     }
 
     #[test]
+    fn suppressed_diagnostic_reports_ethanol_environment_multiplicity() {
+        // RDKit 2025.09.3 Morgan generator, radius 2, sparse bitInfoMap.
+        let mol = parse("CCO").unwrap();
+        let mut pairs: Vec<_> = suppressed_environments_diagnostic(&mol, &EcfpConfig::default())
+            .into_iter()
+            .map(|(atom, radius, _)| (atom, radius))
+            .collect();
+        pairs.sort_unstable();
+        assert_eq!(pairs, [(0, 0), (0, 1), (1, 0), (1, 1), (2, 0), (2, 1)]);
+    }
+
+    #[test]
     fn bondset_union_order_independent() {
         let mut a = BondSet::empty(130);
         a.set(3);

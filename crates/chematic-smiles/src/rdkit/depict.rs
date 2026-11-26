@@ -924,4 +924,23 @@ mod fixed_fragment_boundary_tests {
         assert_eq!(map.len(), 2);
         assert_eq!(map[&0], map[&1]);
     }
+
+    #[test]
+    fn collision_cleanup_keeps_both_fixed_atoms_in_place() {
+        let input = crate::parse("C.C").unwrap();
+        let mut mol = super::super::parse::from_chematic(&input).unwrap();
+        mol.set_rings(Vec::new());
+        let ctx = Ctx {
+            mol: &mol,
+            cip: None,
+            n: mol.atoms.len(),
+            dmat: Vec::new(),
+        };
+        let map = BTreeMap::from([(0, P::new(0.0, 0.0)), (1, P::new(0.1, 0.0))]);
+        let mut fragment = EFrag::from_coord_map(&ctx, &map).unwrap();
+        assert!(!fragment.find_collisions(&ctx, false).is_empty());
+        fragment.remove_collisions_shorten_bonds(&ctx).unwrap();
+        assert_eq!(fragment.loc(0).unwrap(), map[&0]);
+        assert_eq!(fragment.loc(1).unwrap(), map[&1]);
+    }
 }

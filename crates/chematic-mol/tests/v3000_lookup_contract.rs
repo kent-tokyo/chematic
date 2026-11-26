@@ -54,6 +54,18 @@ fn duplicate_bond_ids_and_missing_endpoints_still_fail() {
 }
 
 #[test]
+fn malformed_bond_index_reports_invalid_bond() {
+    let malformed = block(&[1, 2], &[(1, 1, 2)]).replace("M  V30 1 1 1 2", "M  V30 x 1 1 2");
+    let error = read_mol_v3000_with_diagnostics(&malformed)
+        .err()
+        .expect("invalid bond index");
+    assert!(
+        error.to_string().contains("cannot parse bond index"),
+        "{error}"
+    );
+}
+
+#[test]
 fn continued_atom_properties_keep_typed_and_opaque_fields() {
     let input = block(&[1, 2], &[(1, 1, 2)]).replace(
         "M  V30 1 C 0 0 0 0",

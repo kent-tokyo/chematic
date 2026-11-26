@@ -292,6 +292,24 @@ fn roundtrip_atomic_result_failure() {
     assert_roundtrip_eq(&original, &out_value);
 }
 
+#[test]
+fn failed_atomic_result_preserves_error_extensions() {
+    let mut original = atomic_result_energy_json();
+    original["success"] = json!(false);
+    original.as_object_mut().unwrap().remove("return_result");
+    original["error"] = json!({
+        "error_type": "ConvergenceError",
+        "error_message": "Iteration limit reached",
+        "extras": {"iterations": 200, "residual": 0.01},
+        "vendor_detail": {"algorithm": "SCF"}
+    });
+
+    let parsed = parse_atomic_result(&original.to_string()).unwrap();
+    let written: Value = serde_json::from_str(&write_atomic_result(&parsed)).unwrap();
+    assert_eq!(written["error"], original["error"]);
+    assert_eq!(parse_atomic_result(&written.to_string()).unwrap(), parsed);
+}
+
 // ─── Cross-field invariant validation ───────────────────────────────────────
 
 #[test]
@@ -851,4 +869,27 @@ fn invalid_result_values_report_the_precise_path() {
     assert!(
         matches!(parse_atomic_result(&input.to_string()), Err(QcSchemaError::WrongType { field, .. }) if field == "success")
     );
+}
+
+#[test]
+fn integer_fields_accept_integral_json_floats_and_reject_fractional_values() {
+    let mut input = water_molecule_json("qcschema_molecule");
+    input["schema_version"] = json!(1.0);
+    input["molecular_multiplicity"] = json!(1.0);
+    input["connectivity"] = json!([[0.0, 1.0, 1.0], [0.0, 2.0, 1.0]]);
+    let mol = parse_qcschema_molecule(&input.to_string()).unwrap();
+    assert_eq!(mol.molecular_multiplicity, 1);
+    assert_eq!(mol.connectivity.unwrap().len(), 2);
+
+    input["molecular_multiplicity"] = json!(1.5);
+    assert!(matches!(
+        parse_qcschema_molecule(&input.to_string()),
+        Err(QcSchemaError::WrongType { .. })
+    ));
+    input["molecular_multiplicity"] = json!(1);
+    input["connectivity"][0][0] = json!(0.5);
+    assert!(matches!(
+        parse_qcschema_molecule(&input.to_string()),
+        Err(QcSchemaError::WrongType { .. })
+    ));
 }

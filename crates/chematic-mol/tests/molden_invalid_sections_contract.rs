@@ -82,3 +82,52 @@ fn atom_intensity_and_total_row_limits_are_enforced_before_output() {
         assert!(error.detail.contains(message), "{error}");
     }
 }
+
+#[test]
+fn public_record_validation_rejects_empty_and_inconsistent_geometry() {
+    let source = "[Molden Format]\n[Atoms] Angs\nC 1 6 0 0 0\n";
+    let record = parse_molden(source).unwrap();
+
+    let mut empty_atoms = record.clone();
+    empty_atoms.atoms.as_mut().unwrap().atoms.clear();
+    assert!(
+        empty_atoms
+            .validate()
+            .unwrap_err()
+            .detail
+            .contains("Atoms count outside limits")
+    );
+
+    let mut nonfinite = record.clone();
+    nonfinite.atoms.as_mut().unwrap().atoms[0].position[1] = f64::INFINITY;
+    assert!(
+        nonfinite
+            .validate()
+            .unwrap_err()
+            .detail
+            .contains("non-finite coordinate")
+    );
+
+    let mut empty_vibrations = record.clone();
+    empty_vibrations.fr_coords = Some(vec![]);
+    assert!(
+        empty_vibrations
+            .validate()
+            .unwrap_err()
+            .detail
+            .contains("FR-COORD atom count outside limits")
+    );
+
+    let mut mismatch = record;
+    mismatch.fr_coords = Some(vec![chematic_mol::molden::MoldenVibrationAtom {
+        symbol: "O".into(),
+        position_bohr: [0.0; 3],
+    }]);
+    assert!(
+        mismatch
+            .validate()
+            .unwrap_err()
+            .detail
+            .contains("same source-order element sequence")
+    );
+}

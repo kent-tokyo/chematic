@@ -1,4 +1,6 @@
-use chematic_mol::{NucleicAcidLimits, validate_nucleic_acid_json};
+use chematic_mol::{
+    NucleicAcidDocument, NucleicAcidError, NucleicAcidLimits, validate_nucleic_acid_json,
+};
 use serde_json::{Value, json};
 
 fn dna() -> Value {
@@ -25,4 +27,38 @@ fn dna_rejects_incompatible_base_and_modification_without_rewriting() {
             "{report}"
         );
     }
+}
+
+#[test]
+fn document_object_rejects_wrong_field_types_as_invalid_json() {
+    let mut document = dna();
+    document["strands"][0]["residues"] = json!("not an array");
+    assert!(matches!(
+        NucleicAcidDocument::from_json(&document),
+        Err(NucleicAcidError::InvalidJson { .. })
+    ));
+}
+
+#[test]
+fn pseudouridine_requires_rna_and_a_compatible_base() {
+    let mut document = dna();
+    document["strands"][0]["kind"] = json!("rna");
+    document["strands"][0]["residues"][0]["sugar"] = json!("ribose");
+    document["strands"][0]["residues"][0]["modification"] = json!("pseudouridine");
+    for base in ["U", "other"] {
+        document["strands"][0]["residues"][0]["base"] = json!(base);
+        assert!(NucleicAcidDocument::from_json(&document).is_ok(), "{base}");
+    }
+    document["strands"][0]["residues"][0]["base"] = json!("A");
+    assert!(matches!(
+        NucleicAcidDocument::from_json(&document),
+        Err(NucleicAcidError::InvalidResidueIdentity { .. })
+    ));
+    document["strands"][0]["kind"] = json!("dna");
+    document["strands"][0]["residues"][0]["sugar"] = json!("deoxyribose");
+    document["strands"][0]["residues"][0]["base"] = json!("other");
+    assert!(matches!(
+        NucleicAcidDocument::from_json(&document),
+        Err(NucleicAcidError::InvalidResidueIdentity { .. })
+    ));
 }

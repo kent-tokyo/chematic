@@ -380,3 +380,90 @@ pub(crate) fn permutation_parity(from: &[u32], to: &[u32]) -> Option<bool> {
         .sum::<usize>();
     Some(inversions.is_multiple_of(2))
 }
+
+#[cfg(test)]
+mod candidate_logic_tests {
+    use super::*;
+
+    #[test]
+    fn stereo_is_unknown_until_mapping_but_logic_can_decide() {
+        let atom = |number| AtomQuery::Primitive(AtomPrimitive::AtomicNum(number));
+        let chiral = || AtomQuery::Primitive(AtomPrimitive::Chirality(1));
+        let or = |a, b| AtomQuery::Or(Box::new(a), Box::new(b));
+        let and = |a, b| AtomQuery::And(Box::new(a), Box::new(b));
+        let eval = |query: &AtomQuery| {
+            candidate_query_result(query, |p| matches!(p, AtomPrimitive::AtomicNum(6)))
+        };
+
+        assert_eq!(eval(&or(atom(6), chiral())), Some(true));
+        assert_eq!(eval(&or(chiral(), atom(6))), Some(true));
+        assert_eq!(eval(&or(atom(7), atom(8))), Some(false));
+        assert_eq!(eval(&or(atom(7), chiral())), None);
+        assert_eq!(eval(&and(atom(7), chiral())), Some(false));
+        assert_eq!(eval(&and(atom(6), chiral())), None);
+        assert_eq!(eval(&AtomQuery::Not(Box::new(chiral()))), None);
+    }
+
+    #[test]
+    fn tetrahedral_parity_handles_omitted_ligand_and_invalid_frames() {
+        let frame = [10, 20, 30, 40];
+        assert_eq!(
+            tetrahedral_frame_parity(&[10, 20, 30, 40], &frame),
+            Some(true)
+        );
+        assert_eq!(
+            tetrahedral_frame_parity(&[20, 10, 30, 40], &frame),
+            Some(false)
+        );
+        assert_eq!(tetrahedral_frame_parity(&[10, 20, 30], &frame), Some(true));
+        assert_eq!(tetrahedral_frame_parity(&[20, 10, 30], &frame), Some(false));
+        assert_eq!(tetrahedral_frame_parity(&[10, 20], &frame), None);
+        assert_eq!(tetrahedral_frame_parity(&[10, 10, 20], &frame), None);
+        assert_eq!(tetrahedral_frame_parity(&[10, 20, 50], &frame), None);
+        assert_eq!(tetrahedral_frame_parity(&[10, 20, 30], &[10, 20, 30]), None);
+        assert_eq!(permutation_parity(&[10, 10], &[10, 10]), None);
+    }
+
+    #[test]
+    fn alkene_stereo_fails_closed_for_incomplete_or_inconsistent_mappings() {
+        let query = crate::parse_smarts("F/C=C/F").unwrap();
+        let molecule = chematic_smiles::parse("F/C=C/F").unwrap();
+        let check = |mapping: [Option<AtomIdx>; 4]| {
+            mapped_alkene_compatible(&query, &molecule, &OnceLock::new(), |index| mapping[index])
+        };
+        let exact = [
+            Some(AtomIdx(0)),
+            Some(AtomIdx(1)),
+            Some(AtomIdx(2)),
+            Some(AtomIdx(3)),
+        ];
+        assert!(check(exact));
+        assert!(!check([exact[0], None, exact[2], exact[3]]));
+        assert!(!check([exact[0], exact[1], None, exact[3]]));
+        assert!(!check([exact[0], Some(AtomIdx(0)), exact[2], exact[3]]));
+        assert!(!check([None, exact[1], exact[2], exact[3]]));
+        assert!(!check([exact[0], exact[1], exact[2], None]));
+        assert!(!check([Some(AtomIdx(3)), exact[1], exact[2], exact[3]]));
+        assert!(!check([exact[0], exact[1], exact[2], Some(AtomIdx(0))]));
+        let multiple = chematic_smiles::parse("F/C=C/F.C=C").unwrap();
+        let without_stereo = [
+            Some(AtomIdx(0)),
+            Some(AtomIdx(4)),
+            Some(AtomIdx(5)),
+            Some(AtomIdx(3)),
+        ];
+        assert!(!mapped_alkene_compatible(
+            &query,
+            &multiple,
+            &OnceLock::new(),
+            |i| without_stereo[i]
+        ));
+        let unspecified = chematic_smiles::parse("FC=CF").unwrap();
+        assert!(!mapped_alkene_compatible(
+            &query,
+            &unspecified,
+            &OnceLock::new(),
+            |i| exact[i]
+        ));
+    }
+}

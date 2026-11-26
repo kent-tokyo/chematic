@@ -623,6 +623,23 @@ mod tests {
     use chematic_smiles::parse;
 
     #[test]
+    fn accurate_cip_fallback_maps_enantiomers_to_rdkit_morgan_codes() {
+        // RDKit 2025.09.3 FindMolChiralCenters assigns R and S, respectively.
+        for (smiles, expected) in [("C[C@H](O)F", 3), ("C[C@@H](O)F", 2)] {
+            let mol = parse(smiles).unwrap();
+            let assignment = chematic_cip::assign_cip_accurate_experimental(
+                &mol,
+                chematic_cip::CipBudget::default_budget(),
+            )
+            .unwrap();
+            let codes = assignment.assignments.into_iter().collect();
+            let prepared = MorganChirality::from_cip(&mol, &codes);
+            assert_eq!(prepared.tagged, [false, true, false, false]);
+            assert_eq!(prepared.code, [1, expected, 1, 1], "{smiles}");
+        }
+    }
+
+    #[test]
     fn compact_stereo_emissions_match_general_lifecycle() {
         let mut inputs = vec![
             "".to_string(),

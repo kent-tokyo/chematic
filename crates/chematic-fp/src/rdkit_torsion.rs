@@ -1005,4 +1005,26 @@ mod tests {
         let fp = rdkit_torsion_fp(&m);
         assert_eq!(fp.popcount(), 0);
     }
+
+    #[test]
+    fn main_group_outer_electrons_follow_periodic_groups() {
+        for (atomic_number, expected) in [
+            (2, 2),
+            (19, 1),
+            (37, 1),
+            (55, 1),
+            (20, 2),
+            (38, 2),
+            (56, 2),
+            (81, 3),
+            (82, 4),
+            (83, 5),
+            (84, 6),
+            (85, 7),
+            (86, 8),
+        ] {
+            assert_eq!(main_group_outer_electrons(atomic_number), Some(expected));
+        }
+        assert_eq!(main_group_outer_electrons(26), None);
+    }
 }

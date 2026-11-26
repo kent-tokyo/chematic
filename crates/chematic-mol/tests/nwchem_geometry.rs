@@ -52,6 +52,15 @@ fn edits_and_unknown_json_fields() {
     g.centers[0].mass_amu = Some(0.0);
     assert!(write_nwchem_geometry(&g).is_err());
 }
+
+#[test]
+fn edited_comments_cannot_inject_nwchem_directives() {
+    let mut geometry = parse_nwchem_geometry("geometry\nH 0 0 0\nend\n").unwrap();
+    for comment in ["safe\ntask dft", "comment\rgeometry", "café"] {
+        geometry.comments = vec![comment.into()];
+        assert!(write_nwchem_geometry(&geometry).is_err(), "{comment:?}");
+    }
+}
 #[test]
 fn limits_and_invalid_edited_records_refuse() {
     let s = include_str!("../../../validation/nwchem_geometry/centers.nw");

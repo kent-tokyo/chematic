@@ -900,6 +900,8 @@ object 3 class array type double rank 0 items 8 data follows\n\
                 units: GridUnits::Bohr
             }
         );
+        assert!(err.to_string().contains("Bohr"));
+        assert!(err.to_string().contains("conversion"));
     }
 
     #[test]
@@ -912,6 +914,7 @@ object 3 class array type double rank 0 items 8 data follows\n\
         });
         let err = write_opendx(&grid).unwrap_err();
         assert_eq!(err, OpenDxError::AtomsNotSupported { count: 1 });
+        assert!(err.to_string().contains("1 atom"));
     }
 
     #[test]

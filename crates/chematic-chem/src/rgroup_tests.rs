@@ -693,3 +693,68 @@ fn labelled_core_refuses_when_match_cap_is_reached() {
         })
     ));
 }
+
+#[test]
+fn cut_core_remaps_atom_tags_directions_and_stereo_group_members() {
+    use chematic_core::{BondOrder, RGroupLabel, StereoGroup, StereoGroupKind};
+
+    let mut input = mol("CCCC");
+    input.set_tag(AtomIdx(2), Some(37));
+    let label = RGroupLabel::numbered(7).unwrap();
+    input.set_r_group(AtomIdx(3), label);
+    input.set_bond_direction(BondIdx(1), BondOrder::Up);
+    input.set_bond_direction_anchor(BondIdx(1), AtomIdx(2));
+    input.set_stereo_groups_with_bonds(vec![(
+        StereoGroup::new(StereoGroupKind::And(3), vec![AtomIdx(1), AtomIdx(2)]),
+        vec![BondIdx(1)],
+    )]);
+
+    let core = [AtomIdx(1), AtomIdx(2), AtomIdx(3)].into_iter().collect();
+    let output = build_core_mol(&input, &core, &[(AtomIdx(1), AtomIdx(0))], None, None);
+    assert_eq!(output.atom_tag(AtomIdx(1)).map(|tag| tag.get()), Some(37));
+    assert_eq!(output.r_group_label(AtomIdx(2)), Some(label));
+    assert_eq!(output.bond_direction(BondIdx(0)), Some(BondOrder::Up));
+    assert_eq!(output.bond_direction_anchor(BondIdx(0)), Some(AtomIdx(1)));
+    assert_eq!(output.stereo_groups().len(), 1);
+    assert_eq!(output.stereo_groups()[0].kind, StereoGroupKind::And(3));
+    assert_eq!(
+        output.stereo_groups()[0].atom_indices,
+        [AtomIdx(0), AtomIdx(1)]
+    );
+    assert_eq!(output.stereo_group_bond_indices(0), Some(&[BondIdx(0)][..]));
+}
+
+#[test]
+fn cut_bond_direction_is_reversed_when_anchor_is_removed() {
+    let mut input = mol("CC=C");
+    let core = [AtomIdx(1), AtomIdx(2)].into_iter().collect();
+    for (direction, expected) in [
+        (BondOrder::Up, BondOrder::Down),
+        (BondOrder::Down, BondOrder::Up),
+    ] {
+        input.set_bond_direction(BondIdx(0), direction);
+        input.set_bond_direction_anchor(BondIdx(0), AtomIdx(0));
+        assert_eq!(
+            cut_bond_order(&input, BondIdx(0), AtomIdx(1), &core, false),
+            expected
+        );
+        input.set_bond_direction_anchor(BondIdx(0), AtomIdx(1));
+        assert_eq!(
+            cut_bond_order(&input, BondIdx(0), AtomIdx(1), &core, false),
+            direction
+        );
+    }
+}
+
+#[test]
+fn labeled_core_preserves_quadruple_bond_at_attachment() {
+    let molecule = mol("[Re]$[Re]");
+    let rows = rgroup_decompose_labeled("[#75]$[*:1]", &[&molecule]).unwrap();
+    let row = rows[0].as_ref().expect("quadruple-bonded metal must match");
+    let core = mol(&row.core_smiles);
+    assert_eq!(core.bond_count(), 1);
+    assert_eq!(core.bond(BondIdx(0)).order, BondOrder::Quadruple);
+    let group = mol(&row.r_groups[&1]);
+    assert_eq!(group.bond_count(), 1);
+    assert_eq!(group.bond(BondIdx(0)).order, BondOrder::Quadruple);
+}

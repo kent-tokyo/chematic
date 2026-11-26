@@ -137,3 +137,7 @@ pub fn project_cjson_to_cml_with_limits(
     verify(&record, &output, limits)?;
     Ok(output)
 }
+
+#[cfg(test)]
+#[path = "cjson_cml_tests.rs"]
+mod tests;

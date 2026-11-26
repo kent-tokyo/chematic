@@ -2529,3 +2529,21 @@ mod tests {
         }
     }
 }
+
+#[test]
+fn numeric_type_registry_guard_rejects_wrong_element_and_unknown_type() {
+    let carbon = chematic_smiles::parse("C").unwrap();
+    assert!(validate_numeric_type_elements(&carbon, &[1]).is_ok());
+    let mismatch = validate_numeric_type_elements(&carbon, &[6]).unwrap_err();
+    assert!(
+        mismatch
+            .to_string()
+            .contains("semantic-compatibility invariant violated")
+    );
+    let unknown = validate_numeric_type_elements(&carbon, &[255]).unwrap_err();
+    assert!(
+        unknown
+            .to_string()
+            .contains("does not exist in the numeric type registry")
+    );
+}

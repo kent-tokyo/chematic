@@ -1483,3 +1483,7 @@ mod layout_boundary_contract_tests {
         assert_eq!(permutation_is_odd(&[1, 2, 3], &[1, 2, 4]), None);
     }
 }
+
+#[cfg(test)]
+#[path = "stereo_depiction/retry_tests.rs"]
+mod retry_tests;

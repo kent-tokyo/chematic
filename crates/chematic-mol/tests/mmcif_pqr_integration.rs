@@ -114,6 +114,22 @@ fn multi_chain_model_altloc_fixture_round_trips_through_write_read() {
     assert_eq!(r.space_group, r2.space_group);
 }
 
+#[test]
+fn insertion_code_round_trips_without_changing_residue_number() {
+    let mut input = parse_mmcif(MULTI_CHAIN_MODEL_ALTLOC_MMCIF).unwrap();
+    input.atoms[0].icode = Some('B');
+    let written = write_mmcif(
+        &input.atoms,
+        input.cell.as_ref(),
+        input.space_group.as_deref(),
+        "INS",
+    );
+    let roundtrip = parse_mmcif(&written).unwrap();
+    assert_eq!(roundtrip.atoms[0].icode, Some('B'));
+    assert_eq!(roundtrip.atoms[0].res_seq, input.atoms[0].res_seq);
+    assert_eq!(roundtrip.atoms[0].chain_id, input.atoms[0].chain_id);
+}
+
 /// A realistic multi-chain PQR fixture (with chain-id column present),
 /// hand-authored per the APBS/PDB2PQR field layout.
 const MULTI_CHAIN_PQR: &str = "\
@@ -180,10 +196,29 @@ fn mmcif_quotes_names_and_space_group_containing_apostrophes() {
 
 #[test]
 fn mmcif_rejects_invalid_postfix_charge() {
-    for charge in ["x+", "x-"] {
+    for charge in ["x+", "x-", "-2+", "+2-", "-9223372036854775808-"] {
         let input = format!(
-            "data_bad\nloop_\n_atom_site.type_symbol\n_atom_site.pdbx_formal_charge\nC {charge}\n"
+            "data_bad\nloop_\n_atom_site.type_symbol\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.pdbx_formal_charge\nC 0 0 0 {charge}\n"
         );
-        assert!(parse_mmcif(&input).is_err(), "{charge}");
+        assert_eq!(
+            parse_mmcif(&input).unwrap_err(),
+            chematic_mol::mmcif::MmcifError::InvalidInteger {
+                column: "pdbx_formal_charge",
+                raw: charge.to_owned(),
+            },
+            "{charge}"
+        );
     }
+}
+
+#[test]
+fn mmcif_postfix_negative_integer_handles_signed_range_boundary() {
+    let input = |value: &str| {
+        format!(
+            "data_x\nloop_\n_atom_site.type_symbol\n_atom_site.Cartn_x\n_atom_site.Cartn_y\n_atom_site.Cartn_z\n_atom_site.label_seq_id\nC 0 0 0 {value}\n"
+        )
+    };
+    let parsed = parse_mmcif(&input("9223372036854775808-")).unwrap();
+    assert_eq!(parsed.atoms[0].label_seq_id, Some(i64::MIN));
+    assert!(parse_mmcif(&input("9223372036854775809-")).is_err());
 }

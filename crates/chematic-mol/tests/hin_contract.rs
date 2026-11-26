@@ -224,3 +224,35 @@ fn numeric_spelling_and_signed_zero_do_not_force_source_reformatting() {
     assert_eq!(write_hin_record(&record), text);
     rejects(&PAIR.replace("-0.75", "1e309"));
 }
+
+#[test]
+fn malformed_headers_short_atoms_and_duplicate_ids_are_rejected() {
+    for (source, expected) in [
+        ("mol 1\n", "mol requires an ID and quoted title"),
+        (
+            "mol 1 \"x\"\natom 1 C C\nendmol 1\n",
+            "atom requires identity, charge, coordinates and degree",
+        ),
+        (
+            "mol 1 \"x\"\natom 1 C C CT - 0 0 0 0 0\natom 1 N N N - 0 1 0 0 0\nendmol 1\n",
+            "duplicate atom ID",
+        ),
+    ] {
+        let error = parse_hin_record(source).unwrap_err();
+        assert!(error.to_string().contains(expected), "{error}");
+    }
+}
+
+#[test]
+fn excessive_directed_connectivity_is_rejected_before_graph_construction() {
+    let triangle = "mol 1 \"x\"\natom 1 C C CT - 0 0 0 0 2 2 s 3 s\natom 2 C C CT - 0 1 0 0 2 1 s 3 s\natom 3 C C CT - 0 0 1 0 2 1 s 2 s\nendmol 1\n";
+    let limits = HinParseLimits {
+        max_atoms: 3,
+        max_bonds: 2,
+        ..Default::default()
+    };
+    assert_eq!(
+        parse_hin_record_with_limits(triangle, limits).unwrap_err(),
+        HinError::ResourceLimit
+    );
+}

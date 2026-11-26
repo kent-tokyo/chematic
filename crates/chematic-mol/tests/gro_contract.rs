@@ -224,6 +224,23 @@ fn one_decimal_coordinate_fields_are_supported() {
     assert_eq!(d.atoms[0].position_nm, [-1.2, 0.5, 4.8]);
 }
 
+#[test]
+fn trailing_blank_lines_obey_the_same_line_length_limit() {
+    let data = frame(&row("CA", 3, false), "1 1 1");
+    let max_line_len = data.lines().map(str::len).max().unwrap();
+    let limits = GroParseLimits {
+        max_line_len,
+        ..Default::default()
+    };
+    let accepted = format!("{data}{}\n", " ".repeat(max_line_len));
+    assert!(parse_gro_with_limits(&accepted, &limits).is_ok());
+    let rejected = format!("{data}{}\n", " ".repeat(max_line_len + 1));
+    assert!(matches!(
+        parse_gro_with_limits(&rejected, &limits),
+        Err(GroError::LineTooLong { line: 5, .. })
+    ));
+}
+
 #[path = "support/upstream_diagnostics.rs"]
 mod upstream_diagnostics;
 use upstream_diagnostics::diagnostic;

@@ -17,6 +17,20 @@ fn pseudoatom_fixture() -> Molecule {
     builder.build()
 }
 
+#[test]
+fn v2000_numbered_r_symbol_is_read_and_preserved_on_write() {
+    let text = "R-group\n  chematic\n\n  1  0  0  0  0  0            999 V2000\n    0.0000    0.0000    0.0000 R12 0  0  0  0  0  0  0  0  0  0  0  0\nM  END\n";
+    let (mol, _) = parse_mol(text).unwrap();
+    assert!(mol.atom(AtomIdx(0)).wildcard);
+    assert_eq!(mol.r_group_label(AtomIdx(0)).unwrap().number(), Some(12));
+    let written = write_mol(&mol, &MolMetadata::default());
+    let (reparsed, _) = parse_mol(&written).unwrap();
+    assert_eq!(
+        reparsed.r_group_label(AtomIdx(0)).unwrap().number(),
+        Some(12)
+    );
+}
+
 fn assert_fixture(mol: &Molecule) {
     assert_eq!(mol.atom_count(), 5);
     let carbon = mol.atom(AtomIdx(0));
