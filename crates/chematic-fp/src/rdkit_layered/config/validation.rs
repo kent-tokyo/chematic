@@ -116,3 +116,27 @@ fn validate_mask(c: &RdkitLayeredConfig) -> Result<(), RdkitLayeredError> {
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::same_indices;
+    use chematic_core::{BondIdx, BondOrder};
+
+    #[test]
+    fn sanitized_view_must_preserve_indices_and_supported_bonds() {
+        let source = chematic_smiles::parse("CC").unwrap();
+        let different_atoms = chematic_smiles::parse("CO").unwrap();
+        assert_eq!(
+            same_indices(&source, &different_atoms).unwrap_err().code,
+            "index_changing_view"
+        );
+
+        let mut unsupported = source.clone();
+        unsupported.set_bond_order(BondIdx(0), BondOrder::QueryAny);
+        assert_eq!(
+            same_indices(&source, &unsupported).unwrap_err().code,
+            "unsupported_bond"
+        );
+        assert!(same_indices(&source, &source).is_ok());
+    }
+}
