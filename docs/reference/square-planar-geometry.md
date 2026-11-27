@@ -72,6 +72,29 @@ or a later optimization. It does not change `rdkit_embed`, the timed ensemble
 API, or the existing checked-conformer stereo acceptance policy. Rust exposes
 the same operation in `square_planar_embedding`.
 
+`rdkit_embed_square_planar_with_retry()` offers a separate bounded retry:
+
+```python
+result = mol.rdkit_embed_square_planar_with_retry(random_seed=1)
+coords = result["coordinates"]
+print(result["attempts"], result["used_tightened_bounds"])
+```
+
+It returns the first result unchanged if that result passes the original angle
+policy. `initial_rejection` is `None` in this case, and otherwise records why
+the first coordinates failed the angle policy. Only if a measured final angle
+is outside that policy does it make at most one more
+attempt, with the same seed and tighter embedding bounds: the trans minimum
+is raised by 20° (capped at 180°) and the cis tolerance is reduced by 10°
+(floored at 0°). Both attempts are checked against the original policy, not
+the tighter bounds. Setup, invalid-input and embedding failures are not
+retried. If tightening cannot change the bounds, no retry is made. When both
+attempts fail, the error includes both reasons. A retry repeats embedding and
+can take substantially longer; it is not a time limit or a guarantee of a
+result. `attempts` counts these whole embedding calls; each call can itself
+perform multiple internal initialization attempts. The numeric adjustments
+are an experimental heuristic and may be unsuitable for particular complexes.
+
 The Python regression tests compare atom order and bond connectivity first,
 then compare every reported angle with RDKit's `GetAngleDeg` on six fixed Pt
 examples spanning SP1–SP3 and two SMILES atom orders. They also check three

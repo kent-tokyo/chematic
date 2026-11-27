@@ -92,11 +92,100 @@ pub fn rdkit_embed_square_planar(
     embed_options: &RdkitEmbedOptions,
     config: SquarePlanarEmbedConfig,
 ) -> Result<Vec<[f64; 3]>, SquarePlanarEmbedError> {
-    let constraints = square_planar_constraints(mol, config)?;
+    embed_with_bounds(mol, embed_options, config, config)
+}
+
+fn embed_with_bounds(
+    mol: &Molecule,
+    embed_options: &RdkitEmbedOptions,
+    bounds: SquarePlanarEmbedConfig,
+    acceptance: SquarePlanarEmbedConfig,
+) -> Result<Vec<[f64; 3]>, SquarePlanarEmbedError> {
+    let constraints = square_planar_constraints(mol, bounds)?;
     let coords = rdkit_embed_molecule_with_constraints(mol, embed_options, &constraints)
         .map_err(SquarePlanarEmbedError::Embed)?;
-    validate_angles(mol, &coords, config)?;
+    validate_angles(mol, &coords, acceptance)?;
     Ok(coords)
+}
+
+/// A successful bounded retry. Coordinates meet the original angle policy.
+#[derive(Debug)]
+pub struct SquarePlanarRetryResult {
+    pub coords: Vec<[f64; 3]>,
+    pub attempts: u8,
+    pub used_tightened_bounds: bool,
+    /// Reason the first set of bounds was rejected, if a retry succeeded.
+    pub initial_rejection: Option<String>,
+}
+
+/// The original failure, or both failures when a second attempt was made.
+#[derive(Debug)]
+pub enum SquarePlanarRetryError {
+    Initial(SquarePlanarEmbedError),
+    Both {
+        initial: Box<SquarePlanarEmbedError>,
+        retry: Box<SquarePlanarEmbedError>,
+    },
+}
+
+impl core::fmt::Display for SquarePlanarRetryError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Self::Initial(error) => write!(f, "{error}"),
+            Self::Both { initial, retry } => write!(
+                f,
+                "initial attempt: {initial}; tightened-bounds retry: {retry}"
+            ),
+        }
+    }
+}
+impl std::error::Error for SquarePlanarRetryError {}
+
+/// Run one attempt and, only after a final angle rejection, at most one more
+/// with the same seed and tighter bounds. The original acceptance policy is
+/// applied to both outputs. Setup and embedding errors are not retried.
+pub fn rdkit_embed_square_planar_with_retry(
+    mol: &Molecule,
+    embed_options: &RdkitEmbedOptions,
+    config: SquarePlanarEmbedConfig,
+) -> Result<SquarePlanarRetryResult, SquarePlanarRetryError> {
+    let initial = match rdkit_embed_square_planar(mol, embed_options, config) {
+        Ok(coords) => {
+            return Ok(SquarePlanarRetryResult {
+                coords,
+                attempts: 1,
+                used_tightened_bounds: false,
+                initial_rejection: None,
+            });
+        }
+        Err(error @ SquarePlanarEmbedError::AngleOutOfRange { .. }) => error,
+        Err(error) => return Err(SquarePlanarRetryError::Initial(error)),
+    };
+    let tighter = tightened_bounds(config);
+    if tighter.trans_min_degrees == config.trans_min_degrees
+        && tighter.cis_tolerance_degrees == config.cis_tolerance_degrees
+    {
+        return Err(SquarePlanarRetryError::Initial(initial));
+    }
+    match embed_with_bounds(mol, embed_options, tighter, config) {
+        Ok(coords) => Ok(SquarePlanarRetryResult {
+            coords,
+            attempts: 2,
+            used_tightened_bounds: true,
+            initial_rejection: Some(initial.to_string()),
+        }),
+        Err(retry) => Err(SquarePlanarRetryError::Both {
+            initial: Box::new(initial),
+            retry: Box::new(retry),
+        }),
+    }
+}
+
+fn tightened_bounds(config: SquarePlanarEmbedConfig) -> SquarePlanarEmbedConfig {
+    SquarePlanarEmbedConfig {
+        trans_min_degrees: (config.trans_min_degrees + 20.0).min(180.0),
+        cis_tolerance_degrees: (config.cis_tolerance_degrees - 10.0).max(0.0),
+    }
 }
 
 fn square_planar_constraints(
@@ -315,6 +404,58 @@ mod tests {
                 square_planar_constraints(&mol, config),
                 Err(SquarePlanarEmbedError::InvalidThreshold)
             ));
+        }
+    }
+
+    #[test]
+    fn retry_tightening_is_bounded_and_initial_errors_are_preserved() {
+        let tighter = tightened_bounds(SquarePlanarEmbedConfig::default());
+        assert_eq!(
+            (tighter.trans_min_degrees, tighter.cis_tolerance_degrees),
+            (170.0, 20.0)
+        );
+        let clamped = tightened_bounds(SquarePlanarEmbedConfig {
+            trans_min_degrees: 179.0,
+            cis_tolerance_degrees: 4.0,
+        });
+        assert_eq!(
+            (clamped.trans_min_degrees, clamped.cis_tolerance_degrees),
+            (180.0, 0.0)
+        );
+        let mol = chematic_smiles::parse("CCO").unwrap();
+        let err = rdkit_embed_square_planar_with_retry(
+            &mol,
+            &RdkitEmbedOptions::default(),
+            SquarePlanarEmbedConfig::default(),
+        )
+        .unwrap_err();
+        assert!(matches!(
+            err,
+            SquarePlanarRetryError::Initial(SquarePlanarEmbedError::NoDeclaration)
+        ));
+    }
+
+    #[test]
+    fn multiple_fragments_keep_each_centers_constraints_local() {
+        use chematic_core::AtomIdx;
+        let mol = chematic_smiles::parse("[Pt@SP1](F)(Cl)(Br)I.F[Pt@SP3](Cl)Br").unwrap();
+        for config in [
+            SquarePlanarEmbedConfig::default(),
+            tightened_bounds(SquarePlanarEmbedConfig::default()),
+        ] {
+            let constraints = square_planar_constraints(&mol, config).unwrap();
+            assert_eq!(constraints.bond_angles.len(), 9);
+            for angle in constraints.bond_angles {
+                let center = AtomIdx(angle.center as u32);
+                assert!(
+                    mol.bond_between(center, AtomIdx(angle.atom1 as u32))
+                        .is_some()
+                );
+                assert!(
+                    mol.bond_between(center, AtomIdx(angle.atom2 as u32))
+                        .is_some()
+                );
+            }
         }
     }
 }

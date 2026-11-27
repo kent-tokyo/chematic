@@ -112,3 +112,41 @@ def test_square_planar_vacancy_measures_only_real_ligands(smiles):
     assert len(report["trans"]) == 1 and len(report["cis"]) == 2
     for a, b, angle in report["trans"] + report["cis"]:
         assert angle == pytest.approx(rdMolTransforms.GetAngleDeg(conf, a, report["center"], b), abs=1e-10)
+
+
+def test_square_planar_retry_preserves_first_success():
+    mol = chematic.from_smiles("[Pt@SP3](F)(Cl)(Br)I").add_hydrogens()
+    for seed in range(1, 11):
+        try:
+            first = mol.rdkit_embed_square_planar(random_seed=seed)
+            break
+        except RuntimeError:
+            continue
+    else:
+        pytest.fail("no initial embedding met the angle policy")
+    result = mol.rdkit_embed_square_planar_with_retry(random_seed=seed)
+    assert result["attempts"] == 1 and result["used_tightened_bounds"] is False
+    assert result["initial_rejection"] is None
+    assert result["coordinates"] == first
+
+
+def test_square_planar_retry_recovers_rejected_embedding():
+    mol = chematic.from_smiles("[Pt@SP1](F)(Cl)(Br)I").add_hydrogens()
+    for seed in range(1, 16):
+        try:
+            mol.rdkit_embed_square_planar(random_seed=seed)
+        except RuntimeError:
+            try:
+                result = mol.rdkit_embed_square_planar_with_retry(random_seed=seed)
+                break
+            except RuntimeError:
+                continue
+    else:
+        pytest.fail("no retry recovered a rejected embedding")
+    assert result["attempts"] == 2 and result["used_tightened_bounds"] is True
+    assert "outside the selected limits" in result["initial_rejection"]
+    report = mol.square_planar_geometry_diagnostics(result["coordinates"])[0]
+    assert all(angle >= 150.0 for _, _, angle in report["trans"])
+    assert all(60.0 <= angle <= 120.0 for _, _, angle in report["cis"])
+    with pytest.raises(ValueError, match="no square-planar declaration"):
+        chematic.from_smiles("CCO").rdkit_embed_square_planar_with_retry()

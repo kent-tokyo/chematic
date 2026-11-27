@@ -82,6 +82,7 @@ A retained historical record is not evidence about current source.
 - [Element-stratified force-field development comparison](2026-11-27-forcefield-hetero-development.md)
 - [Cooperative force-field minimization development check](2026-11-27-cooperative-minimization.md)
 - [Square-planar constrained embedding development probe](2026-11-27-square-planar-embedding-development.md)
+- [Square-planar bounded retry development probe](2026-11-27-square-planar-retry-development.md)
 
 - [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
 

@@ -1,0 +1,1611 @@
+{
+  "selection": "exposed development and authored synthetic molecules; neither is a holdout",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6 (v3.13.6:4e665351082, Aug  6 2025, 11:22:35) [Clang 16.0.0 (clang-1600.0.26.6)]",
+  "wheel_sha256": "2e46dc1e0c1ce15be9a71243e4eb29d91428e0b718643eb779346c0e00897f41",
+  "extension_sha256": "13899a39006757d03244bca678a210bc16710bf87ff20f19cab1dc280c62b24d",
+  "script_sha256": "8f3a5b0baa5f20caec5d7535b1764bb14a95bb090c91d1e2707fbec9b9243d35",
+  "case_script_sha256": "eb91441d9fd7b4c7c0b4ae3aceff757a11ad9d68e2939010652a5e35b5f2d619",
+  "records": [
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 1274667
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 228666
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 235375
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 219666
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 224625
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 224042
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 136750
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 131333
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 130375
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 134292
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 133417
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 127916
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 2678291
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 3150084
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 7979667
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 6407417
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 333542
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 322500
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 377250
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 303708
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 381167
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 386083
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 351042
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 355834
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 362042
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 328416
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 365125
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 336708
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 354958
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 339500
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 335042
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 339584
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 379500
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 339333
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 283458
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 269875
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 250333
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 236000
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 245292
+    },
+    {
+      "block": 1,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 242875
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 479167
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 230458
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 472583
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 464583
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 230625
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 468542
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 138125
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 275917
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 134416
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 274583
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 273500
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 268583
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 1,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 4935583
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 5377333
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 14889541
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 6269917
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 755834
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 754375
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 794250
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 694500
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 760958
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 709333
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 594042
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 608209
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 594292
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 570708
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 637666
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 581959
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 597125
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 592750
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 578917
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 586042
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 606167
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 586959
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 480417
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 515708
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 243875
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 467125
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 486167
+    },
+    {
+      "block": 2,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 512542
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 502166
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 240625
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 499208
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 490250
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 243416
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 494333
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 145417
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 285166
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 140250
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 289750
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 287625
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 283000
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 1,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 4615000
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 5323208
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 14873083
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 6027583
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 811958
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 812917
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 859750
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 748500
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 823667
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 784459
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 562000
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 576333
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 564834
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 544000
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 606959
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 554458
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 567625
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 563709
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 606834
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 674250
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 695583
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 672041
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 556250
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 2,
+      "elapsed_ns": 595375
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 282625
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 543500
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 558041
+    },
+    {
+      "block": 3,
+      "method": "retry",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 23,
+      "status": "returned",
+      "attempts": 2,
+      "elapsed_ns": 485625
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 229166
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP1](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 219875
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 226750
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP2](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 221459
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 219917
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "[Pt@SP3](F)(Cl)(Br)I",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 225292
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 131416
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP1](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 131209
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 1,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 128167
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP2](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 133541
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 130209
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "F[Pt@SP3](Cl)Br",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 129208
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 2336917
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+      "seed": 42,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 2806666
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 1,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 8086416
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "development",
+      "smiles": "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+      "seed": 42,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 6355291
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 319583
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP1](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 317334
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 369375
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP2](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 300500
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 355833
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Pd@SP3](F)(Cl)(Br)N",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 313417
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 283458
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP1](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 290417
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 292625
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP2](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 304334
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 360417
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "N[Pt@SP3](F)Cl",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 333208
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 346250
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP1](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 337291
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 326833
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP2](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 338500
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 373041
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "[Ni@SP3](F)(Cl)(Br)S",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 338625
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 276334
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP1](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 297167
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 7,
+      "status": "returned",
+      "attempts": 1,
+      "elapsed_ns": 282833
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP2](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 272334
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 7,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 280042
+    },
+    {
+      "block": 4,
+      "method": "single",
+      "group": "synthetic",
+      "smiles": "O[Pd@SP3](Cl)Br",
+      "seed": 23,
+      "status": "error",
+      "attempts": 1,
+      "elapsed_ns": 279042
+    }
+  ]
+}
