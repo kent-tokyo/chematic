@@ -534,22 +534,27 @@ fn tetrahedral_positions(
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
 /// geometry check inline. Plain tetrahedral centers and explicitly supported
-/// phosphorus, sulfur and three-coordinate selenonium are in scope. Allene central atoms,
+/// phosphorus, sulfur and selected three-coordinate selenium are in scope. Allene central atoms,
 /// which declare axial chirality via bond directions rather than
 /// `Atom::chirality`, are handled by the double-bond path instead.
 fn supported_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
     let atom = mol.atom(idx);
-    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
-    // S+ with three single bonds, have a stereochemically active lone pair.
-    // Represent it by the direction opposite the three unit bond vectors.
-    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
+    // For the tested three-coordinate neutral sulfur and selenium classes,
+    // represent the lone pair opposite the three unit bond vectors.
+    let element = atom.element.atomic_number();
+    let neutral_chalcogen_lone_pair = matches!(element, 16 | 34)
         && atom.charge == 0
+        && (element != 34 || implicit_hcount(mol, idx) == 0)
         && mol.neighbors(idx).count() == 3
         && mol
             .neighbors(idx)
             .filter(|(n, b)| {
                 mol.bond(*b).order == BondOrder::Double
-                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
+                    && match element {
+                        16 => matches!(mol.atom(*n).element.atomic_number(), 7 | 8),
+                        34 => matches!(mol.atom(*n).element.atomic_number(), 7 | 8 | 16 | 34),
+                        _ => false,
+                    }
             })
             .count()
             == 1
@@ -570,7 +575,7 @@ fn supported_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool
         && atom.charge == 1
         && mol.neighbors(idx).count() == 3
         && all_single_ish;
-    neutral_sulfur_lone_pair || sulfonium_lone_pair
+    neutral_chalcogen_lone_pair || sulfonium_lone_pair
 }
 
 fn tetrahedral_constraint_for(

@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    fn unsupported_other_selenium_stereo_is_not_silently_accepted() {
+    fn degenerate_other_selenium_stereo_is_not_silently_accepted() {
         use chematic_core::AtomIdx;
         let smiles = "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br";
         let mol = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
@@ -279,14 +279,34 @@ mod tests {
         let SquarePlanarCheckedError::OtherStereo { unevaluable, .. } = error else {
             panic!("expected unevaluable selenium stereo")
         };
-        assert!(unevaluable.contains(&(
-            StereoElement::Tetrahedral(AtomIdx(11)),
-            StereoRejectionReason::UnsupportedCoordination,
-        )));
+        assert!(unevaluable.iter().any(|(element, reason)| *element
+            == StereoElement::Tetrahedral(AtomIdx(11))
+            && *reason != StereoRejectionReason::UnsupportedCoordination));
         assert!(
             !unevaluable
                 .iter()
                 .any(|(element, _)| *element == StereoElement::Tetrahedral(AtomIdx(18)))
         );
+    }
+
+    #[test]
+    fn square_planar_selenium_fixture_checks_other_center_and_mirror() {
+        let reference: serde_json::Value = serde_json::from_str(include_str!(
+            "stereo_constraints_se_square_planar_oracle.json"
+        ))
+        .unwrap();
+        assert_eq!(reference["expected_cip"], reference["rdkit_3d_cip"]);
+        assert_ne!(reference["expected_cip"], reference["rdkit_mirror_cip"]);
+        let mol = chematic_chem::add_hydrogens(
+            &chematic_smiles::parse(reference["smiles"].as_str().unwrap()).unwrap(),
+        );
+        let coords: Vec<[f64; 3]> = serde_json::from_value(reference["coords"].clone()).unwrap();
+        let mirror: Vec<_> = coords.iter().map(|&[x, y, z]| [-x, y, z]).collect();
+        assert!(check_planarity(&mol, &geometry(&coords), 0.3).is_ok());
+        assert_eq!(check_other_stereo(&mol, &geometry(&coords)).unwrap(), 1);
+        assert!(matches!(check_other_stereo(&mol, &geometry(&mirror)),
+            Err(SquarePlanarCheckedError::OtherStereo { violated, unevaluable })
+            if violated == [StereoElement::Tetrahedral(chematic_core::AtomIdx(11))]
+                && unevaluable.is_empty()));
     }
 }

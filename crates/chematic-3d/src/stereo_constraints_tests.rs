@@ -74,6 +74,80 @@ mod tests {
     }
 
     #[test]
+    fn neutral_selenium_double_bond_stereo_matches_rdkit_and_mirrors() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("stereo_constraints_se_neutral_oracle.json"))
+                .unwrap();
+        let rows = fixture["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 24);
+        for row in rows {
+            let smiles = row["smiles"].as_str().unwrap();
+            let molecule = chematic_chem::add_hydrogens(&mol(smiles));
+            let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+            assert_eq!(points.len(), molecule.atom_count());
+            let coords = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            let mirror = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(-x, y, z))
+                    .collect(),
+            };
+            let original = verify_stereo(&molecule, &coords);
+            let reflected = verify_stereo(&molecule, &mirror);
+            assert_eq!(original.n_declared(), 1, "{smiles}");
+            assert_eq!(original.n_unevaluable(), 0, "{smiles}");
+            assert_eq!(original.n_violations(), 0, "{smiles}");
+            assert_eq!(reflected.n_violations(), 1, "{smiles}");
+            assert_eq!(reflected.n_unevaluable(), 0, "{smiles}");
+        }
+    }
+
+    #[test]
+    fn neutral_selenium_repair_rechecks_declared_stereo() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("stereo_constraints_se_neutral_oracle.json"))
+                .unwrap();
+        let row = fixture["rows"].as_array().unwrap().first().unwrap();
+        let molecule = chematic_chem::add_hydrogens(&mol(row["smiles"].as_str().unwrap()));
+        let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+        let mirror = Coords3D {
+            points: points
+                .iter()
+                .map(|&[x, y, z]| Point3::new(-x, y, z))
+                .collect(),
+        };
+        assert_eq!(verify_stereo(&molecule, &mirror).n_violations(), 1);
+        let outcome = repair_stereo(&molecule, &mirror).expect("acyclic repair should succeed");
+        assert_eq!(outcome.repaired.len(), 1);
+        let checked = verify_stereo(&molecule, &outcome.coords);
+        assert_eq!((checked.n_violations(), checked.n_unevaluable()), (0, 0));
+    }
+
+    #[test]
+    fn selenium_other_double_bond_coordination_stays_unevaluable() {
+        for smiles in ["C[Se@](=C)F", "C[Se@+](=O)F", "C[Se@H](=O)F"] {
+            let molecule = chematic_chem::add_hydrogens(&mol(smiles));
+            assert!(
+                matches!(
+                    tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+                    Err(StereoRejectionReason::UnsupportedCoordination)
+                ),
+                "{smiles}"
+            );
+        }
+        let implicit_h = mol("C[Se@H](=O)F");
+        assert!(matches!(
+            tetrahedral_constraint_for(&implicit_h, AtomIdx(1)),
+            Err(StereoRejectionReason::UnsupportedCoordination)
+        ));
+    }
+
+    #[test]
     fn sulfoxide_parity_matches_rdkit_coordinates_and_repair() {
         // RDKit 2026.09.2 ETKDG, seed 42, C[S@](=O)CC.
         let m = mol("C[S@](=O)CC");
