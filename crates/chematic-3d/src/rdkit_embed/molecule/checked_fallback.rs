@@ -13,8 +13,8 @@ pub struct CheckedConformer {
     pub force_field_error: Option<String>,
 }
 
-/// Counts for a mixed checked ensemble. Detailed rejection counts are
-/// available when MMFF setup fails and the embedded geometries are screened.
+/// Counts for a mixed checked ensemble. Rejection counts describe discarded
+/// candidates, not optimized geometries that were replaced by a safe fallback.
 #[derive(Clone, Debug)]
 pub struct CheckedEnsembleDiagnostics {
     pub conformers: Vec<CheckedConformer>,
@@ -70,7 +70,7 @@ pub fn etkdg_embed_multiple_confs_mixed_checked_with_fallback(
     .conformers)
 }
 
-/// Also report why embedded coordinates were rejected when MMFF setup fails.
+/// Also report rejection reasons after MMFF optimization or setup failure.
 pub fn etkdg_embed_multiple_confs_mixed_checked_diagnostics(
     mh: &Molecule,
     num_confs: usize,
@@ -165,7 +165,10 @@ fn optimize_embedded_checked_diagnostics_inner(
             });
         }
     };
-    let mut conformers = optimize_checked_ensemble_with_field(mh, embedded, max_iters, &field)?;
+    let (mut conformers, rejected) =
+        super::checked_optimization::optimize_checked_ensemble_with_rejections(
+            mh, embedded, max_iters, &field,
+        )?;
     for conformer in &mut conformers {
         repair_linear_nitrogen(mh, conformer, retry_iters);
     }
@@ -182,8 +185,8 @@ fn optimize_embedded_checked_diagnostics_inner(
         conformers,
         embedded: count,
         force_field_error: None,
-        stereo_violated: None,
-        stereo_unevaluable: None,
-        invalid_coordinates: None,
+        stereo_violated: Some(rejected.stereo_violated),
+        stereo_unevaluable: Some(rejected.stereo_unevaluable),
+        invalid_coordinates: Some(rejected.invalid_coordinates),
     })
 }

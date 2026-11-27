@@ -14,6 +14,30 @@ def test_timed_conformer_generation_reports_mmff_unavailable():
     assert all(row[0] == -1 and row[1] is None for row in result["conformers"])
 
 
+def test_checked_mmff_reports_discarded_stereo_violation():
+    mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
+    coords = mol._timed_prepare_corrected().embed(42)
+    assert coords is not None and mol._timed_stereo_valid(coords)
+    mirror = [[-x, y, z] for x, y, z in coords]
+    assert not mol._timed_stereo_valid(mirror)
+    rows, embedded, error, violated, unevaluable, invalid = mol._timed_optimize_embedded(
+        mirror, max_mmff_iters=0
+    )
+    assert rows == [] and embedded == 1 and error is None
+    assert (violated, unevaluable, invalid) == (1, 0, 0)
+
+
+def test_timed_mmff_reports_zero_rejection_counts_when_attempts_succeed():
+    for preview in (False, True):
+        result = chematic.generate_conformers_timed(
+            "CCO", 2, timeout_seconds=15, return_partial=True, return_preview=preview
+        )
+        assert result["status"] == "completed"
+        assert result["embedded"] == 2 and result["force_field_error"] is None
+        assert (result["stereo_violated"], result["stereo_unevaluable"],
+                result["invalid_coordinates"]) == (0, 0, 0)
+
+
 def test_timed_conformer_generation_terminates_and_reports_timeout():
     result = chematic.generate_conformers_timed("C" * 80, 20, timeout_seconds=0.1)
     assert result["status"] == "timeout"

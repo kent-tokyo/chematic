@@ -37,4 +37,4 @@ report the last accepted coordinates' completed-iteration count and optional
 energy. A predicate that never cancels follows the existing minimization path.
 
 A local selected-development-set check is recorded in the
-[cooperative minimization benchmark](../../benchmarks/2026-11-27-cooperative-minimization.md).
+[cooperative minimization benchmark](https://github.com/kent-tokyo/chematic/blob/b7bd7e57db8bc597bd92ba8e713a7e454712bfd9/benchmarks/2026-11-27-cooperative-minimization.md).

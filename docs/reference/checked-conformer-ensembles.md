@@ -40,10 +40,14 @@ and returns `(conformers, embedded, force_field_error, stereo_violated,
 stereo_unevaluable, invalid_coordinates)`. When MMFF setup fails, the last
 three values count embedded candidates rejected for each reason; a candidate
 with both violated and unevaluable stereo is counted as violated. When MMFF
-setup succeeds, or no candidate is embedded, these counts are `None` because
-the optimized path does not classify all its rejections. An empty conformer
-list with an `embedded` count greater than zero can therefore be distinguished
-from a failure to embed any candidate.
+setup succeeds, the counts classify discarded candidates whose original
+embedding failed the declared-stereo or coordinate check after the optimized
+geometry also failed that check. An optimized geometry replaced by a safe
+original embedding is not counted as discarded. A non-finite fallback energy
+is not included in these counts, so they are not necessarily exhaustive. If no
+candidate is embedded, the counts are `None`. An empty conformer list with an
+`embedded` count greater than zero can therefore be distinguished from a
+failure to embed any candidate.
 
 For a wall-clock limit around a whole Python call, use the opt-in process
 wrapper:

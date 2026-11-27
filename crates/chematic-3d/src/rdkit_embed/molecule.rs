@@ -17,6 +17,9 @@ pub use checked_fallback::{
 mod prepared_corrected;
 pub use prepared_corrected::PreparedCorrectedEmbedding;
 
+mod checked_optimization;
+use checked_optimization::optimize_checked_ensemble_with_field;
+
 mod quality_retry;
 use quality_retry::{refine_unfinished_quality_minimum, repair_linear_nitrogen, stereo_safe_retry};
 mod torsion_search;
@@ -509,61 +512,6 @@ fn optimize_checked_ensemble(
     let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
     optimize_checked_ensemble_with_field(mh, embedded, max_iters, &field)
-}
-
-fn optimize_checked_ensemble_with_field(
-    mh: &Molecule,
-    embedded: Vec<Vec<[f64; 3]>>,
-    max_iters: u32,
-    field: &chematic_ff::rdkit_mmff::RdkitMmffField,
-) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
-    let optimized = optimize_mmff_conformers(field, embedded.clone(), max_iters);
-    let mut conformers = Vec::with_capacity(optimized.len());
-    for (mut candidate, original) in optimized.into_iter().zip(embedded) {
-        if !stereo_safe_retry(mh, &candidate.coords) {
-            if !stereo_safe_retry(mh, &original) {
-                continue;
-            }
-            let energy = field.energy(original.as_flattened());
-            if !energy.is_finite() {
-                continue;
-            }
-            candidate = RdkitMmffConformer {
-                coords: original,
-                status: 1,
-                energy,
-            };
-        }
-        conformers.push(candidate);
-    }
-    for conformer in &mut conformers {
-        if conformer.status != 0 {
-            continue;
-        }
-        if !conformer.energy.is_finite()
-            || conformer
-                .coords
-                .iter()
-                .flatten()
-                .any(|value| !value.is_finite())
-        {
-            conformer.status = 1;
-            continue;
-        }
-        let field =
-            chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &conformer.coords, 100.0, true)
-                .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
-        let coordinates = conformer.coords.as_flattened();
-        let mut gradient = vec![0.0; coordinates.len()];
-        field.gradient(coordinates, &mut gradient);
-        if gradient
-            .iter()
-            .any(|value| !value.is_finite() || value.abs() > 0.01)
-        {
-            conformer.status = 1;
-        }
-    }
-    Ok(conformers)
 }
 
 /// Generate a checked ensemble and optionally retry near-linear nitrogen

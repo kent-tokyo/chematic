@@ -158,7 +158,8 @@ impl Mol {
 
     /// Return conformers, embedded count, MMFF setup error, and counts of
     /// stereo violations, unevaluable stereo and invalid coordinates.
-    /// Rejection counts are available when MMFF setup fails.
+    /// Rejection counts describe discarded candidates after optimization or
+    /// MMFF setup failure; some other failure reasons are not counted.
     #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
                         max_mmff_iters = 200, repair_mmff_iters = 0))]
     fn etkdg_embed_multiple_confs_mixed_checked_diagnostics(

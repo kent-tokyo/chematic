@@ -199,7 +199,7 @@ def test_mixed_checked_diagnostics_for_supported_and_empty_ensembles():
         mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(2, random_seed=42)
     )
     assert len(rows) == embedded == 2
-    assert (error, violated, unevaluable, invalid) == (None, None, None, None)
+    assert (error, violated, unevaluable, invalid) == (None, 0, 0, 0)
     assert mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(0) == (
         [], 0, None, None, None, None
     )
