@@ -186,7 +186,7 @@ def test_alternative_stereo_repair_agrees_with_rdkit_on_recovered_case():
 
 def test_distorted_prototype_illustrates_verifier_oracle_boundary():
     Chem = pytest.importorskip("rdkit.Chem")
-    fixture = json.loads(Path(__file__).with_name("stereo_distorted_prototype_719.json").read_text())
+    fixture = json.loads(Path(__file__).with_name("stereo_distorted_prototype_719.json").read_text(encoding="utf-8"))
     mol = chematic.from_smiles(fixture["smiles"])
     assert mol.stereo_3d_diagnostics(fixture["coords"])["atom_stereo"][0]["status"] == "satisfied"
     for geometry, raw in ((fixture["coords"], "satisfied"),
