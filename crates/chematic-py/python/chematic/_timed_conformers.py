@@ -14,7 +14,8 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                               random_seed=42, max_iterations=0,
                               max_mmff_iters=200, repair_mmff_iters=0,
                               return_partial=False, return_preview=False,
-                              preview_require_regular_geometry=False):
+                              preview_require_regular_geometry=False,
+                              conformer_require_regular_geometry=False):
     """Generate an explicit-hydrogen mixed ensemble in an isolated process.
 
     The timeout includes interpreter startup and terminates an ongoing attempt.
@@ -23,8 +24,8 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
     timeout or worker failure when their checkpoint is readable. With both
     return_partial and return_preview, a stereo-checked, unoptimized embedding
     for an interrupted attempt may be returned separately as in_progress.
-    The optional regular-geometry screen applies only to that preview, not to
-    the completed conformers.
+    The preview and completed-conformer geometry screens are independently
+    selectable. Completed conformers failing their screen are counted.
     Coordinates use the atom order
     obtained by parsing ``smiles`` and adding hydrogens in the worker.
     """
@@ -42,10 +43,13 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
         raise TypeError("preview_require_regular_geometry must be a bool")
     if preview_require_regular_geometry and not return_preview:
         raise ValueError("preview_require_regular_geometry requires return_preview=True")
+    if not isinstance(conformer_require_regular_geometry, bool):
+        raise TypeError("conformer_require_regular_geometry must be a bool")
     request = {"smiles": smiles, "num_confs": num_confs, "random_seed": random_seed,
                "max_iterations": max_iterations, "max_mmff_iters": max_mmff_iters,
                "repair_mmff_iters": repair_mmff_iters, "return_preview": return_preview,
                "preview_require_regular_geometry": preview_require_regular_geometry,
+               "conformer_require_regular_geometry": conformer_require_regular_geometry,
                "package_file": os.path.realpath(sys.modules[__package__].__file__)}
     with tempfile.TemporaryDirectory(prefix="chematic-conformers-") if return_partial else contextlib.nullcontext() as directory:
         if directory is not None:
@@ -62,12 +66,14 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                 process.kill()
                 process.communicate()
                 response = {"status": "timeout"}
-                _attach_checkpoint(response, request.get("checkpoint"))
+                _attach_checkpoint(response, request.get("checkpoint"),
+                                   require_regular_geometry=conformer_require_regular_geometry)
                 response["elapsed_seconds"] = time.monotonic() - started
                 return response
             if process.returncode != 0:
                 response = {"status": "worker_error", "error": stderr[-2000:]}
-                _attach_checkpoint(response, request.get("checkpoint"))
+                _attach_checkpoint(response, request.get("checkpoint"),
+                                   require_regular_geometry=conformer_require_regular_geometry)
                 response["elapsed_seconds"] = time.monotonic() - started
                 return response
             try:
@@ -77,7 +83,8 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
             if not isinstance(response, dict) or response.get("status") not in ("completed", "error", "worker_error"):
                 response = {"status": "worker_error", "error": "invalid worker response"}
             if response["status"] != "completed":
-                _attach_checkpoint(response, request.get("checkpoint"))
+                _attach_checkpoint(response, request.get("checkpoint"),
+                                   require_regular_geometry=conformer_require_regular_geometry)
             response["elapsed_seconds"] = time.monotonic() - started
             return response
         finally:
@@ -86,23 +93,27 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                 process.wait()
 
 
-def _attach_checkpoint(response, path):
+def _attach_checkpoint(response, path, *, require_regular_geometry=False):
     if path is None:
         return
     try:
-        response.update(_read_checkpoint(path, recover_prefix=True))
+        response.update(_read_checkpoint(path, recover_prefix=True,
+                                         require_regular_geometry=require_regular_geometry))
     except (OSError, ValueError) as error:
         # Preserve the worker's original failure instead of turning an
         # unreadable checkpoint into an unrelated exception.
         response["checkpoint_error"] = f"{type(error).__name__}: {error}"
 
 
-def _empty_checkpoint():
-    return {"conformers": [], "attempts_completed": 0, "embedded": 0,
+def _empty_checkpoint(*, require_regular_geometry=False):
+    result = {"conformers": [], "attempts_completed": 0, "embedded": 0,
             "attempt_diagnostics": [],
             "force_field_error": None, "stereo_violated": None,
             "stereo_unevaluable": None, "invalid_coordinates": None,
             "unclassified_rejections": None}
+    if require_regular_geometry:
+        result["regular_geometry_rejected"] = 0
+    return result
 
 
 def _attempt_diagnostic(entry):
@@ -126,17 +137,23 @@ def _attempt_diagnostic(entry):
             counts["other"] += 1
     rejected = entry["embedded"] - len(entry["rows"])
     rejection_counts = (entry["violated"], entry["unevaluable"], entry["invalid"])
-    known_rejections = sum(value for value in rejection_counts if value is not None)
+    geometry_rejected = entry.get("geometry_rejected", 0)
+    if type(geometry_rejected) is not int or geometry_rejected < 0:
+        raise ValueError("invalid checkpoint geometry rejection count")
+    known_rejections = sum(value for value in rejection_counts if value is not None) + geometry_rejected
     if rejected < known_rejections:
         raise ValueError("inconsistent checkpoint candidate counts")
     remaining = rejected - known_rejections
     unclassified = (remaining if all(value is not None for value in rejection_counts)
                     or remaining == 0 else None)
-    return {"attempt": entry["attempt"], "embedded": entry["embedded"],
+    result = {"attempt": entry["attempt"], "embedded": entry["embedded"],
             "returned": len(entry["rows"]), "force_field_error": entry["error"],
             "stereo_violated": entry["violated"], "stereo_unevaluable": entry["unevaluable"],
             "invalid_coordinates": entry["invalid"], "unclassified_rejections": unclassified,
             "conformer_status_counts": counts}
+    if "geometry_rejected" in entry:
+        result["regular_geometry_rejected"] = geometry_rejected
+    return result
 
 
 def _apply_checkpoint_entry(result, counts_known, entry):
@@ -153,12 +170,19 @@ def _apply_checkpoint_entry(result, counts_known, entry):
               ("invalid_coordinates", entry.get("invalid")))
     if any(value is not None and (type(value) is not int or value < 0) for _, value in values):
         raise ValueError("invalid checkpoint rejection count")
+    geometry_present = "geometry_rejected" in entry
+    if (("regular_geometry_rejected" in result and not geometry_present)
+            or (geometry_present and result["attempts_completed"] > 0
+                and "regular_geometry_rejected" not in result)):
+        raise ValueError("inconsistent checkpoint geometry screen")
     diagnostic = _attempt_diagnostic(entry)
     values += (("unclassified_rejections", diagnostic["unclassified_rejections"]),)
     result["conformers"].extend(entry["rows"])
     result["attempt_diagnostics"].append(diagnostic)
     result["embedded"] += entry["embedded"]
     result["force_field_error"] = result["force_field_error"] or entry["error"]
+    if geometry_present:
+        result["regular_geometry_rejected"] = result.get("regular_geometry_rejected", 0) + entry["geometry_rejected"]
     for key, value in values:
         if value is None:
             counts_known[key] = False
@@ -196,8 +220,8 @@ def _apply_preview(result, entry):
         result["in_progress"]["geometry_error"] = entry.get("geometry_error")
 
 
-def _read_checkpoint(path, *, recover_prefix=False):
-    result = _empty_checkpoint()
+def _read_checkpoint(path, *, recover_prefix=False, require_regular_geometry=False):
+    result = _empty_checkpoint(require_regular_geometry=require_regular_geometry)
     counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
                                          "unclassified_rejections")}
     records_read = 0
@@ -233,7 +257,8 @@ def _read_checkpoint(path, *, recover_prefix=False):
 def _run_partial(mol, request):
     # Individual mixed-ensemble calls with one attempt use the corrected
     # gradient. This is intentionally a separate profile from a mixed batch.
-    result = _empty_checkpoint()
+    regular_geometry = request.get("conformer_require_regular_geometry", False)
+    result = _empty_checkpoint(require_regular_geometry=regular_geometry)
     counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
                                          "unclassified_rejections")}
     prepared = None
@@ -282,6 +307,8 @@ def _run_partial(mol, request):
             )
         entry = {"attempt": index + 1, "rows": rows, "embedded": embedded, "error": error,
                  "violated": violated, "unevaluable": unevaluable, "invalid": invalid}
+        if regular_geometry:
+            entry["rows"], entry["geometry_rejected"] = _filter_regular_geometry(mol, rows)
         _apply_checkpoint_entry(result, counts_known, entry)
         _append_checkpoint(request["checkpoint"], entry)
     return result
@@ -291,6 +318,16 @@ def _append_checkpoint(path, entry):
     payload = (json.dumps(entry, allow_nan=False, separators=(",", ":")) + "\n").encode("utf-8")
     with open(path, "ab") as stream:
         stream.write(payload)
+
+
+def _filter_regular_geometry(mol, rows):
+    retained = []
+    for row in rows:
+        if not isinstance(row, (list, tuple)) or len(row) != 4:
+            raise ValueError("invalid conformer for regular geometry screening")
+        if mol._timed_stereo_valid(row[2], require_regular_geometry=True):
+            retained.append(row)
+    return retained, len(rows) - len(retained)
 
 
 def _main():
@@ -309,9 +346,14 @@ def _main():
                     max_iterations=request["max_iterations"], max_mmff_iters=request["max_mmff_iters"],
                     repair_mmff_iters=request["repair_mmff_iters"])
             )
+            regular_geometry_rejected = None
+            if request.get("conformer_require_regular_geometry", False):
+                rows, regular_geometry_rejected = _filter_regular_geometry(mol, rows)
             response = {"status": "completed", "conformers": rows, "embedded": embedded,
                         "force_field_error": force_field_error, "stereo_violated": violated,
                         "stereo_unevaluable": unevaluable, "invalid_coordinates": invalid}
+            if regular_geometry_rejected is not None:
+                response["regular_geometry_rejected"] = regular_geometry_rejected
     except Exception as error:
         response = {"status": "error", "error_type": type(error).__name__, "error": str(error)}
     print(json.dumps(response, allow_nan=False))

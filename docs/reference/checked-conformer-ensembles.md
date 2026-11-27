@@ -111,13 +111,42 @@ may appear in `in_progress`.
 
 For each completed attempt, `unclassified_rejections` is the number of embedded
 candidates that were neither returned nor included in the three rejection
-counts. The top-level field sums that number over completed attempts. If a
+counts or the optional `regular_geometry_rejected` count. The top-level field
+sums that number over completed attempts. If a
 rejection count is unknown and a remaining discarded candidate could belong to
 it, the corresponding value is `None`, as is the aggregate. A zero is still
 reported when no discarded candidates remain. The number does not identify the
 cause: a non-finite fallback energy, for example, can contribute to it.
 Impossible candidate totals are reported as a checkpoint error; on timeout or
 worker failure, earlier valid records remain available.
+
+Set `conformer_require_regular_geometry=True` to screen each returned conformer
+after the ordinary checked-ensemble processing. This applies to both normal
+and `return_partial=True` modes, including retained force-field fallback
+coordinates. Rows that fail the conservative declared-stereo and tetrahedral
+geometry screen are omitted. `regular_geometry_rejected` reports the number of
+omitted rows separately from the backend's rejection counters. In partial mode
+it appears in each completed `attempt_diagnostics` record and as an aggregate;
+an interrupted attempt has not yet been counted. On timeout without partial
+results the counter is unavailable. A zero counter does not establish that
+any conformer was generated, that all stereo classes were checked, or that the
+remaining geometry and force-field energies are physically valid. This screen
+can also withhold plausible structures. The option is independent of the
+preview screen below and is included in the worker's deadline.
+
+```python
+result = chematic.generate_conformers_timed(
+    "C[C@H](O)F", 10, timeout_seconds=5.0, return_partial=True,
+    conformer_require_regular_geometry=True,
+)
+print(result.get("regular_geometry_rejected"))
+```
+
+In partial mode, `regular_geometry_rejected` counts completed attempts only;
+zero may mean no attempt completed. If the check itself fails, the worker
+reports an error and previously checkpointed attempts remain available.
+With partial recovery, checkpoints missing the selected screen's rejection
+count are rejected instead of silently treated as zero.
 
 To retain a provisional embedding even when its MMFF optimization is
 interrupted, set `return_preview=True` together with `return_partial=True`.
@@ -151,8 +180,8 @@ because embedding failed, the stereo/geometry check did not pass, or the worker
 was interrupted before its checkpoint was written; absence does not identify
 which occurred. The screen can withhold plausible structures and does not prove
 chemical validity. See [3D stereo diagnostics](stereo-3d-diagnostics.md) for
-its limits. This option affects previews only: completed conformers still use
-the ordinary checked-ensemble verifier, not the regular-geometry screen.
+its limits. This option affects previews only; use
+`conformer_require_regular_geometry=True` separately for completed conformers.
 
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility

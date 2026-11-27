@@ -793,3 +793,213 @@ _run_partial(SlowMol(), {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
     assert result["attempts_completed"] == 0 and result["conformers"] == []
     assert result["in_progress"]["stereo_screen"] == "regular_geometry"
     assert result["in_progress"]["coordinates"] == [[0., 0., 0.]]
+
+
+@pytest.mark.parametrize("counts, expected_unclassified", [((1, 0, 0), 0), ((None, None, None), None)])
+def test_partial_completed_geometry_rejections_are_counted_without_double_counting(tmp_path, counts, expected_unclassified):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class FakeMol:
+        def etkdg_embed_multiple_confs_mixed_checked_diagnostics(self, count, **kwargs):
+            return ([[0, 1.0, [[0., 0., 0.]], None], [1, 2.0, [[1., 0., 0.]], None]],
+                    3, None, *counts)
+
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            assert require_regular_geometry
+            return coords[0][0] == 0.0
+
+    path = tmp_path / "journal.jsonl"
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0,
+               "conformer_require_regular_geometry": True, "checkpoint": str(path)}
+    result = _run_partial(FakeMol(), request)
+    assert result["regular_geometry_rejected"] == 1
+    assert len(result["conformers"]) == 1
+    assert result["unclassified_rejections"] == expected_unclassified
+    assert result["attempt_diagnostics"][0]["regular_geometry_rejected"] == 1
+    assert result["attempt_diagnostics"][0]["unclassified_rejections"] == expected_unclassified
+    assert _read_checkpoint(str(path), require_regular_geometry=True) == result
+    assert _read_checkpoint(str(path)) == result
+
+
+def test_geometry_checkpoint_counts_are_atomic_and_mode_consistent(tmp_path):
+    import json
+    from chematic._timed_conformers import _apply_checkpoint_entry, _empty_checkpoint, _read_checkpoint
+
+    result = _empty_checkpoint(require_regular_geometry=True)
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                   "unclassified_rejections")}
+    entry = {"attempt": 1, "rows": [], "embedded": 0, "error": None,
+             "violated": 0, "unevaluable": 0, "invalid": 0, "geometry_rejected": 1}
+    with pytest.raises(ValueError, match="inconsistent checkpoint candidate counts"):
+        _apply_checkpoint_entry(result, known, entry)
+    assert result == _empty_checkpoint(require_regular_geometry=True)
+    for invalid in (-1, None, True):
+        with pytest.raises(ValueError, match="invalid checkpoint geometry rejection count"):
+            _apply_checkpoint_entry(result, known, {**entry, "geometry_rejected": invalid})
+        assert result == _empty_checkpoint(require_regular_geometry=True)
+    with pytest.raises(ValueError, match="inconsistent checkpoint geometry screen"):
+        _apply_checkpoint_entry(result, known, {k: v for k, v in entry.items() if k != "geometry_rejected"})
+
+    good = {**entry, "geometry_rejected": 0}
+    wrong_mode = {k: v for k, v in good.items() if k != "geometry_rejected"}
+    wrong_mode["attempt"] = 2
+    path = tmp_path / "journal.jsonl"
+    path.write_text(json.dumps(good) + "\n" + json.dumps(wrong_mode) + "\n", encoding="utf-8")
+    recovered = _read_checkpoint(str(path), recover_prefix=True, require_regular_geometry=True)
+    assert recovered["attempts_completed"] == 1 and recovered["regular_geometry_rejected"] == 0
+    assert "inconsistent checkpoint geometry screen" in recovered["checkpoint_error"]
+
+
+def test_geometry_filter_rejects_known_distorted_coordinates():
+    import json
+    from pathlib import Path
+    from chematic._timed_conformers import _filter_regular_geometry
+
+    path = Path(__file__).with_name("stereo_distorted_prototype_719.json")
+    fixture = json.loads(path.read_text(encoding="utf-8"))
+    mol = chematic.from_smiles(fixture["smiles"])
+    row = [1, 0.0, fixture["coords"], None]
+    assert mol._timed_stereo_valid(fixture["coords"])
+    assert _filter_regular_geometry(mol, [row]) == ([], 1)
+
+
+@pytest.mark.parametrize("partial", [False, True])
+def test_completed_conformer_regular_geometry_option_preserves_simple_results(partial):
+    options = {"timeout_seconds": 15, "return_partial": partial, "random_seed": 42}
+    normal = chematic.generate_conformers_timed("CCO", 2, **options)
+    screened = chematic.generate_conformers_timed(
+        "CCO", 2, conformer_require_regular_geometry=True, **options)
+    assert normal["status"] == screened["status"] == "completed"
+    assert normal["conformers"] == screened["conformers"]
+    assert "regular_geometry_rejected" not in normal
+    assert screened["regular_geometry_rejected"] == 0
+    if partial:
+        assert all(item["regular_geometry_rejected"] == 0 for item in screened["attempt_diagnostics"])
+    with pytest.raises(TypeError, match="conformer_require_regular_geometry must be a bool"):
+        chematic.generate_conformers_timed("CCO", 1, timeout_seconds=1,
+                                          conformer_require_regular_geometry=1)
+
+
+def test_completed_geometry_rejection_survives_worker_termination(tmp_path):
+    import subprocess
+    import sys
+    import time
+    from chematic._timed_conformers import _attach_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    script = '''
+import sys, time
+from chematic._timed_conformers import _run_partial
+class SlowMol:
+    def etkdg_embed_multiple_confs_mixed_checked_diagnostics(self, count, **kwargs):
+        if kwargs["random_seed"] != 42: time.sleep(30)
+        return [[1, 0.0, [[0., 0., 0.]], None]], 1, None, 0, 0, 0
+    def _timed_stereo_valid(self, coords, *, require_regular_geometry=False): return False
+_run_partial(SlowMol(), {"num_confs": 2, "random_seed": 42, "max_iterations": 0,
+    "max_mmff_iters": 200, "repair_mmff_iters": 0, "conformer_require_regular_geometry": True,
+    "checkpoint": sys.argv[1]})
+'''
+    worker = subprocess.Popen([sys.executable, "-c", script, str(path)])
+    try:
+        deadline = time.monotonic() + 10
+        while (not path.exists() or not path.read_bytes().endswith(b"\n")) and time.monotonic() < deadline and worker.poll() is None:
+            time.sleep(0.01)
+        assert path.exists() and path.read_bytes().endswith(b"\n")
+    finally:
+        worker.kill()
+        worker.wait()
+    response = {"status": "timeout"}
+    _attach_checkpoint(response, str(path), require_regular_geometry=True)
+    assert response["attempts_completed"] == 1
+    assert response["conformers"] == [] and response["regular_geometry_rejected"] == 1
+    assert response["attempt_diagnostics"][0]["regular_geometry_rejected"] == 1
+    assert response["unclassified_rejections"] == 0
+
+
+def test_full_worker_counts_screened_fallback_rows(monkeypatch, capsys):
+    import io
+    import json
+    import os
+    import sys
+    from types import SimpleNamespace
+    from chematic._timed_conformers import _main
+
+    class FakeMol:
+        def add_hydrogens(self):
+            return self
+
+        def etkdg_embed_multiple_confs_mixed_checked_diagnostics(self, count, **kwargs):
+            return ([[-1, None, [[0., 0., 0.]], "unsupported"],
+                     [-1, None, [[1., 0., 0.]], "unsupported"]],
+                    2, "unsupported", None, None, None)
+
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            assert require_regular_geometry
+            return coords[0][0] == 0.0
+
+    fake = SimpleNamespace(__file__="/fake/chematic/__init__.py", from_smiles=lambda _: FakeMol())
+    request = {"package_file": os.path.realpath(fake.__file__), "smiles": "B", "num_confs": 2,
+               "random_seed": 42, "max_iterations": 0, "max_mmff_iters": 200,
+               "repair_mmff_iters": 0, "conformer_require_regular_geometry": True}
+    monkeypatch.setitem(sys.modules, "chematic", fake)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(request)))
+    _main()
+    response = json.loads(capsys.readouterr().out)
+    assert response["status"] == "completed"
+    assert response["force_field_error"] == "unsupported"
+    assert response["regular_geometry_rejected"] == 1
+    assert response["conformers"] == [[-1, None, [[0., 0., 0.]], "unsupported"]]
+    assert response["stereo_unevaluable"] is None
+
+
+@pytest.mark.parametrize("partial", [False, True])
+def test_screened_timed_conformers_preserve_mmff_unavailable_reporting(partial):
+    result = chematic.generate_conformers_timed(
+        "CB(C)C", 1, timeout_seconds=15, return_partial=partial,
+        conformer_require_regular_geometry=True)
+    assert result["status"] == "completed" and result["embedded"] == 1
+    assert result["force_field_error"] and result["regular_geometry_rejected"] == 0
+    assert len(result["conformers"]) == 1
+    assert result["conformers"][0][0] == -1 and result["conformers"][0][1] is None
+    assert result["conformers"][0][3]
+
+
+def test_geometry_screen_timeout_before_first_attempt_counts_only_completed():
+    result = chematic.generate_conformers_timed(
+        "C" * 80, 20, timeout_seconds=0.001, return_partial=True,
+        conformer_require_regular_geometry=True)
+    assert result["status"] == "timeout"
+    assert result["attempts_completed"] == 0
+    assert result["regular_geometry_rejected"] == 0 and result["conformers"] == []
+
+
+def test_completed_and_preview_geometry_screens_are_independent():
+    result = chematic.generate_conformers_timed(
+        "CCO", 1, timeout_seconds=15, return_partial=True, return_preview=True,
+        preview_require_regular_geometry=True, conformer_require_regular_geometry=True)
+    assert result["status"] == "completed" and result["attempts_completed"] == 1
+    assert result["regular_geometry_rejected"] == 0
+    assert result["attempt_diagnostics"][0]["regular_geometry_rejected"] == 0
+    assert "in_progress" not in result
+
+
+def test_geometry_screen_exception_does_not_checkpoint_unchecked_row(tmp_path):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class FakeMol:
+        def etkdg_embed_multiple_confs_mixed_checked_diagnostics(self, count, **kwargs):
+            return [[0, 1.0, [[0., 0., 0.]], None]], 1, None, 0, 0, 0
+
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            raise ValueError("invalid coordinates")
+
+    path = tmp_path / "journal.jsonl"
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0,
+               "conformer_require_regular_geometry": True, "checkpoint": str(path)}
+    with pytest.raises(ValueError, match="invalid coordinates"):
+        _run_partial(FakeMol(), request)
+    result = _read_checkpoint(str(path), require_regular_geometry=True)
+    assert result["attempts_completed"] == 0 and result["conformers"] == []
+    assert result["regular_geometry_rejected"] == 0

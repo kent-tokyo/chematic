@@ -6488,4 +6488,5 @@ def generate_conformers_timed(
     return_partial: bool = False,
     return_preview: bool = False,
     preview_require_regular_geometry: bool = False,
+    conformer_require_regular_geometry: bool = False,
 ) -> dict[str, object]: ...
