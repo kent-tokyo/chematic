@@ -53,15 +53,20 @@ impl BondConstraint {
 
     /// Check if current distance satisfies constraint.
     pub fn satisfied(&self, coords: &Coords3D) -> bool {
-        let d = coords.get(self.atom1).distance(&coords.get(self.atom2));
-        let lower = self.target_distance - self.tolerance;
-        let upper = self.target_distance + self.tolerance;
-        d >= lower && d <= upper
+        self.violation(coords) == 0.0
     }
 
-    /// Violation magnitude; 0.0 if satisfied.
+    /// Violation magnitude; 0.0 if satisfied, infinity for invalid geometry or parameters.
     pub fn violation(&self, coords: &Coords3D) -> f64 {
         let d = coords.get(self.atom1).distance(&coords.get(self.atom2));
+        if !d.is_finite()
+            || !self.target_distance.is_finite()
+            || self.target_distance < 0.0
+            || !self.tolerance.is_finite()
+            || self.tolerance < 0.0
+        {
+            return f64::INFINITY;
+        }
         let lower = self.target_distance - self.tolerance;
         let upper = self.target_distance + self.tolerance;
         if d < lower {
@@ -98,15 +103,31 @@ impl AngleConstraint {
 
     /// Check if current angle satisfies constraint.
     pub fn satisfied(&self, coords: &Coords3D) -> bool {
-        let angle = compute_angle(coords, self.atom1, self.center, self.atom2);
-        let lower = self.target_angle - self.tolerance;
-        let upper = self.target_angle + self.tolerance;
-        angle >= lower && angle <= upper
+        self.violation(coords) == 0.0
     }
 
-    /// Violation magnitude; 0.0 if satisfied.
+    /// Violation magnitude; 0.0 if satisfied, infinity for undefined geometry or parameters.
     pub fn violation(&self, coords: &Coords3D) -> f64 {
-        let angle = compute_angle(coords, self.atom1, self.center, self.atom2);
+        let center = coords.get(self.center);
+        let v1 = coords.get(self.atom1).sub(&center);
+        let v2 = coords.get(self.atom2).sub(&center);
+        let n1 = v1.norm();
+        let n2 = v2.norm();
+        if !n1.is_finite()
+            || !n2.is_finite()
+            || n1 < 1e-10
+            || n2 < 1e-10
+            || !self.target_angle.is_finite()
+            || !(0.0..=PI).contains(&self.target_angle)
+            || !self.tolerance.is_finite()
+            || self.tolerance < 0.0
+        {
+            return f64::INFINITY;
+        }
+        let angle = (v1.dot(&v2) / (n1 * n2)).clamp(-1.0, 1.0).dacos();
+        if !angle.is_finite() {
+            return f64::INFINITY;
+        }
         let lower = self.target_angle - self.tolerance;
         let upper = self.target_angle + self.tolerance;
         if angle < lower {
@@ -134,6 +155,9 @@ impl ConstraintSet {
     }
 
     /// Maximum violation magnitude among all constraints.
+    ///
+    /// Bond violations are measured in Å and angle violations in radians.
+    /// Returns infinity if a constraint has undefined geometry or invalid parameters.
     pub fn max_violation(&self, coords: &Coords3D) -> f64 {
         let bond_violations = self
             .bonds

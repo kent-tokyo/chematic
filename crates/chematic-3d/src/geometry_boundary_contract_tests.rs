@@ -2,6 +2,50 @@ use crate::{AngleConstraint, BondConstraint, ConstraintSet, Coords3D, Point3};
 use chematic_core::AtomIdx;
 
 #[test]
+fn constraint_diagnostics_reject_undefined_geometry_and_invalid_parameters() {
+    let bond = BondConstraint::new(AtomIdx(0), AtomIdx(1), 1.0);
+    let angle = AngleConstraint::new(AtomIdx(0), AtomIdx(1), AtomIdx(2), 0.0);
+    let constraints = ConstraintSet {
+        bonds: vec![bond.clone()],
+        angles: vec![angle.clone()],
+    };
+    for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let coords = Coords3D {
+            points: vec![
+                Point3::new(invalid, 0.0, 0.0),
+                Point3::zero(),
+                Point3::new(1.0, 0.0, 0.0),
+            ],
+        };
+        assert!(!bond.satisfied(&coords));
+        assert!(!angle.satisfied(&coords));
+        assert_eq!(constraints.violated_count(&coords), 2);
+        assert_eq!(constraints.max_violation(&coords), f64::INFINITY);
+    }
+    let coincident = Coords3D {
+        points: vec![Point3::zero(), Point3::zero(), Point3::new(1.0, 0.0, 0.0)],
+    };
+    assert!(!angle.satisfied(&coincident));
+    assert_eq!(angle.violation(&coincident), f64::INFINITY);
+
+    let valid = Coords3D {
+        points: vec![
+            Point3::new(1.0, 0.0, 0.0),
+            Point3::zero(),
+            Point3::new(1.0, 0.0, 0.0),
+        ],
+    };
+    assert!(bond.satisfied(&valid));
+    assert!(angle.satisfied(&valid));
+    let mut invalid_bond = bond;
+    invalid_bond.tolerance = f64::NAN;
+    assert_eq!(invalid_bond.violation(&valid), f64::INFINITY);
+    let mut invalid_angle = angle;
+    invalid_angle.target_angle = -0.1;
+    assert_eq!(invalid_angle.violation(&valid), f64::INFINITY);
+}
+
+#[test]
 fn torsion_preferences_have_periodic_scores_minimized_at_the_declared_angle() {
     use crate::etkdg_knowledge::{get_torsion_preference, score_torsion};
     let mut checked = 0;
