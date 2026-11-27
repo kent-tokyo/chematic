@@ -1,0 +1,225 @@
+{
+  "input_sha256": "44a64e20b7b9ebc7a26067af0378f9c03a350a660556c6b6e18ba370468884dc",
+  "wheel_sha256": "65740f3f6d3d596c26001977d55f0078f98135f88c70b70979702ae75cd0ac1d",
+  "extension_sha256": "7482766512e0cd6fb2ed20f2ff640bce55649d8400d9990a827499b15d0770c1",
+  "script_sha256": "63039b61fc72789b20b0efb5216e97154e3b9d66b1042205b761824a35054a5c",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "records": [
+    {
+      "index": 1166,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 1166,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 1214,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 1214,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 1750,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 1750,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 3408,
+      "mirror": false,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 3408,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 3437,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 3437,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 3790,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 3790,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 4609,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 4609,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 4726,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 4726,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 4744,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 4744,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 5048,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 5048,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 5876,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 5876,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 8375,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 8375,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 8725,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 8725,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 8841,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 8841,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 10091,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 10091,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 10849,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 10849,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 11575,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 11575,
+      "mirror": true,
+      "status": "ok",
+      "valid": false
+    },
+    {
+      "index": 11656,
+      "mirror": false,
+      "status": "ok",
+      "valid": true
+    },
+    {
+      "index": 11656,
+      "mirror": true,
+      "status": "ok",
+      "valid": true
+    }
+  ]
+}

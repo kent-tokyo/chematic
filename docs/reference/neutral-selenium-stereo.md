@@ -25,3 +25,6 @@ local development probe. These examples are small and do not establish general
 selenium stereochemistry or a population-wide accuracy rate. RDKit printed
 UFF typing warnings for some generated selenium examples; these coordinates
 are used to test parity convention, not as validated geometry or energy.
+
+Use [3D declared-stereo diagnostics](stereo-3d-diagnostics.md) to inspect
+individual satisfied, violated and unevaluable entries on existing coordinates.

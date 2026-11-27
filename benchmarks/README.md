@@ -85,6 +85,7 @@ A retained historical record is not evidence about current source.
 - [Square-planar bounded retry development probe](2026-11-27-square-planar-retry-development.md)
 - [Square-planar planarity and stereo development probe](2026-11-27-square-planar-checked-development.md)
 - [Neutral selenium stereo development comparison](2026-11-27-neutral-selenium-stereo-development.md)
+- [Selenium-containing crystal stereo development audit](2026-11-27-selenium-crystal-stereo-development.md)
 
 - [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
 
