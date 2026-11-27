@@ -44,20 +44,23 @@ impl Mol {
     /// nonbonded atom pairs and receive their identities in ``clash_check``.
     /// With ``max_alternative_attempts`` (at most 16), a rejected repair can
     /// try other deterministic substituent choices; a cutoff is required.
-    #[pyo3(signature = (coords, *, clash_cutoff=None, max_alternative_attempts=0))]
+    /// With ``require_regular_geometry=True``, reject output with tetrahedral
+    /// centers that fail the optional conservative geometry screen.
+    #[pyo3(signature = (coords, *, clash_cutoff=None, max_alternative_attempts=0, require_regular_geometry=false))]
     fn repair_stereo_3d<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
         clash_cutoff: Option<f64>,
         max_alternative_attempts: usize,
+        require_regular_geometry: bool,
     ) -> PyResult<Bound<'py, PyDict>> {
         use chematic_3d::geometry_check::{
             GeometryCheckConfig, check_geometry, compare_nonbonded_clashes,
         };
         use chematic_3d::stereo_constraints::{
             repair_stereo, repair_stereo_with_variant, satisfied_tetrahedral_geometry_is_regular,
-            verify_stereo,
+            verify_stereo, verify_stereo_with_geometry_screen,
         };
         if max_alternative_attempts > 16 {
             return Err(PyValueError::new_err(
@@ -78,7 +81,7 @@ impl Mol {
         }
         let geometry = flat_to_coords3d(&coords);
         let mol = self.inner.clone();
-        let (outcome, initial, comparison, retry) = py
+        let (outcome, initial, comparison, distorted, retry) = py
             .detach(move || {
                 if let Some(cutoff) = clash_cutoff {
                     let config = GeometryCheckConfig {
@@ -99,16 +102,27 @@ impl Mol {
                     (Some(_), Err(_)) => None,
                     (None, _) => None,
                 };
+                let mut distorted = match (&outcome, require_regular_geometry) {
+                    (Ok(repaired), true) => Some(
+                        verify_stereo_with_geometry_screen(&mol, &repaired.coords)
+                            .distorted_tetrahedral,
+                    ),
+                    _ => None,
+                };
                 let mut attempts = 0;
                 let mut stereo_failures = 0;
                 let mut geometry_failures = 0;
                 let mut clash_rejections = 0;
                 let mut tetrahedral_geometry_rejections = 0;
                 let mut selected_variant = outcome.is_ok().then_some(0);
+                if distorted.as_ref().is_some_and(|atoms| !atoms.is_empty()) {
+                    selected_variant = None;
+                }
                 if let Some(cutoff) = clash_cutoff
-                    && comparison
+                    && (comparison
                         .as_ref()
                         .is_some_and(|c| !c.new_clashes.is_empty())
+                        || distorted.as_ref().is_some_and(|atoms| !atoms.is_empty()))
                 {
                     selected_variant = None;
                     for variant in 1..=max_alternative_attempts {
@@ -122,6 +136,21 @@ impl Mol {
                             }
                         };
                         if !satisfied_tetrahedral_geometry_is_regular(&mol, &alternative.coords) {
+                            tetrahedral_geometry_rejections += 1;
+                            continue;
+                        }
+                        let alternative_distorted = if require_regular_geometry {
+                            Some(
+                                verify_stereo_with_geometry_screen(&mol, &alternative.coords)
+                                    .distorted_tetrahedral,
+                            )
+                        } else {
+                            None
+                        };
+                        if alternative_distorted
+                            .as_ref()
+                            .is_some_and(|atoms| !atoms.is_empty())
+                        {
                             tetrahedral_geometry_rejections += 1;
                             continue;
                         }
@@ -143,6 +172,7 @@ impl Mol {
                         }
                         outcome = Ok(alternative);
                         comparison = Some(checked);
+                        distorted = alternative_distorted;
                         selected_variant = Some(variant);
                         break;
                     }
@@ -151,6 +181,7 @@ impl Mol {
                     outcome,
                     initial,
                     comparison,
+                    distorted,
                     (
                         attempts,
                         selected_variant,
@@ -177,6 +208,29 @@ impl Mol {
         let rejected_clashes = comparison
             .as_ref()
             .is_some_and(|c| !c.new_clashes.is_empty());
+        let rejected_distortion = distorted.as_ref().is_some_and(|atoms| !atoms.is_empty());
+        if require_regular_geometry {
+            let report = PyDict::new(py);
+            if let Some(atoms) = &distorted {
+                report.set_item(
+                    "status",
+                    if rejected_distortion {
+                        "rejected"
+                    } else {
+                        "passed"
+                    },
+                )?;
+                report.set_item(
+                    "distorted_atoms",
+                    atoms.iter().map(|a| a.0).collect::<Vec<_>>(),
+                )?;
+            } else {
+                report.set_item("status", "not_evaluated_repair_failed")?;
+            }
+            result.set_item("regular_geometry_check", report)?;
+        } else {
+            result.set_item("regular_geometry_check", py.None())?;
+        }
         if let Some(cutoff) = clash_cutoff {
             let report = PyDict::new(py);
             report.set_item("cutoff", cutoff)?;
@@ -212,14 +266,26 @@ impl Mol {
             result.set_item("clash_check", py.None())?;
         }
         match outcome {
-            Ok(outcome) if rejected_clashes => {
+            Ok(outcome) if rejected_clashes || rejected_distortion => {
                 result.set_item("ok", false)?;
                 result.set_item("fully_verified", false)?;
                 result.set_item("coordinates", py.None())?;
-                let failure = PyDict::new(py);
-                failure.set_item("kind", "geometry")?;
-                failure.set_item("reason", "NewNonbondedClashes")?;
-                failures.append(failure)?;
+                if rejected_clashes {
+                    let failure = PyDict::new(py);
+                    failure.set_item("kind", "geometry")?;
+                    failure.set_item("reason", "NewNonbondedClashes")?;
+                    failures.append(failure)?;
+                }
+                if let Some(atoms) = &distorted {
+                    for &atom in atoms {
+                        let row = stereo_element_dict(
+                            py,
+                            chematic_3d::stereo_constraints::StereoElement::Tetrahedral(atom),
+                        )?;
+                        row.set_item("reason", "DistortedTetrahedralGeometry")?;
+                        failures.append(row)?;
+                    }
+                }
                 for element in outcome.unevaluable {
                     unevaluable.append(stereo_element_dict(py, element)?)?;
                 }

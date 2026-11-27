@@ -317,3 +317,66 @@ def test_independently_placed_hydrogen_is_not_treated_as_reconstructed():
     Chem.AssignStereochemistryFrom3D(ref, replaceExistingTags=True)
     assert ref.GetAtomWithIdx(1).GetChiralTag() != expected
     assert ref.GetAtomWithIdx(1).GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED
+
+
+def test_repair_can_reject_distorted_success_without_returning_coordinates():
+    mol = chematic.from_smiles("O=C1OC(c2ccccc2)=N[C@]1(Cc1ccccc1)SCc1ccccc1")
+    coords = mol.generate_3d_etkdg()
+    default = mol.repair_stereo_3d(coords)
+    assert default["ok"] and default["regular_geometry_check"] is None
+    assert mol.stereo_3d_diagnostics(default["coordinates"], require_regular_geometry=True)["unevaluable"] == 1
+    result = mol.repair_stereo_3d(coords, require_regular_geometry=True)
+    assert not result["ok"] and not result["fully_verified"] and result["coordinates"] is None
+    assert result["regular_geometry_check"] == {"status": "rejected", "distorted_atoms": [11]}
+    assert result["failures"] == [{"kind": "atom", "index": 11, "reason": "DistortedTetrahedralGeometry"}]
+    assert result["retry"]["selected_variant"] is None
+
+
+def test_repair_regular_geometry_screen_success_and_failure():
+    mol = chematic.from_smiles("C[N@H+](CC)CCC")
+    result = mol.repair_stereo_3d(mol.generate_3d_etkdg(), require_regular_geometry=True)
+    assert result["ok"] and result["fully_verified"]
+    assert result["regular_geometry_check"] == {"status": "passed", "distorted_atoms": []}
+    ring = chematic.from_smiles("C1[C@@H]2CCC1CC2")
+    result = ring.repair_stereo_3d(ring.generate_3d_etkdg(), require_regular_geometry=True)
+    assert not result["ok"] and result["coordinates"] is None
+    assert result["regular_geometry_check"] == {"status": "not_evaluated_repair_failed"}
+    pt = chematic.from_smiles("[Pt@SP1](F)(Cl)(Br)I")
+    coords = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]]
+    result = pt.repair_stereo_3d(coords, require_regular_geometry=True)
+    assert result["ok"] and not result["fully_verified"]
+    assert result["regular_geometry_check"]["status"] == "passed"
+    assert result["unevaluable"] == [{"kind": "atom", "index": 0}]
+
+
+def test_repair_retries_when_only_regular_geometry_check_rejects_baseline():
+    # Exposed COD development record 2110: baseline has no new clash, but
+    # variant 2 fixes its distorted tetrahedral geometry.
+    smiles = "CC(=O)Oc1cc2c(s1)CCN([C@H](C(=O)C1CC1)c1ccccc1F)C2"
+    mol = chematic.from_smiles(smiles)
+    coords = mol.generate_3d_etkdg()
+    baseline = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
+    assert baseline["ok"] and baseline["clash_check"]["status"] == "passed"
+    rejected = mol.repair_stereo_3d(coords, clash_cutoff=0.8, require_regular_geometry=True)
+    assert not rejected["ok"] and rejected["regular_geometry_check"]["status"] == "rejected"
+    result = mol.repair_stereo_3d(coords, clash_cutoff=0.8, max_alternative_attempts=3,
+                                  require_regular_geometry=True)
+    assert result["ok"] and result["fully_verified"]
+    assert result["retry"]["attempted"] == 2 and result["retry"]["selected_variant"] == 2
+    assert result["regular_geometry_check"] == {"status": "passed", "distorted_atoms": []}
+    assert result["clash_check"]["status"] == "passed"
+    assert mol.stereo_3d_diagnostics(result["coordinates"], require_regular_geometry=True)["unevaluable"] == 0
+
+
+def test_repair_reports_clash_and_tetrahedral_distortion_together():
+    mol = chematic.from_smiles("O=C1OC(c2ccccc2)=N[C@]1(Cc1ccccc1)SCc1ccccc1")
+    result = mol.repair_stereo_3d(mol.generate_3d_etkdg(), clash_cutoff=0.8,
+                                  max_alternative_attempts=3, require_regular_geometry=True)
+    assert not result["ok"] and result["coordinates"] is None
+    assert result["clash_check"]["status"] == "rejected"
+    assert result["regular_geometry_check"] == {"status": "rejected", "distorted_atoms": [11]}
+    assert result["failures"] == [
+        {"kind": "geometry", "reason": "NewNonbondedClashes"},
+        {"kind": "atom", "index": 11, "reason": "DistortedTetrahedralGeometry"}]
+    assert result["retry"]["attempted"] == 3
+    assert result["retry"]["tetrahedral_geometry_rejections"] == 3

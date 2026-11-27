@@ -50,26 +50,35 @@ of validity. On the exposed development sample, the current screen made 1,100 of
 that had agreed with RDKit. The fixed-sample protocol and follow-up are recorded
 under `validation/results/2026-11-27-tetrahedral-geometry-screen/` and
 `validation/results/2026-11-27-implicit-h-planarity/` in the repository.
-The repair API's `fully_verified` flag uses its original verifier; request this
-screen separately if that distinction matters.
+The repair API can also require this screen on its output, as described below.
 
 ## Repairing declared stereo
 
 `Mol.repair_stereo_3d(coords)` attempts to repair violated declared stereo by
 moving bridge-connected substituents, and checks the result again. It returns
 `ok`, `fully_verified`, `coordinates`, `repaired`, `unevaluable`, and
-`failures`, and `clash_check`. Each repaired entry identifies an atom or bond and reports the
+`failures`, `clash_check`, `regular_geometry_check`, and `retry`. Each repaired entry identifies an atom or bond and reports the
 number of moved atoms and the largest displacement in Å. Unevaluable entries
 identify an atom or bond. Failure entries also give a reason such as
 `NoBridgeEligibleSubstituent`.
 
 On failure, `coordinates` is `None`; partial coordinates are not returned.
 `fully_verified` is true only when repair succeeds and no reported stereo was
-unevaluable before repair. It is also true if the verifier reports no stereo,
+unevaluable before repair; when `require_regular_geometry=True`, the output
+must also pass that geometry screen. It is also true if the verifier reports no stereo,
 so inspect `stereo_3d_diagnostics` to determine the covered elements. Unsupported
 classes and unreported specifications remain outside this check. The operation
 can move atoms substantially and does not minimize energy or screen for clashes;
 check those separately. It does not change the input molecule or coordinates.
+
+Set `require_regular_geometry=True` to reject an otherwise successful repair
+when a reported tetrahedral center fails the geometry screen. The result then
+has `ok=False`, no coordinates, and one `DistortedTetrahedralGeometry` failure
+per rejected atom. `regular_geometry_check` gives `passed`, `rejected`, or
+`not_evaluated_repair_failed`, along with `distorted_atoms` when evaluated.
+It is `None` when the option is not selected. A `passed` geometry screen does
+not mean unsupported or originally unevaluable stereo was verified; check
+`fully_verified` and `unevaluable` separately.
 
 Set `clash_cutoff` to a finite positive distance in Å to screen all nonbonded
 atom pairs before and after repair. The screen includes 1–3 pairs and separate
@@ -85,7 +94,7 @@ coordinate-range limits as `check_geometry` and raises `ValueError` for an
 invalid cutoff or input outside those limits.
 
 With `max_alternative_attempts` set to a value from 1 through 16, a repair
-rejected for new close pairs can try deterministic alternative choices of
+rejected for new close pairs, or by the requested regular-geometry check, can try deterministic alternative choices of
 bridge-connected substituents. `clash_cutoff` is required. The original repair
 is attempted first, and an already accepted result is unchanged. The `retry`
 report gives the number attempted, the selected variant (zero for the original,
@@ -99,8 +108,8 @@ Alternative candidates also undergo a conservative screen of every reported
 satisfied tetrahedral center. Each of the center's barycentric weights in the
 tetrahedron of its ligand positions must exceed `1e-6`; an implicit ligand is
 reconstructed where needed. The ligand directions must form pair angles from
-45° to 165°. This screen is
-applied to alternatives, not to the original accepted repair. It rejects grossly
+45° to 165°. This screen is applied to alternatives and, when explicitly
+requested with `require_regular_geometry=True`, to the original repair. It rejects grossly
 distorted candidates but is not an independent stereochemistry oracle and does
 not guarantee valid geometry or remove pre-existing clashes. Candidates that
 leave reported stereo unevaluable still return `fully_verified=False`.
@@ -118,7 +127,7 @@ margin is an experimental conservative threshold. It also applies to
 ```python
 mol = chematic.from_smiles("C[N@H+](CC)CCC")
 coords = mol.generate_3d_etkdg()
-result = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
+result = mol.repair_stereo_3d(coords, clash_cutoff=0.8, require_regular_geometry=True)
 if result["ok"]:
     coords = result["coordinates"]
     print(result["repaired"], result["unevaluable"])
