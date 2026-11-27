@@ -9,6 +9,14 @@ import sys
 import tempfile
 import time
 
+_REGULAR_REJECTION_REASONS = (
+    "stereo_violated", "distorted_tetrahedral_geometry", "stereo_unevaluable",
+)
+
+
+def _empty_regular_rejection_reasons():
+    return {reason: 0 for reason in _REGULAR_REJECTION_REASONS}
+
 
 def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                               random_seed=42, max_iterations=0,
@@ -113,6 +121,7 @@ def _empty_checkpoint(*, require_regular_geometry=False):
             "unclassified_rejections": None}
     if require_regular_geometry:
         result["regular_geometry_rejected"] = 0
+        result["regular_geometry_rejection_reasons"] = _empty_regular_rejection_reasons()
     return result
 
 
@@ -140,6 +149,16 @@ def _attempt_diagnostic(entry):
     geometry_rejected = entry.get("geometry_rejected", 0)
     if type(geometry_rejected) is not int or geometry_rejected < 0:
         raise ValueError("invalid checkpoint geometry rejection count")
+    geometry_reasons = entry.get("geometry_rejection_reasons")
+    if geometry_reasons is not None:
+        if (not isinstance(geometry_reasons, dict)
+                or set(geometry_reasons) != set(_REGULAR_REJECTION_REASONS)
+                or any(type(value) is not int or value < 0 for value in geometry_reasons.values())
+                or sum(geometry_reasons.values()) != geometry_rejected):
+            raise ValueError("invalid checkpoint geometry rejection reasons")
+        geometry_reasons = dict(geometry_reasons)
+    elif geometry_rejected == 0:
+        geometry_reasons = _empty_regular_rejection_reasons()
     known_rejections = sum(value for value in rejection_counts if value is not None) + geometry_rejected
     if rejected < known_rejections:
         raise ValueError("inconsistent checkpoint candidate counts")
@@ -153,6 +172,7 @@ def _attempt_diagnostic(entry):
             "conformer_status_counts": counts}
     if "geometry_rejected" in entry:
         result["regular_geometry_rejected"] = geometry_rejected
+        result["regular_geometry_rejection_reasons"] = geometry_reasons
     return result
 
 
@@ -171,6 +191,8 @@ def _apply_checkpoint_entry(result, counts_known, entry):
     if any(value is not None and (type(value) is not int or value < 0) for _, value in values):
         raise ValueError("invalid checkpoint rejection count")
     geometry_present = "geometry_rejected" in entry
+    if "geometry_rejection_reasons" in entry and not geometry_present:
+        raise ValueError("checkpoint geometry reasons require rejection count")
     if (("regular_geometry_rejected" in result and not geometry_present)
             or (geometry_present and result["attempts_completed"] > 0
                 and "regular_geometry_rejected" not in result)):
@@ -183,6 +205,11 @@ def _apply_checkpoint_entry(result, counts_known, entry):
     result["force_field_error"] = result["force_field_error"] or entry["error"]
     if geometry_present:
         result["regular_geometry_rejected"] = result.get("regular_geometry_rejected", 0) + entry["geometry_rejected"]
+        prior = result.get("regular_geometry_rejection_reasons", _empty_regular_rejection_reasons())
+        reasons = diagnostic["regular_geometry_rejection_reasons"]
+        result["regular_geometry_rejection_reasons"] = (
+            {key: prior[key] + reasons[key] for key in _REGULAR_REJECTION_REASONS}
+            if prior is not None and reasons is not None else None)
     for key, value in values:
         if value is None:
             counts_known[key] = False
@@ -308,7 +335,8 @@ def _run_partial(mol, request):
         entry = {"attempt": index + 1, "rows": rows, "embedded": embedded, "error": error,
                  "violated": violated, "unevaluable": unevaluable, "invalid": invalid}
         if regular_geometry:
-            entry["rows"], entry["geometry_rejected"] = _filter_regular_geometry(mol, rows)
+            (entry["rows"], entry["geometry_rejected"],
+             entry["geometry_rejection_reasons"]) = _filter_regular_geometry(mol, rows)
         _apply_checkpoint_entry(result, counts_known, entry)
         _append_checkpoint(request["checkpoint"], entry)
     return result
@@ -322,12 +350,25 @@ def _append_checkpoint(path, entry):
 
 def _filter_regular_geometry(mol, rows):
     retained = []
+    reasons = _empty_regular_rejection_reasons()
     for row in rows:
         if not isinstance(row, (list, tuple)) or len(row) != 4:
             raise ValueError("invalid conformer for regular geometry screening")
         if mol._timed_stereo_valid(row[2], require_regular_geometry=True):
             retained.append(row)
-    return retained, len(rows) - len(retained)
+            continue
+        report = mol.stereo_3d_diagnostics(row[2], require_regular_geometry=True)
+        if report["violated"]:
+            reason = "stereo_violated"
+        elif any(item["reason"] == "DistortedTetrahedralGeometry"
+                 for item in report["atom_stereo"]):
+            reason = "distorted_tetrahedral_geometry"
+        elif report["unevaluable"]:
+            reason = "stereo_unevaluable"
+        else:
+            raise ValueError("inconsistent regular geometry screening report")
+        reasons[reason] += 1
+    return retained, len(rows) - len(retained), reasons
 
 
 def _main():
@@ -348,12 +389,13 @@ def _main():
             )
             regular_geometry_rejected = None
             if request.get("conformer_require_regular_geometry", False):
-                rows, regular_geometry_rejected = _filter_regular_geometry(mol, rows)
+                rows, regular_geometry_rejected, regular_geometry_rejection_reasons = _filter_regular_geometry(mol, rows)
             response = {"status": "completed", "conformers": rows, "embedded": embedded,
                         "force_field_error": force_field_error, "stereo_violated": violated,
                         "stereo_unevaluable": unevaluable, "invalid_coordinates": invalid}
             if regular_geometry_rejected is not None:
                 response["regular_geometry_rejected"] = regular_geometry_rejected
+                response["regular_geometry_rejection_reasons"] = regular_geometry_rejection_reasons
     except Exception as error:
         response = {"status": "error", "error_type": type(error).__name__, "error": str(error)}
     print(json.dumps(response, allow_nan=False))

@@ -134,6 +134,19 @@ remaining geometry and force-field energies are physically valid. This screen
 can also withhold plausible structures. The option is independent of the
 preview screen below and is included in the worker's deadline.
 
+`regular_geometry_rejection_reasons` splits that count into disjoint categories:
+`stereo_violated`, `distorted_tetrahedral_geometry`, and `stereo_unevaluable`.
+When a rejected conformer has multiple issues, the first applicable category
+in that order is used; the categories are counts of conformers, not individual
+stereo elements. These counts describe the additional post-processing screen
+and do not replace or overlap the backend rejection counters. Coordinates
+rejected by this screen are not returned. Invalid coordinates or an inconsistent
+diagnostic cause a worker error instead of being guessed into a category.
+Per-attempt and aggregate reason counts are retained in partial checkpoints.
+When recovering an older checkpoint that records rejections without their
+breakdown, the aggregate breakdown is `None` rather than guessed; a zero
+rejection count still has a known all-zero breakdown.
+
 ```python
 result = chematic.generate_conformers_timed(
     "C[C@H](O)F", 10, timeout_seconds=5.0, return_partial=True,

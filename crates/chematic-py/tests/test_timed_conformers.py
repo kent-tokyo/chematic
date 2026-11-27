@@ -808,12 +808,18 @@ def test_partial_completed_geometry_rejections_are_counted_without_double_counti
             assert require_regular_geometry
             return coords[0][0] == 0.0
 
+        def stereo_3d_diagnostics(self, coords, *, require_regular_geometry=False):
+            return {"violated": 0, "unevaluable": 1, "atom_stereo": [
+                {"reason": "DistortedTetrahedralGeometry"}]}
+
     path = tmp_path / "journal.jsonl"
     request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
                "max_mmff_iters": 200, "repair_mmff_iters": 0,
                "conformer_require_regular_geometry": True, "checkpoint": str(path)}
     result = _run_partial(FakeMol(), request)
     assert result["regular_geometry_rejected"] == 1
+    assert result["regular_geometry_rejection_reasons"] == {
+        "stereo_violated": 0, "distorted_tetrahedral_geometry": 1, "stereo_unevaluable": 0}
     assert len(result["conformers"]) == 1
     assert result["unclassified_rejections"] == expected_unclassified
     assert result["attempt_diagnostics"][0]["regular_geometry_rejected"] == 1
@@ -861,7 +867,8 @@ def test_geometry_filter_rejects_known_distorted_coordinates():
     mol = chematic.from_smiles(fixture["smiles"])
     row = [1, 0.0, fixture["coords"], None]
     assert mol._timed_stereo_valid(fixture["coords"])
-    assert _filter_regular_geometry(mol, [row]) == ([], 1)
+    assert _filter_regular_geometry(mol, [row]) == ([], 1, {
+        "stereo_violated": 0, "distorted_tetrahedral_geometry": 1, "stereo_unevaluable": 0})
 
 
 @pytest.mark.parametrize("partial", [False, True])
@@ -896,6 +903,8 @@ class SlowMol:
         if kwargs["random_seed"] != 42: time.sleep(30)
         return [[1, 0.0, [[0., 0., 0.]], None]], 1, None, 0, 0, 0
     def _timed_stereo_valid(self, coords, *, require_regular_geometry=False): return False
+    def stereo_3d_diagnostics(self, coords, *, require_regular_geometry=False):
+        return {"violated": 0, "unevaluable": 1, "atom_stereo": [{"reason": "DistortedTetrahedralGeometry"}]}
 _run_partial(SlowMol(), {"num_confs": 2, "random_seed": 42, "max_iterations": 0,
     "max_mmff_iters": 200, "repair_mmff_iters": 0, "conformer_require_regular_geometry": True,
     "checkpoint": sys.argv[1]})
@@ -913,6 +922,7 @@ _run_partial(SlowMol(), {"num_confs": 2, "random_seed": 42, "max_iterations": 0,
     _attach_checkpoint(response, str(path), require_regular_geometry=True)
     assert response["attempts_completed"] == 1
     assert response["conformers"] == [] and response["regular_geometry_rejected"] == 1
+    assert response["regular_geometry_rejection_reasons"]["distorted_tetrahedral_geometry"] == 1
     assert response["attempt_diagnostics"][0]["regular_geometry_rejected"] == 1
     assert response["unclassified_rejections"] == 0
 
@@ -938,6 +948,10 @@ def test_full_worker_counts_screened_fallback_rows(monkeypatch, capsys):
             assert require_regular_geometry
             return coords[0][0] == 0.0
 
+        def stereo_3d_diagnostics(self, coords, *, require_regular_geometry=False):
+            return {"violated": 0, "unevaluable": 1, "atom_stereo": [
+                {"reason": "UnsupportedCoordination"}]}
+
     fake = SimpleNamespace(__file__="/fake/chematic/__init__.py", from_smiles=lambda _: FakeMol())
     request = {"package_file": os.path.realpath(fake.__file__), "smiles": "B", "num_confs": 2,
                "random_seed": 42, "max_iterations": 0, "max_mmff_iters": 200,
@@ -949,6 +963,7 @@ def test_full_worker_counts_screened_fallback_rows(monkeypatch, capsys):
     assert response["status"] == "completed"
     assert response["force_field_error"] == "unsupported"
     assert response["regular_geometry_rejected"] == 1
+    assert response["regular_geometry_rejection_reasons"]["stereo_unevaluable"] == 1
     assert response["conformers"] == [[-1, None, [[0., 0., 0.]], "unsupported"]]
     assert response["stereo_unevaluable"] is None
 
@@ -1003,3 +1018,108 @@ def test_geometry_screen_exception_does_not_checkpoint_unchecked_row(tmp_path):
     result = _read_checkpoint(str(path), require_regular_geometry=True)
     assert result["attempts_completed"] == 0 and result["conformers"] == []
     assert result["regular_geometry_rejected"] == 0
+
+
+def test_regular_rejection_reasons_cover_violation_distortion_and_unknown():
+    from chematic._timed_conformers import _filter_regular_geometry
+
+    alkene = chematic.from_smiles("F/C=C/F")
+    cis = [[0., 1., 0.], [0., 0., 0.], [1., 0., 0.], [1., 1., 0.]]
+    rows, count, reasons = _filter_regular_geometry(alkene, [[1, 0.0, cis, None]])
+    assert rows == [] and count == 1
+    assert reasons == {"stereo_violated": 1, "distorted_tetrahedral_geometry": 0,
+                       "stereo_unevaluable": 0}
+
+    pt = chematic.from_smiles("[Pt@SP1](F)(Cl)(Br)I")
+    coords = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]]
+    rows, count, reasons = _filter_regular_geometry(pt, [[1, 0.0, coords, None]])
+    assert rows == [] and count == 1
+    assert reasons == {"stereo_violated": 0, "distorted_tetrahedral_geometry": 0,
+                       "stereo_unevaluable": 1}
+
+    class Inconsistent:
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            return False
+
+        def stereo_3d_diagnostics(self, coords, *, require_regular_geometry=False):
+            return {"violated": 0, "unevaluable": 0, "atom_stereo": []}
+
+    with pytest.raises(ValueError, match="inconsistent regular geometry screening report"):
+        _filter_regular_geometry(Inconsistent(), [[1, 0.0, [[0., 0., 0.]], None]])
+
+
+def test_legacy_and_malformed_geometry_reason_checkpoints(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    legacy = {"attempt": 1, "rows": [], "embedded": 1, "error": None,
+              "violated": 0, "unevaluable": 0, "invalid": 0, "geometry_rejected": 1}
+    path.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+    result = _read_checkpoint(str(path), require_regular_geometry=True)
+    assert result["regular_geometry_rejected"] == 1
+    assert result["regular_geometry_rejection_reasons"] is None
+    assert result["attempt_diagnostics"][0]["regular_geometry_rejection_reasons"] is None
+
+    valid = {"stereo_violated": 0, "distorted_tetrahedral_geometry": 1, "stereo_unevaluable": 0}
+    for bad in ({**valid, "stereo_violated": True}, {**valid, "stereo_violated": -1},
+                {**valid, "stereo_violated": 1}, {"stereo_violated": 1}, "invalid"):
+        entry = {**legacy, "geometry_rejection_reasons": bad}
+        path.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+        with pytest.raises(ValueError, match="invalid checkpoint geometry rejection reasons"):
+            _read_checkpoint(str(path), require_regular_geometry=True)
+    missing_count = {k: v for k, v in legacy.items() if k != "geometry_rejected"}
+    missing_count["geometry_rejection_reasons"] = valid
+    path.write_text(json.dumps(missing_count) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="geometry reasons require rejection count"):
+        _read_checkpoint(str(path))
+
+
+def test_geometry_reason_aggregate_preserves_unknown_legacy_prefix(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    first = {"attempt": 1, "rows": [], "embedded": 1, "error": None,
+             "violated": 0, "unevaluable": 0, "invalid": 0, "geometry_rejected": 1}
+    reasons = {"stereo_violated": 1, "distorted_tetrahedral_geometry": 0, "stereo_unevaluable": 0}
+    second = {**first, "attempt": 2, "geometry_rejection_reasons": reasons}
+    path.write_text(json.dumps(first) + "\n" + json.dumps(second) + "\n", encoding="utf-8")
+    result = _read_checkpoint(str(path), require_regular_geometry=True)
+    assert result["regular_geometry_rejected"] == 2
+    assert result["regular_geometry_rejection_reasons"] is None
+    assert result["attempt_diagnostics"][0]["regular_geometry_rejection_reasons"] is None
+    assert result["attempt_diagnostics"][1]["regular_geometry_rejection_reasons"] == reasons
+
+
+def test_regular_rejection_reason_precedence_and_known_aggregate():
+    from chematic._timed_conformers import (
+        _apply_checkpoint_entry, _empty_checkpoint, _filter_regular_geometry,
+    )
+
+    class Mixed:
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            return False
+
+        def stereo_3d_diagnostics(self, coords, *, require_regular_geometry=False):
+            return {"violated": 1, "unevaluable": 1, "atom_stereo": [
+                {"reason": "DistortedTetrahedralGeometry"}]}
+
+    rows, count, reasons = _filter_regular_geometry(Mixed(), [[1, 0.0, [[0., 0., 0.]], None]])
+    assert rows == [] and count == 1 and reasons["stereo_violated"] == 1
+    assert reasons["distorted_tetrahedral_geometry"] == 0
+
+    result = _empty_checkpoint(require_regular_geometry=True)
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                   "unclassified_rejections")}
+    first = {"attempt": 1, "rows": [], "embedded": 2, "error": None,
+             "violated": 1, "unevaluable": 0, "invalid": 0, "geometry_rejected": 1,
+             "geometry_rejection_reasons": reasons}
+    second_reasons = {"stereo_violated": 0, "distorted_tetrahedral_geometry": 1, "stereo_unevaluable": 0}
+    second = {**first, "attempt": 2, "geometry_rejection_reasons": second_reasons}
+    _apply_checkpoint_entry(result, known, first)
+    _apply_checkpoint_entry(result, known, second)
+    assert result["regular_geometry_rejected"] == 2 and result["stereo_violated"] == 2
+    assert result["unclassified_rejections"] == 0
+    assert result["regular_geometry_rejection_reasons"] == {
+        "stereo_violated": 1, "distorted_tetrahedral_geometry": 1, "stereo_unevaluable": 0}
