@@ -287,12 +287,16 @@ impl Mol {
     /// Report declared atom and double-bond stereo checks at supplied coordinates.
     /// Entries the verifier reports as unsupported are unevaluable. The
     /// verifier does not cover every possible stereochemical specification.
+    /// With ``require_regular_geometry=True``, tetrahedral results with extreme
+    /// ligand geometry are reported as unevaluable instead of satisfied/violated.
+    #[pyo3(signature = (coords, *, require_regular_geometry=false))]
     fn stereo_3d_diagnostics<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
+        require_regular_geometry: bool,
     ) -> PyResult<Bound<'py, PyDict>> {
-        use chematic_3d::stereo_constraints::verify_stereo;
+        use chematic_3d::stereo_constraints::{verify_stereo, verify_stereo_with_geometry_screen};
         if coords.len() != self.inner.atom_count()
             || coords.iter().flatten().any(|v| !v.is_finite())
         {
@@ -302,7 +306,14 @@ impl Mol {
         }
         let geometry = flat_to_coords3d(&coords);
         let mol = self.inner.clone();
-        let report = py.detach(move || verify_stereo(&mol, &geometry));
+        let (report, distorted) = py.detach(move || {
+            if require_regular_geometry {
+                let screened = verify_stereo_with_geometry_screen(&mol, &geometry);
+                (screened.report, screened.distorted_tetrahedral)
+            } else {
+                (verify_stereo(&mol, &geometry), Vec::new())
+            }
+        });
         let result = PyDict::new(py);
         result.set_item("reported", report.n_declared())?;
         result.set_item("satisfied", report.n_satisfied())?;
@@ -311,7 +322,10 @@ impl Mol {
         let atoms = pyo3::types::PyList::empty(py);
         for item in report.tetrahedral {
             let row = PyDict::new(py);
-            let (status, reason) = status_parts(item.status);
+            let (status, mut reason) = status_parts(item.status);
+            if distorted.contains(&item.atom) {
+                reason = Some("DistortedTetrahedralGeometry".to_string());
+            }
             row.set_item("atom", item.atom.0)?;
             row.set_item("status", status)?;
             row.set_item("reason", reason)?;

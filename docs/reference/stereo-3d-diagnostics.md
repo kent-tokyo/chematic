@@ -32,6 +32,26 @@ On grossly distorted tetrahedral geometries, the signed-volume result can
 disagree with RDKit's assignment from the same coordinates; a regression
 fixture for development record 719 demonstrates this known limitation.
 
+Set `require_regular_geometry=True` to apply a conservative tetrahedral
+geometry screen before treating a reported atom as satisfied or violated:
+
+```python
+report = mol.stereo_3d_diagnostics(coords, require_regular_geometry=True)
+```
+
+Centers that fail the screen are reported as `unevaluable` with reason
+`DistortedTetrahedralGeometry`; already unevaluable centers retain their prior
+reason, and double-bond results are unchanged. The screen uses the same
+ligand-weight and angle thresholds described for alternative repairs below.
+It also rejects many centers where the original result agrees with RDKit, so it
+is an opt-in uncertainty screen, not an independent stereo oracle or a proof
+of validity. On the exposed development sample, it made 1,080 of 2,055
+otherwise comparable atom-center decisions unevaluable, including 890 that had
+agreed with RDKit. The fixed-sample protocol and coverage are recorded under
+`validation/results/2026-11-27-tetrahedral-geometry-screen/` in the repository.
+The repair API's `fully_verified` flag uses its original verifier; request this
+screen separately if that distinction matters.
+
 ## Repairing declared stereo
 
 `Mol.repair_stereo_3d(coords)` attempts to repair violated declared stereo by

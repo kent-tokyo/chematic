@@ -24,6 +24,12 @@ mod tests {
             &molecule,
             &alternative.coords
         ));
+        let screened = verify_stereo_with_geometry_screen(&molecule, &alternative.coords);
+        assert_eq!(screened.distorted_tetrahedral, vec![AtomIdx(11)]);
+        assert_eq!(
+            screened.report.tetrahedral[0].status,
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry)
+        );
 
         let molecule = mol("CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1");
         let initial = crate::generate_coords_etkdg(&molecule);
@@ -32,6 +38,13 @@ mod tests {
             &molecule,
             &alternative.coords
         ));
+        assert_eq!(
+            verify_stereo_with_geometry_screen(&molecule, &alternative.coords)
+                .report
+                .tetrahedral[0]
+                .status,
+            StereoStatus::Satisfied
+        );
         assert!(!satisfied_tetrahedral_geometry_is_regular(
             &molecule,
             &Coords3D::default()

@@ -343,6 +343,44 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
     }
 }
 
+/// A stereo report and the tetrahedral centers rejected by the geometry screen.
+#[derive(Debug, Clone)]
+pub struct GeometryScreenedStereoVerification {
+    pub report: StereoVerification,
+    pub distorted_tetrahedral: Vec<AtomIdx>,
+}
+
+/// Verify declared stereo with an additional conservative tetrahedral geometry
+/// screen. Reported satisfied or violated tetrahedral centers whose ligand
+/// geometry fails the screen become unevaluable. Double bonds and elements
+/// already unevaluable retain their original status. The screen is a heuristic,
+/// not an independent stereo oracle or proof of physical validity.
+/// Rejected centers are listed in `distorted_tetrahedral`; their status in
+/// `report` is `Unevaluable(DegenerateGeometry)`.
+/// `report.is_fully_satisfied()` excludes unevaluable elements from violations;
+/// also check `report.n_unevaluable()` before treating all stereo as verified.
+///
+/// As with [`verify_stereo`], coordinates must match the molecule's atom order.
+pub fn verify_stereo_with_geometry_screen(
+    mol: &Molecule,
+    coords: &Coords3D,
+) -> GeometryScreenedStereoVerification {
+    let mut report = verify_stereo(mol, coords);
+    let mut distorted_tetrahedral = Vec::new();
+    for result in &mut report.tetrahedral {
+        if !matches!(result.status, StereoStatus::Unevaluable(_))
+            && !tetrahedral_geometry_is_regular(mol, coords, result.atom)
+        {
+            result.status = StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+            distorted_tetrahedral.push(result.atom);
+        }
+    }
+    GeometryScreenedStereoVerification {
+        report,
+        distorted_tetrahedral,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Constraint representation (declared stereo, independent of any geometry)
 // ---------------------------------------------------------------------------
@@ -546,40 +584,47 @@ pub fn satisfied_tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords
         .iter()
         .filter(|r| r.status.is_satisfied())
     {
-        let Ok(constraint) = tetrahedral_constraint_for(mol, item.atom) else {
-            return false;
-        };
-        let Ok(p) = tetrahedral_positions(coords, item.atom, &constraint.order) else {
-            return false;
-        };
-        let center = coords.get(item.atom);
-        let volume = signed_volume(p[0], p[1], p[2], p[3]);
-        if !volume.is_finite() || volume.abs() < VOLUME_EPS {
+        if !tetrahedral_geometry_is_regular(mol, coords, item.atom) {
             return false;
         }
-        let weights = [
-            signed_volume(center, p[1], p[2], p[3]) / volume,
-            signed_volume(p[0], center, p[2], p[3]) / volume,
-            signed_volume(p[0], p[1], center, p[3]) / volume,
-            signed_volume(p[0], p[1], p[2], center) / volume,
-        ];
-        if weights.iter().any(|w| !w.is_finite() || *w <= 1e-6) {
-            return false;
-        }
-        for i in 0..4 {
-            for j in i + 1..4 {
-                let Some(a) = p[i].sub(&center).try_normalize() else {
-                    return false;
-                };
-                let Some(b) = p[j].sub(&center).try_normalize() else {
-                    return false;
-                };
-                let cosine = a.dot(&b);
-                if !cosine.is_finite()
-                    || !(-0.9659258262890683..=core::f64::consts::FRAC_1_SQRT_2).contains(&cosine)
-                {
-                    return false;
-                }
+    }
+    true
+}
+
+fn tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D, atom: AtomIdx) -> bool {
+    let Ok(constraint) = tetrahedral_constraint_for(mol, atom) else {
+        return false;
+    };
+    let Ok(p) = tetrahedral_positions(coords, atom, &constraint.order) else {
+        return false;
+    };
+    let center = coords.get(atom);
+    let volume = signed_volume(p[0], p[1], p[2], p[3]);
+    if !volume.is_finite() || volume.abs() < VOLUME_EPS {
+        return false;
+    }
+    let weights = [
+        signed_volume(center, p[1], p[2], p[3]) / volume,
+        signed_volume(p[0], center, p[2], p[3]) / volume,
+        signed_volume(p[0], p[1], center, p[3]) / volume,
+        signed_volume(p[0], p[1], p[2], center) / volume,
+    ];
+    if weights.iter().any(|w| !w.is_finite() || *w <= 1e-6) {
+        return false;
+    }
+    for i in 0..4 {
+        for j in i + 1..4 {
+            let Some(a) = p[i].sub(&center).try_normalize() else {
+                return false;
+            };
+            let Some(b) = p[j].sub(&center).try_normalize() else {
+                return false;
+            };
+            let cosine = a.dot(&b);
+            if !cosine.is_finite()
+                || !(-0.9659258262890683..=core::f64::consts::FRAC_1_SQRT_2).contains(&cosine)
+            {
+                return false;
             }
         }
     }

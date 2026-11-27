@@ -189,6 +189,13 @@ def test_distorted_prototype_illustrates_verifier_oracle_boundary():
     fixture = json.loads(Path(__file__).with_name("stereo_distorted_prototype_719.json").read_text())
     mol = chematic.from_smiles(fixture["smiles"])
     assert mol.stereo_3d_diagnostics(fixture["coords"])["atom_stereo"][0]["status"] == "satisfied"
+    for geometry, raw in ((fixture["coords"], "satisfied"),
+                          ([[-x, y, z] for x, y, z in fixture["coords"]], "violated")):
+        assert mol.stereo_3d_diagnostics(geometry)["atom_stereo"][0]["status"] == raw
+        screened = mol.stereo_3d_diagnostics(geometry, require_regular_geometry=True)
+        assert screened["atom_stereo"][0] == {"atom": fixture["center"],
+            "status": "unevaluable", "reason": "DistortedTetrahedralGeometry"}
+        assert (screened["satisfied"], screened["violated"], screened["unevaluable"]) == (0, 0, 1)
     reference = Chem.MolFromSmiles(fixture["smiles"])
     Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
     index = fixture["center"]
@@ -200,3 +207,20 @@ def test_distorted_prototype_illustrates_verifier_oracle_boundary():
     Chem.AssignStereochemistryFrom3D(reference, replaceExistingTags=True)
     Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
     assert reference.GetAtomWithIdx(index).GetProp("_CIPCode") != expected
+
+
+def test_tetrahedral_geometry_screen_preserves_regular_and_double_bond_results():
+    smiles = "CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1"
+    mol = chematic.from_smiles(smiles)
+    repair = mol.repair_stereo_3d(mol.generate_3d_etkdg(), clash_cutoff=0.8,
+                                  max_alternative_attempts=3)
+    assert repair["ok"]
+    coords = repair["coordinates"]
+    assert mol.stereo_3d_diagnostics(coords, require_regular_geometry=True) == mol.stereo_3d_diagnostics(coords)
+    mirror = [[-x, y, z] for x, y, z in coords]
+    assert mol.stereo_3d_diagnostics(mirror, require_regular_geometry=True) == mol.stereo_3d_diagnostics(mirror)
+    alkene = chematic.from_smiles("F/C=C/F")
+    geometry = [[0, 1, 0], [0, 0, 0], [1, 0, 0], [1, -1, 0]]
+    assert alkene.stereo_3d_diagnostics(geometry, require_regular_geometry=True) == alkene.stereo_3d_diagnostics(geometry)
+    with pytest.raises(ValueError, match="finite and match"):
+        mol.stereo_3d_diagnostics([[math.nan, 0, 0]] * len(coords), require_regular_geometry=True)
