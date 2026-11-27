@@ -45,10 +45,11 @@ reason, and double-bond results are unchanged. The screen uses the same
 ligand-weight and angle thresholds described for alternative repairs below.
 It also rejects many centers where the original result agrees with RDKit, so it
 is an opt-in uncertainty screen, not an independent stereo oracle or a proof
-of validity. On the exposed development sample, it made 1,080 of 2,055
-otherwise comparable atom-center decisions unevaluable, including 890 that had
-agreed with RDKit. The fixed-sample protocol and coverage are recorded under
-`validation/results/2026-11-27-tetrahedral-geometry-screen/` in the repository.
+of validity. On the exposed development sample, the current screen made 1,100 of
+2,055 otherwise comparable atom-center decisions unevaluable, including 910
+that had agreed with RDKit. The fixed-sample protocol and follow-up are recorded
+under `validation/results/2026-11-27-tetrahedral-geometry-screen/` and
+`validation/results/2026-11-27-implicit-h-planarity/` in the repository.
 The repair API's `fully_verified` flag uses its original verifier; request this
 screen separately if that distinction matters.
 
@@ -103,6 +104,13 @@ applied to alternatives, not to the original accepted repair. It rejects grossly
 distorted candidates but is not an independent stereochemistry oracle and does
 not guarantee valid geometry or remove pre-existing clashes. Candidates that
 leave reported stereo unevaluable still return `fully_verified=False`.
+
+For carbon with three explicit neighbors and one implicit hydrogen, the
+screen additionally requires the absolute scalar triple product of the three
+normalized real bond directions to be at least 0.15. Zero indicates coplanar
+directions; the 0.15 margin is an experimental conservative threshold. It
+also applies to `require_regular_geometry=True`. It does not change the default
+stereo verifier or apply to carbon with explicit hydrogen coordinates.
 
 ```python
 mol = chematic.from_smiles("C[N@H+](CC)CCC")

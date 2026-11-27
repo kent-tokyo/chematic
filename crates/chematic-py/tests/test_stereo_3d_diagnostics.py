@@ -224,3 +224,29 @@ def test_tetrahedral_geometry_screen_preserves_regular_and_double_bond_results()
     assert alkene.stereo_3d_diagnostics(geometry, require_regular_geometry=True) == alkene.stereo_3d_diagnostics(geometry)
     with pytest.raises(ValueError, match="finite and match"):
         mol.stereo_3d_diagnostics([[math.nan, 0, 0]] * len(coords), require_regular_geometry=True)
+
+
+def test_near_planar_implicit_h_carbon_is_not_confidently_assigned():
+    mol = chematic.from_smiles("F[C@H](Cl)Br")
+    coords = [[-0.8770239853135249, 0.4924418600749846, 0.9596809511921262],
+              [0.0, 0.0, 0.0],
+              [-0.2096233151177489, 0.7302430680925626, -0.6898994627180793],
+              [0.6835160275334422, -0.6881890778227236, -0.2249292230318938]]
+    assert mol.stereo_3d_diagnostics(coords)["atom_stereo"][0]["status"] == "violated"
+    strict = mol.stereo_3d_diagnostics(coords, require_regular_geometry=True)
+    assert strict["atom_stereo"][0] == {"atom": 1, "status": "unevaluable",
+                                         "reason": "DistortedTetrahedralGeometry"}
+    for scale in (0.5, 3.0):
+        transformed = [[scale * -x + 7.0, scale * y - 5.0, scale * z + 1.0]
+                       for x, y, z in coords]
+        assert mol.stereo_3d_diagnostics(transformed, require_regular_geometry=True)["atom_stereo"][0]["status"] == "unevaluable"
+    regular = [[1., 1., 1.], [0., 0., 0.], [-1., -1., 1.], [-1., 1., -1.]]
+    assert mol.stereo_3d_diagnostics(regular, require_regular_geometry=True) == mol.stereo_3d_diagnostics(regular)
+    Chem = pytest.importorskip("rdkit.Chem")
+    reference = Chem.MolFromSmiles("F[C@H](Cl)Br")
+    conf = Chem.Conformer(reference.GetNumAtoms())
+    for index, point in enumerate(coords):
+        conf.SetAtomPosition(index, point)
+    reference.AddConformer(conf)
+    Chem.AssignStereochemistryFrom3D(reference, replaceExistingTags=True)
+    assert reference.GetAtomWithIdx(1).GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED

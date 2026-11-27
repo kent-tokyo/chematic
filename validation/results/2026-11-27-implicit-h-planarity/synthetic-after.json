@@ -1,0 +1,63 @@
+{
+  "smiles": "F[C@H](Cl)Br",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "rdkit": "2026.09.2",
+  "results": [
+    {
+      "label": "threshold_selection",
+      "seed": 20261128,
+      "samples": 30000,
+      "counts": [
+        {
+          "oracle": "raw_agrees",
+          "screen": "satisfied",
+          "count": 6628
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "unevaluable",
+          "count": 14663
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "violated",
+          "count": 6719
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "unevaluable",
+          "count": 1990
+        }
+      ]
+    },
+    {
+      "label": "independent_synthetic_seed",
+      "seed": 920261127,
+      "samples": 50000,
+      "counts": [
+        {
+          "oracle": "raw_agrees",
+          "screen": "satisfied",
+          "count": 11078
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "unevaluable",
+          "count": 24195
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "violated",
+          "count": 11332
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "unevaluable",
+          "count": 3395
+        }
+      ]
+    }
+  ]
+}

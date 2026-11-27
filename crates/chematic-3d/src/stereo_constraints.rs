@@ -126,6 +126,11 @@ const PHANTOM_DIRECTION_EPS: f64 = 1e-3;
 /// this is never used as a physically accurate bond length anywhere.
 const PHANTOM_BOND_LENGTH: f64 = 1.0;
 
+// Experimental margin for three-real-ligand carbon with an implicit H. The
+// absolute normalized triple product is 0 for coplanar bond directions and
+// is independent of bond lengths. Used only by the opt-in geometry screen.
+const MIN_IMPLICIT_H_CARBON_DIRECTION_VOLUME: f64 = 0.15;
+
 // ---------------------------------------------------------------------------
 // Public result types
 // ---------------------------------------------------------------------------
@@ -572,8 +577,10 @@ fn tetrahedral_positions(
 /// Conservative geometric screen for reported, satisfied tetrahedral centers.
 /// The central atom must be inside its four-ligand tetrahedron, and all pairs of
 /// ligand directions (including a reconstructed implicit ligand) must form
-/// angles between 45 and 165 degrees. This is a coarse screen, not an independent
-/// stereochemistry oracle or an energy/geometry minimization.
+/// angles between 45 and 165 degrees. Carbon with three explicit ligands and
+/// one implicit hydrogen must additionally have normalized direction volume
+/// at least 0.15. This is a coarse screen, not an independent stereochemistry
+/// oracle or an energy/geometry minimization.
 pub fn satisfied_tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D) -> bool {
     if coords.atom_count() != mol.atom_count() || !coords.is_finite() {
         return false;
@@ -599,6 +606,24 @@ fn tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D, atom: Atom
         return false;
     };
     let center = coords.get(atom);
+    if mol.atom(atom).element.atomic_number() == 6
+        && mol.degree(atom) == 3
+        && mol.implicit_hydrogen_count(atom) == 1
+    {
+        let directions: Option<Vec<_>> = mol
+            .neighbors(atom)
+            .map(|(neighbor, _)| coords.get(neighbor).sub(&center).try_normalize())
+            .collect();
+        let Some(directions) = directions else {
+            return false;
+        };
+        let volume = directions[0]
+            .dot(&directions[1].cross(&directions[2]))
+            .abs();
+        if !volume.is_finite() || volume < MIN_IMPLICIT_H_CARBON_DIRECTION_VOLUME {
+            return false;
+        }
+    }
     let volume = signed_volume(p[0], p[1], p[2], p[3]);
     if !volume.is_finite() || volume.abs() < VOLUME_EPS {
         return false;
