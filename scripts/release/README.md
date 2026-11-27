@@ -6,10 +6,9 @@ tagged source, builds and publishes packages, and creates the GitHub Release.
 ## Before tagging
 
 1. Compare public Rust, Python, WASM declarations and shared JSON contracts
-   with the previous published tag. For v1.2.5, use `v1.2.4`. Check
-   Cleanup and the new checked conformer bindings against their documented
-   contracts. See [Cleanup migration](../../docs/reference/cleanup-migration.md)
-   and [checked ensembles](../../docs/reference/checked-conformer-ensembles.md).
+   with the previous published tag. Confirm the baseline against the release
+   history and the compatibility checks in [CI](../../.github/workflows/ci.yml).
+   Verify changed APIs against their [documented contracts](../../docs/reference/compatibility-scope.md).
 2. Synchronize workspace and package versions, dependency pins, lockfiles,
    citation metadata and release examples. Move the relevant Unreleased notes
    into the versioned CHANGELOG section. Run the
@@ -24,8 +23,9 @@ tagged source, builds and publishes packages, and creates the GitHub Release.
 ## After tagging
 
 Confirm source qualification, coverage and security on the tag. Verify
-crates.io checksums and source commit, npm version and integrity, and the
-25 PyPI wheels plus sdist against the build hashes. Check the published wheel
+crates.io checksums and source commit, npm version and integrity, and every
+PyPI wheel and sdist against the build hashes. Use the tagged workflow to
+identify the expected distribution matrix. Check the published wheel
 smoke and chemistry jobs, the GitHub Release and its metadata asset, and the
 version shown on docs.rs and the project site.
 
@@ -34,8 +34,8 @@ against the same tag and, where possible, the original artifacts. If the
 PyPI JSON API shows the files before pip's index does, wait for index
 propagation before rerunning install tests. The
 [v1.2.2 channel record](../../validation/results/release-channel-verification-v1.2.2.json)
-shows the evidence to retain. The v1.2.3 and v1.2.4 records still contain
-pre-publication states; see the [validation report](../../docs/reference/validation.md).
+shows the evidence to retain. Record the observed state and evidence for
+each channel in the release record. See the [validation report](../../docs/reference/validation.md).
 
 Keep generated metadata, provenance, and SBOM files with the release
 artifacts. Follow the [release key custody guide](../../docs/reference/release-key-custody.md)

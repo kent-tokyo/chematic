@@ -7,11 +7,18 @@ Thank you for your interest in contributing! chematic is a pure-Rust cheminforma
 ```bash
 git clone https://github.com/kent-tokyo/chematic.git
 cd chematic
-cargo test --workspace --lib --quiet
+cargo test --workspace --exclude chematic-py --lib --quiet
 cargo clippy --workspace -- -D warnings
 ```
 
-No C compiler, no Python, no external tools required for the core crates.
+The core crates build without Python or a C compiler in their default
+configuration. Python binding tests need an environment with the built
+extension. Native InChI needs a C compiler.
+
+Use the [workspace manifest](Cargo.toml) to locate the owning crate.
+The [compatibility scope](docs/reference/compatibility-scope.md) and
+[language bindings](docs/reference/language-bindings.md) describe behavior
+at the public entry points.
 
 ## Product names
 
@@ -85,18 +92,25 @@ merging, so the tested merge includes the current base.
 For version preparation, tag qualification, and registry verification, follow
 the [release checklist](scripts/release/README.md).
 
-## Development workflow
+## Verify a change
 
-```bash
-# Run tests for a single crate
-cargo test -p chematic-chem --lib --quiet
+Run commands from the repository root unless the workflow specifies another
+directory. Start with the affected test target and expand to each changed public
+surface. Workflow definitions carry the current toolchain and package pins.
 
-# Run a specific test by name
-cargo test -p chematic-chem --lib -- hba_count
+| Change | First checks | Broader verification |
+|---|---|---|
+| Rust crate | `cargo fmt --all -- --check` and `cargo test --locked -p <crate> --lib` | Run the affected integration targets and `cargo clippy --workspace -- -D warnings`. |
+| Native InChI | `cargo test -p chematic-inchi --features native-inchi --lib --quiet` | Follow the native InChI jobs in [CI](.github/workflows/ci.yml). |
+| Python | Build the extension with maturin into a test environment and run the relevant tests under `crates/chematic-py/tests/`. | Follow the Python runtime and stub checks in [CI](.github/workflows/ci.yml). |
+| WASM or Node | Build the affected target with wasm-pack from `crates/chematic-wasm/` and run its integration test against that output. | Use the Node and web target jobs in [CI](.github/workflows/ci.yml) for runtime and declaration checks. |
+| Public contracts or structural Rust work | Run the affected regressions and the [repository checks](scripts/checks/README.md). | Follow the [refactoring plan](docs/plans/refactoring-plan.md) for budget and cross-binding checks. |
+| Documentation or benchmark records | Run `git diff --check` and the relevant [document checks](scripts/README.md#finding-the-right-command). | Build the site in strict mode for changes under `docs/` or to its links. |
 
-# Check native InChI feature (requires C compiler)
-cargo test -p chematic-inchi --features native-inchi --lib --quiet
-```
+Report the commands you ran and any required checks you could not run.
+The [validation report](docs/reference/validation.md) and
+[benchmark method](docs/reference/benchmark.md) describe the evidence needed
+for chemistry and performance claims.
 
 ## Code coverage
 
@@ -139,7 +153,7 @@ does not replace the local pass/fail result.
 - Keep PRs focused — one feature or fix per PR.
 - Include tests. New functions without tests will be asked to add them.
 - Update `CHANGELOG.md` under `## [Unreleased]` with a brief description.
-- CI must pass (`cargo test --workspace --lib --quiet` + `cargo clippy --workspace -- -D warnings`).
+- Run the applicable checks above and wait for the required PR checks.
 
 ## Reporting issues
 

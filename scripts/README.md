@@ -26,27 +26,25 @@ and `tools/check_script_layout.py` enforces that list in CI.
 ## Finding the right command
 
 - Search `.github/workflows/` for CI and release entry points.
-- Use [`scripts/check.sh`](check.sh) for the local repository gate bundle.
+- Use [`bash scripts/check.sh`](check.sh) for the local gate bundle. Use the workflow for its runtime matrix and required CI checks.
 - Start from [`docs/reference/validation.md`](../docs/reference/validation.md) for current chemistry
   evidence and [`docs/reference/benchmark.md`](../docs/reference/benchmark.md) for measurements.
 - Follow the dated record in `benchmarks/` or `validation/` before rerunning an
   evidence script; it defines the corpus, versions, hashes, and claim boundary.
 - Use `--help` for manually run validation and diagnostic commands.
 
-Frequently used entry points include:
+Run these entry points from the repository root.
 
 | Task | Entry point |
 |---|---|
-| Release and version checks | `checks/check_release_*.py`, `checks/check_publish_graph.py`, `release/bump_version.py` |
-| Documentation | `mkdocs build --strict`; the CI workflow is the canonical command |
-| Benchmark index | `checks/check_benchmark_index.py` |
-| Compatibility dashboard | `checks/check_compatibility_profiles.py`, `generators/generate_compatibility_dashboard.py` |
-| Evidence records | `checks/evidence/check_*_evidence.py` |
-| Cross-binding fingerprints | `validation/check_fingerprint_cross_binding.py` |
-| Same-process format contracts | `validation/check_same_process_contracts.py` |
-| Parser security | `diagnostics/run_isolated_parser_security.py` |
-| Refactoring budget | `checks/check_refactor_budget.py` |
-| Frozen trust holdouts | `checks/check_trust_holdouts.py`, `validation/score_trust_holdouts.py` |
+| Documentation and release wording | `python3 scripts/checks/check_release_docs_consistency.py` and `python3 scripts/checks/check_product_names.py` |
+| Documentation site | `mkdocs build --strict` in the [pinned environment](../CONTRIBUTING.md#documentation-build) |
+| Benchmark and roadmap indexes | `python3 scripts/checks/check_benchmark_index.py` and `python3 scripts/checks/check_roadmap_disposition.py` |
+| Refactoring budget | `python3 scripts/checks/check_refactor_budget.py` |
+| Binding contracts | `python3 scripts/checks/check_cross_binding_manifest.py` and `python3 scripts/checks/check_binding_surface.py` |
+| Compatibility dashboard | [Profile checker](checks/check_compatibility_profiles.py) and [dashboard generator](generators/generate_compatibility_dashboard.py) |
+| Release and version checks | [Release checklist](release/README.md) |
+| Recorded evidence and holdouts | [Evidence checks](checks/evidence/) and [validation runners](validation/) |
 
 ## Retention rules
 
