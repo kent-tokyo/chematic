@@ -23,6 +23,9 @@ pub struct SquarePlanarAngles {
     pub neighbors: Option<[Option<u32>; 4]>,
     pub trans: Vec<LigandAngle>,
     pub cis: Vec<LigandAngle>,
+    /// Maximum absolute scalar triple product of three unit ligand vectors.
+    /// Zero is coplanar; this is not a distance or a validity judgment.
+    pub max_unit_triple_product: Option<f64>,
     /// `None` means angles were measured, not that the geometry passed a check.
     pub unavailable: Option<&'static str>,
 }
@@ -61,6 +64,7 @@ fn measure_center(
         neighbors: None,
         trans: Vec::new(),
         cis: Vec::new(),
+        max_unit_triple_product: None,
         unavailable: None,
     };
     let Some(permutation) = permutation else {
@@ -90,6 +94,24 @@ fn measure_center(
         }
         unit[i] = v.map(|x| x / norm);
     }
+    let mut max_triple = 0.0_f64;
+    for i in 0..4 {
+        for j in i + 1..4 {
+            for k in j + 1..4 {
+                if [neighbors[i], neighbors[j], neighbors[k]].contains(&STEREO_VACANT_SENTINEL) {
+                    continue;
+                }
+                let cross = [
+                    unit[i][1] * unit[j][2] - unit[i][2] * unit[j][1],
+                    unit[i][2] * unit[j][0] - unit[i][0] * unit[j][2],
+                    unit[i][0] * unit[j][1] - unit[i][1] * unit[j][0],
+                ];
+                let triple: f64 = (0..3).map(|axis| cross[axis] * unit[k][axis]).sum();
+                max_triple = max_triple.max(triple.abs());
+            }
+        }
+    }
+    result.max_unit_triple_product = Some(max_triple.min(1.0));
     let trans = permutation.trans_pairs();
     for i in 0..4 {
         for j in i + 1..4 {
@@ -242,5 +264,34 @@ mod tests {
         assert_eq!(report.cis.len(), 2);
         assert_eq!(report.trans[0].atoms, [0, 3]);
         assert!((report.trans[0].degrees - 180.0).abs() < 1e-10);
+    }
+
+    #[test]
+    fn measures_nonplanarity_even_when_angles_meet_the_previous_screen() {
+        let mol = chematic_smiles::parse("[Pt@SP1](F)(Cl)(Br)I").unwrap();
+        let mut coords = Coords3D::new_zeroed(mol.atom_count());
+        let theta = 20.0_f64.to_radians();
+        coords.set(AtomIdx(1), Point3::new(1.0, 0.0, 0.0));
+        coords.set(AtomIdx(2), Point3::new(0.0, 1.0, 0.0));
+        coords.set(AtomIdx(3), Point3::new(-theta.cos(), 0.0, theta.sin()));
+        coords.set(AtomIdx(4), Point3::new(0.0, -theta.cos(), theta.sin()));
+        let report = square_planar_angles(&mol, &coords).unwrap().remove(0);
+        assert!(report.trans.iter().all(|a| a.degrees >= 150.0));
+        assert!(
+            report
+                .cis
+                .iter()
+                .all(|a| (60.0..=120.0).contains(&a.degrees))
+        );
+        assert!((report.max_unit_triple_product.unwrap() - theta.sin()).abs() < 1e-12);
+        for point in &mut coords.points {
+            *point = Point3::new(
+                -3.0 * point.y + 9.0,
+                3.0 * point.x - 4.0,
+                3.0 * point.z + 2.0,
+            );
+        }
+        let rotated = square_planar_angles(&mol, &coords).unwrap().remove(0);
+        assert!((rotated.max_unit_triple_product.unwrap() - theta.sin()).abs() < 1e-12);
     }
 }

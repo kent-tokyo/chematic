@@ -25,6 +25,14 @@ cis pairs; a supported one-vacancy center has one trans and two cis pairs.
 The recorded stereo order, including vacancies, is required: the API never
 infers it from graph iteration order.
 
+`max_unit_triple_product` is the maximum absolute scalar triple product among
+the real center-to-ligand unit vectors, taken over every three ligands. It is
+dimensionless, lies between zero and one, and is unchanged by translation,
+rotation or uniform scaling. Coplanar vectors give zero. It is not a distance
+in Å, a fitted-plane residual, or by itself proof of a valid square-planar
+structure: nearly collinear ligands can also give a small value. For a center
+with one vacancy, only its three real vectors are used.
+
 An `unavailable` reason reports an unnumbered permutation, missing or
 unsupported neighbor order, or a zero/invalid ligand vector; its angle lists
 are empty. Coordinate count mismatch or nonfinite coordinates raise
@@ -94,6 +102,35 @@ can take substantially longer; it is not a time limit or a guarantee of a
 result. `attempts` counts these whole embedding calls; each call can itself
 perform multiple internal initialization attempts. The numeric adjustments
 are an experimental heuristic and may be unsuitable for particular complexes.
+
+## Optional planarity and other-stereo screen
+
+`rdkit_embed_square_planar_checked` runs the bounded retry above and then
+checks both the maximum unit triple product and other declared stereochemistry
+that the library's verifier can evaluate:
+
+```python
+result = mol.rdkit_embed_square_planar_checked(
+    random_seed=1, max_unit_triple_product=0.3
+)
+print(result["max_unit_triple_product"], result["other_stereo_checked"])
+```
+
+The planarity limit is a required, finite value between zero and one; `0.3`
+is an example, not a recommended universal cutoff. Numbered square-planar
+centers must first pass the existing angle policy and this limit. The method
+then rejects violations and unevaluable entries for other declared
+tetrahedral centers and E/Z bonds that the verifier reports. Numbered
+square-planar entries that the verifier itself marks as unsupported are
+handled by the separate angle and planarity screens. Errors identify the
+failed center or the verifier's violated and unevaluable elements. A failure
+at these additional screens does not trigger another embedding attempt.
+
+The verifier has limited stereochemical coverage; successful screening does
+not certify all possible stereo specifications, bond lengths, energies,
+interfragment geometry or a later optimization. It does not change the
+default embedding or the checked-conformer ensemble API. Rust exposes the
+same opt-in operation in `square_planar_checked`.
 
 The Python regression tests compare atom order and bond connectivity first,
 then compare every reported angle with RDKit's `GetAngleDeg` on six fixed Pt

@@ -83,6 +83,7 @@ A retained historical record is not evidence about current source.
 - [Cooperative force-field minimization development check](2026-11-27-cooperative-minimization.md)
 - [Square-planar constrained embedding development probe](2026-11-27-square-planar-embedding-development.md)
 - [Square-planar bounded retry development probe](2026-11-27-square-planar-retry-development.md)
+- [Square-planar planarity and stereo development probe](2026-11-27-square-planar-checked-development.md)
 
 - [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
 

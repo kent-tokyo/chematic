@@ -2,6 +2,66 @@ use super::*;
 
 #[pymethods]
 impl Mol {
+    /// Embed and additionally screen nonplanarity and other declared stereo.
+    /// The dimensionless planarity limit must be explicitly supplied.
+    #[pyo3(signature = (*, max_unit_triple_product, random_seed = 42, max_iterations = 0,
+                        trans_min_degrees = 150.0, cis_tolerance_degrees = 30.0))]
+    fn rdkit_embed_square_planar_checked<'py>(
+        &self,
+        py: Python<'py>,
+        max_unit_triple_product: f64,
+        random_seed: i32,
+        max_iterations: u32,
+        trans_min_degrees: f64,
+        cis_tolerance_degrees: f64,
+    ) -> PyResult<Bound<'py, PyDict>> {
+        use chematic_3d::rdkit_embed::RdkitEmbedOptions;
+        use chematic_3d::square_planar_checked::{
+            SquarePlanarCheckedConfig, SquarePlanarCheckedError, rdkit_embed_square_planar_checked,
+        };
+        use chematic_3d::square_planar_embedding::{
+            SquarePlanarEmbedConfig, SquarePlanarEmbedError, SquarePlanarRetryError,
+        };
+        let mol = self.inner.clone();
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let config = SquarePlanarCheckedConfig {
+            angles: SquarePlanarEmbedConfig {
+                trans_min_degrees,
+                cis_tolerance_degrees,
+            },
+            max_unit_triple_product,
+        };
+        let result = py
+            .detach(move || rdkit_embed_square_planar_checked(&mol, &options, config))
+            .map_err(|error| {
+                let message = error.to_string();
+                match error {
+                    SquarePlanarCheckedError::InvalidPlanarityLimit
+                    | SquarePlanarCheckedError::Embedding(SquarePlanarRetryError::Initial(
+                        SquarePlanarEmbedError::InvalidThreshold
+                        | SquarePlanarEmbedError::NoDeclaration
+                        | SquarePlanarEmbedError::UnsupportedCenter { .. },
+                    )) => PyValueError::new_err(message),
+                    _ => pyo3::exceptions::PyRuntimeError::new_err(message),
+                }
+            })?;
+        let item = PyDict::new(py);
+        item.set_item("coordinates", result.embedding.coords)?;
+        item.set_item("attempts", result.embedding.attempts)?;
+        item.set_item(
+            "used_tightened_bounds",
+            result.embedding.used_tightened_bounds,
+        )?;
+        item.set_item("initial_rejection", result.embedding.initial_rejection)?;
+        item.set_item("max_unit_triple_product", result.max_unit_triple_product)?;
+        item.set_item("other_stereo_checked", result.other_stereo_checked)?;
+        Ok(item)
+    }
+
     /// Try square-planar embedding once, with one tighter-bounds retry after
     /// a final angle rejection. The original angle policy applies to both.
     #[pyo3(signature = (*, random_seed = 42, max_iterations = 0,
@@ -120,6 +180,7 @@ impl Mol {
                 });
                 item.set_item("permutation", tag)?;
                 item.set_item("neighbors", report.neighbors)?;
+                item.set_item("max_unit_triple_product", report.max_unit_triple_product)?;
                 item.set_item(
                     "trans",
                     report

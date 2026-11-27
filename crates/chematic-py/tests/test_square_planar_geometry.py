@@ -150,3 +150,63 @@ def test_square_planar_retry_recovers_rejected_embedding():
     assert all(60.0 <= angle <= 120.0 for _, _, angle in report["cis"])
     with pytest.raises(ValueError, match="no square-planar declaration"):
         chematic.from_smiles("CCO").rdkit_embed_square_planar_with_retry()
+
+
+def test_square_planar_nonplanarity_can_exceed_the_angle_screen():
+    mol = chematic.from_smiles("[Pt@SP1](F)(Cl)(Br)I")
+    angle = math.radians(20)
+    coords = [[0, 0, 0], [1, 0, 0], [0, 1, 0],
+              [-math.cos(angle), 0, math.sin(angle)], [0, -math.cos(angle), math.sin(angle)]]
+    report = mol.square_planar_geometry_diagnostics(coords)[0]
+    assert all(value >= 150 for _, _, value in report["trans"])
+    assert all(60 <= value <= 120 for _, _, value in report["cis"])
+    assert report["max_unit_triple_product"] == pytest.approx(math.sin(angle), abs=1e-12)
+
+
+def test_square_planar_checked_embedding_requires_explicit_limit_and_keeps_coordinates():
+    mol = chematic.from_smiles("[Pt@SP3](F)(Cl)(Br)I").add_hydrogens()
+    with pytest.raises(TypeError):
+        mol.rdkit_embed_square_planar_checked()
+    for limit in (-0.1, 1.1, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            mol.rdkit_embed_square_planar_checked(max_unit_triple_product=limit)
+    for seed in range(1, 11):
+        try:
+            base = mol.rdkit_embed_square_planar_with_retry(random_seed=seed)
+            report = mol.square_planar_geometry_diagnostics(base["coordinates"])[0]
+            if report["max_unit_triple_product"] > 1e-9:
+                break
+        except RuntimeError:
+            continue
+    else:
+        pytest.fail("no evaluable nonplanar embedding")
+    checked = mol.rdkit_embed_square_planar_checked(max_unit_triple_product=1.0, random_seed=seed)
+    assert checked["coordinates"] == base["coordinates"]
+    assert checked["attempts"] == base["attempts"]
+    assert checked["other_stereo_checked"] == 0
+    assert checked["max_unit_triple_product"] == pytest.approx(report["max_unit_triple_product"])
+    with pytest.raises(RuntimeError, match="unit triple product"):
+        mol.rdkit_embed_square_planar_checked(
+            max_unit_triple_product=report["max_unit_triple_product"] / 2, random_seed=seed
+        )
+
+
+@pytest.mark.parametrize("smiles", [
+    "[Pt@SP3](F)(Cl)(Br)I.C[C@H](O)F",
+    "F[Pt@SP1](Cl)Br.F/C=C/F",
+])
+def test_square_planar_checked_embedding_checks_other_declared_stereo(smiles):
+    mol = chematic.from_smiles(smiles).add_hydrogens()
+    errors = []
+    for seed in range(1, 11):
+        try:
+            result = mol.rdkit_embed_square_planar_checked(
+                random_seed=seed, max_unit_triple_product=1.0
+            )
+            break
+        except RuntimeError as error:
+            errors.append(str(error))
+    else:
+        pytest.fail(f"no checked embedding: {errors}")
+    assert result["other_stereo_checked"] == 1
+    assert result["coordinates"] == mol.rdkit_embed_square_planar_with_retry(random_seed=seed)["coordinates"]
