@@ -37,6 +37,29 @@ fn singletons_charges_and_isotopes_do_not_gain_inferred_hydrogens() {
 }
 
 #[test]
+fn explicit_non_single_ccd_orders_survive_graph_projection() {
+    for (order, expected) in [
+        ("TRIP", BondOrder::Triple),
+        ("QUAD", BondOrder::Quadruple),
+        ("AROM", BondOrder::Aromatic),
+    ] {
+        let text = template("T A Mo N N\nT B Mo N N", &format!("T A B {order} N N"));
+        let component = parse(&text).unwrap();
+        assert_eq!(component.bonds[0].value_order, order);
+        let graph = component.to_molecule(false).unwrap();
+        assert_eq!(graph.bonds().next().unwrap().1.order, expected, "{order}");
+    }
+}
+
+#[test]
+fn graph_projection_revalidates_edited_bond_orders() {
+    let text = template("T A Mo N N\nT B Mo N N", "T A B SING N N");
+    let mut component = parse(&text).unwrap();
+    component.bonds[0].value_order = "INVALID".into();
+    assert!(component.to_molecule(false).is_err());
+}
+
+#[test]
 fn stereo_labels_are_retained_and_graph_loss_requires_consent() {
     let text = "data_s\n_chem_comp.id S\nloop_\n_chem_comp_atom.comp_id\n_chem_comp_atom.atom_id\n_chem_comp_atom.type_symbol\n_chem_comp_atom.charge\n_chem_comp_atom.pdbx_stereo_config\nS C C 0 R\nS F F 0 N\nS CL Cl 0 N\nS BR Br 0 N\nS H H 0 N\nloop_\n_chem_comp_bond.comp_id\n_chem_comp_bond.atom_id_1\n_chem_comp_bond.atom_id_2\n_chem_comp_bond.value_order\nS C F SING\nS C CL SING\nS C BR SING\nS C H SING\n";
     let c = parse(text).unwrap();

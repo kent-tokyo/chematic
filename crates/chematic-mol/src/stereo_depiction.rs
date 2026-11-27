@@ -1031,6 +1031,9 @@ pub fn with_stereo_depiction<R>(
     draw(copy.as_ref().unwrap_or(mol), &layout)
 }
 
+mod given_coordinates;
+pub use given_coordinates::with_stereo_depiction_on;
+
 /// 2D coordinates (Å, y up) for writing `mol` to a MOL block: its stereo
 /// depiction when it has stereo, the ordinary layout otherwise.
 pub fn mol_block_coords(mol: &Molecule) -> Vec<(f64, f64)> {
@@ -1480,3 +1483,7 @@ mod layout_boundary_contract_tests {
         assert_eq!(permutation_is_odd(&[1, 2, 3], &[1, 2, 4]), None);
     }
 }
+
+#[cfg(test)]
+#[path = "stereo_depiction/retry_tests.rs"]
+mod retry_tests;

@@ -13,6 +13,21 @@ mod tests {
     use chematic_core::{Atom, BondOrder, Element};
 
     #[test]
+    fn empirical_hetero_torsion_parameters_match_rdkit_controls() {
+        // RDKit 2025.09.3 MMFF94 GetMMFFTorsionParams for atoms 0-1-2-3.
+        for (smiles, expected_v2) in [("COOC", -2.0), ("COSC", -4.0)] {
+            let mol = chematic_smiles::parse(smiles).unwrap();
+            let types = assign_mmff94_numeric_types(&mol).unwrap();
+            let empirical = torsion_empirical_rule(&mol, 1, 2, types[1], types[2]);
+            assert_eq!(
+                (empirical.v1, empirical.v2, empirical.v3),
+                (0.0, expected_v2, 0.0),
+                "{smiles}"
+            );
+        }
+    }
+
+    #[test]
     fn chorded_four_cycle_uses_local_mmff_angle_type() {
         // RDKit 2026.09.2: C12C3C4C1C234 has four relevant triangular
         // cycles, but angle 0-1-2 lies on a local four-cycle whose edge set

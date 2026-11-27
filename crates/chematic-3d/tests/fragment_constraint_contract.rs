@@ -55,3 +55,25 @@ fn nonfinite_torsion_bounds_fail_before_embedding() {
         );
     }
 }
+
+#[test]
+fn triangle_inequality_violation_rejects_constrained_embedding() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C1CC1").unwrap());
+    let constraints = InternalCoordinateConstraints {
+        bond_lengths: vec![
+            BondLengthConstraint::around(0, 1, 1.0, 0.01),
+            BondLengthConstraint::around(1, 2, 1.0, 0.01),
+            BondLengthConstraint::around(0, 2, 3.0, 0.01),
+        ],
+        ..Default::default()
+    };
+    let result = rdkit_embed_molecule_with_constraints(
+        &molecule,
+        &RdkitEmbedOptions::default(),
+        &constraints,
+    );
+    assert!(matches!(
+        result,
+        Err(chematic_3d::rdkit_embed::RdkitEmbedError::Failed)
+    ));
+}

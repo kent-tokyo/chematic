@@ -64,6 +64,32 @@ fn json_output(args: &[&str], stdin: &str) -> Value {
 }
 
 #[test]
+fn convert_rejects_malformed_structure_input_without_output() {
+    for (format, input) in [
+        ("mol", "not a MOL block\n"),
+        ("mol2", "not MOL2\n"),
+        (
+            "cml",
+            r#"<molecule><atomArray><atom id="a1" elementType="Xx"/></atomArray></molecule>"#,
+        ),
+    ] {
+        let output = invoke(
+            &[
+                "convert",
+                "--input-format",
+                format,
+                "--output-format",
+                "smiles",
+            ],
+            input,
+        );
+        assert!(!output.status.success(), "{format}");
+        assert!(output.stdout.is_empty(), "{format}");
+        assert!(!output.stderr.is_empty(), "{format}");
+    }
+}
+
+#[test]
 fn rdkit_parity_search_perceives_aromaticity_in_single_and_batch_modes() {
     // RDKit 2025.09.3 sanitizes aromatic cyclobutadiene to a non-aromatic
     // ring, while a Kekule benzene is perceived as aromatic.

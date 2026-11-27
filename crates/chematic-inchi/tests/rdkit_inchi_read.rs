@@ -32,6 +32,9 @@ const CASES: &[(&str, &str)] = &[
     ),
     // Pentavalent nitro N repaired by the InChI clean-up rules.
     ("InChI=1S/CH3NO2/c1-2(3)4/h1H3", "C[N+](=O)[O-]"),
+    ("InChI=1S/CH3NO2/c1-2(3)4/h1H3/p+1", "C[N+](=O)O"),
+    ("InChI=1S/C2H7NO/c1-3(2)4/h4H,1-2H3/q+1", "C[N+](C)O"),
+    ("InChI=1S/C2H5NO/c1-3(2)4/h1H2,2H3/p+1", "C=[N+](C)O"),
     ("InChI=1S/CH4O3S/c1-5(2,3)4/h1H3,(H,2,3,4)", "CS(=O)(=O)O"),
     ("InChI=1S/CH4O/c1-2/h2H,1H3/i1D3", "[2H]C([2H])([2H])O"),
 ];

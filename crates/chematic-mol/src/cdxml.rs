@@ -45,14 +45,17 @@
 //!   -- while a directional wedge in the same situation is not ambiguous
 //!   (the narrow endpoint is the reference by CDXML's convention) and is
 //!   unaffected either way.
-//! - E/Z double-bond stereo is derived from 2D coordinates via `assign_ez_from_2d`.
+//! - E/Z double-bond stereo is derived from 2D coordinates: bond directions
+//!   via `apply_ez_directions_from_2d` (what the SMILES and MOL writers read,
+//!   as for MOL and MRV input), and the E/Z label cache via `assign_ez_from_2d`.
 //! - Presentation-only nodes (text boxes, arrows, etc.) are silently skipped.
 
 use std::collections::HashMap;
 
 use chematic_core::{Atom, AtomIdx, BondOrder, Element, Molecule, MoleculeBuilder, RGroupLabel};
 use chematic_perception::{
-    apply_ctab_local_parity_from_wedges_with_diagnostics, assign_ez_from_2d,
+    apply_ctab_local_parity_from_wedges_with_diagnostics, apply_ez_directions_from_2d_ex,
+    assign_ez_from_2d,
 };
 
 use crate::cml::parse_xml_attrs;
@@ -499,6 +502,32 @@ impl FragAccum {
             options,
         )?;
         assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
+        // A wavy carrier explicitly leaves each adjacent double bond unspecified.
+        let mut unspecified = std::collections::HashSet::new();
+        for (index, display) in self.bond_display.iter().enumerate() {
+            if display.as_deref() != Some("Wavy") {
+                continue;
+            }
+            let (begin, end) = bonds.positions[index];
+            for atom in [fragment.indices[&begin], fragment.indices[&end]] {
+                for (_, bond_index) in fragment.molecule.neighbors(atom) {
+                    if fragment.molecule.bond(bond_index).order == BondOrder::Double {
+                        unspecified.insert(bond_index);
+                    }
+                }
+            }
+        }
+        for &bond_index in &unspecified {
+            let bond = fragment.molecule.bond(bond_index);
+            let first = bond.atom1;
+            if matches!(
+                fragment.molecule.atom(first).cip_code,
+                Some(chematic_core::atom::CipCode::E | chematic_core::atom::CipCode::Z)
+            ) {
+                fragment.molecule.set_cip_code(first, None);
+            }
+        }
+        apply_ez_directions_from_2d_ex(&mut fragment.molecule, &fragment.coords, &unspecified);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
         Ok(())

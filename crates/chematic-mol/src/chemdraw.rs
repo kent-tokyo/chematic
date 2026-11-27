@@ -175,12 +175,7 @@ pub fn parse_chemdraw_block_with_limits(
             }
         }
     }
-    // The legacy CDXML reader computes an E/Z CIP cache but does not populate
-    // the direction metadata consumed by SMILES/MOL writers. Complete that
-    // geometry-derived representation only in this new projection API.
-    for (m, coords) in &mut molecules {
-        chematic_perception::apply_ez_directions_from_2d(m, coords);
-    }
+    // E/Z bond directions come from the CDXML reader itself.
     Ok(ChemDrawBlock {
         format,
         source: input.to_vec(),

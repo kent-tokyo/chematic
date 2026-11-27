@@ -676,3 +676,37 @@ fn test_standalone_wedge_still_suppressed_after_reorientation_helpers() {
     let out = write(&mol);
     assert!(!out.contains('/') && !out.contains('\\'), "got '{out}'");
 }
+
+#[test]
+fn three_ligand_square_planar_reordering_is_reversible_and_rejects_invalid_frames() {
+    use chematic_core::SquarePlanarPermutation::{SP1, SP2, SP3};
+    let original = [10, 20, 30];
+    for order in [
+        [10, 20, 30],
+        [10, 30, 20],
+        [20, 10, 30],
+        [20, 30, 10],
+        [30, 10, 20],
+        [30, 20, 10],
+    ] {
+        for tag in [SP1, SP2, SP3] {
+            let remapped = remap_three_ligand_square_planar(tag, original, order).unwrap();
+            assert_eq!(
+                remap_three_ligand_square_planar(remapped, order, original),
+                Some(tag)
+            );
+        }
+    }
+    assert_eq!(
+        remap_three_ligand_square_planar(SP1, [10, 10, 30], original),
+        None
+    );
+    assert_eq!(
+        remap_three_ligand_square_planar(SP1, original, [10, 20, 40]),
+        None
+    );
+    assert_eq!(
+        remap_three_ligand_square_planar(SP1, original, [10, 10, 30]),
+        None
+    );
+}

@@ -26,6 +26,20 @@ fn numeric_bits(a: &PqrAtomRecord) -> [u64; 5] {
 }
 
 #[test]
+fn residue_number_with_insertion_code_must_fit_i64() {
+    let valid = "ATOM 17 CA ALA A 9223372036854775807B 1 2 3 0 1\n";
+    assert_eq!(parse_pqr(valid).unwrap().atoms[0].res_seq, i64::MAX);
+    let invalid = valid.replace("9223372036854775807B", "9223372036854775808B");
+    assert!(matches!(
+        parse_pqr(&invalid),
+        Err(chematic_mol::PqrError::InvalidField {
+            field: "Residue_number",
+            ..
+        })
+    ));
+}
+
+#[test]
 fn ordered_fields_survive_checked_rewrite_without_rounding() {
     let mut second = atom();
     second.group_pdb = "HETATM".into();

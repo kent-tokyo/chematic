@@ -1474,3 +1474,7 @@ mod tests {
 #[cfg(test)]
 #[path = "inchi_read_output_tests.rs"]
 mod output_tests;
+
+#[cfg(test)]
+#[path = "inchi_read/cleanup_tests.rs"]
+mod cleanup_tests;

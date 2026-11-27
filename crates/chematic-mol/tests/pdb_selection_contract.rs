@@ -261,6 +261,15 @@ fn structural_record_boundaries_reject_each_ambiguous_pdb_spelling() {
 
     let cases = [
         (
+            format!("MODEL        0\n{atom}\nENDMDL\nEND\n"),
+            "invalid MODEL number",
+        ),
+        (format!("{ter}\nEND\n"), "TER has no preceding segment"),
+        (
+            format!("{atom}\nCONECT    1    X\nEND\n"),
+            "invalid CONECT serial",
+        ),
+        (
             format!("MODEL        1\n{atom}\nEND\n"),
             "MODEL lacks ENDMDL",
         ),

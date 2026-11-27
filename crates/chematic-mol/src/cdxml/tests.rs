@@ -843,6 +843,63 @@ fn bounded_parser_rejects_bond_and_fragment_limits() {
     ));
 }
 
+/// 1,2-Difluoroethene drawn E (zigzag) or Z, in CDXML's y-down coordinates.
+fn difluoroethene_cdxml(z: bool, mirror: bool) -> String {
+    let y = |v: f64| if mirror { -v } else { v };
+    let last = if z { -30.0 } else { 15.0 };
+    format!(
+        r#"<CDXML><page><fragment>
+<n id="1" p="0 {}" Element="9"/>
+<n id="2" p="25.98 {}"/>
+<n id="3" p="51.96 {}"/>
+<n id="4" p="{} {}" Element="9"/>
+<b B="1" E="2"/>
+<b B="2" E="3" Order="2"/>
+<b B="3" E="4"/>
+</fragment></page></CDXML>"#,
+        y(0.0),
+        y(15.0),
+        y(0.0),
+        if z { 51.96 } else { 77.94 },
+        y(last)
+    )
+}
+
+#[test]
+fn drawn_alkene_geometry_reaches_smiles() {
+    let canonical =
+        |smiles: &str| chematic_smiles::canonical_smiles(&chematic_smiles::parse(smiles).unwrap());
+    for mirror in [false, true] {
+        for (z, expected) in [(false, "F/C=C/F"), (true, "F/C=C\\F")] {
+            let (mol, _) = parse_cdxml(&difluoroethene_cdxml(z, mirror)).unwrap();
+            assert_eq!(
+                chematic_smiles::canonical_smiles(&mol),
+                canonical(expected),
+                "z={z} mirror={mirror}"
+            );
+            // The E/Z label cache is still filled, as before.
+            assert!(mol.atoms().any(|(_, atom)| atom.cip_code.is_some()));
+        }
+    }
+}
+
+#[test]
+fn alkene_without_stereo_gets_no_direction() {
+    // 1,1-Difluoroethene: one end carries two identical substituents.
+    let cdxml = r#"<CDXML><page><fragment>
+<n id="1" p="0 0"/>
+<n id="2" p="25.98 15"/>
+<n id="3" p="51.96 0" Element="9"/>
+<n id="4" p="25.98 45" Element="9"/>
+<b B="1" E="2" Order="2"/>
+<b B="2" E="3"/>
+<b B="2" E="4"/>
+</fragment></page></CDXML>"#;
+    let (mol, _) = parse_cdxml(cdxml).unwrap();
+    let smiles = chematic_smiles::canonical_smiles(&mol);
+    assert!(!smiles.contains(['/', '\\']), "{smiles}");
+}
+
 /// ChemDraw puts each attribute on its own line, starting right after the
 /// element name (`<n` then a line break), and closes the previous element on
 /// the same line (`/><n`). Line breaks may be CRLF.
@@ -901,4 +958,15 @@ fn element_names_that_only_start_like_atoms_or_bonds_are_skipped() {
     let (mol, _) = parse_cdxml(cdxml).unwrap();
     assert_eq!(mol.atom_count(), 1);
     assert_eq!(mol.bond_count(), 0);
+}
+
+#[test]
+fn wavy_carrier_leaves_alkene_unspecified() {
+    let input = difluoroethene_cdxml(false, false).replace(
+        "<b B=\"1\" E=\"2\"/>",
+        "<b B=\"1\" E=\"2\" Display=\"Wavy\"/>",
+    );
+    let (mol, _) = parse_cdxml(&input).unwrap();
+    let smiles = chematic_smiles::canonical_smiles(&mol);
+    assert!(!smiles.contains(['/', '\\']), "{smiles}");
 }

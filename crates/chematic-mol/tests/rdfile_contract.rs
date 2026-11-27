@@ -145,6 +145,17 @@ fn malformed_embedded_payloads_and_counts_fail() {
         assert!(diagnostic(parse_rdfile(&text)).is_err());
     }
 }
+
+#[test]
+fn v2000_reaction_rejects_a_v3000_component() {
+    let (prefix, reaction) = FIXTURE.split_once("$RXN\n").unwrap();
+    let text = format!("{prefix}$RXN\n{}", reaction.replacen("V2000", "V3000", 1));
+    let error = diagnostic(parse_rdfile(&text)).unwrap_err();
+    assert!(
+        error.to_string().contains("components must be V2000"),
+        "{error}"
+    );
+}
 #[test]
 fn unsupported_embedded_data_and_keyword_continuations_fail() {
     for value in ["$MFMT", "x\n$UNKNOWN anything", "x\n$DATUM orphan"] {
