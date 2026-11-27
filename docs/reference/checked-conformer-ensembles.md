@@ -109,6 +109,16 @@ include every possible reason for discarding a candidate. The interrupted
 attempt is not a completed diagnostic record; its separately requested preview
 may appear in `in_progress`.
 
+For each completed attempt, `unclassified_rejections` is the number of embedded
+candidates that were neither returned nor included in the three rejection
+counts. The top-level field sums that number over completed attempts. If a
+rejection count is unknown and a remaining discarded candidate could belong to
+it, the corresponding value is `None`, as is the aggregate. A zero is still
+reported when no discarded candidates remain. The number does not identify the
+cause: a non-finite fallback energy, for example, can contribute to it.
+Impossible candidate totals are reported as a checkpoint error; on timeout or
+worker failure, earlier valid records remain available.
+
 To retain a provisional embedding even when its MMFF optimization is
 interrupted, set `return_preview=True` together with `return_partial=True`.
 On timeout or worker failure, `result.get("in_progress")` may contain an

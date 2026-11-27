@@ -95,13 +95,15 @@ def test_attempt_diagnostics_distinguish_statuses_and_reject_bad_rows():
 
     entry = {"attempt": 1, "rows": [[0, 1.0, [], None], [1, 2.0, [], None],
              [-1, 3.0, [], None], [-1, None, [], "unsupported"], [42, 4.0, [], None]],
-             "embedded": 5, "error": None, "violated": 2, "unevaluable": 1, "invalid": 0}
+             "embedded": 9, "error": None, "violated": 2, "unevaluable": 1, "invalid": 0}
     result = _empty_checkpoint()
-    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                   "unclassified_rejections")}
     _apply_checkpoint_entry(result, known, entry)
     assert result["attempt_diagnostics"] == [{
-        "attempt": 1, "embedded": 5, "returned": 5, "force_field_error": None,
+        "attempt": 1, "embedded": 9, "returned": 5, "force_field_error": None,
         "stereo_violated": 2, "stereo_unevaluable": 1, "invalid_coordinates": 0,
+        "unclassified_rejections": 1,
         "conformer_status_counts": {"converged": 1, "unfinished": 1, "minimizer_failed": 1,
                                     "force_field_unavailable": 1, "other": 1},
     }]
@@ -110,6 +112,80 @@ def test_attempt_diagnostics_distinguish_statuses_and_reject_bad_rows():
         _apply_checkpoint_entry(result, known, invalid_entry)
     assert result["attempts_completed"] == len(result["attempt_diagnostics"]) == 1
     assert result["conformers"] == entry["rows"]
+    assert result["unclassified_rejections"] == 1
+
+
+@pytest.mark.parametrize("embedded,rows,counts,expected", [
+    (3, [], (1, 1, 0), 1),
+    (1, [], (None, 0, 0), None),
+    (1, [[1, 1.0, [], None]], (None, None, None), 0),
+    (0, [], (None, None, None), 0),
+])
+def test_unclassified_rejections_are_unknown_only_when_needed(embedded, rows, counts, expected):
+    from chematic._timed_conformers import _apply_checkpoint_entry, _empty_checkpoint
+
+    entry = {"attempt": 1, "rows": rows, "embedded": embedded, "error": None,
+             "violated": counts[0], "unevaluable": counts[1], "invalid": counts[2]}
+    result = _empty_checkpoint()
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                   "unclassified_rejections")}
+    _apply_checkpoint_entry(result, known, entry)
+    assert result["attempt_diagnostics"][0]["unclassified_rejections"] == expected
+    assert result["unclassified_rejections"] == expected
+
+
+@pytest.mark.parametrize("embedded,rows,counts", [
+    (0, [[1, 1.0, [], None]], (0, 0, 0)),
+    (1, [], (1, 1, None)),
+])
+def test_inconsistent_candidate_counts_are_rejected_atomically(embedded, rows, counts):
+    from chematic._timed_conformers import _apply_checkpoint_entry, _empty_checkpoint
+
+    entry = {"attempt": 1, "rows": rows, "embedded": embedded, "error": None,
+             "violated": counts[0], "unevaluable": counts[1], "invalid": counts[2]}
+    result = _empty_checkpoint()
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                   "unclassified_rejections")}
+    with pytest.raises(ValueError, match="inconsistent checkpoint candidate counts"):
+        _apply_checkpoint_entry(result, known, entry)
+    assert result == _empty_checkpoint()
+    assert all(known.values())
+
+
+def test_unclassified_aggregate_remains_unknown_after_an_unknown_attempt(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    entries = [
+        {"attempt": 1, "rows": [], "embedded": 1, "error": None,
+         "violated": None, "unevaluable": 0, "invalid": 0},
+        {"attempt": 2, "rows": [], "embedded": 2, "error": None,
+         "violated": 1, "unevaluable": 0, "invalid": 0},
+    ]
+    path = tmp_path / "attempts.jsonl"
+    path.write_text("".join(json.dumps(entry) + "\n" for entry in entries), encoding="utf-8")
+    result = _read_checkpoint(str(path))
+    assert [entry["unclassified_rejections"] for entry in result["attempt_diagnostics"]] == [None, 1]
+    assert result["unclassified_rejections"] is None
+
+
+def test_inconsistent_checkpoint_counts_preserve_previous_attempt(tmp_path):
+    import json
+    from chematic._timed_conformers import _attach_checkpoint, _read_checkpoint
+
+    first = {"attempt": 1, "rows": [], "embedded": 2, "error": None,
+             "violated": 1, "unevaluable": 0, "invalid": 0}
+    bad = {**first, "attempt": 2, "embedded": 0}
+    path = tmp_path / "attempts.jsonl"
+    path.write_text(json.dumps(first) + "\n" + json.dumps(bad) + "\n", encoding="utf-8")
+    response = {"status": "timeout"}
+    _attach_checkpoint(response, str(path))
+    assert response["status"] == "timeout"
+    assert response["attempts_completed"] == 1
+    assert response["unclassified_rejections"] == 1
+    assert "line 2: ValueError: inconsistent checkpoint candidate counts" in response["checkpoint_error"]
+    with pytest.raises(ValueError, match="inconsistent checkpoint candidate counts"):
+        _read_checkpoint(str(path))
 
 
 def test_attempt_diagnostics_record_an_empty_embedding(tmp_path):

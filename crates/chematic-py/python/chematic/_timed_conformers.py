@@ -93,7 +93,8 @@ def _empty_checkpoint():
     return {"conformers": [], "attempts_completed": 0, "embedded": 0,
             "attempt_diagnostics": [],
             "force_field_error": None, "stereo_violated": None,
-            "stereo_unevaluable": None, "invalid_coordinates": None}
+            "stereo_unevaluable": None, "invalid_coordinates": None,
+            "unclassified_rejections": None}
 
 
 def _attempt_diagnostic(entry):
@@ -115,10 +116,19 @@ def _attempt_diagnostic(entry):
             counts["minimizer_failed"] += 1
         else:
             counts["other"] += 1
+    rejected = entry["embedded"] - len(entry["rows"])
+    rejection_counts = (entry["violated"], entry["unevaluable"], entry["invalid"])
+    known_rejections = sum(value for value in rejection_counts if value is not None)
+    if rejected < known_rejections:
+        raise ValueError("inconsistent checkpoint candidate counts")
+    remaining = rejected - known_rejections
+    unclassified = (remaining if all(value is not None for value in rejection_counts)
+                    or remaining == 0 else None)
     return {"attempt": entry["attempt"], "embedded": entry["embedded"],
             "returned": len(entry["rows"]), "force_field_error": entry["error"],
             "stereo_violated": entry["violated"], "stereo_unevaluable": entry["unevaluable"],
-            "invalid_coordinates": entry["invalid"], "conformer_status_counts": counts}
+            "invalid_coordinates": entry["invalid"], "unclassified_rejections": unclassified,
+            "conformer_status_counts": counts}
 
 
 def _apply_checkpoint_entry(result, counts_known, entry):
@@ -136,6 +146,7 @@ def _apply_checkpoint_entry(result, counts_known, entry):
     if any(value is not None and (type(value) is not int or value < 0) for _, value in values):
         raise ValueError("invalid checkpoint rejection count")
     diagnostic = _attempt_diagnostic(entry)
+    values += (("unclassified_rejections", diagnostic["unclassified_rejections"]),)
     result["conformers"].extend(entry["rows"])
     result["attempt_diagnostics"].append(diagnostic)
     result["embedded"] += entry["embedded"]
@@ -175,7 +186,8 @@ def _apply_preview(result, entry):
 
 def _read_checkpoint(path, *, recover_prefix=False):
     result = _empty_checkpoint()
-    counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                         "unclassified_rejections")}
     records_read = 0
     try:
         with open(path, "rb") as stream:
@@ -210,7 +222,8 @@ def _run_partial(mol, request):
     # Individual mixed-ensemble calls with one attempt use the corrected
     # gradient. This is intentionally a separate profile from a mixed batch.
     result = _empty_checkpoint()
-    counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    counts_known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates",
+                                         "unclassified_rejections")}
     prepared = None
     if request.get("return_preview") and request["num_confs"]:
         base = request["random_seed"]
