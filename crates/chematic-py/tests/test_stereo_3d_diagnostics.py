@@ -250,3 +250,70 @@ def test_near_planar_implicit_h_carbon_is_not_confidently_assigned():
     reference.AddConformer(conf)
     Chem.AssignStereochemistryFrom3D(reference, replaceExistingTags=True)
     assert reference.GetAtomWithIdx(1).GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED
+
+
+def test_near_planar_carbon_screen_agrees_for_explicit_and_implicit_hydrogen():
+    implicit = chematic.from_smiles("F[C@H](Cl)Br")
+    explicit = chematic.from_smiles("F[C@]([H])(Cl)Br")
+    coords = [[-0.8770239853135249, 0.4924418600749846, 0.9596809511921262],
+              [0., 0., 0.],
+              [-0.2096233151177489, 0.7302430680925626, -0.6898994627180793],
+              [0.6835160275334422, -0.6881890778227236, -0.2249292230318938]]
+    vectors = [coords[i] for i in (0, 2, 3)]
+    unit = [[v / math.sqrt(sum(x * x for x in vector)) for v in vector] for vector in vectors]
+    opposite = [-sum(v[i] for v in unit) for i in range(3)]
+    norm = math.sqrt(sum(x * x for x in opposite))
+    hydrogen = [x / norm for x in opposite]
+    explicit_coords = [coords[0], coords[1], hydrogen, coords[2], coords[3]]
+    for mol, geometry in ((implicit, coords), (explicit, explicit_coords)):
+        assert mol.stereo_3d_diagnostics(geometry)["atom_stereo"][0]["status"] == "violated"
+        screened = mol.stereo_3d_diagnostics(geometry, require_regular_geometry=True)
+        assert screened["atom_stereo"][0]["status"] == "unevaluable"
+        assert screened["atom_stereo"][0]["reason"] == "DistortedTetrahedralGeometry"
+
+    # The extra condition is limited to H directions within the documented
+    # cosine tolerance of the reconstructed direction.
+    for degrees, expected in ((0.001, "unevaluable"), (0.1, "violated")):
+        angle = math.radians(degrees)
+        hx, hy, hz = hydrogen
+        rotated = [hx * math.cos(angle) - hy * math.sin(angle),
+                   hx * math.sin(angle) + hy * math.cos(angle), hz]
+        geometry = [coords[0], coords[1], rotated, coords[2], coords[3]]
+        screened = explicit.stereo_3d_diagnostics(geometry, require_regular_geometry=True)
+        assert screened["atom_stereo"][0]["status"] == expected
+
+    Chem = pytest.importorskip("rdkit.Chem")
+    parser = Chem.SmilesParserParams()
+    parser.removeHs = False
+    for smiles, geometry in (("F[C@H](Cl)Br", coords),
+                             ("F[C@]([H])(Cl)Br", explicit_coords)):
+        ref = Chem.MolFromSmiles(smiles, parser)
+        conf = Chem.Conformer(ref.GetNumAtoms())
+        for index, point in enumerate(geometry):
+            conf.SetAtomPosition(index, point)
+        ref.AddConformer(conf)
+        Chem.AssignStereochemistryFrom3D(ref, replaceExistingTags=True)
+        assert ref.GetAtomWithIdx(1).GetChiralTag() == Chem.ChiralType.CHI_UNSPECIFIED
+
+
+def test_independently_placed_hydrogen_is_not_treated_as_reconstructed():
+    mol = chematic.from_smiles("F[C@]([H])(Cl)Br")
+    coords = [[-0.31716336694990643, -1.1529430890295795, 0.8131938328381386],
+              [0., 0., 0.],
+              [0.4044183324438519, 0.48023863138805034, 1.248358878123955],
+              [0.6088488519188352, 0.646845493145074, 0.15207343144295907],
+              [-0.6224489427854606, -0.38682559639918296, -0.5246302514739701]]
+    screened = mol.stereo_3d_diagnostics(coords, require_regular_geometry=True)
+    assert screened["atom_stereo"][0]["status"] == "violated"
+    Chem = pytest.importorskip("rdkit.Chem")
+    parser = Chem.SmilesParserParams()
+    parser.removeHs = False
+    ref = Chem.MolFromSmiles("F[C@]([H])(Cl)Br", parser)
+    expected = ref.GetAtomWithIdx(1).GetChiralTag()
+    conf = Chem.Conformer(ref.GetNumAtoms())
+    for index, point in enumerate(coords):
+        conf.SetAtomPosition(index, point)
+    ref.AddConformer(conf)
+    Chem.AssignStereochemistryFrom3D(ref, replaceExistingTags=True)
+    assert ref.GetAtomWithIdx(1).GetChiralTag() != expected
+    assert ref.GetAtomWithIdx(1).GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED

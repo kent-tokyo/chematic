@@ -126,10 +126,13 @@ const PHANTOM_DIRECTION_EPS: f64 = 1e-3;
 /// this is never used as a physically accurate bond length anywhere.
 const PHANTOM_BOND_LENGTH: f64 = 1.0;
 
-// Experimental margin for three-real-ligand carbon with an implicit H. The
+// Experimental margin for three-real-ligand carbon bearing one H. The
 // absolute normalized triple product is 0 for coplanar bond directions and
 // is independent of bond lengths. Used only by the opt-in geometry screen.
-const MIN_IMPLICIT_H_CARBON_DIRECTION_VOLUME: f64 = 0.15;
+const MIN_HYDROGEN_BEARING_CARBON_DIRECTION_VOLUME: f64 = 0.15;
+// Treat an explicit H as reconstructed only when its unit direction matches
+// the implicit-H construction to within this cosine tolerance.
+const RECONSTRUCTED_H_COSINE_TOLERANCE: f64 = 1e-8;
 
 // ---------------------------------------------------------------------------
 // Public result types
@@ -577,10 +580,10 @@ fn tetrahedral_positions(
 /// Conservative geometric screen for reported, satisfied tetrahedral centers.
 /// The central atom must be inside its four-ligand tetrahedron, and all pairs of
 /// ligand directions (including a reconstructed implicit ligand) must form
-/// angles between 45 and 165 degrees. Carbon with three explicit ligands and
-/// one implicit hydrogen must additionally have normalized direction volume
-/// at least 0.15. This is a coarse screen, not an independent stereochemistry
-/// oracle or an energy/geometry minimization.
+/// angles between 45 and 165 degrees. Carbon with an implicit hydrogen or an
+/// explicit hydrogen matching its reconstructed direction additionally needs
+/// normalized three-ligand direction volume at least 0.15. This is a coarse
+/// screen, not an independent stereo oracle or geometry minimization.
 pub fn satisfied_tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D) -> bool {
     if coords.atom_count() != mol.atom_count() || !coords.is_finite() {
         return false;
@@ -606,22 +609,57 @@ fn tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D, atom: Atom
         return false;
     };
     let center = coords.get(atom);
-    if mol.atom(atom).element.atomic_number() == 6
-        && mol.degree(atom) == 3
-        && mol.implicit_hydrogen_count(atom) == 1
-    {
-        let directions: Option<Vec<_>> = mol
-            .neighbors(atom)
-            .map(|(neighbor, _)| coords.get(neighbor).sub(&center).try_normalize())
-            .collect();
+    if mol.atom(atom).element.atomic_number() == 6 {
+        let neighbors: Vec<_> = mol.neighbors(atom).map(|(neighbor, _)| neighbor).collect();
+        let implicit_h = neighbors.len() == 3 && mol.implicit_hydrogen_count(atom) == 1;
+        let explicit_h = neighbors.len() == 4
+            && mol.implicit_hydrogen_count(atom) == 0
+            && neighbors
+                .iter()
+                .filter(|&&n| mol.atom(n).element.atomic_number() == 1)
+                .count()
+                == 1;
+        let directions: Option<Vec<_>> = if implicit_h || explicit_h {
+            neighbors
+                .iter()
+                .copied()
+                .filter(|&n| !explicit_h || mol.atom(n).element.atomic_number() != 1)
+                .map(|neighbor| coords.get(neighbor).sub(&center).try_normalize())
+                .collect()
+        } else {
+            Some(Vec::new())
+        };
         let Some(directions) = directions else {
             return false;
         };
-        let volume = directions[0]
-            .dot(&directions[1].cross(&directions[2]))
-            .abs();
-        if !volume.is_finite() || volume < MIN_IMPLICIT_H_CARBON_DIRECTION_VOLUME {
-            return false;
+        let matches_reconstruction = if explicit_h {
+            let reconstructed = directions[0]
+                .add(&directions[1])
+                .add(&directions[2])
+                .scale(-1.0);
+            let hydrogen = neighbors
+                .iter()
+                .copied()
+                .find(|&n| mol.atom(n).element.atomic_number() == 1)
+                .expect("explicit_h checked exactly one hydrogen");
+            let actual = coords.get(hydrogen).sub(&center).try_normalize();
+            reconstructed.norm() >= PHANTOM_DIRECTION_EPS
+                && reconstructed
+                    .try_normalize()
+                    .zip(actual)
+                    .is_some_and(|(expected, actual)| {
+                        expected.dot(&actual) >= 1.0 - RECONSTRUCTED_H_COSINE_TOLERANCE
+                    })
+        } else {
+            false
+        };
+        if implicit_h || matches_reconstruction {
+            let volume = directions[0]
+                .dot(&directions[1].cross(&directions[2]))
+                .abs();
+            if !volume.is_finite() || volume < MIN_HYDROGEN_BEARING_CARBON_DIRECTION_VOLUME {
+                return false;
+            }
         }
     }
     let volume = signed_volume(p[0], p[1], p[2], p[3]);

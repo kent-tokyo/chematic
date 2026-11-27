@@ -105,12 +105,15 @@ distorted candidates but is not an independent stereochemistry oracle and does
 not guarantee valid geometry or remove pre-existing clashes. Candidates that
 leave reported stereo unevaluable still return `fully_verified=False`.
 
-For carbon with three explicit neighbors and one implicit hydrogen, the
-screen additionally requires the absolute scalar triple product of the three
-normalized real bond directions to be at least 0.15. Zero indicates coplanar
-directions; the 0.15 margin is an experimental conservative threshold. It
-also applies to `require_regular_geometry=True`. It does not change the default
-stereo verifier or apply to carbon with explicit hydrogen coordinates.
+For carbon with three graph neighbors and one implicit hydrogen, the screen
+additionally requires the absolute scalar triple product of the three
+normalized real bond directions to be at least 0.15. The same check applies to
+carbon with three non-hydrogen neighbors and one explicit hydrogen when its
+direction matches the reconstructed implicit-H direction within a cosine
+tolerance of `1e-8`. Independently placed explicit hydrogen is not subjected
+to this additional check. Zero volume indicates coplanar directions; the 0.15
+margin is an experimental conservative threshold. It also applies to
+`require_regular_geometry=True` and does not change the default stereo verifier.
 
 ```python
 mol = chematic.from_smiles("C[N@H+](CC)CCC")
