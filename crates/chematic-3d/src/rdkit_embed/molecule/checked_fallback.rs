@@ -6,8 +6,9 @@ use super::*;
 #[derive(Clone, Debug)]
 pub struct CheckedConformer {
     pub coords: Vec<[f64; 3]>,
-    /// Zero means converged, one means unfinished, and minus one means that
-    /// MMFF could not be prepared. The latter has no energy.
+    /// Zero means converged and one means unfinished. Minus one can mean a
+    /// minimizer line-search failure, or unavailable MMFF when accompanied by
+    /// a force-field error and no energy.
     pub status: i32,
     pub energy: Option<f64>,
     pub force_field_error: Option<String>,

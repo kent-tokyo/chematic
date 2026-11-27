@@ -31,9 +31,10 @@ count or empty. Invalid options or force-field setup failures raise
 arguments as the mixed checked method and returns `(status, energy,
 coordinates, force_field_error)`. When MMFF setup fails, stereo-checked
 embedded coordinates are returned with status `-1`, `None` energy and an
-error message. Status `0` and `1` have the same meaning as above and their
-error field is `None`. These embedded coordinates have not undergone MMFF
-optimization or an independent geometry-quality screen.
+error message. Status `-1` with a `None` error instead reports a minimizer
+line-search failure. Status `0` and `1` have the same meaning as above and their
+error field is `None`. Coordinates returned because MMFF was unavailable have
+not undergone MMFF optimization or an independent geometry-quality screen.
 
 `etkdg_embed_multiple_confs_mixed_checked_diagnostics` has the same options
 and returns `(conformers, embedded, force_field_error, stereo_violated,
@@ -95,6 +96,18 @@ prefix is retained and `checkpoint_error` identifies the first bad line; later
 records are not used. An unreadable checkpoint is also reported as
 `checkpoint_error`. In either case the original worker status and error are
 preserved. If the first record is malformed, no checkpoint data is returned.
+
+In this mode, `attempt_diagnostics` contains one record per completed attempt,
+also on timeout when a checkpoint is available. Each record includes its
+attempt number, embedded and returned counts, the force-field error and the
+three rejection counts. `conformer_status_counts` distinguishes `converged`,
+`unfinished`, `minimizer_failed`, `force_field_unavailable`, and `other`
+returned conformers. `unfinished` includes any status 1 result, including a
+safe embedded fallback or a failed final gradient check; it does not imply that
+the iteration limit alone caused it. Rejection counts may be `None`, and do not
+include every possible reason for discarding a candidate. The interrupted
+attempt is not a completed diagnostic record; its separately requested preview
+may appear in `in_progress`.
 
 To retain a provisional embedding even when its MMFF optimization is
 interrupted, set `return_preview=True` together with `return_partial=True`.

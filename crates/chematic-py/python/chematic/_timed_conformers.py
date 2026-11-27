@@ -91,8 +91,34 @@ def _attach_checkpoint(response, path):
 
 def _empty_checkpoint():
     return {"conformers": [], "attempts_completed": 0, "embedded": 0,
+            "attempt_diagnostics": [],
             "force_field_error": None, "stereo_violated": None,
             "stereo_unevaluable": None, "invalid_coordinates": None}
+
+
+def _attempt_diagnostic(entry):
+    counts = {"converged": 0, "unfinished": 0, "minimizer_failed": 0,
+              "force_field_unavailable": 0, "other": 0}
+    for row in entry["rows"]:
+        if (not isinstance(row, (list, tuple)) or len(row) != 4
+                or type(row[0]) is not int
+                or (row[3] is not None and not isinstance(row[3], str))):
+            raise ValueError("invalid checkpoint conformer")
+        status, _, _, error = row
+        if status == 0:
+            counts["converged"] += 1
+        elif status == 1:
+            counts["unfinished"] += 1
+        elif status == -1 and error is not None:
+            counts["force_field_unavailable"] += 1
+        elif status == -1:
+            counts["minimizer_failed"] += 1
+        else:
+            counts["other"] += 1
+    return {"attempt": entry["attempt"], "embedded": entry["embedded"],
+            "returned": len(entry["rows"]), "force_field_error": entry["error"],
+            "stereo_violated": entry["violated"], "stereo_unevaluable": entry["unevaluable"],
+            "invalid_coordinates": entry["invalid"], "conformer_status_counts": counts}
 
 
 def _apply_checkpoint_entry(result, counts_known, entry):
@@ -109,7 +135,9 @@ def _apply_checkpoint_entry(result, counts_known, entry):
               ("invalid_coordinates", entry.get("invalid")))
     if any(value is not None and (type(value) is not int or value < 0) for _, value in values):
         raise ValueError("invalid checkpoint rejection count")
+    diagnostic = _attempt_diagnostic(entry)
     result["conformers"].extend(entry["rows"])
+    result["attempt_diagnostics"].append(diagnostic)
     result["embedded"] += entry["embedded"]
     result["force_field_error"] = result["force_field_error"] or entry["error"]
     for key, value in values:

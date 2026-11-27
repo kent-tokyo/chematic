@@ -84,6 +84,60 @@ def test_partial_mode_returns_individually_checked_attempts():
     # JSON converts the nested Rust tuples into lists.
     import json
     assert result["conformers"] == json.loads(json.dumps(expected))
+    assert [item["attempt"] for item in result["attempt_diagnostics"]] == [1, 2, 3]
+    assert all(item["embedded"] == item["returned"] == 1 for item in result["attempt_diagnostics"])
+    assert sum(sum(item["conformer_status_counts"].values())
+               for item in result["attempt_diagnostics"]) == len(expected)
+
+
+def test_attempt_diagnostics_distinguish_statuses_and_reject_bad_rows():
+    from chematic._timed_conformers import _apply_checkpoint_entry, _empty_checkpoint
+
+    entry = {"attempt": 1, "rows": [[0, 1.0, [], None], [1, 2.0, [], None],
+             [-1, 3.0, [], None], [-1, None, [], "unsupported"], [42, 4.0, [], None]],
+             "embedded": 5, "error": None, "violated": 2, "unevaluable": 1, "invalid": 0}
+    result = _empty_checkpoint()
+    known = {key: True for key in ("stereo_violated", "stereo_unevaluable", "invalid_coordinates")}
+    _apply_checkpoint_entry(result, known, entry)
+    assert result["attempt_diagnostics"] == [{
+        "attempt": 1, "embedded": 5, "returned": 5, "force_field_error": None,
+        "stereo_violated": 2, "stereo_unevaluable": 1, "invalid_coordinates": 0,
+        "conformer_status_counts": {"converged": 1, "unfinished": 1, "minimizer_failed": 1,
+                                    "force_field_unavailable": 1, "other": 1},
+    }]
+    invalid_entry = {**entry, "attempt": 2, "rows": [[1]]}
+    with pytest.raises(ValueError, match="invalid checkpoint conformer"):
+        _apply_checkpoint_entry(result, known, invalid_entry)
+    assert result["attempts_completed"] == len(result["attempt_diagnostics"]) == 1
+    assert result["conformers"] == entry["rows"]
+
+
+def test_attempt_diagnostics_record_an_empty_embedding(tmp_path):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class NoEmbedding:
+        def etkdg_embed_multiple_confs_mixed_checked_diagnostics(self, count, **kwargs):
+            return [], 0, None, None, None, None
+
+    checkpoint = str(tmp_path / "attempts.jsonl")
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0, "checkpoint": checkpoint}
+    result = _run_partial(NoEmbedding(), request)
+    attempt = result["attempt_diagnostics"][0]
+    assert attempt["embedded"] == attempt["returned"] == 0
+    assert attempt["stereo_violated"] is None
+    assert sum(attempt["conformer_status_counts"].values()) == 0
+    assert _read_checkpoint(checkpoint) == result
+
+
+def test_partial_attempt_diagnostics_report_unsupported_mmff():
+    result = chematic.generate_conformers_timed("CB(C)C", 1, timeout_seconds=15, return_partial=True)
+    assert result["status"] == "completed"
+    attempt = result["attempt_diagnostics"][0]
+    assert attempt["embedded"] == attempt["returned"] == 1
+    assert attempt["force_field_error"]
+    assert attempt["conformer_status_counts"]["force_field_unavailable"] == 1
+    assert attempt["conformer_status_counts"]["minimizer_failed"] == 0
 
 
 def test_partial_timeout_keeps_completed_checkpoint(monkeypatch):
@@ -118,6 +172,7 @@ def test_partial_timeout_keeps_completed_checkpoint(monkeypatch):
     assert result["status"] == "timeout"
     assert result["attempts_completed"] == 1
     assert len(result["conformers"]) == 1
+    assert result["attempt_diagnostics"][0]["conformer_status_counts"]["unfinished"] == 1
 
 
 def test_partial_timeout_before_first_attempt_is_empty():
