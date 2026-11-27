@@ -94,6 +94,50 @@ pub struct NonbondedClash {
     pub distance: f64,
 }
 
+/// Pairwise comparison of nonbonded contacts below an absolute cutoff.
+#[derive(Debug, Clone)]
+pub struct NonbondedClashComparison {
+    pub before_count: usize,
+    pub after_count: usize,
+    /// Pairs below the cutoff only in the second geometry, with their new distances.
+    pub new_clashes: Vec<NonbondedClash>,
+    /// Pairs below the cutoff only in the first geometry, with their old distances.
+    pub resolved_clashes: Vec<NonbondedClash>,
+}
+
+/// Compare the identities of close nonbonded pairs, including 1-3 pairs and
+/// separate fragments. Existing close pairs that become closer are not new
+/// pairs; callers needing that distinction must inspect the original reports.
+/// Uses the same bounds and strict distance cutoff as [`check_geometry`].
+pub fn compare_nonbonded_clashes(
+    mol: &Molecule,
+    before: &Coords3D,
+    after: &Coords3D,
+    cutoff: f64,
+) -> Result<NonbondedClashComparison, GeometryCheckError> {
+    let config = GeometryCheckConfig {
+        nonbonded_min_distance: cutoff,
+        ..GeometryCheckConfig::default()
+    };
+    let before = check_geometry(mol, before, &config)?.nonbonded_clashes;
+    let after = check_geometry(mol, after, &config)?.nonbonded_clashes;
+    let key = |clash: &NonbondedClash| (clash.atoms[0].0, clash.atoms[1].0);
+    let before_pairs: std::collections::HashSet<_> = before.iter().map(key).collect();
+    let after_pairs: std::collections::HashSet<_> = after.iter().map(key).collect();
+    Ok(NonbondedClashComparison {
+        before_count: before.len(),
+        after_count: after.len(),
+        new_clashes: after
+            .into_iter()
+            .filter(|c| !before_pairs.contains(&key(c)))
+            .collect(),
+        resolved_clashes: before
+            .into_iter()
+            .filter(|c| !after_pairs.contains(&key(c)))
+            .collect(),
+    })
+}
+
 #[derive(Debug, Clone)]
 pub struct GeometryCheckReport {
     /// Thresholds actually used, retained for reproducible batch decisions.

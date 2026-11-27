@@ -34,7 +34,7 @@ coordinates. Square-planar ligand angles can be inspected separately with
 `Mol.repair_stereo_3d(coords)` attempts to repair violated declared stereo by
 moving bridge-connected substituents, and checks the result again. It returns
 `ok`, `fully_verified`, `coordinates`, `repaired`, `unevaluable`, and
-`failures`. Each repaired entry identifies an atom or bond and reports the
+`failures`, and `clash_check`. Each repaired entry identifies an atom or bond and reports the
 number of moved atoms and the largest displacement in Å. Unevaluable entries
 identify an atom or bond. Failure entries also give a reason such as
 `NoBridgeEligibleSubstituent`.
@@ -47,10 +47,23 @@ classes and unreported specifications remain outside this check. The operation
 can move atoms substantially and does not minimize energy or screen for clashes;
 check those separately. It does not change the input molecule or coordinates.
 
+Set `clash_cutoff` to a finite positive distance in Å to screen all nonbonded
+atom pairs before and after repair. The screen includes 1–3 pairs and separate
+fragments. If any pair newly falls strictly below the cutoff, the repair is
+rejected with `NewNonbondedClashes` and no coordinates are returned. The
+`clash_check` report gives the cutoff, status, counts, and the atom indices and
+distances for new and resolved pairs. If stereo repair itself fails, its status
+is `not_evaluated_repair_failed`. With no cutoff, `clash_check` is `None`.
+Existing close pairs that become closer are not classified as new. A passing
+check does not establish that the geometry is clash-free, chemically valid, or
+free of unsupported stereochemistry. The screen has the same 2,048-atom and
+coordinate-range limits as `check_geometry` and raises `ValueError` for an
+invalid cutoff or input outside those limits.
+
 ```python
 mol = chematic.from_smiles("C[N@H+](CC)CCC")
 coords = mol.generate_3d_etkdg()
-result = mol.repair_stereo_3d(coords)
+result = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
 if result["ok"]:
     coords = result["coordinates"]
     print(result["repaired"], result["unevaluable"])

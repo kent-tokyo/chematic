@@ -40,11 +40,18 @@ impl Mol {
     /// it is false when any reported element was unevaluable. A molecule with no
     /// reported stereo is vacuously fully verified. This operation does not
     /// minimize the structure or guarantee the absence of steric clashes.
+    /// Set ``clash_cutoff`` to a positive distance in Å to reject newly close
+    /// nonbonded atom pairs and receive their identities in ``clash_check``.
+    #[pyo3(signature = (coords, *, clash_cutoff=None))]
     fn repair_stereo_3d<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
+        clash_cutoff: Option<f64>,
     ) -> PyResult<Bound<'py, PyDict>> {
+        use chematic_3d::geometry_check::{
+            GeometryCheckConfig, check_geometry, compare_nonbonded_clashes,
+        };
         use chematic_3d::stereo_constraints::{repair_stereo, verify_stereo};
         if coords.len() != self.inner.atom_count()
             || coords.iter().flatten().any(|v| !v.is_finite())
@@ -55,15 +62,86 @@ impl Mol {
         }
         let geometry = flat_to_coords3d(&coords);
         let mol = self.inner.clone();
-        let (outcome, initial) = py.detach(move || {
-            let initial = verify_stereo(&mol, &geometry);
-            (repair_stereo(&mol, &geometry), initial)
-        });
+        let (outcome, initial, comparison) = py
+            .detach(move || {
+                if let Some(cutoff) = clash_cutoff {
+                    let config = GeometryCheckConfig {
+                        nonbonded_min_distance: cutoff,
+                        ..GeometryCheckConfig::default()
+                    };
+                    check_geometry(&mol, &geometry, &config)?;
+                }
+                let initial = verify_stereo(&mol, &geometry);
+                let outcome = repair_stereo(&mol, &geometry);
+                let comparison = match (clash_cutoff, &outcome) {
+                    (Some(cutoff), Ok(repaired)) => Some(compare_nonbonded_clashes(
+                        &mol,
+                        &geometry,
+                        &repaired.coords,
+                        cutoff,
+                    )?),
+                    (Some(_), Err(_)) => None,
+                    (None, _) => None,
+                };
+                Ok::<_, chematic_3d::geometry_check::GeometryCheckError>((
+                    outcome, initial, comparison,
+                ))
+            })
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
         let result = PyDict::new(py);
         let repaired_rows = pyo3::types::PyList::empty(py);
         let failures = pyo3::types::PyList::empty(py);
         let unevaluable = pyo3::types::PyList::empty(py);
+        let rejected_clashes = comparison
+            .as_ref()
+            .is_some_and(|c| !c.new_clashes.is_empty());
+        if let Some(cutoff) = clash_cutoff {
+            let report = PyDict::new(py);
+            report.set_item("cutoff", cutoff)?;
+            if let Some(comparison) = &comparison {
+                report.set_item(
+                    "status",
+                    if rejected_clashes {
+                        "rejected"
+                    } else {
+                        "passed"
+                    },
+                )?;
+                report.set_item("before_count", comparison.before_count)?;
+                report.set_item("after_count", comparison.after_count)?;
+                for (key, clashes) in [
+                    ("new", &comparison.new_clashes),
+                    ("resolved", &comparison.resolved_clashes),
+                ] {
+                    let rows = pyo3::types::PyList::empty(py);
+                    for clash in clashes {
+                        let row = PyDict::new(py);
+                        row.set_item("atoms", [clash.atoms[0].0, clash.atoms[1].0])?;
+                        row.set_item("distance", clash.distance)?;
+                        rows.append(row)?;
+                    }
+                    report.set_item(key, rows)?;
+                }
+            } else {
+                report.set_item("status", "not_evaluated_repair_failed")?;
+            }
+            result.set_item("clash_check", report)?;
+        } else {
+            result.set_item("clash_check", py.None())?;
+        }
         match outcome {
+            Ok(outcome) if rejected_clashes => {
+                result.set_item("ok", false)?;
+                result.set_item("fully_verified", false)?;
+                result.set_item("coordinates", py.None())?;
+                let failure = PyDict::new(py);
+                failure.set_item("kind", "geometry")?;
+                failure.set_item("reason", "NewNonbondedClashes")?;
+                failures.append(failure)?;
+                for element in outcome.unevaluable {
+                    unevaluable.append(stereo_element_dict(py, element)?)?;
+                }
+            }
             Ok(outcome) => {
                 result.set_item("ok", true)?;
                 result.set_item("fully_verified", outcome.unevaluable.is_empty())?;

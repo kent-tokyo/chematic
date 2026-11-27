@@ -25,7 +25,9 @@ repairs addressed one center in record 2877 and two in record 9498. For 2877,
 one atom moved up to 3.472 Å; for 9498, the largest movement was 1.518 Å. No
 successful repair changed any bond length by more than 1e-12 Å or changed the
 count of nonbonded pairs closer than 0.8 Å. Record 9498 retained four such pairs,
-so unchanged counts must not be read as clash-free geometry. All successful
+but pairwise reinspection found that one original pair was replaced by a new
+close pair (atoms 3 and 32). Unchanged counts must not be read as unchanged
+contacts or clash-free geometry. All successful
 outputs have zero violations and zero unevaluable elements according to the
 same verifier used by the repair implementation.
 

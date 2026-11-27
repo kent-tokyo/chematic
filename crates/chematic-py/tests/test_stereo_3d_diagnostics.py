@@ -97,3 +97,36 @@ def test_repaired_ammonium_agrees_with_rdkit_stereo_from_coordinates():
         Chem.AssignStereochemistry(molecule, force=True, cleanIt=True)
         codes.append(molecule.GetAtomWithIdx(1).GetProp("_CIPCode"))
     assert codes[0] != expected and codes[1] == expected
+
+
+def test_repair_stereo_rejects_new_clash_pairs_even_if_count_drops():
+    # Exposed COD development record 532: 2 old clashes become 1 new clash.
+    smiles = "C[C@@H]1OC(=O)N(C(=O)[C@H](Cc2ccccc2)NC(=O)OC(C)(C)C)[C@H]1C(=O)N[C@@H](CC(=O)OCc1ccccc1)c1ccccc1"
+    mol = chematic.from_smiles(smiles)
+    coords = mol.generate_3d_etkdg()
+    legacy = mol.repair_stereo_3d(coords)
+    assert legacy["ok"] and legacy["clash_check"] is None
+    result = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
+    assert not result["ok"] and result["coordinates"] is None
+    assert result["failures"] == [{"kind": "geometry", "reason": "NewNonbondedClashes"}]
+    report = result["clash_check"]
+    assert report["status"] == "rejected"
+    assert (report["before_count"], report["after_count"]) == (2, 1)
+    assert report["new"][0]["atoms"] == [3, 26]
+    assert report["new"][0]["distance"] < 0.8
+    assert len(report["resolved"]) == 2
+
+
+def test_repair_stereo_clash_screen_success_failure_and_invalid_cutoff():
+    mol = chematic.from_smiles("C[N@H+](CC)CCC")
+    coords = mol.generate_3d_etkdg()
+    passed = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
+    assert passed["ok"] and passed["clash_check"]["status"] == "passed"
+    assert passed["clash_check"]["new"] == []
+    for cutoff in (0, -1, math.nan, math.inf):
+        with pytest.raises(ValueError, match="positive"):
+            mol.repair_stereo_3d(coords, clash_cutoff=cutoff)
+    ring = chematic.from_smiles("C1[C@@H]2CCC1CC2")
+    failed = ring.repair_stereo_3d(ring.generate_3d_etkdg(), clash_cutoff=0.8)
+    assert not failed["ok"] and failed["coordinates"] is None
+    assert failed["clash_check"] == {"cutoff": 0.8, "status": "not_evaluated_repair_failed"}
