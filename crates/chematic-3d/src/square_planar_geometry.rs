@@ -67,31 +67,13 @@ fn measure_center(
         result.unavailable = Some("unnumbered_permutation");
         return result;
     };
-    let Some(order) = mol.stereo_neighbor_order(center) else {
-        result.unavailable = Some("missing_neighbor_order");
-        return result;
+    let neighbors = match declared_neighbors(mol, center) {
+        Ok(neighbors) => neighbors,
+        Err(reason) => {
+            result.unavailable = Some(reason);
+            return result;
+        }
     };
-    let Ok(neighbors): Result<[u32; 4], _> = order.try_into() else {
-        result.unavailable = Some("unsupported_neighbor_order");
-        return result;
-    };
-    let vacancies = neighbors
-        .iter()
-        .filter(|&&nb| nb == STEREO_VACANT_SENTINEL)
-        .count();
-    if vacancies > 1
-        || mol.degree(center) + vacancies != 4
-        || neighbors.iter().enumerate().any(|(i, &nb)| {
-            nb != STEREO_VACANT_SENTINEL
-                && (nb as usize >= mol.atom_count()
-                    || nb == center.0
-                    || neighbors[..i].contains(&nb)
-                    || mol.bond_between(center, AtomIdx(nb)).is_none())
-        })
-    {
-        result.unavailable = Some("unsupported_neighbor_order");
-        return result;
-    }
     result.neighbors = Some(neighbors.map(|nb| (nb != STEREO_VACANT_SENTINEL).then_some(nb)));
     let origin = coords.get(center);
     let mut unit = [[0.0; 3]; 4];
@@ -127,6 +109,33 @@ fn measure_center(
         }
     }
     result
+}
+
+pub(crate) fn declared_neighbors(
+    mol: &Molecule,
+    center: AtomIdx,
+) -> Result<[u32; 4], &'static str> {
+    let order = mol
+        .stereo_neighbor_order(center)
+        .ok_or("missing_neighbor_order")?;
+    let neighbors: [u32; 4] = order.try_into().map_err(|_| "unsupported_neighbor_order")?;
+    let vacancies = neighbors
+        .iter()
+        .filter(|&&nb| nb == STEREO_VACANT_SENTINEL)
+        .count();
+    if vacancies > 1
+        || mol.degree(center) + vacancies != 4
+        || neighbors.iter().enumerate().any(|(i, &nb)| {
+            nb != STEREO_VACANT_SENTINEL
+                && (nb as usize >= mol.atom_count()
+                    || nb == center.0
+                    || neighbors[..i].contains(&nb)
+                    || mol.bond_between(center, AtomIdx(nb)).is_none())
+        })
+    {
+        return Err("unsupported_neighbor_order");
+    }
+    Ok(neighbors)
 }
 
 #[cfg(test)]

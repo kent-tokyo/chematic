@@ -33,6 +33,38 @@ def test_square_planar_geometry_reports_ideal_and_degenerate_coordinates():
         mol.square_planar_geometry_diagnostics([[math.nan, 0, 0]] + coords[1:])
 
 
+@pytest.mark.parametrize("pattern", ["[Pt@SP{}](F)(Cl)(Br)I", "F[Pt@SP{}](Cl)Br"])
+@pytest.mark.parametrize("permutation", [1, 2, 3])
+def test_square_planar_embedding_enforces_final_angle_policy(pattern, permutation):
+    mol = chematic.from_smiles(pattern.format(permutation)).add_hydrogens()
+    coords = None
+    failures = []
+    for seed in range(1, 11):
+        try:
+            coords = mol.rdkit_embed_square_planar(random_seed=seed)
+            break
+        except RuntimeError as error:
+            failures.append(str(error))
+    assert coords is not None, failures
+    report = mol.square_planar_geometry_diagnostics(coords)[0]
+    assert report["unavailable"] is None
+    assert all(angle >= 150.0 for _, _, angle in report["trans"])
+    assert all(60.0 <= angle <= 120.0 for _, _, angle in report["cis"])
+
+
+def test_square_planar_embedding_rejects_invalid_or_unsupported_input():
+    with pytest.raises(ValueError, match="no square-planar declaration"):
+        chematic.from_smiles("CCO").rdkit_embed_square_planar()
+    with pytest.raises(ValueError, match="unnumbered_permutation"):
+        chematic.from_smiles("[Pt@SP](F)(Cl)(Br)I").rdkit_embed_square_planar()
+    with pytest.raises(ValueError, match="unsupported_neighbor_order"):
+        chematic.from_smiles("F[Pt@SP3]Cl").rdkit_embed_square_planar()
+    mol = chematic.from_smiles("F[Pt@SP3](Cl)Br")
+    for trans, cis in [(120.0, 30.0), (float("nan"), 30.0), (150.0, -1.0)]:
+        with pytest.raises(ValueError, match="invalid or overlapping"):
+            mol.rdkit_embed_square_planar(trans_min_degrees=trans, cis_tolerance_degrees=cis)
+
+
 @pytest.mark.parametrize("pattern", ["[Pt@SP{}](F)(Cl)(Br)I", "F[Pt@SP{}](Cl)(Br)I"])
 @pytest.mark.parametrize("permutation", [1, 2, 3])
 def test_square_planar_angles_match_rdkit_coordinates(pattern, permutation):

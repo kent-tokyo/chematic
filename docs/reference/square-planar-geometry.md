@@ -33,12 +33,44 @@ list. Rust exposes the same measurements through
 `chematic_3d::square_planar_geometry::square_planar_angles`.
 
 The names cis and trans describe the *declaration*, not an assertion that a
-particular input geometry is square planar or stereochemically valid. There is
-no threshold, fitting, coordinate correction, embedding constraint, or
-acceptance decision here. Existing checked conformer generation continues to
+particular input geometry is square planar or stereochemically valid. The
+diagnostic does not apply a threshold, fit, or correct coordinates. Existing
+checked conformer generation continues to
 mark this stereo class unevaluable. In particular, a vacancy does not acquire
 an inferred coordinate, and distortions, duplicate ligands, and unusual
 coordination may require additional chemical interpretation.
+
+## Experimental constrained embedding
+
+`mol.rdkit_embed_square_planar()` runs one ETKDG embedding attempt with the
+declared ligand-pair angles added to the distance bounds. It then measures
+the final coordinates and raises `RuntimeError` if embedding fails or any
+measured angle falls outside the chosen policy. No coordinates are returned on
+such a failure. A caller may try another seed explicitly:
+
+```python
+mol = chematic.from_smiles("[Pt@SP3](F)(Cl)(Br)I").add_hydrogens()
+coords = mol.rdkit_embed_square_planar(random_seed=1)
+print(mol.square_planar_geometry_diagnostics(coords))
+```
+
+By default, each trans angle must be at least 150° and each cis angle must be
+within 30° of 90°. `trans_min_degrees` and `cis_tolerance_degrees` change
+these limits; they must be finite, nonoverlapping and within the angular
+range. These defaults are experimental geometric thresholds, not universal
+chemistry criteria. Unsupported neighbor orders, an unnumbered permutation,
+missing declarations and invalid thresholds raise `ValueError`. The method
+requires three or four real ligands per declared center, with at most one
+recorded vacancy. Multiple centers are constrained together, so ring or
+other distance constraints may make the bounds unsatisfiable.
+
+Final checking is necessary: embedding and later energy refinement can move
+angles outside their initial bounds. The method validates only the measured
+square-planar angles of the returned embedding; it does not validate other
+stereochemistry, bond lengths, energy, planarity beyond those angle limits,
+or a later optimization. It does not change `rdkit_embed`, the timed ensemble
+API, or the existing checked-conformer stereo acceptance policy. Rust exposes
+the same operation in `square_planar_embedding`.
 
 The Python regression tests compare atom order and bond connectivity first,
 then compare every reported angle with RDKit's `GetAngleDeg` on six fixed Pt

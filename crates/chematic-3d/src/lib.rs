@@ -47,6 +47,7 @@ pub mod rdkit_shape_descriptors;
 pub mod sasa;
 pub mod sasa_checked;
 pub mod shape_descriptors;
+pub mod square_planar_embedding;
 pub mod square_planar_geometry;
 pub mod stereo3d;
 pub mod stereo_constraints;

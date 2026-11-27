@@ -2,6 +2,46 @@ use super::*;
 
 #[pymethods]
 impl Mol {
+    /// Generate one experimental square-planar-constrained ETKDG conformer.
+    /// Raises if bounds, embedding, or final angle validation fail.
+    #[pyo3(signature = (*, random_seed = 42, max_iterations = 0,
+                        trans_min_degrees = 150.0, cis_tolerance_degrees = 30.0))]
+    fn rdkit_embed_square_planar(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+        trans_min_degrees: f64,
+        cis_tolerance_degrees: f64,
+    ) -> PyResult<Vec<[f64; 3]>> {
+        use chematic_3d::rdkit_embed::RdkitEmbedOptions;
+        use chematic_3d::square_planar_embedding::{
+            SquarePlanarEmbedConfig, SquarePlanarEmbedError, rdkit_embed_square_planar,
+        };
+        let mol = self.inner.clone();
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let config = SquarePlanarEmbedConfig {
+            trans_min_degrees,
+            cis_tolerance_degrees,
+        };
+        py.detach(move || rdkit_embed_square_planar(&mol, &options, config))
+            .map_err(|error| {
+                let message = error.to_string();
+                match error {
+                    SquarePlanarEmbedError::InvalidThreshold
+                    | SquarePlanarEmbedError::NoDeclaration
+                    | SquarePlanarEmbedError::UnsupportedCenter { .. } => {
+                        PyValueError::new_err(message)
+                    }
+                    _ => pyo3::exceptions::PyRuntimeError::new_err(message),
+                }
+            })
+    }
+
     /// Measure declared square-planar ligand angles without judging validity.
     fn square_planar_geometry_diagnostics<'py>(
         &self,
