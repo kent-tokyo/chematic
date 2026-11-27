@@ -1059,7 +1059,9 @@ pub enum RepairRejectionReason {
     /// started, or `Violated` and already individually confirmed fixed by its own
     /// repair attempt -- ended up `Violated` in the final geometry because some
     /// *other*, unrelated repair in the same `repair_stereo` call moved
-    /// shared/overlapping geometry it depended on.
+    /// shared/overlapping geometry it depended on. Also used when a previously
+    /// satisfied element becomes unevaluable or disappears, or an unevaluable
+    /// element becomes violated.
     RepairCausedNewViolation,
 }
 
@@ -1433,12 +1435,12 @@ fn record_stereo_regressions(
     failures: &mut Vec<(StereoElement, RepairRejectionReason)>,
 ) {
     for result in &initial.tetrahedral {
-        let regressed = result.status.is_satisfied()
-            && final_check
-                .tetrahedral
-                .iter()
-                .find(|candidate| candidate.atom == result.atom)
-                .is_some_and(|candidate| candidate.status.is_violated());
+        let final_status = final_check
+            .tetrahedral
+            .iter()
+            .find(|candidate| candidate.atom == result.atom)
+            .map(|candidate| candidate.status);
+        let regressed = stereo_status_regressed(result.status, final_status);
         if regressed {
             failures.push((
                 StereoElement::Tetrahedral(result.atom),
@@ -1447,18 +1449,26 @@ fn record_stereo_regressions(
         }
     }
     for result in &initial.double_bond {
-        let regressed = result.status.is_satisfied()
-            && final_check
-                .double_bond
-                .iter()
-                .find(|candidate| candidate.bond == result.bond)
-                .is_some_and(|candidate| candidate.status.is_violated());
+        let final_status = final_check
+            .double_bond
+            .iter()
+            .find(|candidate| candidate.bond == result.bond)
+            .map(|candidate| candidate.status);
+        let regressed = stereo_status_regressed(result.status, final_status);
         if regressed {
             failures.push((
                 StereoElement::DoubleBond(result.bond),
                 RepairRejectionReason::RepairCausedNewViolation,
             ));
         }
+    }
+}
+
+fn stereo_status_regressed(initial: StereoStatus, final_status: Option<StereoStatus>) -> bool {
+    match initial {
+        StereoStatus::Satisfied => !final_status.is_some_and(|s| s.is_satisfied()),
+        StereoStatus::Unevaluable(_) => final_status.is_some_and(|s| s.is_violated()),
+        StereoStatus::Violated => false, // Repaired elements are checked separately.
     }
 }
 

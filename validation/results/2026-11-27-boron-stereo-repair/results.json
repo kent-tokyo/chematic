@@ -1,0 +1,864 @@
+{
+  "input_sha256": "e3c2cf4aa5c7c5740fd3d23c670e26535515b97f16a02ee2bf387661513726a1",
+  "selection_sha256": "e4b41bf071c2c81fb8ae636ac06a6afb3937a5b78dc79732b2803b193236f381",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "selection_count": 24,
+  "results": [
+    {
+      "index": 175,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 3,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 3,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 1281,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 3,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 3,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 2082,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 0,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 0,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 2242,
+      "before": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 3,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 3,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 2877,
+      "before": {
+        "reported": 1,
+        "satisfied": 0,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [
+        {
+          "kind": "atom",
+          "index": 1,
+          "atoms_moved": 1,
+          "max_displacement": 3.471631996495815
+        }
+      ],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 0,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 0,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 3103,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 1,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 1,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 3424,
+      "before": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 12,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 2,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 12,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "clashes_after": 2,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 3663,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 45,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 45,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 3926,
+      "before": {
+        "reported": 3,
+        "satisfied": 1,
+        "violated": 2,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 7,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 13,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": false,
+      "fully_verified": false,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [
+        {
+          "kind": "atom",
+          "index": 7,
+          "reason": "NoBridgeEligibleSubstituent"
+        },
+        {
+          "kind": "atom",
+          "index": 13,
+          "reason": "NoBridgeEligibleSubstituent"
+        }
+      ],
+      "clashes_before": 0
+    },
+    {
+      "index": 4550,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 29,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 29,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 5446,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 7,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 7,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 5666,
+      "before": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 7,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 3,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 7,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "clashes_after": 3,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 6955,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 2,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 2,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 7179,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 9,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 9,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 7361,
+      "before": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 13,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 20,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 13,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 20,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 8861,
+      "before": {
+        "reported": 8,
+        "satisfied": 4,
+        "violated": 4,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 9,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 13,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 22,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 32,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 34,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 38,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 50,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 51,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": false,
+      "fully_verified": false,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [
+        {
+          "kind": "atom",
+          "index": 32,
+          "reason": "NoBridgeEligibleSubstituent"
+        },
+        {
+          "kind": "atom",
+          "index": 34,
+          "reason": "NoBridgeEligibleSubstituent"
+        },
+        {
+          "kind": "atom",
+          "index": 38,
+          "reason": "NoBridgeEligibleSubstituent"
+        },
+        {
+          "kind": "atom",
+          "index": 51,
+          "reason": "NoBridgeEligibleSubstituent"
+        }
+      ],
+      "clashes_before": 6
+    },
+    {
+      "index": 9498,
+      "before": {
+        "reported": 2,
+        "satisfied": 0,
+        "violated": 2,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 14,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 24,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [
+        {
+          "kind": "atom",
+          "index": 14,
+          "atoms_moved": 9,
+          "max_displacement": 1.5175437378662777
+        },
+        {
+          "kind": "atom",
+          "index": 24,
+          "atoms_moved": 8,
+          "max_displacement": 1.4325794328560766
+        }
+      ],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 4,
+      "after": {
+        "reported": 2,
+        "satisfied": 2,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 14,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 24,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 4,
+      "max_bond_length_change": 8.881784197001252e-16
+    },
+    {
+      "index": 10066,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 9,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 9,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 10519,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 11,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 11,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 10578,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 8,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 8,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 10605,
+      "before": {
+        "reported": 2,
+        "satisfied": 2,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 32,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 2,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 1,
+      "after": {
+        "reported": 2,
+        "satisfied": 2,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 32,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 2,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "clashes_after": 1,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 11067,
+      "before": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 7,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 3,
+      "after": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": [
+          {
+            "bond": 7,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      },
+      "clashes_after": 3,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 11192,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 0,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 0,
+      "max_bond_length_change": 0.0
+    },
+    {
+      "index": 11250,
+      "before": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "ok": true,
+      "fully_verified": true,
+      "repaired": [],
+      "unevaluable": [],
+      "failures": [],
+      "clashes_before": 2,
+      "after": {
+        "reported": 0,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [],
+        "double_bond_stereo": []
+      },
+      "clashes_after": 2,
+      "max_bond_length_change": 0.0
+    }
+  ]
+}

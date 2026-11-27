@@ -10,6 +10,71 @@ mod tests {
     }
 
     #[test]
+    fn final_reconciliation_rejects_loss_of_previously_satisfied_stereo() {
+        let initial = StereoVerification {
+            tetrahedral: vec![TetrahedralReport {
+                atom: AtomIdx(1),
+                status: StereoStatus::Satisfied,
+            }],
+            double_bond: vec![DoubleBondReport {
+                bond: BondIdx(2),
+                status: StereoStatus::Satisfied,
+            }],
+        };
+        for status in [
+            StereoStatus::Violated,
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+        ] {
+            let final_check = StereoVerification {
+                tetrahedral: vec![TetrahedralReport {
+                    atom: AtomIdx(1),
+                    status,
+                }],
+                double_bond: vec![DoubleBondReport {
+                    bond: BondIdx(2),
+                    status,
+                }],
+            };
+            let mut failures = Vec::new();
+            record_stereo_regressions(&initial, &final_check, &mut failures);
+            assert_eq!(
+                failures,
+                vec![
+                    (
+                        StereoElement::Tetrahedral(AtomIdx(1)),
+                        RepairRejectionReason::RepairCausedNewViolation
+                    ),
+                    (
+                        StereoElement::DoubleBond(BondIdx(2)),
+                        RepairRejectionReason::RepairCausedNewViolation
+                    ),
+                ]
+            );
+        }
+        let mut failures = Vec::new();
+        record_stereo_regressions(
+            &initial,
+            &StereoVerification {
+                tetrahedral: vec![],
+                double_bond: vec![],
+            },
+            &mut failures,
+        );
+        assert_eq!(failures.len(), 2);
+        failures.clear();
+        record_stereo_regressions(&initial, &initial, &mut failures);
+        assert!(failures.is_empty());
+        assert!(stereo_status_regressed(
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+            Some(StereoStatus::Violated)
+        ));
+        assert!(!stereo_status_regressed(
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+            Some(StereoStatus::Satisfied)
+        ));
+    }
+
+    #[test]
     fn phosphorus_and_sulfur_stereo_matches_rdkit_and_mirrors() {
         let fixtures = [
             (include_str!("stereo_constraints_ps_oracle.json"), 17),

@@ -44,3 +44,56 @@ def test_stereo_diagnostics_empty_and_invalid_coordinates():
         mol.stereo_3d_diagnostics([[0, 0, 0]])
     with pytest.raises(ValueError, match="finite and match"):
         mol.stereo_3d_diagnostics([[math.nan, 0, 0]] * 3)
+
+
+def test_repair_stereo_3d_recovers_development_ammonium():
+    smiles = "C[N@@H+](CCNc1ccc2c3c(cccc13)C(=O)N(CCOCCO)C2=O)Cc1ccccc1B(O)O"
+    mol = chematic.from_smiles(smiles)
+    before = mol.generate_3d_etkdg()
+    assert mol.stereo_3d_diagnostics(before)["violated"] == 1
+    result = mol.repair_stereo_3d(before)
+    assert result["ok"] and result["fully_verified"]
+    assert result["failures"] == [] and result["unevaluable"] == []
+    assert result["repaired"][0]["kind"] == "atom"
+    assert result["repaired"][0]["index"] == 1
+    assert result["repaired"][0]["atoms_moved"] > 0
+    assert result["repaired"][0]["max_displacement"] > 0
+    assert mol.stereo_3d_diagnostics(result["coordinates"])["satisfied"] == 1
+
+
+def test_repair_stereo_3d_reports_ring_failure_and_unknown_stereo():
+    mol = chematic.from_smiles("C1[C@@H]2CCC1CC2")
+    result = mol.repair_stereo_3d(mol.generate_3d_etkdg())
+    assert result["ok"] is False and result["fully_verified"] is False
+    assert result["coordinates"] is None
+    assert result["failures"] == [{"kind": "atom", "index": 1,
+                                  "reason": "NoBridgeEligibleSubstituent"}]
+    pt = chematic.from_smiles("[Pt@SP1](F)(Cl)(Br)I")
+    geometry = [[0, 0, 0], [1, 0, 0], [0, 1, 0], [-1, 0, 0], [0, -1, 0]]
+    unknown = pt.repair_stereo_3d(geometry)
+    assert unknown["ok"] and not unknown["fully_verified"]
+    assert unknown["unevaluable"] == [{"kind": "atom", "index": 0}]
+    with pytest.raises(ValueError, match="finite and match"):
+        pt.repair_stereo_3d([[float("nan"), 0, 0]] * 5)
+
+
+def test_repaired_ammonium_agrees_with_rdkit_stereo_from_coordinates():
+    Chem = pytest.importorskip("rdkit.Chem")
+    smiles = "C[N@@H+](CCNc1ccc2c3c(cccc13)C(=O)N(CCOCCO)C2=O)Cc1ccccc1B(O)O"
+    mol = chematic.from_smiles(smiles)
+    geometry = mol.generate_3d_etkdg()
+    repaired = mol.repair_stereo_3d(geometry)["coordinates"]
+    reference = Chem.MolFromSmiles(smiles)
+    Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
+    expected = reference.GetAtomWithIdx(1).GetProp("_CIPCode")
+    codes = []
+    for coords in (geometry, repaired):
+        molecule = Chem.Mol(reference)
+        conf = Chem.Conformer(molecule.GetNumAtoms())
+        for idx, point in enumerate(coords):
+            conf.SetAtomPosition(idx, point)
+        molecule.AddConformer(conf)
+        Chem.AssignStereochemistryFrom3D(molecule, replaceExistingTags=True)
+        Chem.AssignStereochemistry(molecule, force=True, cleanIt=True)
+        codes.append(molecule.GetAtomWithIdx(1).GetProp("_CIPCode"))
+    assert codes[0] != expected and codes[1] == expected
