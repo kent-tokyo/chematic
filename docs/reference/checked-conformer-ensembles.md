@@ -143,6 +143,17 @@ distance bounds and torsion knowledge once per worker and reuses them across
 attempts; preparation is included in the deadline. Completed attempts replace
 their provisional record.
 
+Set `preview_require_regular_geometry=True` together with `return_preview=True`
+and `return_partial=True` to also require the conservative tetrahedral geometry
+screen before publishing a preview. A retained preview then includes
+`stereo_screen: "regular_geometry"` in `in_progress`. A preview may be absent
+because embedding failed, the stereo/geometry check did not pass, or the worker
+was interrupted before its checkpoint was written; absence does not identify
+which occurred. The screen can withhold plausible structures and does not prove
+chemical validity. See [3D stereo diagnostics](stereo-3d-diagnostics.md) for
+its limits. This option affects previews only: completed conformers still use
+the ordinary checked-ensemble verifier, not the regular-geometry screen.
+
 The mixed method divides the requested attempts between the compatibility
 and corrected ETKDG torsion gradients, using the first half for compatibility
 and the remainder for corrected. The two modes share the same attempt seed

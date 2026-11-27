@@ -13,7 +13,8 @@ import time
 def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
                               random_seed=42, max_iterations=0,
                               max_mmff_iters=200, repair_mmff_iters=0,
-                              return_partial=False, return_preview=False):
+                              return_partial=False, return_preview=False,
+                              preview_require_regular_geometry=False):
     """Generate an explicit-hydrogen mixed ensemble in an isolated process.
 
     The timeout includes interpreter startup and terminates an ongoing attempt.
@@ -22,6 +23,8 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
     timeout or worker failure when their checkpoint is readable. With both
     return_partial and return_preview, a stereo-checked, unoptimized embedding
     for an interrupted attempt may be returned separately as in_progress.
+    The optional regular-geometry screen applies only to that preview, not to
+    the completed conformers.
     Coordinates use the atom order
     obtained by parsing ``smiles`` and adding hydrogens in the worker.
     """
@@ -35,9 +38,14 @@ def generate_conformers_timed(smiles, num_confs, *, timeout_seconds,
         raise TypeError("return_partial and return_preview must be bools")
     if return_preview and not return_partial:
         raise ValueError("return_preview requires return_partial=True")
+    if not isinstance(preview_require_regular_geometry, bool):
+        raise TypeError("preview_require_regular_geometry must be a bool")
+    if preview_require_regular_geometry and not return_preview:
+        raise ValueError("preview_require_regular_geometry requires return_preview=True")
     request = {"smiles": smiles, "num_confs": num_confs, "random_seed": random_seed,
                "max_iterations": max_iterations, "max_mmff_iters": max_mmff_iters,
                "repair_mmff_iters": repair_mmff_iters, "return_preview": return_preview,
+               "preview_require_regular_geometry": preview_require_regular_geometry,
                "package_file": os.path.realpath(sys.modules[__package__].__file__)}
     with tempfile.TemporaryDirectory(prefix="chematic-conformers-") if return_partial else contextlib.nullcontext() as directory:
         if directory is not None:
@@ -166,6 +174,8 @@ def _apply_preview(result, entry):
             or entry["preview_attempt"] != result["attempts_completed"] + 1
             or "in_progress" in result or not isinstance(entry.get("coordinates"), list)):
         raise ValueError("invalid preview checkpoint")
+    if "stereo_screen" in entry and entry["stereo_screen"] != "regular_geometry":
+        raise ValueError("invalid preview stereo screen")
     if "geometry" in entry:
         geometry = entry["geometry"]
         if geometry is not None:
@@ -179,6 +189,8 @@ def _apply_preview(result, entry):
             raise ValueError("invalid preview geometry error")
     result["in_progress"] = {"attempt": entry["preview_attempt"],
                              "coordinates": entry["coordinates"]}
+    if "stereo_screen" in entry:
+        result["in_progress"]["stereo_screen"] = entry["stereo_screen"]
     if "geometry" in entry:
         result["in_progress"]["geometry"] = entry["geometry"]
         result["in_progress"]["geometry_error"] = entry.get("geometry_error")
@@ -240,8 +252,13 @@ def _run_partial(mol, request):
             if coords is None:
                 rows, embedded, error, violated, unevaluable, invalid = [], 0, None, None, None, None
             else:
-                if mol._timed_stereo_valid(coords):
+                regular_screen = request.get("preview_require_regular_geometry", False)
+                valid = (mol._timed_stereo_valid(coords, require_regular_geometry=True)
+                         if regular_screen else mol._timed_stereo_valid(coords))
+                if valid:
                     preview = {"preview_attempt": index + 1, "coordinates": coords}
+                    if regular_screen:
+                        preview["stereo_screen"] = "regular_geometry"
                     try:
                         count, worst, violation_rate, clashes = mol._timed_preview_geometry(coords)
                         preview["geometry"] = {"bond_count": count, "worst_bond_length": worst,

@@ -72,9 +72,14 @@ impl Mol {
     }
 
     /// Check declared stereochemistry before publishing a timed preview.
-    fn _timed_stereo_valid(&self, coords: Vec<[f64; 3]>) -> PyResult<bool> {
+    #[pyo3(signature = (coords, *, require_regular_geometry=false))]
+    fn _timed_stereo_valid(
+        &self,
+        coords: Vec<[f64; 3]>,
+        require_regular_geometry: bool,
+    ) -> PyResult<bool> {
         use chematic_3d::coords::{Coords3D, Point3};
-        use chematic_3d::stereo_constraints::verify_stereo;
+        use chematic_3d::stereo_constraints::{verify_stereo, verify_stereo_with_geometry_screen};
         if coords.len() != self.inner.atom_count()
             || coords.iter().flatten().any(|v| !v.is_finite())
         {
@@ -86,7 +91,11 @@ impl Mol {
                 .map(|[x, y, z]| Point3::new(x, y, z))
                 .collect(),
         };
-        let result = verify_stereo(&self.inner, &geometry);
+        let result = if require_regular_geometry {
+            verify_stereo_with_geometry_screen(&self.inner, &geometry).report
+        } else {
+            verify_stereo(&self.inner, &geometry)
+        };
         Ok(result.n_violations() == 0 && result.n_unevaluable() == 0)
     }
 

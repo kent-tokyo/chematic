@@ -682,3 +682,114 @@ def test_prepared_preview_zero_seed_matches_existing_partial_mode():
     assert baseline["status"] == preview["status"] == "completed"
     assert baseline["conformers"] == preview["conformers"]
     assert baseline["attempts_completed"] == preview["attempts_completed"] == 3
+
+
+def test_timed_preview_regular_geometry_screen_rejects_distorted_stereo():
+    import json
+    from pathlib import Path
+
+    path = Path(__file__).with_name("stereo_distorted_prototype_719.json")
+    fixture = json.loads(path.read_text(encoding="utf-8"))
+    molecule = chematic.from_smiles(fixture["smiles"])
+    assert molecule._timed_stereo_valid(fixture["coords"])
+    assert not molecule._timed_stereo_valid(fixture["coords"], require_regular_geometry=True)
+
+
+@pytest.mark.parametrize("screen_passes", [False, True])
+def test_strict_preview_checkpoint_contains_only_screened_coordinates(tmp_path, screen_passes):
+    from chematic._timed_conformers import _read_checkpoint, _run_partial
+
+    class FakeMol:
+        def _timed_prepare_corrected(self, **kwargs):
+            return self
+
+        def embed(self, seed):
+            return [[0.0, 0.0, 0.0]]
+
+        def _timed_stereo_valid(self, coords, *, require_regular_geometry=False):
+            assert require_regular_geometry is True
+            return screen_passes
+
+        def _timed_preview_geometry(self, coords):
+            return (0, None, None, 0)
+
+        def _timed_optimize_embedded(self, coords, **kwargs):
+            raise RuntimeError("interrupted")
+
+    path = tmp_path / "journal.jsonl"
+    request = {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+               "max_mmff_iters": 200, "repair_mmff_iters": 0,
+               "return_preview": True, "preview_require_regular_geometry": True,
+               "checkpoint": str(path)}
+    with pytest.raises(RuntimeError, match="interrupted"):
+        _run_partial(FakeMol(), request)
+    result = _read_checkpoint(str(path))
+    if screen_passes:
+        assert result["in_progress"]["coordinates"] == [[0.0, 0.0, 0.0]]
+        assert result["in_progress"]["stereo_screen"] == "regular_geometry"
+    else:
+        assert "in_progress" not in result
+
+
+def test_invalid_preview_screen_checkpoint_is_rejected(tmp_path):
+    import json
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "journal.jsonl"
+    entry = {"preview_attempt": 1, "coordinates": [[0., 0., 0.]], "stereo_screen": "invalid"}
+    path.write_text(json.dumps(entry) + "\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="invalid preview stereo screen"):
+        _read_checkpoint(str(path))
+
+
+def test_timed_preview_screen_options_and_completed_ensemble():
+    with pytest.raises(ValueError, match="requires return_preview"):
+        chematic.generate_conformers_timed("CCO", 1, timeout_seconds=1,
+                                          preview_require_regular_geometry=True)
+    with pytest.raises(TypeError, match="must be a bool"):
+        chematic.generate_conformers_timed("CCO", 1, timeout_seconds=1,
+                                          preview_require_regular_geometry=1)
+    options = {"num_confs": 2, "timeout_seconds": 15, "return_partial": True,
+               "return_preview": True, "random_seed": 42}
+    baseline = chematic.generate_conformers_timed("CCO", **options)
+    checked = chematic.generate_conformers_timed("CCO", preview_require_regular_geometry=True, **options)
+    assert baseline["status"] == checked["status"] == "completed"
+    assert baseline["conformers"] == checked["conformers"]
+    assert baseline["attempts_completed"] == checked["attempts_completed"] == 2
+
+
+def test_strict_preview_checkpoint_survives_worker_termination(tmp_path):
+    import subprocess
+    import sys
+    import time
+    from chematic._timed_conformers import _read_checkpoint
+
+    path = tmp_path / "strict-journal.jsonl"
+    script = '''
+import sys, time
+from chematic._timed_conformers import _run_partial
+class SlowMol:
+    def _timed_prepare_corrected(self, **kwargs): return self
+    def embed(self, seed): return [[0.0, 0.0, 0.0]]
+    def _timed_stereo_valid(self, coords, *, require_regular_geometry=False): return require_regular_geometry
+    def _timed_preview_geometry(self, coords): return (0, None, None, 0)
+    def _timed_optimize_embedded(self, coords, **kwargs):
+        time.sleep(30)
+        return [], 1, None, None, None, None
+_run_partial(SlowMol(), {"num_confs": 1, "random_seed": 42, "max_iterations": 0,
+    "max_mmff_iters": 200, "repair_mmff_iters": 0, "return_preview": True,
+    "preview_require_regular_geometry": True, "checkpoint": sys.argv[1]})
+'''
+    worker = subprocess.Popen([sys.executable, "-c", script, str(path)])
+    try:
+        deadline = time.monotonic() + 10
+        while not path.exists() and time.monotonic() < deadline and worker.poll() is None:
+            time.sleep(0.01)
+        assert path.exists(), "worker did not publish a screened preview"
+    finally:
+        worker.kill()
+        worker.wait()
+    result = _read_checkpoint(str(path))
+    assert result["attempts_completed"] == 0 and result["conformers"] == []
+    assert result["in_progress"]["stereo_screen"] == "regular_geometry"
+    assert result["in_progress"]["coordinates"] == [[0., 0., 0.]]
