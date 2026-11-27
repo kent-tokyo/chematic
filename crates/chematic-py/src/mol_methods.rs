@@ -37,6 +37,7 @@ mod path_enumeration;
 mod properties;
 mod rooted;
 mod sasa_checked;
+mod square_planar_geometry;
 mod stereo_cleanup;
 mod stereo_groups;
 mod tautomer_control;

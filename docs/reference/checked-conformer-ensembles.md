@@ -153,6 +153,8 @@ arguments. Both methods apply the source's declared-stereo checks. If a
 minimized structure fails a check, the implementation can retain the original
 embedded structure with a nonzero status, or omit the candidate. These checks
 do not establish correctness for every possible stereochemical specification.
+For square-planar declarations, the separate [angle diagnostic](square-planar-geometry.md)
+measures available ligand angles without changing this acceptance policy.
 
 `repair_mmff_iters` defaults to zero. A positive value allows that many extra
 MMFF iterations when attempting to repair a near-linear three-coordinate
