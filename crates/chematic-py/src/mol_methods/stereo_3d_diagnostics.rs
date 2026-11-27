@@ -42,17 +42,33 @@ impl Mol {
     /// minimize the structure or guarantee the absence of steric clashes.
     /// Set ``clash_cutoff`` to a positive distance in Å to reject newly close
     /// nonbonded atom pairs and receive their identities in ``clash_check``.
-    #[pyo3(signature = (coords, *, clash_cutoff=None))]
+    /// With ``max_alternative_attempts`` (at most 16), a rejected repair can
+    /// try other deterministic substituent choices; a cutoff is required.
+    #[pyo3(signature = (coords, *, clash_cutoff=None, max_alternative_attempts=0))]
     fn repair_stereo_3d<'py>(
         &self,
         py: Python<'py>,
         coords: Vec<[f64; 3]>,
         clash_cutoff: Option<f64>,
+        max_alternative_attempts: usize,
     ) -> PyResult<Bound<'py, PyDict>> {
         use chematic_3d::geometry_check::{
             GeometryCheckConfig, check_geometry, compare_nonbonded_clashes,
         };
-        use chematic_3d::stereo_constraints::{repair_stereo, verify_stereo};
+        use chematic_3d::stereo_constraints::{
+            repair_stereo, repair_stereo_with_variant, satisfied_tetrahedral_geometry_is_regular,
+            verify_stereo,
+        };
+        if max_alternative_attempts > 16 {
+            return Err(PyValueError::new_err(
+                "max_alternative_attempts must be at most 16",
+            ));
+        }
+        if max_alternative_attempts > 0 && clash_cutoff.is_none() {
+            return Err(PyValueError::new_err(
+                "clash_cutoff is required for alternative attempts",
+            ));
+        }
         if coords.len() != self.inner.atom_count()
             || coords.iter().flatten().any(|v| !v.is_finite())
         {
@@ -62,7 +78,7 @@ impl Mol {
         }
         let geometry = flat_to_coords3d(&coords);
         let mol = self.inner.clone();
-        let (outcome, initial, comparison) = py
+        let (outcome, initial, comparison, retry) = py
             .detach(move || {
                 if let Some(cutoff) = clash_cutoff {
                     let config = GeometryCheckConfig {
@@ -72,8 +88,8 @@ impl Mol {
                     check_geometry(&mol, &geometry, &config)?;
                 }
                 let initial = verify_stereo(&mol, &geometry);
-                let outcome = repair_stereo(&mol, &geometry);
-                let comparison = match (clash_cutoff, &outcome) {
+                let mut outcome = repair_stereo(&mol, &geometry);
+                let mut comparison = match (clash_cutoff, &outcome) {
                     (Some(cutoff), Ok(repaired)) => Some(compare_nonbonded_clashes(
                         &mol,
                         &geometry,
@@ -83,8 +99,66 @@ impl Mol {
                     (Some(_), Err(_)) => None,
                     (None, _) => None,
                 };
+                let mut attempts = 0;
+                let mut stereo_failures = 0;
+                let mut geometry_failures = 0;
+                let mut clash_rejections = 0;
+                let mut tetrahedral_geometry_rejections = 0;
+                let mut selected_variant = outcome.is_ok().then_some(0);
+                if let Some(cutoff) = clash_cutoff
+                    && comparison
+                        .as_ref()
+                        .is_some_and(|c| !c.new_clashes.is_empty())
+                {
+                    selected_variant = None;
+                    for variant in 1..=max_alternative_attempts {
+                        attempts += 1;
+                        let alternative = match repair_stereo_with_variant(&mol, &geometry, variant)
+                        {
+                            Ok(value) => value,
+                            Err(_) => {
+                                stereo_failures += 1;
+                                continue;
+                            }
+                        };
+                        if !satisfied_tetrahedral_geometry_is_regular(&mol, &alternative.coords) {
+                            tetrahedral_geometry_rejections += 1;
+                            continue;
+                        }
+                        let checked = match compare_nonbonded_clashes(
+                            &mol,
+                            &geometry,
+                            &alternative.coords,
+                            cutoff,
+                        ) {
+                            Ok(value) => value,
+                            Err(_) => {
+                                geometry_failures += 1;
+                                continue;
+                            }
+                        };
+                        if !checked.new_clashes.is_empty() {
+                            clash_rejections += 1;
+                            continue;
+                        }
+                        outcome = Ok(alternative);
+                        comparison = Some(checked);
+                        selected_variant = Some(variant);
+                        break;
+                    }
+                }
                 Ok::<_, chematic_3d::geometry_check::GeometryCheckError>((
-                    outcome, initial, comparison,
+                    outcome,
+                    initial,
+                    comparison,
+                    (
+                        attempts,
+                        selected_variant,
+                        stereo_failures,
+                        geometry_failures,
+                        clash_rejections,
+                        tetrahedral_geometry_rejections,
+                    ),
                 ))
             })
             .map_err(|error| PyValueError::new_err(error.to_string()))?;
@@ -92,6 +166,14 @@ impl Mol {
         let repaired_rows = pyo3::types::PyList::empty(py);
         let failures = pyo3::types::PyList::empty(py);
         let unevaluable = pyo3::types::PyList::empty(py);
+        let retry_report = PyDict::new(py);
+        retry_report.set_item("attempted", retry.0)?;
+        retry_report.set_item("selected_variant", retry.1)?;
+        retry_report.set_item("stereo_failures", retry.2)?;
+        retry_report.set_item("geometry_failures", retry.3)?;
+        retry_report.set_item("clash_rejections", retry.4)?;
+        retry_report.set_item("tetrahedral_geometry_rejections", retry.5)?;
+        result.set_item("retry", retry_report)?;
         let rejected_clashes = comparison
             .as_ref()
             .is_some_and(|c| !c.new_clashes.is_empty());

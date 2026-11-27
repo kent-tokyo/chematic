@@ -10,6 +10,35 @@ mod tests {
     }
 
     #[test]
+    fn alternative_repair_rejects_extreme_ligand_geometry() {
+        // RDKit identifies the variant-1 geometry as the wrong enantiomer,
+        // although the signed ligand-volume verifier reports it as satisfied.
+        let molecule = mol("O=C1OC(c2ccccc2)=N[C@]1(Cc1ccccc1)SCc1ccccc1");
+        let initial = crate::generate_coords_etkdg(&molecule);
+        let alternative = repair_stereo_with_variant(&molecule, &initial, 1).unwrap();
+        assert_eq!(
+            verify_stereo(&molecule, &alternative.coords).n_satisfied(),
+            1
+        );
+        assert!(!satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &alternative.coords
+        ));
+
+        let molecule = mol("CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1");
+        let initial = crate::generate_coords_etkdg(&molecule);
+        let alternative = repair_stereo_with_variant(&molecule, &initial, 2).unwrap();
+        assert!(satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &alternative.coords
+        ));
+        assert!(!satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &Coords3D::default()
+        ));
+    }
+
+    #[test]
     fn final_reconciliation_rejects_loss_of_previously_satisfied_stereo() {
         let initial = StereoVerification {
             tetrahedral: vec![TetrahedralReport {

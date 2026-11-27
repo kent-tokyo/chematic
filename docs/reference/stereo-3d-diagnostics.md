@@ -28,6 +28,9 @@ clashes, energies and stereochemistry not reported by this verifier need
 separate assessment. The method is read-only; it neither repairs nor generates
 coordinates. Square-planar ligand angles can be inspected separately with
 [`square_planar_geometry_diagnostics`](square-planar-geometry.md).
+On grossly distorted tetrahedral geometries, the signed-volume result can
+disagree with RDKit's assignment from the same coordinates; a regression
+fixture for development record 719 demonstrates this known limitation.
 
 ## Repairing declared stereo
 
@@ -59,6 +62,27 @@ check does not establish that the geometry is clash-free, chemically valid, or
 free of unsupported stereochemistry. The screen has the same 2,048-atom and
 coordinate-range limits as `check_geometry` and raises `ValueError` for an
 invalid cutoff or input outside those limits.
+
+With `max_alternative_attempts` set to a value from 1 through 16, a repair
+rejected for new close pairs can try deterministic alternative choices of
+bridge-connected substituents. `clash_cutoff` is required. The original repair
+is attempted first, and an already accepted result is unchanged. The `retry`
+report gives the number attempted, the selected variant (zero for the original,
+`None` if none was accepted), and counts for stereo failures, geometry errors,
+new-clash rejections, and tetrahedral geometry rejections. A repair that fails
+before the clash screen is not retried. Each variant applies the same choice
+index across stereo elements; this is a bounded search, not an exhaustive
+enumeration of combinations.
+
+Alternative candidates also undergo a conservative screen of every reported
+satisfied tetrahedral center. Each of the center's barycentric weights in the
+tetrahedron of its ligand positions must exceed `1e-6`; an implicit ligand is
+reconstructed where needed. The ligand directions must form pair angles from
+45° to 165°. This screen is
+applied to alternatives, not to the original accepted repair. It rejects grossly
+distorted candidates but is not an independent stereochemistry oracle and does
+not guarantee valid geometry or remove pre-existing clashes. Candidates that
+leave reported stereo unevaluable still return `fully_verified=False`.
 
 ```python
 mol = chematic.from_smiles("C[N@H+](CC)CCC")

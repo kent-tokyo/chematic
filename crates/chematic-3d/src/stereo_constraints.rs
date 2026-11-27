@@ -531,6 +531,61 @@ fn tetrahedral_positions(
     Ok(out)
 }
 
+/// Conservative geometric screen for reported, satisfied tetrahedral centers.
+/// The central atom must be inside its four-ligand tetrahedron, and all pairs of
+/// ligand directions (including a reconstructed implicit ligand) must form
+/// angles between 45 and 165 degrees. This is a coarse screen, not an independent
+/// stereochemistry oracle or an energy/geometry minimization.
+pub fn satisfied_tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D) -> bool {
+    if coords.atom_count() != mol.atom_count() || !coords.is_finite() {
+        return false;
+    }
+    let report = verify_stereo(mol, coords);
+    for item in report
+        .tetrahedral
+        .iter()
+        .filter(|r| r.status.is_satisfied())
+    {
+        let Ok(constraint) = tetrahedral_constraint_for(mol, item.atom) else {
+            return false;
+        };
+        let Ok(p) = tetrahedral_positions(coords, item.atom, &constraint.order) else {
+            return false;
+        };
+        let center = coords.get(item.atom);
+        let volume = signed_volume(p[0], p[1], p[2], p[3]);
+        if !volume.is_finite() || volume.abs() < VOLUME_EPS {
+            return false;
+        }
+        let weights = [
+            signed_volume(center, p[1], p[2], p[3]) / volume,
+            signed_volume(p[0], center, p[2], p[3]) / volume,
+            signed_volume(p[0], p[1], center, p[3]) / volume,
+            signed_volume(p[0], p[1], p[2], center) / volume,
+        ];
+        if weights.iter().any(|w| !w.is_finite() || *w <= 1e-6) {
+            return false;
+        }
+        for i in 0..4 {
+            for j in i + 1..4 {
+                let Some(a) = p[i].sub(&center).try_normalize() else {
+                    return false;
+                };
+                let Some(b) = p[j].sub(&center).try_normalize() else {
+                    return false;
+                };
+                let cosine = a.dot(&b);
+                if !cosine.is_finite()
+                    || !(-0.9659258262890683..=core::f64::consts::FRAC_1_SQRT_2).contains(&cosine)
+                {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
 /// geometry check inline. Plain tetrahedral centers and explicitly supported
@@ -1129,6 +1184,7 @@ fn repair_tetrahedral_center(
     mol: &Molecule,
     coords: &mut Coords3D,
     idx: AtomIdx,
+    variant: usize,
 ) -> Result<RepairedElement, RepairRejectionReason> {
     let order = tetrahedral_constraint_for(mol, idx)
         .expect("already validated by verify_stereo before repair was attempted")
@@ -1139,8 +1195,9 @@ fn repair_tetrahedral_center(
         .filter(|&n| n != STEREO_H_SENTINEL)
         .collect();
 
-    // Pick the smallest bridge-eligible real substituent to move (least disturbance).
-    let mut best: Option<(u32, HashSet<AtomIdx>)> = None;
+    // Stable size order retains the historical smallest-component choice at
+    // variant zero; other variants allow bounded, deterministic retries.
+    let mut candidates: Vec<(u32, HashSet<AtomIdx>)> = Vec::new();
     for &cand in &real_neighbors {
         let others: Vec<AtomIdx> = real_neighbors
             .iter()
@@ -1148,18 +1205,16 @@ fn repair_tetrahedral_center(
             .filter(|&n| n != cand)
             .map(AtomIdx)
             .collect();
-        if let Some(component) = bridge_component(mol, &[AtomIdx(cand)], idx, &others)
-            && best
-                .as_ref()
-                .map(|(_, c)| component.len() < c.len())
-                .unwrap_or(true)
-        {
-            best = Some((cand, component));
+        if let Some(component) = bridge_component(mol, &[AtomIdx(cand)], idx, &others) {
+            candidates.push((cand, component));
         }
     }
-    let Some((moved, component)) = best else {
+    if candidates.is_empty() {
         return Err(RepairRejectionReason::NoBridgeEligibleSubstituent);
-    };
+    }
+    candidates.sort_by_key(|(_, component)| component.len());
+    let selected = variant % candidates.len();
+    let (moved, component) = candidates.swap_remove(selected);
 
     // Declared-order positions BEFORE any mutation (phantom computed from the
     // original, not-yet-moved real neighbor positions).
@@ -1234,6 +1289,7 @@ fn repair_double_bond(
     mol: &Molecule,
     coords: &mut Coords3D,
     bond_idx: BondIdx,
+    variant: usize,
 ) -> Result<RepairedElement, RepairRejectionReason> {
     let bond = mol.bond(bond_idx);
     let a1 = bond.atom1;
@@ -1263,7 +1319,7 @@ fn repair_double_bond(
 
     let (pivot, other_end, component) = match (a1_component, a2_component) {
         (Some(c1), Some(c2)) => {
-            if c1.len() <= c2.len() {
+            if (c1.len() <= c2.len()) == variant.is_multiple_of(2) {
                 (a1, a2, c1)
             } else {
                 (a2, a1, c2)
@@ -1312,13 +1368,31 @@ pub fn repair_stereo(
     mol: &Molecule,
     coords: &Coords3D,
 ) -> Result<RepairOutcome, RepairFailureReport> {
+    repair_stereo_with_variant(mol, coords, 0)
+}
+
+/// Run the same verified repair with a deterministic alternative choice of
+/// bridge-connected substituent at each stereo element. Variant zero retains
+/// the default behavior; nonzero variants do not guarantee clash-free output.
+pub fn repair_stereo_with_variant(
+    mol: &Molecule,
+    coords: &Coords3D,
+    variant: usize,
+) -> Result<RepairOutcome, RepairFailureReport> {
     let initial = verify_stereo(mol, coords);
     let mut working = coords.clone();
     let mut repaired = Vec::new();
     let mut failures: Vec<(StereoElement, RepairRejectionReason)> = Vec::new();
 
     let unevaluable = unevaluable_elements(&initial);
-    apply_stereo_repairs(mol, &initial, &mut working, &mut repaired, &mut failures);
+    apply_stereo_repairs(
+        mol,
+        &initial,
+        &mut working,
+        &mut repaired,
+        &mut failures,
+        variant,
+    );
 
     // Unconditional final reconciliation pass -- runs whether or not the loop above
     // already produced failures, and checks BOTH directions:
@@ -1379,10 +1453,11 @@ fn apply_stereo_repairs(
     coords: &mut Coords3D,
     repaired: &mut Vec<RepairedElement>,
     failures: &mut Vec<(StereoElement, RepairRejectionReason)>,
+    variant: usize,
 ) {
     for result in &initial.tetrahedral {
         if result.status.is_violated() {
-            match repair_tetrahedral_center(mol, coords, result.atom) {
+            match repair_tetrahedral_center(mol, coords, result.atom, variant) {
                 Ok(info) => repaired.push(info),
                 Err(reason) => failures.push((StereoElement::Tetrahedral(result.atom), reason)),
             }
@@ -1390,7 +1465,7 @@ fn apply_stereo_repairs(
     }
     for result in &initial.double_bond {
         if result.status.is_violated() {
-            match repair_double_bond(mol, coords, result.bond) {
+            match repair_double_bond(mol, coords, result.bond, variant) {
                 Ok(info) => repaired.push(info),
                 Err(reason) => failures.push((StereoElement::DoubleBond(result.bond), reason)),
             }

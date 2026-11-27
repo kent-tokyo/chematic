@@ -130,3 +130,73 @@ def test_repair_stereo_clash_screen_success_failure_and_invalid_cutoff():
     failed = ring.repair_stereo_3d(ring.generate_3d_etkdg(), clash_cutoff=0.8)
     assert not failed["ok"] and failed["coordinates"] is None
     assert failed["clash_check"] == {"cutoff": 0.8, "status": "not_evaluated_repair_failed"}
+
+
+def test_alternative_stereo_repair_recovers_checked_development_case():
+    smiles = "CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1"
+    mol = chematic.from_smiles(smiles)
+    coords = mol.generate_3d_etkdg()
+    baseline = mol.repair_stereo_3d(coords, clash_cutoff=0.8)
+    assert not baseline["ok"] and baseline["clash_check"]["status"] == "rejected"
+    result = mol.repair_stereo_3d(coords, clash_cutoff=0.8, max_alternative_attempts=3)
+    assert result["ok"] and result["fully_verified"]
+    assert result["retry"]["attempted"] == 2
+    assert result["retry"]["selected_variant"] == 2
+    assert result["retry"]["clash_rejections"] == 1
+    assert result["clash_check"]["new"] == []
+    assert mol.stereo_3d_diagnostics(result["coordinates"])["violated"] == 0
+    repeat = mol.repair_stereo_3d(coords, clash_cutoff=0.8, max_alternative_attempts=3)
+    assert repeat == result
+    for a, b, *_ in mol.bond_table:
+        assert abs(math.dist(coords[a], coords[b]) -
+                   math.dist(result["coordinates"][a], result["coordinates"][b])) < 1e-10
+
+
+def test_alternative_stereo_repair_rejects_distorted_ligand_geometry():
+    smiles = "O=C1OC(c2ccccc2)=N[C@]1(Cc1ccccc1)SCc1ccccc1"
+    mol = chematic.from_smiles(smiles)
+    coords = mol.generate_3d_etkdg()
+    result = mol.repair_stereo_3d(coords, clash_cutoff=0.8, max_alternative_attempts=3)
+    assert not result["ok"] and result["coordinates"] is None
+    assert result["retry"]["tetrahedral_geometry_rejections"] == 3
+    with pytest.raises(ValueError, match="clash_cutoff is required"):
+        mol.repair_stereo_3d(coords, max_alternative_attempts=1)
+    with pytest.raises(ValueError, match="at most 16"):
+        mol.repair_stereo_3d(coords, clash_cutoff=0.8, max_alternative_attempts=17)
+
+
+def test_alternative_stereo_repair_agrees_with_rdkit_on_recovered_case():
+    Chem = pytest.importorskip("rdkit.Chem")
+    smiles = "CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1"
+    mol = chematic.from_smiles(smiles)
+    result = mol.repair_stereo_3d(mol.generate_3d_etkdg(), clash_cutoff=0.8,
+                                  max_alternative_attempts=3)
+    assert result["ok"]
+    reference = Chem.MolFromSmiles(smiles)
+    Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
+    expected = reference.GetAtomWithIdx(2).GetProp("_CIPCode")
+    conf = Chem.Conformer(reference.GetNumAtoms())
+    for index, xyz in enumerate(result["coordinates"]):
+        conf.SetAtomPosition(index, xyz)
+    reference.AddConformer(conf)
+    Chem.AssignStereochemistryFrom3D(reference, replaceExistingTags=True)
+    Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
+    assert reference.GetAtomWithIdx(2).GetProp("_CIPCode") == expected
+
+
+def test_distorted_prototype_illustrates_verifier_oracle_boundary():
+    Chem = pytest.importorskip("rdkit.Chem")
+    fixture = json.loads(Path(__file__).with_name("stereo_distorted_prototype_719.json").read_text())
+    mol = chematic.from_smiles(fixture["smiles"])
+    assert mol.stereo_3d_diagnostics(fixture["coords"])["atom_stereo"][0]["status"] == "satisfied"
+    reference = Chem.MolFromSmiles(fixture["smiles"])
+    Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
+    index = fixture["center"]
+    expected = reference.GetAtomWithIdx(index).GetProp("_CIPCode")
+    conf = Chem.Conformer(reference.GetNumAtoms())
+    for i, point in enumerate(fixture["coords"]):
+        conf.SetAtomPosition(i, point)
+    reference.AddConformer(conf)
+    Chem.AssignStereochemistryFrom3D(reference, replaceExistingTags=True)
+    Chem.AssignStereochemistry(reference, force=True, cleanIt=True)
+    assert reference.GetAtomWithIdx(index).GetProp("_CIPCode") != expected
