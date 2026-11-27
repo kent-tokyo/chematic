@@ -2,8 +2,8 @@
 //! RDKit perceives it as SP2 and types it `B_2` for UFF, even with single bonds only.
 
 use chematic_3d::{
-    Coords3D, add_hydrogens_with_coords, generate_and_minimize_dreiding, generate_coords_etkdg,
-    get_bond_angle_deg, minimize_uff,
+    Coords3D, add_hydrogens_with_coords, generate_and_minimize_dreiding, generate_coords,
+    generate_coords_etkdg, get_bond_angle_deg, minimize_uff,
 };
 use chematic_core::{AtomIdx, Molecule};
 
@@ -26,6 +26,38 @@ fn boron_angles(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
         }
     }
     angles
+}
+
+#[test]
+fn acyclic_trigonal_boron_branches_start_planar() {
+    // Cover a boron root, an already placed parent, and alternate atom orders.
+    for smiles in ["B(F)(F)F", "FB(F)F", "CB(C)C", "OB(O)O", "ClB(F)Br"] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let coords = generate_coords(&mol);
+        assert_angles(
+            smiles,
+            "initial placement",
+            &boron_angles(&mol, &coords),
+            120.0,
+            0.01,
+        );
+        let coords = generate_coords_etkdg(&mol);
+        assert_trigonal_planar(smiles, "ETKDG placement", &boron_angles(&mol, &coords));
+    }
+}
+
+#[test]
+fn development_boronic_acid_starts_with_planar_boron() {
+    // Exposed COD development record 2877; the aromatic attachment is already
+    // placed before the two acyclic B-O branches.
+    let smiles = "C[N@@H+](CCNc1ccc2c3c(cccc13)C(=O)N(CCOCCO)C2=O)Cc1ccccc1B(O)O";
+    let mol = chematic_smiles::parse(smiles).unwrap();
+    for (stage, coords) in [
+        ("initial placement", generate_coords(&mol)),
+        ("ETKDG placement", generate_coords_etkdg(&mol)),
+    ] {
+        assert_trigonal_planar(smiles, stage, &boron_angles(&mol, &coords));
+    }
 }
 
 fn assert_angles(smiles: &str, stage: &str, angles: &[f64], expected: f64, tolerance: f64) {

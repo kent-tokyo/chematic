@@ -643,6 +643,25 @@ fn dfs_place_connectivity_ordered(
     let bend_angle = PI - angle;
     let dir_bent = rotate_around_axis(incoming_dir, perp, bend_angle);
 
+    // A neutral, three-coordinate boron is planar. The generic tetrahedral
+    // azimuth spacing makes two branches only ~97° apart, even when their
+    // angles to the parent are both 120°. Restrict this placement to the
+    // tree case: ring systems have their own anchored geometry.
+    let trigonal_boron = super::dg::is_trigonal_boron(mol, current);
+    let placed_neighbor_count = if trigonal_boron {
+        mol.neighbors(current)
+            .filter(|(nb, _)| placed[nb.0 as usize])
+            .count()
+    } else {
+        0
+    };
+    let planar_boron = trigonal_boron
+        && unplaced_neighbors
+            .iter()
+            .all(|nb| !atom_to_system.contains_key(nb))
+        && ((placed_neighbor_count == 1 && unplaced_neighbors.len() == 2)
+            || (placed_neighbor_count == 0 && unplaced_neighbors.len() == 3));
+
     for (i, &nb) in unplaced_neighbors.iter().enumerate() {
         if placed[nb.0 as usize] {
             // Already placed by an earlier iteration of this same loop (a
@@ -690,7 +709,13 @@ fn dfs_place_connectivity_ordered(
         }
 
         let dihedral = (i as f64) * (2.0 * PI / 3.0);
-        let mut dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
+        let mut dir_final = if planar_boron && placed_neighbor_count == 0 {
+            Point3::new(dihedral.dcos(), dihedral.dsin(), 0.0)
+        } else if planar_boron {
+            rotate_around_axis(dir_bent, incoming_dir, (i as f64) * PI)
+        } else {
+            rotate_around_axis(dir_bent, incoming_dir, dihedral)
+        };
         if let Some(outward) =
             aromatic_outward_direction(mol, current, placed, coords, atom_to_system)
         {
