@@ -88,7 +88,8 @@ Rust/Python/Node/WASM 绑定属于稳定范围。3D、pKa/ADMET、IUPAC、Markus
 ## 开发
 
 ```bash
-cargo test --workspace --all-targets --locked
+cargo test --workspace --all-targets --locked --exclude chematic-py
+cargo test -p chematic-py --lib --no-default-features --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 

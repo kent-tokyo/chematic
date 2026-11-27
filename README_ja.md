@@ -89,7 +89,8 @@ IUPAC、Markush/polymer、CDXML編集、RDKit型APIは実験的または制限�
 ## 開発
 
 ```bash
-cargo test --workspace --all-targets --locked
+cargo test --workspace --all-targets --locked --exclude chematic-py
+cargo test -p chematic-py --lib --no-default-features --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
