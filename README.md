@@ -19,7 +19,7 @@ Python, Rust, Node.js, and browser applications share the same Rust core.
 
 ```bash
 pip install chematic
-cargo add chematic --features "smiles,perception,chem,3d,fp"
+cargo add chematic --features "smiles,perception,chem,threed,fp"
 npm install @kent-tokyo/chematic
 ```
 
