@@ -558,7 +558,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.
-    /// Returns the first atom added inside the branch, or `None` if empty.
+    /// Returns the first atom added inside the branch; an empty branch is an
+    /// error.
     fn parse_branch(
         &mut self,
         mol: &mut MoleculeBuilder,
@@ -578,13 +579,13 @@ impl<'a> Parser<'a> {
         if self.peek() != Some(b')') {
             return Err(SmilesError::MismatchedParentheses { pos: self.pos });
         }
+        // An empty branch, `C()` or `C(=)`, has no atom to attach: OpenSMILES
+        // and RDKit both reject it.
+        if mol.atom_count() == count_before {
+            return Err(SmilesError::UnexpectedCharacter { pos: self.pos });
+        }
         self.advance(); // consume ')'
-        let first_branch_atom = if mol.atom_count() > count_before {
-            Some(AtomIdx(count_before as u32))
-        } else {
-            None
-        };
-        Ok(first_branch_atom)
+        Ok(Some(AtomIdx(count_before as u32)))
     }
 
     /// Handle ring closure: close an existing open ring, or register a new one.
@@ -815,7 +816,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_organic_atom(&mut self) -> Result<Atom, SmilesError> {
-        let pos = self.pos;
         let first = self.advance().unwrap() as char;
 
         let symbol = if first == 'C' && self.peek() == Some(b'l') {
@@ -828,10 +828,8 @@ impl<'a> Parser<'a> {
             first.to_string()
         };
 
-        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
-            symbol: symbol.clone(),
-            pos,
-        })?;
+        // `try_parse_atom` only dispatches organic-subset letters here.
+        let element = Element::from_symbol(&symbol).expect("organic subset symbol");
 
         let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::organic(element);
@@ -840,24 +838,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_aromatic_organic(&mut self) -> Result<Atom, SmilesError> {
-        let pos = self.pos;
         let first = self.advance().unwrap() as char;
 
-        // Handle `se` and `as` written without brackets (rare but valid per spec)
-        let (symbol, _multi) = if first == 's' && self.peek() == Some(b'e') {
+        // Accept `se` written without brackets. `try_parse_atom` dispatches only
+        // `b c n o p s` here, so an unbracketed `as` never reaches this point.
+        let symbol = if first == 's' && self.peek() == Some(b'e') {
             self.advance();
-            ("Se".to_string(), true)
-        } else if first == 'a' && self.peek() == Some(b's') {
-            self.advance();
-            ("As".to_string(), true)
+            "Se".to_string()
         } else {
-            (first.to_ascii_uppercase().to_string(), false)
+            first.to_ascii_uppercase().to_string()
         };
 
-        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
-            symbol: symbol.clone(),
-            pos,
-        })?;
+        let element = Element::from_symbol(&symbol).expect("aromatic organic subset symbol");
 
         let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::aromatic(element);
