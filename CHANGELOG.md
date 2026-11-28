@@ -31,8 +31,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   systems and unsaturated non-aromatic rings (decalin was "cyclodecane"),
   enols and other unsaturated heteroatom compounds (`OC=C` was "ethanol"),
   branched groups on amines, thiols, haloalkanes, ethers and sulfides
-  (`CCOC(C)C` was "1-ethoxypropane"), and N-substituted amides (`CC(=O)NC`
-  was "ethanamide").
+  (`CCOC(C)C` was "1-ethoxypropane"), isopropyl and tert-butyl branches
+  (`CCCC(C(C)C)CCC` was "4-propylheptane"), N-substituted amides
+  (`CC(=O)NC` was "ethanamide"), phenols and anilines with two further
+  substituents ("1-hydroxy-2,4-dimethylbenzene"), and chains longer than
+  20 carbons.
 
 - `chematic_iupac::name` numbers branched alcohols from the hydroxyl end
   (`CC(C)CC(C)O` is 4-methylpentan-2-ol, not "2-methyl-pentan-2-ol") and
@@ -40,7 +43,13 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   ("2-methylpropan-2-ol"). Tertiary amines list N-substituents alphabetically
   ("N-ethyl-N-methylpropanamine"), symmetric sulfides use "di"
   ("dimethyl sulfide"), and haloalkane locants use the first point of
-  difference ("1,2,5-trichloropentane").
+  difference ("1,2,5-trichloropentane"). Four or more identical groups use
+  tetra/penta/hexa ("2,2,3,3-tetramethylbutane", was "2,2,3,3-?methyl..."),
+  stems past C10 are spelled ("undecanoic acid", was "longanoic acid"), and
+  identical hydroxy or amino groups on benzene take a multiplied suffix
+  ("benzene-1,4-diol", was "4-hydroxyphenol"). Trisubstituted benzene names
+  break locant ties alphabetically, so they no longer vary between runs
+  ("1-chloro-3,5-dimethylbenzene").
 
 ## [1.2.5] - 2026-11-26
 

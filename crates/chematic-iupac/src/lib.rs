@@ -78,6 +78,9 @@ pub fn name(mol: &Molecule) -> Result<String, IupacError> {
 // crate root they can see this private `Namer` struct.
 // ---------------------------------------------------------------------------
 
+/// Longest carbon count the stem tables spell (icosane).
+pub(crate) const MAX_CARBONS: usize = 20;
+
 struct Namer<'a> {
     mol: &'a Molecule,
 }
@@ -102,6 +105,9 @@ impl<'a> Namer<'a> {
             .collect();
 
         let carbons: Vec<AtomIdx> = atoms_of(mol, 6);
+        if carbons.len() > MAX_CARBONS {
+            return Err(IupacError::NotSupported);
+        }
         let o_atoms: Vec<AtomIdx> = atoms_of(mol, 8);
         let n_atoms: Vec<AtomIdx> = atoms_of(mol, 7);
         let s_atoms: Vec<AtomIdx> = atoms_of(mol, 16);

@@ -2,7 +2,7 @@
 //! branched forms.
 
 use crate::helpers::{
-    alkane_stem, alkane_suffix, alkene_suffix, alkyne_suffix, count_c_chain,
+    alkane_stem, alkane_suffix, alkene_suffix, alkyne_suffix, branch_is_linear, count_c_chain,
     find_longest_c_chain_candidates, format_substituents, unsaturation_locant,
 };
 use crate::{IupacError, Namer};
@@ -93,7 +93,7 @@ impl<'a> Namer<'a> {
                 for (nb, _) in mol.neighbors(chain_c) {
                     if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
                         let sub_len = count_c_chain(mol, nb, chain_c);
-                        if sub_len > 4 {
+                        if sub_len > 4 || !branch_is_linear(mol, nb, chain_c) {
                             return None;
                         }
                         subs.push((position, sub_len));
@@ -169,7 +169,7 @@ impl<'a> Namer<'a> {
 
         Ok(format!(
             "{}{}",
-            format_substituents(&best_subs),
+            format_substituents(&best_subs)?,
             alkane_suffix(n)
         ))
     }

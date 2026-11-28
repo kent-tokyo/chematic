@@ -67,7 +67,7 @@ impl<'a> Namer<'a> {
         let prefix = if subs.is_empty() {
             String::new()
         } else {
-            format_substituents(&subs)
+            format_substituents(&subs)?
         };
         Ok(format!("{}{}anamide", prefix, alkane_stem(n)))
     }

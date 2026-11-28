@@ -3,7 +3,7 @@
 
 use crate::helpers::{
     alkane_base, alkane_stem, alkane_suffix, anchor_chain_and_substituents, attached_at_chain_ends,
-    count_c_chain, find_longest_c_chain, format_substituents,
+    branch_is_linear, count_c_chain, find_longest_c_chain, format_substituents,
 };
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
@@ -89,7 +89,7 @@ impl<'a> Namer<'a> {
             let prefix = if subs.is_empty() {
                 String::new()
             } else {
-                format_substituents(&subs)
+                format_substituents(&subs)?
             };
             return Ok(format!("{}{}anal", prefix, alkane_stem(n)));
         }
@@ -116,7 +116,7 @@ impl<'a> Namer<'a> {
             for (nb, _) in mol.neighbors(chain_c) {
                 if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
                     let sub_len = count_c_chain(mol, nb, chain_c);
-                    if sub_len > 4 {
+                    if sub_len > 4 || !branch_is_linear(mol, nb, chain_c) {
                         return Err(IupacError::NotSupported);
                     }
                     let adj_pos = if reversed { n + 1 - position } else { position };
@@ -127,7 +127,7 @@ impl<'a> Namer<'a> {
         let prefix = if subs.is_empty() {
             String::new()
         } else {
-            format_substituents(&subs)
+            format_substituents(&subs)?
         };
         Ok(format!("{}{}-{}-one", prefix, alkane_base(n), pos))
     }
@@ -236,7 +236,7 @@ impl<'a> Namer<'a> {
             } else {
                 format!(
                     "{}{}anoate",
-                    format_substituents(&subs),
+                    format_substituents(&subs)?,
                     alkane_stem(acid_n)
                 )
             };
@@ -252,7 +252,7 @@ impl<'a> Namer<'a> {
             } else {
                 Ok(format!(
                     "{}{}anoic acid",
-                    format_substituents(&subs),
+                    format_substituents(&subs)?,
                     alkane_stem(n)
                 ))
             }
@@ -295,7 +295,7 @@ impl<'a> Namer<'a> {
             for (nb, _) in self.mol.neighbors(chain_c) {
                 if all_c_set.contains(&nb) && !chain_set.contains(&nb) {
                     let sub_len = count_c_chain(self.mol, nb, chain_c);
-                    if sub_len > 4 {
+                    if sub_len > 4 || !branch_is_linear(self.mol, nb, chain_c) {
                         return Err(IupacError::NotSupported);
                     }
                     subs.push((position, sub_len));
@@ -319,7 +319,7 @@ impl<'a> Namer<'a> {
             subs
         };
         best.sort_unstable();
-        let prefix = format_substituents(&best);
+        let prefix = format_substituents(&best)?;
 
         Ok(format!("{}{}-{}-ol", prefix, alkane_base(n), pos))
     }

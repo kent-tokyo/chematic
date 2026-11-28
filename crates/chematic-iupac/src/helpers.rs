@@ -1,5 +1,6 @@
 //! Shared graph/naming helpers used by every compound-class handler module.
 
+use crate::IupacError;
 use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::collections::{HashSet, VecDeque};
 
@@ -27,6 +28,25 @@ pub(crate) fn count_c_chain(mol: &Molecule, start: AtomIdx, blocked: AtomIdx) ->
         }
     }
     visited.len()
+}
+
+/// True when the carbon branch that starts at `start` (entered from
+/// `blocked`) is an unbranched chain, so a 3- or 4-carbon branch can be
+/// spelled "propyl"/"butyl" rather than needing "propan-2-yl" or
+/// "tert-butyl".
+pub(crate) fn branch_is_linear(mol: &Molecule, start: AtomIdx, blocked: AtomIdx) -> bool {
+    let (mut prev, mut cur) = (blocked, start);
+    loop {
+        let mut next = mol
+            .neighbors(cur)
+            .map(|(nb, _)| nb)
+            .filter(|&nb| nb != prev && mol.atom(nb).element.atomic_number() == 6);
+        match (next.next(), next.next()) {
+            (None, _) => return true,
+            (Some(nb), None) => (prev, cur) = (cur, nb),
+            (Some(_), Some(_)) => return false,
+        }
+    }
 }
 
 /// Number of carbon neighbors of `c`.
@@ -275,7 +295,7 @@ pub(crate) fn anchor_chain_and_substituents(
             for (nb, _) in mol.neighbors(chain_c) {
                 if c_set.contains(&nb) && !chain_set.contains(&nb) {
                     let sub_len = count_c_chain(mol, nb, chain_c);
-                    if sub_len > 4 {
+                    if sub_len > 4 || !branch_is_linear(mol, nb, chain_c) {
                         oversized = true;
                         break;
                     }
@@ -301,7 +321,7 @@ pub(crate) fn anchor_chain_and_substituents(
 }
 
 /// Format substituents as an IUPAC prefix string ("2-methyl", "2,2-dimethyl", etc.).
-pub(crate) fn format_substituents(subs: &[(usize, usize)]) -> String {
+pub(crate) fn format_substituents(subs: &[(usize, usize)]) -> Result<String, IupacError> {
     // Group by alkyl name; sort alphabetically.
     let mut groups: std::collections::BTreeMap<&str, Vec<usize>> =
         std::collections::BTreeMap::new();
@@ -311,7 +331,7 @@ pub(crate) fn format_substituents(subs: &[(usize, usize)]) -> String {
             2 => "ethyl",
             3 => "propyl",
             4 => "butyl",
-            _ => continue,
+            _ => return Err(IupacError::NotSupported),
         };
         groups.entry(alkyl).or_default().push(pos);
     }
@@ -324,15 +344,10 @@ pub(crate) fn format_substituents(subs: &[(usize, usize)]) -> String {
             .map(|p| p.to_string())
             .collect::<Vec<_>>()
             .join(",");
-        let mult = match positions.len() {
-            1 => String::new(),
-            2 => "di".to_string(),
-            3 => "tri".to_string(),
-            _ => "?".to_string(),
-        };
+        let mult = multiplier(positions.len()).ok_or(IupacError::NotSupported)?;
         parts.push(format!("{}-{}{}", locants, mult, alkyl));
     }
-    parts.join("-")
+    Ok(parts.join("-"))
 }
 
 /// Return the IUPAC locant (1-based, lowest) of a double or triple bond on the chain.
@@ -387,10 +402,16 @@ pub(crate) fn ring_order_traversal(mol: &Molecule, ring_atoms: &HashSet<AtomIdx>
 
 /// Find the minimum IUPAC locant assignment for `attach_points` on a ring.
 /// Returns sorted `(locant, attach_atom)` pairs.
+/// Lowest-locant numbering of `attach_points` around the ring. `names[i]` is
+/// the prefix cited for `attach_points[i]`; when two numberings give the same
+/// locant set, the one giving the lower locant to the substituent cited first
+/// in alphabetical order wins (IUPAC P-31.1.4.3.4), so the result does not
+/// depend on hash iteration order.
 pub(crate) fn best_benzene_locants(
     mol: &Molecule,
     ring_atoms: &HashSet<AtomIdx>,
     attach_points: &[AtomIdx],
+    names: &[&str],
 ) -> Vec<(usize, AtomIdx)> {
     let ring_order = ring_order_traversal(mol, ring_atoms);
     let ring_n = ring_order.len();
@@ -402,7 +423,9 @@ pub(crate) fn best_benzene_locants(
         .iter()
         .map(|a| ring_order.iter().position(|r| r == a).unwrap_or(0))
         .collect();
-    let mut best_locs: Option<Vec<usize>> = None;
+    // (sorted locant set, (prefix, locant) pairs in citation order)
+    type NumberingKey<'n> = (Vec<usize>, Vec<(&'n str, usize)>);
+    let mut best_locs: Option<NumberingKey> = None;
     let mut best_assignment: Vec<(usize, AtomIdx)> = Vec::new();
     for start in 0..n {
         for &reverse in &[false, true] {
@@ -418,6 +441,15 @@ pub(crate) fn best_benzene_locants(
             }
             assignment.sort_by_key(|&(l, _)| l);
             let locs: Vec<usize> = assignment.iter().map(|&(l, _)| l).collect();
+            let mut cited: Vec<(&str, usize)> = assignment
+                .iter()
+                .map(|&(l, a)| {
+                    let i = attach_points.iter().position(|&p| p == a).unwrap_or(0);
+                    (names[i], l)
+                })
+                .collect();
+            cited.sort_unstable();
+            let locs = (locs, cited);
             let is_better = best_locs.as_ref().is_none_or(|b| locs < *b);
             if is_better {
                 best_locs = Some(locs);
@@ -455,6 +487,19 @@ pub(crate) fn count_components(mol: &Molecule) -> usize {
     count
 }
 
+/// Multiplying prefix for `n` identical groups ("", "di", "tri", ...).
+pub(crate) fn multiplier(n: usize) -> Option<&'static str> {
+    Some(match n {
+        1 => "",
+        2 => "di",
+        3 => "tri",
+        4 => "tetra",
+        5 => "penta",
+        6 => "hexa",
+        _ => return None,
+    })
+}
+
 /// Return the alkyl group name prefix (e.g. 1 → "methyl", 2 → "ethyl").
 pub(crate) fn alkyl_prefix(n: usize) -> String {
     format!("{}yl", alkane_stem(n))
@@ -472,7 +517,19 @@ pub(crate) fn alkane_stem(n: usize) -> &'static str {
         8 => "oct",
         9 => "non",
         10 => "dec",
-        _ => "long",
+        11 => "undec",
+        12 => "dodec",
+        13 => "tridec",
+        14 => "tetradec",
+        15 => "pentadec",
+        16 => "hexadec",
+        17 => "heptadec",
+        18 => "octadec",
+        19 => "nonadec",
+        20 => "icos",
+        // `Namer::name` refuses molecules with more than MAX_CARBONS carbons,
+        // so no chain reaches this arm.
+        _ => "",
     }
 }
 
@@ -519,29 +576,7 @@ pub(crate) fn alkane_base(n: usize) -> String {
 }
 
 pub(crate) fn alkane_suffix(n: usize) -> String {
-    match n {
-        1 => "methane".into(),
-        2 => "ethane".into(),
-        3 => "propane".into(),
-        4 => "butane".into(),
-        5 => "pentane".into(),
-        6 => "hexane".into(),
-        7 => "heptane".into(),
-        8 => "octane".into(),
-        9 => "nonane".into(),
-        10 => "decane".into(),
-        11 => "undecane".into(),
-        12 => "dodecane".into(),
-        13 => "tridecane".into(),
-        14 => "tetradecane".into(),
-        15 => "pentadecane".into(),
-        16 => "hexadecane".into(),
-        17 => "heptadecane".into(),
-        18 => "octadecane".into(),
-        19 => "nonadecane".into(),
-        20 => "icosane".into(),
-        _ => format!("{n}alkane"),
-    }
+    format!("{}ane", alkane_stem(n))
 }
 
 pub(crate) fn alkene_suffix(n: usize) -> String {
