@@ -191,10 +191,7 @@ impl<'a> Namer<'a> {
         // Count the total C chain (nitrile C + alkyl chain).
         // count_c_chain gives all C reachable from nitrile_c without crossing N.
         let n_carbons = count_c_chain(mol, nitrile_c, n_idx);
-        // n_carbons already includes the nitrile carbon itself.
-        if n_carbons == 0 {
-            return Err(IupacError::NotSupported);
-        }
+        // n_carbons already includes the nitrile carbon itself, so it is >= 1.
         // Verify no branching on the C chain
         let c_set: std::collections::HashSet<AtomIdx> = carbons.iter().copied().collect();
         for &c in carbons {

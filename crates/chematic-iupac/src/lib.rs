@@ -255,13 +255,8 @@ impl<'a> Namer<'a> {
                 if het_elements.len() != 1 {
                     return Err(IupacError::NotSupported);
                 }
-                let prefix = match het_elements.iter().next().copied().unwrap() {
-                    9 => "fluoro",
-                    17 => "chloro",
-                    35 => "bromo",
-                    53 => "iodo",
-                    _ => return Err(IupacError::NotSupported),
-                };
+                let an = het_elements.iter().next().copied().unwrap_or(0);
+                let prefix = helpers::halogen_prefix(an).ok_or(IupacError::NotSupported)?;
                 self.name_haloalkane(carbons, halogens, prefix)
             }
             _ => Err(IupacError::NotSupported),

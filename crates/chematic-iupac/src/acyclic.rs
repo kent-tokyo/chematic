@@ -100,9 +100,6 @@ impl<'a> Namer<'a> {
                     }
                 }
             }
-            if subs.is_empty() {
-                return None;
-            }
             let subs_rev: Vec<(usize, usize)> =
                 subs.iter().map(|&(pos, len)| (n + 1 - pos, len)).collect();
             let first_fwd = subs.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
@@ -128,10 +125,9 @@ impl<'a> Namer<'a> {
         let candidates = find_longest_c_chain_candidates(mol, carbons);
         let mut best: Option<Best> = None;
         for chain in &candidates {
+            // A branched molecule has at least 4 carbons, so every candidate
+            // chain has at least 3 and at least one substituent.
             let chain_len = chain.len();
-            if chain_len < 2 {
-                continue;
-            }
             let Some(subs) = subs_for(chain) else {
                 continue;
             };
