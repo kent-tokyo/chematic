@@ -81,11 +81,11 @@ Installation: `pip install chematic`, `cargo add chematic`, or
 | A Rust service or CLI | [Rust server guide](use-cases/rust-server.md) |
 | An MCP-enabled agent | [AI-assisted analysis](use-cases/ai-drug-discovery.md) |
 | A reproducible research workflow | [Researcher guide](reference/researchers.md) |
-| A migration from RDKit | [RDKit migration guide](reference/rdkit-migration.md) |
+| A migration from RDKit | [Check compatibility before migrating](reference/rdkit-migration.md), then [translate RDKit code](reference/rdkit_cheatsheet.md) |
 
 ## Release verification
 
-The [validation report](reference/validation.md) links v1.2.4 publication
+The [validation report](reference/validation.md) links v1.2.5 publication
 checks, wheel tests, and versioned benchmarks. See the [compatibility scope](reference/compatibility-scope.md)
 for supported inputs and the [Cleanup migration note](reference/cleanup-migration.md)
 for checked Cleanup error handling.

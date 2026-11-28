@@ -1,0 +1,10 @@
+name = "kekule"
+version = "0.1.0"
+defaultTargets = ["kekule-check"]
+
+[[lean_lib]]
+name = "Kekule"
+
+[[lean_exe]]
+name = "kekule-check"
+root = "Main"

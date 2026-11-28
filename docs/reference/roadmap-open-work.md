@@ -2,7 +2,7 @@
 
 The [CHANGELOG](https://github.com/kent-tokyo/chematic/blob/main/CHANGELOG.md)
 tracks completed changes. The [validation report](validation.md) records
-published v1.2.4 and links the dated evidence.
+published v1.2.5 and links the dated evidence.
 
 ## Release and compatibility
 
@@ -83,15 +83,9 @@ broaden the supported domain.
 
 ## Accuracy packages
 
-| Package | State |
-|---|---|
-| A0 Evaluation contract | Complete |
-| A1 Perception and descriptors | Active |
-| A2 Stereo and identity | Active |
-| A3 Fingerprints and retrieval | Maintenance |
-| A4 Workflows and interchange | Active |
-| A5 Independent adjudication | External |
-| A6 3D and force fields | Experimental |
+The state of each package (A0 to A6) is kept in one place, the
+[roadmap's accuracy package table](https://github.com/kent-tokyo/chematic/blob/main/ROADMAP.md#accuracy-packages).
+This ledger lists what remains open and the rule for closing it.
 
 ## Completion rule
 

@@ -366,6 +366,25 @@ mod tests {
     }
 
     #[test]
+    fn client_meta_shape_errors_are_reported() {
+        assert!(parse_client_meta(&json!({ "_meta": [] })).is_err());
+        assert!(
+            parse_client_meta(&json!({ "_meta": {} }))
+                .unwrap()
+                .is_none()
+        );
+        let caps_not_object = json!({
+            "_meta": {
+                META_PROTOCOL_VERSION: MODERN_PROTOCOL_VERSION,
+                META_CLIENT_CAPABILITIES: true
+            }
+        });
+        let message = parse_client_meta(&caps_not_object).unwrap_err();
+        assert!(message.contains("must be an object"), "{message}");
+        assert!(parse_client_meta(&modern_meta_json()).unwrap().is_some());
+    }
+
+    #[test]
     fn classify_discover_is_always_modern() {
         assert_eq!(
             classify_dialect("server/discover", &json!({})).unwrap(),
