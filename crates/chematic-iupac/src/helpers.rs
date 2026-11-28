@@ -29,6 +29,26 @@ pub(crate) fn count_c_chain(mol: &Molecule, start: AtomIdx, blocked: AtomIdx) ->
     visited.len()
 }
 
+/// Number of carbon neighbors of `c`.
+pub(crate) fn carbon_degree(mol: &Molecule, c: AtomIdx) -> usize {
+    mol.neighbors(c)
+        .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
+        .count()
+}
+
+/// True when no carbon has more than two carbon neighbors, i.e. every carbon
+/// chain in the molecule is a straight chain.
+pub(crate) fn carbons_unbranched(mol: &Molecule, carbons: &[AtomIdx]) -> bool {
+    carbons.iter().all(|&c| carbon_degree(mol, c) <= 2)
+}
+
+/// True when each of `attach` sits at the end of its carbon chain (at most
+/// one carbon neighbor), so a chain hanging off a heteroatom is an n-alkyl
+/// group rather than, say, isopropyl.
+pub(crate) fn attached_at_chain_ends(mol: &Molecule, attach: &[AtomIdx]) -> bool {
+    attach.iter().all(|&c| carbon_degree(mol, c) <= 1)
+}
+
 /// Find the longest carbon chain in a C-subgraph using two-pass BFS.
 ///
 /// Returns the sequence of AtomIdx forming the longest simple path.

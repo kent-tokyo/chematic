@@ -16,7 +16,7 @@
 
 #![forbid(unsafe_code)]
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::collections::HashSet;
 
 mod acyclic;
@@ -134,12 +134,22 @@ impl<'a> Namer<'a> {
             if any_aromatic {
                 return self.name_aromatic_ring(&ring_atoms);
             }
+            // The non-aromatic ring namers below only spell saturated parents
+            // (cycloalkane, cycloalkanol, azacycles, spiro/bicyclo alkanes).
+            // A C=C or C=O anywhere would be silently dropped from the name.
+            if mol.bonds().any(|(_, b)| b.order != BondOrder::Single) {
+                return Err(IupacError::NotSupported);
+            }
             let only_oxygen = het_elements.len() == 1 && het_elements.contains(&8);
             let only_nitrogen = het_elements.len() == 1 && het_elements.contains(&7);
             let n_and_o =
                 het_elements.len() == 2 && het_elements.contains(&7) && het_elements.contains(&8);
             // Non-aromatic ring: supported heteroatom patterns only.
             if !het_elements.is_empty() && !only_oxygen && !only_nitrogen && !n_and_o {
+                return Err(IupacError::NotSupported);
+            }
+            // The heteroatom ring namers below are monocyclic only.
+            if !het_elements.is_empty() && rings.rings().len() != 1 {
                 return Err(IupacError::NotSupported);
             }
             if only_oxygen {
@@ -157,7 +167,24 @@ impl<'a> Namer<'a> {
             {
                 return Ok(name);
             }
+            // Fused and other polycyclic skeletons have no namer: the
+            // monocyclic namer would call decalin "cyclodecane".
+            if rings.rings().len() != 1 {
+                return Err(IupacError::NotSupported);
+            }
             return self.name_cycloalkane(&ring_atoms, &carbons);
+        }
+
+        // The acyclic heteroatom namers spell saturated carbon skeletons only;
+        // an enol such as `OC=C` would otherwise come out as "ethanol".
+        if !het_elements.is_empty()
+            && mol.bonds().any(|(_, b)| {
+                b.order != BondOrder::Single
+                    && mol.atom(b.atom1).element.atomic_number() == 6
+                    && mol.atom(b.atom2).element.atomic_number() == 6
+            })
+        {
+            return Err(IupacError::NotSupported);
         }
 
         // Acyclic dispatch on heteroatom composition.

@@ -777,10 +777,6 @@ impl<'a> Namer<'a> {
         if sz == 6 && n_n == 1 && n_o == 1 {
             return Ok("morpholine".into());
         }
-        // Piperazine: 6-membered ring, 4C + 2N
-        if sz == 6 && n_n == 2 && n_o == 0 {
-            return Ok("piperazine".into());
-        }
         Err(IupacError::NotSupported)
     }
 }

@@ -2,8 +2,8 @@
 //! carboxylic acids, esters.
 
 use crate::helpers::{
-    alkane_base, alkane_stem, alkane_suffix, anchor_chain_and_substituents, count_c_chain,
-    find_longest_c_chain, format_substituents,
+    alkane_base, alkane_stem, alkane_suffix, anchor_chain_and_substituents, attached_at_chain_ends,
+    count_c_chain, find_longest_c_chain, format_substituents,
 };
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
@@ -154,6 +154,12 @@ impl<'a> Namer<'a> {
         }) {
             return Err(IupacError::NotSupported);
         }
+        // Both sides must be n-alkyl chains joined to O at C1: `CCOC(C)C` is
+        // 2-ethoxypropane, which the "1-alkoxyalkane" spelling below cannot
+        // express.
+        if !attached_at_chain_ends(mol, &[side_a, side_b]) {
+            return Err(IupacError::NotSupported);
+        }
         let len_a = count_c_chain(mol, side_a, o_idx);
         let len_b = count_c_chain(mol, side_b, o_idx);
         let (alkoxy_len, parent_len) = if len_a <= len_b {
@@ -297,26 +303,23 @@ impl<'a> Namer<'a> {
             }
         }
 
-        // Re-number subs with the same locant direction as OH position.
-        if pos_fwd > n + 1 - pos_fwd {
-            // Reverse direction was chosen for OH; re-number subs accordingly.
-            subs = subs.iter().map(|&(p, l)| (n + 1 - p, l)).collect();
-        }
-
-        let prefix = if subs.is_empty() {
-            String::new()
+        // The OH carbon gets the lowest locant (IUPAC P-31.1.4). Number the
+        // substituents in that same direction; only when the OH sits in the
+        // middle of the chain do the substituent locants pick the direction.
+        let reversed: Vec<(usize, usize)> = subs.iter().map(|&(p, l)| (n + 1 - p, l)).collect();
+        let mut best = if pos_fwd > n + 1 - pos_fwd {
+            reversed
+        } else if pos_fwd == n + 1 - pos_fwd {
+            let mut fwd_locs: Vec<usize> = subs.iter().map(|&(p, _)| p).collect();
+            let mut rev_locs: Vec<usize> = reversed.iter().map(|&(p, _)| p).collect();
+            fwd_locs.sort_unstable();
+            rev_locs.sort_unstable();
+            if rev_locs < fwd_locs { reversed } else { subs }
         } else {
-            subs.sort_unstable();
-            let subs_rev: Vec<(usize, usize)> = subs.iter().map(|&(p, l)| (n + 1 - p, l)).collect();
-            let first_fwd = subs.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
-            let first_rev = subs_rev.iter().map(|&(p, _)| p).min().unwrap_or(usize::MAX);
-            let best = if first_fwd <= first_rev {
-                subs.clone()
-            } else {
-                subs_rev
-            };
-            format!("{}-", format_substituents(&best))
+            subs
         };
+        best.sort_unstable();
+        let prefix = format_substituents(&best);
 
         Ok(format!("{}{}-{}-ol", prefix, alkane_base(n), pos))
     }

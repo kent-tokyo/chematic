@@ -26,6 +26,22 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   line break (`<n` then `id="..."` on the next line), as ChemDraw writes them;
   such files used to parse as an empty molecule without an error.
 
+- `chematic_iupac::name` no longer returns wrong names for structures outside
+  its scope; it returns `NotSupported` instead. Affected: fused and cage ring
+  systems and unsaturated non-aromatic rings (decalin was "cyclodecane"),
+  enols and other unsaturated heteroatom compounds (`OC=C` was "ethanol"),
+  branched groups on amines, thiols, haloalkanes, ethers and sulfides
+  (`CCOC(C)C` was "1-ethoxypropane"), and N-substituted amides (`CC(=O)NC`
+  was "ethanamide").
+
+- `chematic_iupac::name` numbers branched alcohols from the hydroxyl end
+  (`CC(C)CC(C)O` is 4-methylpentan-2-ol, not "2-methyl-pentan-2-ol") and
+  writes substituent prefixes without a hyphen before the parent
+  ("2-methylpropan-2-ol"). Tertiary amines list N-substituents alphabetically
+  ("N-ethyl-N-methylpropanamine"), symmetric sulfides use "di"
+  ("dimethyl sulfide"), and haloalkane locants use the first point of
+  difference ("1,2,5-trichloropentane").
+
 ## [1.2.5] - 2026-11-26
 
 ### Fixed
