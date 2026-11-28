@@ -840,7 +840,10 @@ jobs:
     # Keep one stable required check while the implementation jobs evolve.
     # Release qualification waits for the entire called CI workflow, including
     # the slower artifact and cross-platform lanes below.
-    if: ${{ always() }}
+    # !cancelled() rather than always(): a superseded run must not hold the
+    # concurrency group while its gate waits for a runner. Failed or skipped
+    # lanes still reach the gate and fail it.
+    if: ${{ !cancelled() }}
     needs:
       - test-python-stubs
       - test
