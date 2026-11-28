@@ -110,7 +110,7 @@ fn reference(body: &str) -> Option<char> {
     char::from_u32(value)
 }
 
-fn unescape_xml(source: &str) -> String {
+pub(crate) fn unescape_xml(source: &str) -> String {
     if !source.contains('&') {
         return source.to_owned();
     }

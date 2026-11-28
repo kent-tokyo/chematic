@@ -130,7 +130,7 @@ impl std::error::Error for CmlError {}
 
 mod attributes;
 mod lexical;
-pub(crate) use attributes::parse_xml_attrs;
+pub(crate) use attributes::{parse_xml_attrs, unescape_xml};
 use lexical::split_cml_tags;
 
 // ---------------------------------------------------------------------------
