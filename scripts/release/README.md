@@ -6,7 +6,7 @@ tagged source, builds and publishes packages, and creates the GitHub Release.
 ## Before tagging
 
 1. Compare public Rust, Python, WASM declarations and shared JSON contracts
-   with the previous published tag. For v1.2.5, use `v1.2.4`. Check
+   with the previous published tag. For v1.2.6, use `v1.2.5`. Check
    Cleanup and the new checked conformer bindings against their documented
    contracts. See [Cleanup migration](../../docs/reference/cleanup-migration.md)
    and [checked ensembles](../../docs/reference/checked-conformer-ensembles.md).

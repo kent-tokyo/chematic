@@ -6,8 +6,8 @@ published v1.2.5 and links the dated evidence.
 
 ## Release and compatibility
 
-- Compare the v1.2.5 candidate's Rust, Python and WASM public APIs against
-  v1.2.4, including the [Cleanup contract](cleanup-migration.md).
+- Compare the v1.2.6 candidate's Rust, Python and WASM public APIs against
+  v1.2.5, including the [Cleanup contract](cleanup-migration.md).
 - Qualify the exact release artifacts across Rust, Python and WASM. Preserve
   comparator versions and typed refusals when reporting results.
 
