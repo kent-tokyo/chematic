@@ -48,14 +48,58 @@ def site_link_errors() -> list[str]:
     return errors
 
 
+# `cargo add chematic --features "a,b"` and `chematic = { ..., features = [...] }`.
+CARGO_ADD_FEATURES = re.compile(r'cargo add chematic(?:@\S+)?\s+(?:--features|-F)\s+"?([^"\n`]+)"?')
+MANIFEST_FEATURES = re.compile(r'^chematic\s*=\s*\{[^}\n]*features\s*=\s*\[([^\]\n]*)\]', re.MULTILINE)
+
+
+def facade_features() -> set[str]:
+    """Feature names defined in the `chematic` facade crate's [features] table."""
+    manifest = (ROOT / "crates" / "chematic" / "Cargo.toml").read_text(encoding="utf-8")
+    table = manifest.split("[features]", 1)[1]
+    table = re.split(r"^\[", table, maxsplit=1, flags=re.MULTILINE)[0]
+    return set(re.findall(r"^([A-Za-z0-9_-]+)\s*=", table, re.MULTILINE))
+
+
+def feature_example_errors() -> list[str]:
+    """Install examples must use feature names the facade crate defines:
+    `cargo add` rejects an unknown name (README once showed `3d`, not `threed`)."""
+    known = facade_features()
+    paths = sorted(ROOT.glob("README*.md")) + sorted((ROOT / "docs").rglob("*.md"))
+    errors = []
+    for path in paths:
+        relative = path.relative_to(ROOT)
+        if relative.parts[:2] == ("docs", "archive"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        names = [n for m in CARGO_ADD_FEATURES.findall(text) for n in re.split(r"[\s,]+", m)]
+        names += [n for m in MANIFEST_FEATURES.findall(text) for n in re.findall(r'"([^"]+)"', m)]
+        for name in names:
+            if name and name not in known:
+                errors.append(f"{relative}: unknown chematic feature `{name}` in install example")
+    return errors
+
+
+def validation_report_errors(release_version: str) -> list[str]:
+    """The validation report must not describe the current release as unpublished."""
+    text = (ROOT / "docs" / "reference" / "validation.md").read_text(encoding="utf-8")
+    if f"## v{release_version} preparation" in text:
+        return [
+            f"docs/reference/validation.md: v{release_version} is the current release "
+            "but is still headed as preparation"
+        ]
+    return []
+
+
 def main() -> int:
-    errors: list[str] = site_link_errors()
+    errors: list[str] = site_link_errors() + feature_example_errors()
     cargo = (ROOT / "Cargo.toml").read_text(encoding="utf-8")
     version_match = re.search(r'^version\s*=\s*"([^"]+)"\s*$', cargo, re.MULTILINE)
     if version_match is None:
         print("Release documentation consistency failure: workspace version is missing", file=sys.stderr)
         return 1
     release_version = version_match.group(1)
+    errors += validation_report_errors(release_version)
 
     release_headings = {
         Path("README.md"): f"### v{release_version} release boundary",
@@ -106,7 +150,7 @@ def main() -> int:
         return 1
     print(
         "Release documentation consistency OK: version, product name, key name, gate "
-        "references and site-internal links"
+        "references, install feature names and site-internal links"
     )
     return 0
 

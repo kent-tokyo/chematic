@@ -57,7 +57,6 @@ docs/mcp/
 docs/release/
 docs/verification_coverage.md
 docs/rdkit_compat.md
-validation/README.md
 validation/results/*_report.md
 scripts/mmff94_provenance/
 
@@ -69,3 +68,6 @@ validation/rdkit/README.md
 validation/rdkit_issues/README.md
 validation/results/*.md
 validation/results/*.log
+
+# LLVM coverage raw profiles (cargo llvm-cov / instrumented test runs)
+*.profraw

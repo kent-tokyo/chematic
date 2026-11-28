@@ -105,9 +105,8 @@ impl Connection {
             Some(_) => {}
         }
         let client_meta = if era == ProtocolEra::Modern20260728 {
-            protocol::parse_client_meta(params).map_err(|message| {
-                protocol::error_response(id, protocol::INVALID_PARAMS, message, None)
-            })?
+            // `classify_dialect` has already parsed and validated `_meta`.
+            protocol::parse_client_meta(params).unwrap_or(None)
         } else {
             None
         };
@@ -172,24 +171,19 @@ fn parse_frame(line: &str) -> Result<Value, Value> {
 }
 
 fn bound_response(id: &Value, response: Value) -> Value {
-    match serde_json::to_vec(&response) {
-        Ok(bytes) if bytes.len() <= protocol::MAX_RESPONSE_BYTES => response,
-        Ok(_) => protocol::error_response(
-            id,
-            protocol::INTERNAL_ERROR,
-            format!(
-                "response exceeds maximum size of {} bytes",
-                protocol::MAX_RESPONSE_BYTES
-            ),
-            None,
-        ),
-        Err(_) => protocol::error_response(
-            id,
-            protocol::INTERNAL_ERROR,
-            "response serialization failed",
-            None,
-        ),
+    // A `Value` always serializes; its byte length is the size on the wire.
+    if response.to_string().len() <= protocol::MAX_RESPONSE_BYTES {
+        return response;
     }
+    protocol::error_response(
+        id,
+        protocol::INTERNAL_ERROR,
+        format!(
+            "response exceeds maximum size of {} bytes",
+            protocol::MAX_RESPONSE_BYTES
+        ),
+        None,
+    )
 }
 
 /// Run the stdio server loop: read newline-delimited JSON-RPC from `stdin`,
@@ -219,14 +213,7 @@ pub fn run_stdio() {
         };
 
         if let Some(response) = connection.handle_line(&line) {
-            let serialized = match serde_json::to_string(&response) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("chematic-mcp: serialization error: {e}");
-                    continue;
-                }
-            };
-            if let Err(e) = writeln!(out, "{serialized}") {
+            if let Err(e) = writeln!(out, "{response}") {
                 eprintln!("chematic-mcp: write error: {e}");
                 break;
             }

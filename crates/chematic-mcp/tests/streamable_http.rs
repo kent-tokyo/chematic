@@ -785,3 +785,33 @@ fn malformed_http_text_and_missing_mirrored_method_are_rejected() {
     assert_eq!(json["error"]["code"], -32020);
     assert_eq!(json["error"]["message"], "missing Mcp-Method header");
 }
+
+#[test]
+fn stdio_answers_until_an_oversized_frame_then_stops_with_a_diagnostic() {
+    let exe = env!("CARGO_BIN_EXE_chematic-mcp");
+    let mut child = Command::new(exe)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .unwrap();
+    let request = body(1, "tools/list", json!({}));
+    {
+        let mut stdin = child.stdin.take().unwrap();
+        writeln!(stdin, "{request}").unwrap();
+        // One byte over the 1 MiB frame limit; the server stops reading.
+        let _ = stdin.write_all(&vec![b' '; (1 << 20) + 2]);
+    }
+    let output = child.wait_with_output().unwrap();
+    assert!(output.status.success());
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    let mut lines = stdout.lines();
+    let answer: Value = serde_json::from_str(lines.next().unwrap()).unwrap();
+    assert_eq!(answer, stdio_answer(&request));
+    assert!(
+        lines.next().is_none(),
+        "no output after the oversized frame"
+    );
+    let stderr = String::from_utf8(output.stderr).unwrap();
+    assert!(stderr.contains("read error"), "{stderr}");
+}

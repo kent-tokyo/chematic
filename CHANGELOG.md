@@ -18,6 +18,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- The SMILES parser rejects an empty branch, `C()` or `C(=)C`, with
+  `SmilesError::UnexpectedCharacter`, as OpenSMILES and RDKit do. It used to
+  drop the branch, and with it any bond written inside it.
+
 - The CDXML reader (`parse_cdxml`, `parse_cdxml_all` and their variants) sets
   E/Z bond directions from the drawing, so double-bond geometry reaches the
   SMILES and MOL writers, as it already did through `parse_chemdraw_block`.
@@ -50,6 +54,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   ("benzene-1,4-diol", was "4-hydroxyphenol"). Trisubstituted benzene names
   break locant ties alphabetically, so they no longer vary between runs
   ("1-chloro-3,5-dimethylbenzene").
+
+- The SMILES parser rejects a ring closure that bonds an atom to itself
+  (`C11`, `n11n11`, `C%11%11`) instead of building a self-loop bond, matching
+  RDKit. The error is `SmilesError::InvalidBracketAtom` with the detail
+  `ring closure N bonds atom A to itself`.
 
 ## [1.2.5] - 2026-11-26
 
