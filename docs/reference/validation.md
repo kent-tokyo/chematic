@@ -46,11 +46,19 @@ and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/ben
 report source-wheel measurements for the identified candidate artifacts;
 they do not establish those results for the published wheel.
 
-## v1.2.5 preparation
+## v1.2.5 published release
 
-The unreleased source includes reaction SVG placement and 3D geometry fixes.
-Their regression tests cover selected examples; release artifact qualification
-and broader 3D quality measurements remain to be done.
+The tag points to `b8c3c56fc83a580e7b18b4d4391c3f6b719ae46b`. The
+[release workflow](https://github.com/kent-tokyo/chematic/actions/runs/45724794309)
+passed on its second attempt. It ran CI, coverage, package smoke tests,
+published-wheel chemistry gates and the npm and crates.io publication jobs.
+The checked-in
+[channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.2.5.json)
+retains its pre-publication state and is not evidence of those later checks.
+
+The release includes reaction SVG placement and 3D geometry fixes. Their
+regression tests cover selected examples; broader 3D quality measurements
+remain to be done.
 
 ## Retained package and source evidence
 
@@ -61,6 +69,7 @@ and broader 3D quality measurements remain to be done.
 | Reactions and CTfile | [Reaction and workflow fixtures](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-rdkit-workflows-expanded-source.md) and [CTfile residuals](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-trust-gates-and-residuals.md) |
 | 3D | [A6 topology bounds](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) and [torsion search](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-24-etkdg-torsion-search-rdkit.md) |
 | Independent evaluation | [v1.1.8 holdout score](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-trust-holdout-v1-score.md) and [row data](https://github.com/kent-tokyo/chematic/blob/main/validation/results/2026-10-19-trust-holdout-v1-v118.json) |
+| Directory layout | [Validation directory guide](https://github.com/kent-tokyo/chematic/blob/main/validation/README.md): where inputs, expected values and recorded results live |
 | Full inventory | [Benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md), [historical inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md), and [versioned results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/) |
 
 ## How to interpret results

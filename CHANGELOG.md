@@ -21,6 +21,10 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The MOL V3000 reader reports an atom `RGROUPS=(` list without its closing
   `)` as an error. It used to read the unterminated list as if it were closed.
 
+- The SMILES parser rejects an empty branch, `C()` or `C(=)C`, with
+  `SmilesError::UnexpectedCharacter`, as OpenSMILES and RDKit do. It used to
+  drop the branch, and with it any bond written inside it.
+
 - The CDXML reader (`parse_cdxml`, `parse_cdxml_all` and their variants) sets
   E/Z bond directions from the drawing, so double-bond geometry reaches the
   SMILES and MOL writers, as it already did through `parse_chemdraw_block`.

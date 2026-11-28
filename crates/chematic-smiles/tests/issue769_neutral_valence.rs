@@ -18,6 +18,8 @@ fn over_valent_neutral_oxygen_and_fluorine_are_rejected() {
         ("c1cco(C)c1", "O", 3, 3, 2),
         ("CC(C)=O(C)", "O", 3, 3, 2),
         ("F(C)C", "F", 0, 2, 1),
+        ("C#O", "O", 1, 3, 2),
+        ("C$F", "F", 1, 4, 1),
         // The one such row in the NCI first-5k corpus; RDKit rejects it too.
         ("CCO1=O=C1C2=CC=C(O2)C(C)(C)C", "O", 2, 4, 2),
     ] {

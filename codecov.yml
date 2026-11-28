@@ -9,8 +9,10 @@ coverage:
         informational: true
     patch:
       default:
-        target: auto
-        informational: true
+        # New and changed lines must be covered; see the 99% coverage plan.
+        target: 99%
+        threshold: 0%
+        informational: false
 
 flags:
   rust-unit:

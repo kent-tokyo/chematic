@@ -79,8 +79,8 @@ nav:
     - Researchers: reference/researchers.md
     - Cookbook (EN): reference/cookbook.md
     - Cookbook (日本語): reference/cookbook_ja.md
-    - RDKit Migration: reference/rdkit_cheatsheet.md
-    - RDKit Support Matrix: reference/rdkit-migration.md
+    - "RDKit Migration: Check Compatibility": reference/rdkit-migration.md
+    - "RDKit Migration: Translate Code": reference/rdkit_cheatsheet.md
   - Formats & Bindings:
     - Format Capability Matrix: reference/format-capabilities.md
     - DL-POLY HISTORY: reference/dlpoly-history.md
