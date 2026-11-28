@@ -799,13 +799,8 @@ fn tool_retrosynthesis(args: &Value) -> Result<Value, ToolCallError> {
     }
 
     // Rank by max SA score ascending (easiest disconnections first).
-    disconnections.sort_by(|a, b| {
-        a["max_fragment_sa"]
-            .as_f64()
-            .unwrap_or(10.0)
-            .partial_cmp(&b["max_fragment_sa"].as_f64().unwrap_or(10.0))
-            .unwrap_or(std::cmp::Ordering::Equal)
-    });
+    let max_sa = |d: &Value| d["max_fragment_sa"].as_f64().unwrap_or(10.0);
+    disconnections.sort_by(|a, b| max_sa(a).total_cmp(&max_sa(b)));
 
     Ok(json!({
         "target": target_canon,
@@ -1123,12 +1118,18 @@ mod tests {
             (1.0..=10.0).contains(&max_sa),
             "SA score out of range: {max_sa}"
         );
-        // Disconnections should be sorted ascending by max_fragment_sa
-        if discos.len() >= 2 {
-            let sa0 = discos[0]["max_fragment_sa"].as_f64().unwrap();
-            let sa1 = discos[1]["max_fragment_sa"].as_f64().unwrap();
-            assert!(sa0 <= sa1, "disconnections not sorted: {sa0} > {sa1}");
-        }
+    }
+
+    #[test]
+    fn retrosynthesis_ranks_several_disconnections_easiest_first() {
+        let v = tool_retrosynthesis(&args(&[("smiles", "COc1ccccc1CNC(=O)CCc1ccncc1")])).unwrap();
+        let discos = v["disconnections"].as_array().unwrap();
+        assert!(discos.len() >= 2, "expected several disconnections: {v}");
+        let scores: Vec<f64> = discos
+            .iter()
+            .map(|d| d["max_fragment_sa"].as_f64().unwrap())
+            .collect();
+        assert!(scores.windows(2).all(|w| w[0] <= w[1]), "{scores:?}");
     }
 
     #[test]

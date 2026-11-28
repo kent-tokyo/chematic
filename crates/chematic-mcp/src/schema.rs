@@ -202,6 +202,20 @@ mod tests {
     use serde_json::json;
 
     #[test]
+    fn lenient_subset_accepts_unknown_keywords_and_open_objects() {
+        // Unknown `type` names and non-string/array `type` values are ignored.
+        assert!(validate(&json!({ "type": "decimal" }), &json!("x")).is_ok());
+        assert!(validate(&json!({ "type": 7 }), &json!(null)).is_ok());
+        // Without `additionalProperties: false`, unknown keys pass through.
+        let open = json!({ "type": "object", "properties": { "a": { "type": "string" } } });
+        assert!(validate(&open, &json!({ "a": "x", "b": 1 })).is_ok());
+        // Array items are walked, and a failing item is reported.
+        let list = json!({ "type": "array", "items": { "type": "integer" } });
+        assert!(validate(&list, &json!([1, 2.0])).is_ok());
+        assert!(validate(&list, &json!([1, "two"])).is_err());
+    }
+
+    #[test]
     fn accepts_valid_object() {
         let schema = json!({
             "type": "object",
