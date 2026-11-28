@@ -527,6 +527,9 @@ impl FragAccum {
                 fragment.molecule.set_cip_code(first, None);
             }
         }
+        for &bond_index in &unspecified {
+            fragment.molecule.set_bond_stereo_unspecified(bond_index);
+        }
         apply_ez_directions_from_2d_ex(&mut fragment.molecule, &fragment.coords, &unspecified);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
@@ -831,20 +834,32 @@ pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
         out.push_str(&format!("<n {}/>\n", parts.join(" ")));
     }
 
-    for (_, bond) in mol.bonds() {
+    let wavy = wavy_carrier_bonds(mol);
+    for (bond_index, bond) in mol.bonds() {
         let b = bond.atom1.0 + 1;
         let e = bond.atom2.0 + 1;
         // Wedge/hash stereo is Single order + Display attribute (mirrors the
         // parser's decoding at is_b_tag handling above); other orders map
-        // straight to the Order attribute and ignore Display.
+        // straight to the Order attribute and ignore Display. Both wedge
+        // kinds are written directionally with the narrow end on `B`
+        // (`atom1`, the stereo reference endpoint), so the parser never has
+        // to treat them as ambiguous non-directional glyphs.
         let (order_attr, display_attr) = match bond.order {
+            _ if wavy.contains(&bond_index) => (
+                if bond.order == BondOrder::Double {
+                    "2"
+                } else {
+                    "1"
+                },
+                Some("Wavy"),
+            ),
             BondOrder::Double => ("2", None),
             BondOrder::Triple => ("3", None),
             BondOrder::Quadruple => ("4", None),
             BondOrder::Dative => ("dative", None),
             BondOrder::Aromatic => ("1.5", None),
             BondOrder::Up => ("1", Some("WedgeBegin")),
-            BondOrder::Down => ("1", Some("Hash")),
+            BondOrder::Down => ("1", Some("WedgedHashBegin")),
             _ => ("1", None),
         };
         match display_attr {
@@ -859,6 +874,39 @@ pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
 
     out.push_str("</fragment>\n</page>\n</CDXML>\n");
     out
+}
+
+/// Bonds that should carry `Display="Wavy"` so every double bond whose
+/// stereo the molecule records as explicitly unspecified reads back that way.
+///
+/// The parser marks every double bond touching a wavy bond's endpoints as
+/// unspecified, so a single-bond carrier is only chosen when it cannot
+/// spill onto a double bond with defined stereo; otherwise the double bond
+/// itself carries the glyph.
+fn wavy_carrier_bonds(mol: &Molecule) -> std::collections::HashSet<chematic_core::BondIdx> {
+    let mut carriers = std::collections::HashSet::new();
+    let safe_atom = |atom: AtomIdx| {
+        mol.neighbors(atom).all(|(_, bond)| {
+            mol.bond(bond).order != BondOrder::Double || mol.bond_stereo_is_unspecified(bond)
+        })
+    };
+    for (double, bond) in mol.bonds() {
+        if bond.order != BondOrder::Double || !mol.bond_stereo_is_unspecified(double) {
+            continue;
+        }
+        let carrier = [bond.atom1, bond.atom2]
+            .into_iter()
+            .flat_map(|atom| mol.neighbors(atom))
+            .map(|(_, candidate)| candidate)
+            .find(|&candidate| {
+                let candidate_bond = mol.bond(candidate);
+                candidate_bond.order == BondOrder::Single
+                    && safe_atom(candidate_bond.atom1)
+                    && safe_atom(candidate_bond.atom2)
+            });
+        carriers.insert(carrier.unwrap_or(double));
+    }
+    carriers
 }
 
 // ---------------------------------------------------------------------------
