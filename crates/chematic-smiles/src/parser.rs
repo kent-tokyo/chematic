@@ -558,7 +558,8 @@ impl<'a> Parser<'a> {
     }
 
     /// Parse a `(...)` branch: consume `(`, parse the inner chain, then `)`.
-    /// Returns the first atom added inside the branch, or `None` if empty.
+    /// Returns the first atom added inside the branch; an empty branch is an
+    /// error.
     fn parse_branch(
         &mut self,
         mol: &mut MoleculeBuilder,
@@ -578,13 +579,13 @@ impl<'a> Parser<'a> {
         if self.peek() != Some(b')') {
             return Err(SmilesError::MismatchedParentheses { pos: self.pos });
         }
+        // An empty branch, `C()` or `C(=)`, has no atom to attach: OpenSMILES
+        // and RDKit both reject it.
+        if mol.atom_count() == count_before {
+            return Err(SmilesError::UnexpectedCharacter { pos: self.pos });
+        }
         self.advance(); // consume ')'
-        let first_branch_atom = if mol.atom_count() > count_before {
-            Some(AtomIdx(count_before as u32))
-        } else {
-            None
-        };
-        Ok(first_branch_atom)
+        Ok(Some(AtomIdx(count_before as u32)))
     }
 
     /// Handle ring closure: close an existing open ring, or register a new one.
@@ -600,6 +601,12 @@ impl<'a> Parser<'a> {
         open_rings: &mut OpenRings,
     ) -> Result<StereoEntry, SmilesError> {
         if let Some((open_atom, open_bond, slot, before_bond)) = open_rings.remove(&ring_num) {
+            // `C11`: the same atom both opens and closes the ring, which
+            // would add a self-loop bond. OpenSMILES forbids it and RDKit
+            // rejects it ("duplicated ring closure N bonds atom A to itself").
+            if open_atom == current {
+                return Err(ring_closure_self_loop_error(ring_num, current, self.pos));
+            }
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -815,7 +822,6 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_organic_atom(&mut self) -> Result<Atom, SmilesError> {
-        let pos = self.pos;
         let first = self.advance().unwrap() as char;
 
         let symbol = if first == 'C' && self.peek() == Some(b'l') {
@@ -828,10 +834,8 @@ impl<'a> Parser<'a> {
             first.to_string()
         };
 
-        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
-            symbol: symbol.clone(),
-            pos,
-        })?;
+        // `try_parse_atom` only dispatches organic-subset letters here.
+        let element = Element::from_symbol(&symbol).expect("organic subset symbol");
 
         let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::organic(element);
@@ -840,24 +844,18 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_aromatic_organic(&mut self) -> Result<Atom, SmilesError> {
-        let pos = self.pos;
         let first = self.advance().unwrap() as char;
 
-        // Handle `se` and `as` written without brackets (rare but valid per spec)
-        let (symbol, _multi) = if first == 's' && self.peek() == Some(b'e') {
+        // Accept `se` written without brackets. `try_parse_atom` dispatches only
+        // `b c n o p s` here, so an unbracketed `as` never reaches this point.
+        let symbol = if first == 's' && self.peek() == Some(b'e') {
             self.advance();
-            ("Se".to_string(), true)
-        } else if first == 'a' && self.peek() == Some(b's') {
-            self.advance();
-            ("As".to_string(), true)
+            "Se".to_string()
         } else {
-            (first.to_ascii_uppercase().to_string(), false)
+            first.to_ascii_uppercase().to_string()
         };
 
-        let element = Element::from_symbol(&symbol).ok_or_else(|| SmilesError::UnknownElement {
-            symbol: symbol.clone(),
-            pos,
-        })?;
+        let element = Element::from_symbol(&symbol).expect("aromatic organic subset symbol");
 
         let chirality = self.parse_chirality(false)?;
         let mut atom = Atom::aromatic(element);
@@ -1112,6 +1110,16 @@ fn ring_closure_unmatched_error(ring_num: u32, pos: usize) -> SmilesError {
     match u8::try_from(ring_num) {
         Ok(ring_num) => SmilesError::UnmatchedRingClosure { ring_num, pos },
         Err(_) => SmilesError::UnmatchedExtendedRingClosure { ring_num, pos },
+    }
+}
+
+/// A ring closure that bonds an atom to itself (`C11`). Reported through
+/// `InvalidBracketAtom`, like the existing duplicate-ring-bond error, so the
+/// public `SmilesError` enum stays unchanged within the 1.2.x line.
+fn ring_closure_self_loop_error(ring_num: u32, atom: AtomIdx, pos: usize) -> SmilesError {
+    SmilesError::InvalidBracketAtom {
+        detail: format!("ring closure {ring_num} bonds atom {} to itself", atom.0),
+        pos,
     }
 }
 

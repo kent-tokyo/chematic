@@ -29,3 +29,22 @@ fn explicit_bond_before_branch_is_preserved() {
         1
     );
 }
+
+#[test]
+fn malformed_atoms_bonds_and_charges_are_typed_errors() {
+    for smiles in [
+        "C(C=)", // explicit bond closed by a branch end
+        "C()",   // empty branch
+        "C(=)C", // explicit bond with nothing in the branch
+        "[*:1",  // wildcard bracket without ']'
+        "[Xx]",  // unknown bracket element
+        "C1C1",  // ring closure duplicates the chain bond
+    ] {
+        assert!(parse(smiles).is_err(), "{smiles}");
+    }
+}
+
+#[test]
+fn double_minus_charge_parses() {
+    assert_eq!(parse("[O--]").unwrap().atom(AtomIdx(0)).charge, -2);
+}
