@@ -69,3 +69,6 @@ validation/rdkit/README.md
 validation/rdkit_issues/README.md
 validation/results/*.md
 validation/results/*.log
+
+# LLVM coverage raw profiles (cargo llvm-cov / instrumented test runs)
+*.profraw
