@@ -26,6 +26,11 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   line break (`<n` then `id="..."` on the next line), as ChemDraw writes them;
   such files used to parse as an empty molecule without an error.
 
+- The SMILES parser rejects a ring closure that bonds an atom to itself
+  (`C11`, `n11n11`, `C%11%11`) instead of building a self-loop bond, matching
+  RDKit. The error is `SmilesError::InvalidBracketAtom` with the detail
+  `ring closure N bonds atom A to itself`.
+
 ## [1.2.5] - 2026-11-26
 
 ### Fixed

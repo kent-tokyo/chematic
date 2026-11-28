@@ -600,6 +600,12 @@ impl<'a> Parser<'a> {
         open_rings: &mut OpenRings,
     ) -> Result<StereoEntry, SmilesError> {
         if let Some((open_atom, open_bond, slot, before_bond)) = open_rings.remove(&ring_num) {
+            // `C11`: the same atom both opens and closes the ring, which
+            // would add a self-loop bond. OpenSMILES forbids it and RDKit
+            // rejects it ("duplicated ring closure N bonds atom A to itself").
+            if open_atom == current {
+                return Err(ring_closure_self_loop_error(ring_num, current, self.pos));
+            }
             // A directional marker (`/`, `\`) is read "toward" the ring digit
             // from wherever it's written. At the OPENING occurrence (e.g.
             // "C/1..."), that's already the open->close direction, matching
@@ -1112,6 +1118,16 @@ fn ring_closure_unmatched_error(ring_num: u32, pos: usize) -> SmilesError {
     match u8::try_from(ring_num) {
         Ok(ring_num) => SmilesError::UnmatchedRingClosure { ring_num, pos },
         Err(_) => SmilesError::UnmatchedExtendedRingClosure { ring_num, pos },
+    }
+}
+
+/// A ring closure that bonds an atom to itself (`C11`). Reported through
+/// `InvalidBracketAtom`, like the existing duplicate-ring-bond error, so the
+/// public `SmilesError` enum stays unchanged within the 1.2.x line.
+fn ring_closure_self_loop_error(ring_num: u32, atom: AtomIdx, pos: usize) -> SmilesError {
+    SmilesError::InvalidBracketAtom {
+        detail: format!("ring closure {ring_num} bonds atom {} to itself", atom.0),
+        pos,
     }
 }
 
