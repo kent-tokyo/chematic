@@ -16,7 +16,30 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   MOL writers do. A centre whose wedge was on a hydrogen that
   `remove_hydrogens` dropped is drawn with a wedge again.
 
+- `parse_cdxml_all_with_report` reads a CDXML document and returns the
+  molecules together with the expanded ChemDraw abbreviations (node id, label
+  such as `Boc`, and their atoms) and diagnostics. Unlike `parse_cdxml_all`,
+  it keeps the rest of the document when it meets a feature a `Molecule`
+  cannot represent: generic labels such as `A`, `Q`, `X` and `M` become
+  wildcard atoms, and bonds such as `hydrogen` are dropped, each with a
+  diagnostic. `parse_cdxml_all` still refuses these.
+
 ### Fixed
+
+- The CDXML reader expands ChemDraw abbreviations (`NodeType="Nickname"` and
+  `"Fragment"`, for example Boc, Ph, OTBS and template-library structures)
+  instead of failing with `unknown atom ref`. Outer bonds are rewired through
+  each `ExternalConnectionPoint`, following `BondOrdering` when there are
+  several. An abbreviation that cannot be attached is a typed error naming it
+  (`CdxmlError::unexpandable_abbreviation`).
+
+- The CDXML reader accepts ChemDraw query bond orders `any`, `1 1.5`, `2 1.5`
+  and `1 2` as the matching query bonds, and the CDXML writer writes them back.
+
+- The CDXML writer writes hashed wedges as directional `WedgedHashBegin`
+  instead of `Hash`, which the reader ignores as ambiguous, so a parse, write,
+  parse round trip no longer loses stereocentres. A wavy (unknown) double bond
+  also stays unspecified through a round trip.
 
 - The CDXML reader (`parse_cdxml`, `parse_cdxml_all` and their variants) sets
   E/Z bond directions from the drawing, so double-bond geometry reaches the

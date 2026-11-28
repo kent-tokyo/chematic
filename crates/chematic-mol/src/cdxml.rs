@@ -10,12 +10,21 @@
 //!               `NumHydrogens`, `Charge`, `Isotope`, and bounded
 //!               `GenericNickname` pseudoatoms (`*`, `R`, `R<n>`)
 //!
+//! `<n NodeType="Nickname">`/`<n NodeType="Fragment">`: ChemDraw
+//!               abbreviations (Boc, Ph, template structures) are expanded
+//!               from their nested `<fragment>`, attached through its
+//!               `ExternalConnectionPoint` nodes (and the outer node's
+//!               `BondOrdering` when there are several)
+//!
 //! `<b>` (bond): `B` (begin atom id), `E` (end atom id), `Order` (1/2/3,
-//!               defaults to 1; also 4, 1.5/aromatic and directed dative)
+//!               defaults to 1; also 4, 1.5/aromatic, directed dative, and
+//!               the query orders `any`, `1 1.5`, `2 1.5`, `1 2`)
 //! A dative bond retains B -> E regardless of wedge/hash display decoration.
 //! Other declared orders return an [`CdxmlError::InvalidDocument`] classified
 //! by [`CdxmlError::unsupported_bond_order`]; only an absent order defaults to
-//! single. This is a bounded graph profile.
+//! single. This is a bounded graph profile. [`parse_cdxml_all_with_report`]
+//! keeps the rest of a document past generic query labels and
+//! unrepresentable bond orders, reporting each as a diagnostic.
 //!
 //! # Limitations
 //!
@@ -58,7 +67,11 @@ use chematic_perception::{
     assign_ez_from_2d,
 };
 
-use crate::cml::parse_xml_attrs;
+use crate::cml::{parse_xml_attrs, unescape_xml};
+
+#[path = "cdxml/abbreviation.rs"]
+mod abbreviation;
+pub use abbreviation::{CdxmlAbbreviation, CdxmlParseDiagnostic, CdxmlParseReport};
 
 /// Resource limits for CDXML parsing.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -120,7 +133,10 @@ pub enum CdxmlError {
 impl std::fmt::Display for CdxmlError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CdxmlError::InvalidDocument(s) if s.starts_with(UNSUPPORTED_BOND_ORDER_PREFIX) => {
+            CdxmlError::InvalidDocument(s)
+                if s.starts_with(UNSUPPORTED_BOND_ORDER_PREFIX)
+                    || CdxmlError::is_unexpandable_abbreviation(s) =>
+            {
                 f.write_str(s)
             }
             CdxmlError::InvalidDocument(s) => write!(f, "invalid CDXML document: {s}"),
@@ -287,28 +303,62 @@ pub fn parse_cdxml_all_with_limits(
     parse_cdxml_all_with_options_and_limits(input, &CdxmlParseOptions::default(), limits)
 }
 
-/// Accumulator for a single CDXML `<fragment>` being parsed.
-#[derive(Default)]
-struct FragAccum {
-    atom_ids: Vec<String>,
-    atom_elems: Vec<Element>,
-    atom_charges: Vec<i8>,
-    atom_isotopes: Vec<Option<u16>>,
-    atom_h: Vec<Option<u8>>,
-    atom_wildcards: Vec<bool>,
-    atom_rgroups: Vec<Option<RGroupLabel>>,
-    atom_xs: Vec<f64>,
-    atom_ys: Vec<f64>,
-    bond_bs: Vec<String>,
-    bond_es: Vec<String>,
-    bond_ords: Vec<BondOrder>,
-    /// Raw `Display` attribute value per bond, `None` if absent. Needed
-    /// alongside `bond_ords` because `BondOrder::Up`/`Down` alone can't
-    /// distinguish a directional wedge (`WedgeBegin`/`WedgeEnd`, which has
-    /// an inherent narrow-end convention) from a non-directional one
+/// One parsed `<n>` atom node.
+#[derive(Clone, Debug)]
+struct AtomRec {
+    id: String,
+    element: Element,
+    charge: i8,
+    isotope: Option<u16>,
+    hydrogens: Option<u8>,
+    wildcard: bool,
+    r_group: Option<RGroupLabel>,
+    x: f64,
+    y: f64,
+    /// `NodeType="Nickname"`/`"Fragment"`: an abbreviation placeholder that
+    /// a nested `<fragment>` normally replaces (see `abbreviation.rs`).
+    abbreviation: bool,
+}
+
+/// One parsed `<b>` bond.
+#[derive(Clone, Debug)]
+struct BondRec {
+    id: Option<String>,
+    begin: String,
+    end: String,
+    order: BondOrder,
+    /// Raw `Display` attribute value, `None` if absent. Needed alongside
+    /// `order` because `BondOrder::Up`/`Down` alone can't distinguish a
+    /// directional wedge (`WedgeBegin`/`WedgeEnd`, which has an inherent
+    /// narrow-end convention) from a non-directional one
     /// (`Bold`/`Hash`/`Dash`, which doesn't) -- see the ambiguity check in
-    /// `flush()`.
-    bond_display: Vec<Option<String>>,
+    /// `normalize_nondirectional_wedges()`.
+    display: Option<String>,
+}
+
+/// An `<n>` element whose children are still being read.
+#[derive(Debug)]
+struct OpenNode {
+    id: Option<String>,
+    abbreviation: bool,
+    label: String,
+    in_string: bool,
+}
+
+/// Accumulator for a single CDXML `<fragment>` being parsed.
+#[derive(Default, Debug)]
+struct FragAccum {
+    atoms: Vec<AtomRec>,
+    bonds: Vec<BondRec>,
+    /// `NodeType="ExternalConnectionPoint"` nodes: `(id, ExternalConnectionNum)`.
+    connection_points: Vec<(String, Option<u32>)>,
+    /// `BondOrdering` per node id (bond ids, one per external connection).
+    bond_orderings: HashMap<String, Vec<String>>,
+    /// Nested fragments read inside abbreviation nodes, spliced at flush.
+    expansions: Vec<abbreviation::Expansion>,
+    /// Expanded abbreviations: `(node id, label, atom ids)`.
+    abbreviations: Vec<(String, Option<String>, Vec<String>)>,
+    open_node: Option<OpenNode>,
 }
 
 struct ResolvedBonds {
@@ -322,27 +372,52 @@ struct BuiltFragment {
     coords: Vec<(f64, f64)>,
 }
 
+/// Parse-wide state: tolerance mode and the diagnostics it collects.
+#[derive(Default)]
+struct ParseCtx {
+    tolerant: bool,
+    diagnostics: Vec<CdxmlParseDiagnostic>,
+    abbreviations: Vec<CdxmlAbbreviation>,
+}
+
+impl ParseCtx {
+    fn diagnose(
+        &mut self,
+        molecule_index: usize,
+        code: &'static str,
+        object_id: Option<&str>,
+        message: String,
+    ) {
+        self.diagnostics.push(CdxmlParseDiagnostic {
+            molecule_index,
+            code,
+            object_id: object_id.map(str::to_string),
+            message,
+        });
+    }
+}
+
 impl FragAccum {
     fn is_empty(&self) -> bool {
-        self.atom_ids.is_empty() && self.bond_bs.is_empty()
+        self.atoms.is_empty() && self.bonds.is_empty()
     }
 
     fn resolve_bond_positions(&self) -> Result<ResolvedBonds, CdxmlError> {
         let positions = self
-            .atom_ids
+            .atoms
             .iter()
             .enumerate()
-            .map(|(index, id)| (id.as_str(), index))
+            .map(|(index, atom)| (atom.id.as_str(), index))
             .collect::<HashMap<_, _>>();
-        let mut bonds = Vec::with_capacity(self.bond_bs.len());
-        let mut degree = vec![0; self.atom_ids.len()];
-        for (begin, end) in self.bond_bs.iter().zip(&self.bond_es) {
+        let mut bonds = Vec::with_capacity(self.bonds.len());
+        let mut degree = vec![0; self.atoms.len()];
+        for bond in &self.bonds {
             let begin_pos = *positions
-                .get(begin.as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(begin.clone()))?;
+                .get(bond.begin.as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(bond.begin.clone()))?;
             let end_pos = *positions
-                .get(end.as_str())
-                .ok_or_else(|| CdxmlError::UnknownAtomRef(end.clone()))?;
+                .get(bond.end.as_str())
+                .ok_or_else(|| CdxmlError::UnknownAtomRef(bond.end.clone()))?;
             degree[begin_pos] += 1;
             degree[end_pos] += 1;
             bonds.push((begin_pos, end_pos));
@@ -359,46 +434,39 @@ impl FragAccum {
     ) -> Result<BuiltFragment, CdxmlError> {
         let mut builder = MoleculeBuilder::new();
         let mut indices = HashMap::new();
-        let mut coords = Vec::with_capacity(self.atom_ids.len());
-        for index in 0..self.atom_ids.len() {
-            let mut atom = Atom::new(self.atom_elems[index]);
-            atom.wildcard = self.atom_wildcards[index];
-            atom.charge = self.atom_charges[index];
-            atom.isotope = self.atom_isotopes[index];
+        let mut coords = Vec::with_capacity(self.atoms.len());
+        for (index, rec) in self.atoms.iter().enumerate() {
+            let mut atom = Atom::new(rec.element);
+            atom.wildcard = rec.wildcard;
+            atom.charge = rec.charge;
+            atom.isotope = rec.isotope;
             atom.hydrogen_count = if atom.wildcard {
                 Some(0)
             } else {
-                self.atom_h[index]
+                rec.hydrogens
             };
             let atom_index = builder.add_atom(atom);
-            if let Some(label) = self.atom_rgroups[index] {
+            if let Some(label) = rec.r_group {
                 builder.set_r_group(atom_index, label);
             }
             indices.insert(index, atom_index);
-            coords.push((self.atom_xs[index], self.atom_ys[index]));
+            coords.push((rec.x, rec.y));
         }
-        for (bond_index, &(begin, end)) in bond_positions.iter().enumerate() {
+        for (bond, &(begin, end)) in self.bonds.iter().zip(bond_positions) {
             // Single-bond End glyphs put the stereo reference end on E.
             // They never reverse the independent B -> E dative direction.
-            let (begin, end) =
-                if matches!(self.bond_ords[bond_index], BondOrder::Up | BondOrder::Down)
-                    && matches!(
-                        self.bond_display[bond_index].as_deref(),
-                        Some("WedgeEnd") | Some("WedgedHashEnd")
-                    )
-                {
-                    (end, begin)
-                } else {
-                    (begin, end)
-                };
+            let (begin, end) = if matches!(bond.order, BondOrder::Up | BondOrder::Down)
+                && matches!(
+                    bond.display.as_deref(),
+                    Some("WedgeEnd") | Some("WedgedHashEnd")
+                ) {
+                (end, begin)
+            } else {
+                (begin, end)
+            };
             builder
-                .add_bond(indices[&begin], indices[&end], self.bond_ords[bond_index])
-                .map_err(|_| {
-                    CdxmlError::UnknownAtomRef(format!(
-                        "{} {}",
-                        self.bond_bs[bond_index], self.bond_es[bond_index]
-                    ))
-                })?;
+                .add_bond(indices[&begin], indices[&end], bond.order)
+                .map_err(|_| CdxmlError::UnknownAtomRef(format!("{} {}", bond.begin, bond.end)))?;
         }
         Ok(BuiltFragment {
             molecule: builder.build(),
@@ -408,12 +476,9 @@ impl FragAccum {
     }
 
     fn has_nondirectional_wedge(&self) -> bool {
-        self.bond_display.iter().any(|display| {
-            matches!(
-                display.as_deref(),
-                Some("Bold") | Some("Hash") | Some("Dash")
-            )
-        })
+        self.bonds
+            .iter()
+            .any(|bond| is_nondirectional_display(bond.display.as_deref()))
     }
 
     fn normalize_nondirectional_wedges(
@@ -430,10 +495,8 @@ impl FragAccum {
         }
         for (bond_index, (_, bond)) in molecule.bonds().enumerate() {
             let (mut begin, mut end, mut order) = (bond.atom1, bond.atom2, bond.order);
-            if matches!(
-                self.bond_display[bond_index].as_deref(),
-                Some("Bold") | Some("Hash") | Some("Dash")
-            ) && matches!(order, BondOrder::Up | BondOrder::Down)
+            if is_nondirectional_display(self.bonds[bond_index].display.as_deref())
+                && matches!(order, BondOrder::Up | BondOrder::Down)
             {
                 let (b, e) = bond_positions[bond_index];
                 let eligible = |value: usize| (3..=4).contains(&value);
@@ -455,8 +518,7 @@ impl FragAccum {
         &self,
         molecule: &mut Molecule,
         indices: &HashMap<usize, AtomIdx>,
-        bond_positions: &[(usize, usize)],
-        degree: &[usize],
+        bonds: &ResolvedBonds,
         coords: &[(f64, f64)],
         options: &CdxmlParseOptions,
     ) -> Result<(), CdxmlError> {
@@ -467,10 +529,14 @@ impl FragAccum {
             apply_ctab_local_parity_from_wedges_with_diagnostics(molecule, &cartesian);
             return Ok(());
         }
-        let mut view =
-            self.normalize_nondirectional_wedges(molecule, bond_positions, degree, options)?;
+        let mut view = self.normalize_nondirectional_wedges(
+            molecule,
+            &bonds.positions,
+            &bonds.degree,
+            options,
+        )?;
         apply_ctab_local_parity_from_wedges_with_diagnostics(&mut view, &cartesian);
-        for index in 0..self.atom_ids.len() {
+        for index in 0..self.atoms.len() {
             let atom = indices[&index];
             let chirality = view.atom(atom).chirality;
             if chirality != chematic_core::Chirality::None {
@@ -483,32 +549,14 @@ impl FragAccum {
         Ok(())
     }
 
-    fn flush(
-        &mut self,
-        results: &mut Vec<(Molecule, Vec<(f64, f64)>)>,
-        options: &CdxmlParseOptions,
-    ) -> Result<(), CdxmlError> {
-        if self.is_empty() {
-            return Ok(());
-        }
-        let bonds = self.resolve_bond_positions()?;
-        let mut fragment = self.build_molecule(&bonds.positions)?;
-        self.apply_stereo(
-            &mut fragment.molecule,
-            &fragment.indices,
-            &bonds.positions,
-            &bonds.degree,
-            &fragment.coords,
-            options,
-        )?;
-        assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
-        // A wavy carrier explicitly leaves each adjacent double bond unspecified.
+    /// A wavy carrier explicitly leaves each adjacent double bond unspecified.
+    fn apply_wavy(&self, fragment: &mut BuiltFragment, positions: &[(usize, usize)]) {
         let mut unspecified = std::collections::HashSet::new();
-        for (index, display) in self.bond_display.iter().enumerate() {
-            if display.as_deref() != Some("Wavy") {
+        for (index, bond) in self.bonds.iter().enumerate() {
+            if bond.display.as_deref() != Some("Wavy") {
                 continue;
             }
-            let (begin, end) = bonds.positions[index];
+            let (begin, end) = positions[index];
             for atom in [fragment.indices[&begin], fragment.indices[&end]] {
                 for (_, bond_index) in fragment.molecule.neighbors(atom) {
                     if fragment.molecule.bond(bond_index).order == BondOrder::Double {
@@ -518,23 +566,73 @@ impl FragAccum {
             }
         }
         for &bond_index in &unspecified {
-            let bond = fragment.molecule.bond(bond_index);
-            let first = bond.atom1;
+            let first = fragment.molecule.bond(bond_index).atom1;
             if matches!(
                 fragment.molecule.atom(first).cip_code,
                 Some(chematic_core::atom::CipCode::E | chematic_core::atom::CipCode::Z)
             ) {
                 fragment.molecule.set_cip_code(first, None);
             }
-        }
-        for &bond_index in &unspecified {
             fragment.molecule.set_bond_stereo_unspecified(bond_index);
         }
         apply_ez_directions_from_2d_ex(&mut fragment.molecule, &fragment.coords, &unspecified);
+    }
+
+    fn flush(
+        &mut self,
+        results: &mut Vec<(Molecule, Vec<(f64, f64)>)>,
+        options: &CdxmlParseOptions,
+        limits: &CdxmlParseLimits,
+        ctx: &mut ParseCtx,
+    ) -> Result<(), CdxmlError> {
+        let molecule_index = results.len();
+        self.expand_abbreviations(limits)?;
+        self.drop_top_level_connection_points(molecule_index, ctx);
+        for atom in self.atoms.iter().filter(|atom| atom.abbreviation) {
+            ctx.diagnose(
+                molecule_index,
+                "unexpanded_abbreviation",
+                Some(&atom.id),
+                "abbreviation node has no nested fragment; kept as a carbon placeholder".into(),
+            );
+        }
+        if self.is_empty() {
+            *self = Self::default();
+            return Ok(());
+        }
+        let bonds = self.resolve_bond_positions()?;
+        let mut fragment = self.build_molecule(&bonds.positions)?;
+        self.apply_stereo(
+            &mut fragment.molecule,
+            &fragment.indices,
+            &bonds,
+            &fragment.coords,
+            options,
+        )?;
+        assign_ez_from_2d(&mut fragment.molecule, &fragment.coords);
+        self.apply_wavy(&mut fragment, &bonds.positions);
+        self.record_abbreviations(molecule_index, ctx);
         results.push((fragment.molecule, fragment.coords));
         *self = Self::default();
         Ok(())
     }
+
+    /// Text inside an open node's `<s>` element belongs to its label.
+    fn push_text(&mut self, text: &str) {
+        if let Some(node) = self.open_node.as_mut().filter(|node| node.in_string) {
+            node.label.push_str(&unescape_xml(text));
+        }
+    }
+
+    fn set_string_open(&mut self, open: bool) {
+        if let Some(node) = self.open_node.as_mut() {
+            node.in_string = open;
+        }
+    }
+}
+
+fn is_nondirectional_display(display: Option<&str>) -> bool {
+    matches!(display, Some("Bold") | Some("Hash") | Some("Dash"))
 }
 
 /// Maximum atoms allowed in a single CDXML fragment (DoS guard).
@@ -576,6 +674,11 @@ fn check_cdxml_input_limits(input: &str, limits: &CdxmlParseLimits) -> Result<()
     Ok(())
 }
 
+/// ChemDraw generic query labels with a well-known meaning that a concrete
+/// [`Molecule`] cannot express (no query-atom model): A (any atom except H),
+/// Q (any heteroatom), X (halogen), M (metal), and their H-allowing variants.
+const GENERIC_QUERY_LABELS: [&str; 8] = ["A", "AH", "Q", "QH", "X", "XH", "M", "MH"];
+
 fn cdxml_atom_kind(
     attrs: &HashMap<String, String>,
 ) -> Result<(Element, bool, Option<RGroupLabel>), CdxmlError> {
@@ -611,6 +714,33 @@ fn cdxml_atom_kind(
     }
 }
 
+/// [`cdxml_atom_kind`], except that in tolerant mode an unsupported generic
+/// label becomes a wildcard atom with a diagnostic instead of an error.
+fn cdxml_atom_kind_in(
+    attrs: &HashMap<String, String>,
+    id: &str,
+    molecule_index: usize,
+    ctx: &mut ParseCtx,
+) -> Result<(Element, bool, Option<RGroupLabel>), CdxmlError> {
+    match cdxml_atom_kind(attrs) {
+        Err(CdxmlError::UnsupportedPseudoatomLabel(label)) if ctx.tolerant => {
+            let (code, meaning) = if GENERIC_QUERY_LABELS.contains(&label.as_str()) {
+                ("generic_query_atom_as_wildcard", "generic query atom")
+            } else {
+                ("unrecognized_generic_label", "unrecognized generic label")
+            };
+            ctx.diagnose(
+                molecule_index,
+                code,
+                Some(id),
+                format!("{meaning} {label:?} read as a wildcard atom (*)"),
+            );
+            Ok((Element::C, true, None))
+        }
+        other => other,
+    }
+}
+
 fn cdxml_coords(attrs: &HashMap<String, String>) -> Result<(f64, f64), CdxmlError> {
     let Some(value) = attrs.get("p") else {
         return Ok((0.0, 0.0));
@@ -629,61 +759,95 @@ fn push_cdxml_atom(
     accumulator: &mut FragAccum,
     line: &str,
     limits: &CdxmlParseLimits,
+    molecule_index: usize,
+    ctx: &mut ParseCtx,
 ) -> Result<(), CdxmlError> {
     let attrs = parse_xml_attrs(line);
     check_attribute_limits(&attrs, limits)?;
+    let node_type = attrs.get("NodeType").map(String::as_str);
+    let abbreviation = matches!(node_type, Some("Nickname") | Some("Fragment"));
+    if !line.ends_with("/>") {
+        accumulator.open_node = Some(OpenNode {
+            id: attrs.get("id").cloned(),
+            abbreviation,
+            label: String::new(),
+            in_string: false,
+        });
+    }
     let Some(id) = attrs.get("id").cloned() else {
         return Ok(());
     };
-    if accumulator.atom_ids.len() >= limits.max_atoms {
+    if node_type == Some("ExternalConnectionPoint") {
+        let number = attrs
+            .get("ExternalConnectionNum")
+            .and_then(|value| value.trim().parse().ok());
+        accumulator.connection_points.push((id, number));
+        return Ok(());
+    }
+    if accumulator.atoms.len() >= limits.max_atoms {
         return Err(CdxmlError::ResourceLimit {
             resource: "atoms",
-            actual: accumulator.atom_ids.len() + 1,
+            actual: accumulator.atoms.len() + 1,
             limit: limits.max_atoms,
         });
     }
-    let (element, wildcard, r_group) = cdxml_atom_kind(&attrs)?;
+    if let Some(ordering) = attrs.get("BondOrdering") {
+        let ordering = ordering.split_whitespace().map(str::to_string).collect();
+        accumulator.bond_orderings.insert(id.clone(), ordering);
+    }
+    let (element, wildcard, r_group) = cdxml_atom_kind_in(&attrs, &id, molecule_index, ctx)?;
     let (x, y) = cdxml_coords(&attrs)?;
-    accumulator.atom_ids.push(id);
-    accumulator.atom_elems.push(element);
-    accumulator.atom_charges.push(
-        attrs
-            .get("Charge")
-            .and_then(|value| value.trim().parse().ok())
-            .unwrap_or(0),
-    );
-    accumulator.atom_isotopes.push(
-        attrs
-            .get("Isotope")
-            .and_then(|value| value.trim().parse::<u16>().ok())
+    let number = |key: &str| attrs.get(key).map(|value| value.trim());
+    accumulator.atoms.push(AtomRec {
+        id,
+        element,
+        charge: number("Charge").and_then(|v| v.parse().ok()).unwrap_or(0),
+        isotope: number("Isotope")
+            .and_then(|v| v.parse::<u16>().ok())
             .filter(|&value| value > 0),
-    );
-    accumulator.atom_h.push(
-        attrs
-            .get("NumHydrogens")
-            .and_then(|value| value.trim().parse().ok()),
-    );
-    accumulator.atom_wildcards.push(wildcard);
-    accumulator.atom_rgroups.push(r_group);
-    accumulator.atom_xs.push(x);
-    accumulator.atom_ys.push(y);
+        hydrogens: number("NumHydrogens").and_then(|v| v.parse().ok()),
+        wildcard,
+        r_group,
+        x,
+        y,
+        abbreviation,
+    });
     Ok(())
 }
 
-fn cdxml_bond_order(attrs: &HashMap<String, String>) -> Result<BondOrder, CdxmlError> {
-    let base = match attrs.get("Order").map(|value| value.trim()) {
-        None | Some("1") => BondOrder::Single,
-        Some("2") => BondOrder::Double,
-        Some("3") => BondOrder::Triple,
-        Some("4") => BondOrder::Quadruple,
-        Some("1.5") => BondOrder::Aromatic,
-        Some("dative") => BondOrder::Dative,
-        Some(order) => {
-            return Err(CdxmlError::InvalidDocument(format!(
-                "{UNSUPPORTED_BOND_ORDER_PREFIX}{order}"
-            )));
-        }
+/// Decode a CDXML `Order` value. Space-separated multi-order values are
+/// ChemDraw query bonds; the ones with a core query-bond type are accepted
+/// in any token order.
+fn cdxml_base_order(order: Option<&str>) -> Option<BondOrder> {
+    let Some(order) = order else {
+        return Some(BondOrder::Single);
     };
+    let mut tokens = order.split_whitespace().collect::<Vec<_>>();
+    tokens.sort_unstable();
+    tokens.dedup();
+    Some(match tokens.as_slice() {
+        ["1"] => BondOrder::Single,
+        ["2"] => BondOrder::Double,
+        ["3"] => BondOrder::Triple,
+        ["4"] => BondOrder::Quadruple,
+        ["1.5"] => BondOrder::Aromatic,
+        ["dative"] => BondOrder::Dative,
+        ["any"] => BondOrder::QueryAny,
+        ["1", "1.5"] => BondOrder::QuerySingleOrAromatic,
+        ["1.5", "2"] => BondOrder::QueryDoubleOrAromatic,
+        ["1", "2"] => BondOrder::QuerySingleOrDouble,
+        _ => return None,
+    })
+}
+
+fn cdxml_bond_order(attrs: &HashMap<String, String>) -> Result<BondOrder, CdxmlError> {
+    let declared = attrs.get("Order").map(|value| value.trim());
+    let base = cdxml_base_order(declared).ok_or_else(|| {
+        CdxmlError::InvalidDocument(format!(
+            "{UNSUPPORTED_BOND_ORDER_PREFIX}{}",
+            declared.unwrap_or_default()
+        ))
+    })?;
     if base != BondOrder::Single {
         return Ok(base);
     }
@@ -700,30 +864,46 @@ fn push_cdxml_bond(
     accumulator: &mut FragAccum,
     line: &str,
     limits: &CdxmlParseLimits,
+    molecule_index: usize,
+    ctx: &mut ParseCtx,
 ) -> Result<(), CdxmlError> {
     let attrs = parse_xml_attrs(line);
     check_attribute_limits(&attrs, limits)?;
-    if accumulator.bond_bs.len() >= limits.max_bonds {
+    if accumulator.bonds.len() >= limits.max_bonds {
         return Err(CdxmlError::ResourceLimit {
             resource: "bonds",
-            actual: accumulator.bond_bs.len() + 1,
+            actual: accumulator.bonds.len() + 1,
             limit: limits.max_bonds,
         });
     }
-    accumulator.bond_bs.push(
-        attrs
-            .get("B")
-            .cloned()
-            .ok_or(CdxmlError::MissingBondEndpoint)?,
-    );
-    accumulator.bond_es.push(
-        attrs
-            .get("E")
-            .cloned()
-            .ok_or(CdxmlError::MissingBondEndpoint)?,
-    );
-    accumulator.bond_ords.push(cdxml_bond_order(&attrs)?);
-    accumulator.bond_display.push(attrs.get("Display").cloned());
+    let begin = attrs
+        .get("B")
+        .cloned()
+        .ok_or(CdxmlError::MissingBondEndpoint)?;
+    let end = attrs
+        .get("E")
+        .cloned()
+        .ok_or(CdxmlError::MissingBondEndpoint)?;
+    let order = match cdxml_bond_order(&attrs) {
+        Ok(order) => order,
+        Err(error) if ctx.tolerant && error.unsupported_bond_order().is_some() => {
+            ctx.diagnose(
+                molecule_index,
+                "unsupported_bond_order_dropped",
+                attrs.get("id").map(String::as_str),
+                format!("{error}; bond {begin}-{end} was dropped"),
+            );
+            return Ok(());
+        }
+        Err(error) => return Err(error),
+    };
+    accumulator.bonds.push(BondRec {
+        id: attrs.get("id").cloned(),
+        begin,
+        end,
+        order,
+        display: attrs.get("Display").cloned(),
+    });
     Ok(())
 }
 
@@ -734,8 +914,54 @@ pub fn parse_cdxml_all_with_options_and_limits(
     options: &CdxmlParseOptions,
     limits: &CdxmlParseLimits,
 ) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
+    let mut ctx = ParseCtx::default();
+    parse_cdxml_document(input, options, limits, &mut ctx)
+}
+
+/// Like [`parse_cdxml_all_with_options_and_limits`], but tolerant: a feature
+/// that a concrete [`Molecule`] cannot represent no longer rejects the whole
+/// document. Instead the rest of the document is kept and the feature is
+/// reported in [`CdxmlParseReport::diagnostics`]:
+///
+/// - generic labels such as `A`, `Q`, `X`, `M` (and their `H` variants), and
+///   unrecognized generic labels, become wildcard atoms (`*`), each with a
+///   diagnostic naming the label (`generic_query_atom_as_wildcard` /
+///   `unrecognized_generic_label`);
+/// - bonds with an order that has no core bond type (for example
+///   `hydrogen`, `ionic`) are dropped (`unsupported_bond_order_dropped`).
+///
+/// The report also lists the expanded ChemDraw abbreviations
+/// ([`CdxmlParseReport::abbreviations`]), so an editor can show them
+/// collapsed. Structural errors (malformed XML, unknown atom references,
+/// resource limits, an abbreviation that cannot be expanded) still fail.
+pub fn parse_cdxml_all_with_report(
+    input: &str,
+    options: &CdxmlParseOptions,
+    limits: &CdxmlParseLimits,
+) -> Result<CdxmlParseReport, CdxmlError> {
+    let mut ctx = ParseCtx {
+        tolerant: true,
+        ..ParseCtx::default()
+    };
+    let molecules = parse_cdxml_document(input, options, limits, &mut ctx)?;
+    Ok(CdxmlParseReport {
+        molecules,
+        abbreviations: ctx.abbreviations,
+        diagnostics: ctx.diagnostics,
+    })
+}
+
+#[allow(clippy::type_complexity)]
+fn parse_cdxml_document(
+    input: &str,
+    options: &CdxmlParseOptions,
+    limits: &CdxmlParseLimits,
+    ctx: &mut ParseCtx,
+) -> Result<Vec<(Molecule, Vec<(f64, f64)>)>, CdxmlError> {
     check_cdxml_input_limits(input, limits)?;
-    let mut accumulator = FragAccum::default();
+    // The bottom entry is the top-level fragment; entries above it are
+    // fragments nested inside abbreviation nodes.
+    let mut stack = vec![FragAccum::default()];
     let mut results = Vec::new();
     let mut fragment_count = 0;
     for raw in crate::cdxml_document::logical_cdxml_lines(input) {
@@ -743,6 +969,9 @@ pub fn parse_cdxml_all_with_options_and_limits(
         if line.is_empty() {
             continue;
         }
+        let index = results.len();
+        let depth = stack.len();
+        let top = stack.last_mut().expect("fragment stack is never empty");
         if line.starts_with("<fragment") {
             if fragment_count >= limits.max_fragments {
                 return Err(CdxmlError::ResourceLimit {
@@ -752,16 +981,35 @@ pub fn parse_cdxml_all_with_options_and_limits(
                 });
             }
             fragment_count += 1;
-            accumulator = FragAccum::default();
+            if top.open_node.is_none() {
+                *top = FragAccum::default();
+            } else if !line.ends_with("/>") {
+                stack.push(FragAccum::default());
+            }
         } else if line.starts_with("</fragment>") {
-            accumulator.flush(&mut results, options)?;
+            if depth > 1 {
+                let inner = stack.pop().expect("nested fragment");
+                let parent = stack.last_mut().expect("parent fragment");
+                parent.attach_nested(inner, limits, index, ctx)?;
+            } else {
+                top.flush(&mut results, options, limits, ctx)?;
+            }
         } else if is_n_tag(line) {
-            push_cdxml_atom(&mut accumulator, line, limits)?;
+            push_cdxml_atom(top, line, limits, index, ctx)?;
+        } else if crate::cdxml_document::is_close_tag(line, "n") {
+            top.close_node();
+        } else if crate::cdxml_document::is_open_tag(line, "s") {
+            top.set_string_open(!line.ends_with("/>"));
+        } else if crate::cdxml_document::is_close_tag(line, "s") {
+            top.set_string_open(false);
+        } else if !line.starts_with('<') {
+            top.push_text(line);
         } else if is_b_tag(line) {
-            push_cdxml_bond(&mut accumulator, line, limits)?;
+            push_cdxml_bond(top, line, limits, index, ctx)?;
         }
     }
-    accumulator.flush(&mut results, options)?;
+    stack.truncate(1);
+    stack[0].flush(&mut results, options, limits, ctx)?;
     Ok(results)
 }
 
@@ -858,6 +1106,10 @@ pub fn write_cdxml(mol: &Molecule, coords: &[(f64, f64)]) -> String {
             BondOrder::Quadruple => ("4", None),
             BondOrder::Dative => ("dative", None),
             BondOrder::Aromatic => ("1.5", None),
+            BondOrder::QueryAny => ("any", None),
+            BondOrder::QuerySingleOrAromatic => ("1 1.5", None),
+            BondOrder::QueryDoubleOrAromatic => ("2 1.5", None),
+            BondOrder::QuerySingleOrDouble => ("1 2", None),
             BondOrder::Up => ("1", Some("WedgeBegin")),
             BondOrder::Down => ("1", Some("WedgedHashBegin")),
             _ => ("1", None),
