@@ -1,8 +1,259 @@
 use super::identity_helpers::PyRdkitMmffConformer;
 use super::*;
 
+type FallbackConformer = (i32, Option<f64>, Vec<[f64; 3]>, Option<String>);
+type PreviewGeometry = (usize, Option<f64>, Option<f64>, usize);
+
+#[pyclass(name = "_PreparedCorrectedEmbedding", frozen)]
+struct PyPreparedCorrectedEmbedding {
+    inner: Arc<chematic_3d::rdkit_embed::PreparedCorrectedEmbedding>,
+}
+
+#[pymethods]
+impl PyPreparedCorrectedEmbedding {
+    fn embed(&self, py: Python<'_>, seed: i32) -> PyResult<Option<Vec<[f64; 3]>>> {
+        let inner = Arc::clone(&self.inner);
+        py.detach(move || inner.embed(seed))
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+}
+type FallbackDiagnostics = (
+    Vec<FallbackConformer>,
+    usize,
+    Option<String>,
+    Option<usize>,
+    Option<usize>,
+    Option<usize>,
+);
+
 #[pymethods]
 impl Mol {
+    /// Prepare immutable corrected-gradient embedding data for timed attempts.
+    #[pyo3(signature = (max_iterations = 0))]
+    fn _timed_prepare_corrected(
+        &self,
+        py: Python<'_>,
+        max_iterations: u32,
+    ) -> PyResult<Py<PyPreparedCorrectedEmbedding>> {
+        use chematic_3d::rdkit_embed::{PreparedCorrectedEmbedding, RdkitEmbedOptions};
+        let mol = self.inner.clone();
+        let options = RdkitEmbedOptions {
+            max_iterations,
+            ..Default::default()
+        };
+        let inner = py
+            .detach(move || PreparedCorrectedEmbedding::new(&mol, &options))
+            .map_err(|error| PyValueError::new_err(error.to_string()))?;
+        Py::new(
+            py,
+            PyPreparedCorrectedEmbedding {
+                inner: Arc::new(inner),
+            },
+        )
+    }
+    /// Prepare one corrected-gradient embedding for the timed worker.
+    #[pyo3(signature = (random_seed = 42, max_iterations = 0))]
+    fn _timed_embed_corrected(
+        &self,
+        py: Python<'_>,
+        random_seed: i32,
+        max_iterations: u32,
+    ) -> PyResult<Option<Vec<[f64; 3]>>> {
+        use chematic_3d::rdkit_embed::{RdkitEmbedOptions, etkdg_embed_multiple_confs_corrected};
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || etkdg_embed_multiple_confs_corrected(&mol, 1, &options))
+            .map(|mut values| values.pop())
+            .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Check declared stereochemistry before publishing a timed preview.
+    #[pyo3(signature = (coords, *, require_regular_geometry=false))]
+    fn _timed_stereo_valid(
+        &self,
+        coords: Vec<[f64; 3]>,
+        require_regular_geometry: bool,
+    ) -> PyResult<bool> {
+        use chematic_3d::coords::{Coords3D, Point3};
+        use chematic_3d::stereo_constraints::{verify_stereo, verify_stereo_with_geometry_screen};
+        if coords.len() != self.inner.atom_count()
+            || coords.iter().flatten().any(|v| !v.is_finite())
+        {
+            return Err(PyValueError::new_err("invalid embedded coordinates"));
+        }
+        let geometry = Coords3D {
+            points: coords
+                .into_iter()
+                .map(|[x, y, z]| Point3::new(x, y, z))
+                .collect(),
+        };
+        let result = if require_regular_geometry {
+            verify_stereo_with_geometry_screen(&self.inner, &geometry).report
+        } else {
+            verify_stereo(&self.inner, &geometry)
+        };
+        Ok(result.n_violations() == 0 && result.n_unevaluable() == 0)
+    }
+
+    /// Report coarse geometry indicators for a provisional embedding.
+    fn _timed_preview_geometry(
+        &self,
+        py: Python<'_>,
+        coords: Vec<[f64; 3]>,
+    ) -> PyResult<PreviewGeometry> {
+        use chematic_3d::coords::{Coords3D, Point3};
+        use chematic_3d::pipeline_v2::preview_geometry_diagnostics;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            let geometry = Coords3D {
+                points: coords
+                    .into_iter()
+                    .map(|[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            preview_geometry_diagnostics(&mol, &geometry)
+        })
+        .map(|report| {
+            (
+                report.bond_count,
+                report.worst_bond_length,
+                report.bond_violation_rate_50pct,
+                report.gross_clash_count,
+            )
+        })
+        .ok_or_else(|| PyValueError::new_err("invalid preview coordinates"))
+    }
+
+    /// Optimize a previously prepared embedding without re-embedding it.
+    #[pyo3(signature = (coords, *, max_mmff_iters = 200, repair_mmff_iters = 0))]
+    fn _timed_optimize_embedded(
+        &self,
+        py: Python<'_>,
+        coords: Vec<[f64; 3]>,
+        max_mmff_iters: u32,
+        repair_mmff_iters: u32,
+    ) -> PyResult<FallbackDiagnostics> {
+        use chematic_3d::rdkit_embed::optimize_embedded_checked_diagnostics;
+        let mol = self.inner.clone();
+        py.detach(move || {
+            optimize_embedded_checked_diagnostics(
+                &mol,
+                vec![coords],
+                max_mmff_iters,
+                repair_mmff_iters,
+            )
+        })
+        .map(|result| {
+            let rows = result
+                .conformers
+                .into_iter()
+                .map(|c| (c.status, c.energy, c.coords, c.force_field_error))
+                .collect();
+            (
+                rows,
+                result.embedded,
+                result.force_field_error,
+                result.stereo_violated,
+                result.stereo_unevaluable,
+                result.invalid_coordinates,
+            )
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+
+    /// Return conformers, embedded count, MMFF setup error, and counts of
+    /// stereo violations, unevaluable stereo and invalid coordinates.
+    /// Rejection counts describe discarded candidates after optimization or
+    /// MMFF setup failure; some other failure reasons are not counted.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200, repair_mmff_iters = 0))]
+    fn etkdg_embed_multiple_confs_mixed_checked_diagnostics(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+        repair_mmff_iters: u32,
+    ) -> PyResult<FallbackDiagnostics> {
+        use chematic_3d::rdkit_embed::{
+            RdkitEmbedOptions, etkdg_embed_multiple_confs_mixed_checked_diagnostics,
+        };
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || {
+            etkdg_embed_multiple_confs_mixed_checked_diagnostics(
+                &mol,
+                num_confs,
+                &options,
+                max_mmff_iters,
+                repair_mmff_iters,
+            )
+        })
+        .map(|result| {
+            let rows = result
+                .conformers
+                .into_iter()
+                .map(|c| (c.status, c.energy, c.coords, c.force_field_error))
+                .collect();
+            (
+                rows,
+                result.embedded,
+                result.force_field_error,
+                result.stereo_violated,
+                result.stereo_unevaluable,
+                result.invalid_coordinates,
+            )
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
+    /// Return (status, optional energy, coordinates, optional MMFF error).
+    /// Status -1 retains the embedded coordinates after MMFF setup fails.
+    #[pyo3(signature = (num_confs, *, random_seed = 42, max_iterations = 0,
+                        max_mmff_iters = 200, repair_mmff_iters = 0))]
+    fn etkdg_embed_multiple_confs_mixed_checked_with_fallback(
+        &self,
+        py: Python<'_>,
+        num_confs: usize,
+        random_seed: i32,
+        max_iterations: u32,
+        max_mmff_iters: u32,
+        repair_mmff_iters: u32,
+    ) -> PyResult<Vec<FallbackConformer>> {
+        use chematic_3d::rdkit_embed::{
+            RdkitEmbedOptions, etkdg_embed_multiple_confs_mixed_checked_with_fallback,
+        };
+        let options = RdkitEmbedOptions {
+            random_seed,
+            max_iterations,
+            ..Default::default()
+        };
+        let mol = self.inner.clone();
+        py.detach(move || {
+            etkdg_embed_multiple_confs_mixed_checked_with_fallback(
+                &mol,
+                num_confs,
+                &options,
+                max_mmff_iters,
+                repair_mmff_iters,
+            )
+        })
+        .map(|conformers| {
+            conformers
+                .into_iter()
+                .map(|c| (c.status, c.energy, c.coords, c.force_field_error))
+                .collect()
+        })
+        .map_err(|error| PyValueError::new_err(error.to_string()))
+    }
     /// Generate and optimize one ensemble using the corrected ETKDG torsion
     /// gradient. This uses the requested number of embedding attempts and
     /// MMFF94 minimizations without the extra batches in the quality profile.

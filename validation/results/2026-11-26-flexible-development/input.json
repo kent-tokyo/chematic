@@ -1,0 +1,106 @@
+{
+  "source_sha256": "e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117",
+  "selection": "development partition only; flexible according to fixed graph rule; lowest 20 SHA256(name)",
+  "results": [
+    {
+      "index": 8076,
+      "name": "PUDPHFZVGPKAFR-UHFFFAOYSA-N",
+      "smiles": "CC[P+]1(CC)[B-](c2c(F)c(F)c(F)c(F)c2F)(c2c(F)c(F)c(F)c(F)c2F)[P+](CC)(CC)[B-]1(c1c(F)c(F)c(F)c(F)c1F)c1c(F)c(F)c(F)c(F)c1F"
+    },
+    {
+      "index": 5934,
+      "name": "AQKYFIVHYUQROH-UHFFFAOYSA-N",
+      "smiles": "C=CCNC(=O)N1c2cccc(P(c3ccccc3)c3ccccc3)c2Oc2c1cccc2P(c1ccccc1)c1ccccc1"
+    },
+    {
+      "index": 8243,
+      "name": "ALMADGJWFMVYIR-UHFFFAOYSA-N",
+      "smiles": "OCCCCCCN1c2cccc(P(c3ccccc3)c3ccccc3)c2Oc2c1cccc2P(c1ccccc1)c1ccccc1"
+    },
+    {
+      "index": 6154,
+      "name": "AZWHKXNTCSKADM-IDZYALCFSA-N",
+      "smiles": "C[C@@H]1CCC[C@H]([C@H](COC(=O)c2ccc([N+](=O)[O-])cc2)[C@@H](C[N+](=O)[O-])c2ccccc2)O1"
+    },
+    {
+      "index": 9913,
+      "name": "HEWWOJHRJDDMFV-WJOKGBTCSA-O",
+      "smiles": "CC1=[NH+]C(C)=C(C(=O)OCCN(Cc2ccccc2)c2ccccc2)[C@@H](c2cccc([N+](=O)[O-])c2)C1=[P-]1(=O)OCC(C)(C)CO1"
+    },
+    {
+      "index": 11135,
+      "name": "XONDFNCHKZMZPY-NTHXEYRTSA-N",
+      "smiles": "O=C1C(C2=C/C(=N\\Nc3ccccc3SCc3ccccc3)c3ccccc3C2=O)=C/C(=N\\Nc2ccccc2SCc2ccccc2)c2ccccc21"
+    },
+    {
+      "index": 8872,
+      "name": "SRBBSAYBWVTUKQ-UHFFFAOYSA-N",
+      "smiles": "O=C(c1ccccc1)c1ccc(C(=C(c2ccc(C(=O)c3ccccc3)cc2)c2ccc(C(=O)c3ccccc3)cc2)c2ccc(C(=O)c3ccccc3)cc2)cc1"
+    },
+    {
+      "index": 6260,
+      "name": "OXBWZHKDCWOVNF-UHFFFAOYSA-N",
+      "smiles": "COc1ccc(-c2c3c(c(-c4ccc(OC)cc4)c4c2-c2cccc5cccc-4c25)C(=O)N(CCCCN2C(=O)c4c(c(-c5ccc(OC)cc5)c5c(c4-c4ccc(OC)cc4)-c4cccc6cccc-5c46)C2=O)C3=O)cc1"
+    },
+    {
+      "index": 7359,
+      "name": "BGCLOIWJJHQSEF-KRWDZBQOSA-N",
+      "smiles": "CCCCCNC(=O)[C@H](c1ccsc1)N(Cc1ccccc1)[N+](=O)[O-]"
+    },
+    {
+      "index": 9458,
+      "name": "UKBCEAOXDXRYCP-XKETZBNHSA-N",
+      "smiles": "Cc1ccc(SC2=CN(S(=O)(=O)c3ccc(C)cc3)[C@H](/C(=C/NS(=O)(=O)c3ccc(C)cc3)Sc3ccc(C)cc3)C[C@H]2C)cc1"
+    },
+    {
+      "index": 8596,
+      "name": "XYGYJWFBYWXKHK-GOTSBHOMSA-N",
+      "smiles": "CCOC(=O)C(=O)[C@@H]1CCCN1C(=O)[C@@H]1Cc2ccccc2N1C(=O)CCCc1ccccc1"
+    },
+    {
+      "index": 11975,
+      "name": "PPYVZBMDNXAGQP-UHFFFAOYSA-N",
+      "smiles": "C[Si](C)(C)[Si](=[Si]1C([Si](C)(C)C)([Si](C)(C)C)CCC1([Si](C)(C)C)[Si](C)(C)C)[Si](=[Si]1C([Si](C)(C)C)([Si](C)(C)C)CCC1([Si](C)(C)C)[Si](C)(C)C)[Si](C)(C)C"
+    },
+    {
+      "index": 4609,
+      "name": "HSWDQXPVGSVLSB-NDOUMJCMSA-N",
+      "smiles": "CC(C)c1cccc(C(C)C)c1[N+]1=C([B@@-]2(C#N)[Se][Se][B@-](C#N)(C3=[N+](c4c(C(C)C)cccc4C(C)C)C(C)(C)CC3(C)C)[Se]2)C(C)(C)CC1(C)C"
+    },
+    {
+      "index": 8296,
+      "name": "SDNGZRNGAHJUBO-VEILYXNESA-N",
+      "smiles": "COC(=O)c1ccc(C(=O)OC)c(N/N=C(/C(C)=O)C(=O)Nc2cc3[nH]c(=O)c(=O)[nH]c3cc2OC)c1"
+    },
+    {
+      "index": 1969,
+      "name": "WITDFSFZHZYQHB-UHFFFAOYSA-N",
+      "smiles": "S=C(SSC(=S)N(Cc1ccccc1)Cc1ccccc1)N(Cc1ccccc1)Cc1ccccc1"
+    },
+    {
+      "index": 10611,
+      "name": "AVYOGJRPTXTCBS-UHFFFAOYSA-N",
+      "smiles": "CCCCCCN1C2=CC=C3C=CC=C4C=CC(=C2[C+]43)N(C)[B-]12N(C)C1=C3C(=CC=C4C=CC=C(C=C1)[C+]43)N2CCCCCC"
+    },
+    {
+      "index": 2271,
+      "name": "AQWKVXUGHHNKOE-INMZBQMWSA-N",
+      "smiles": "CCC(/C=C/c1ccccc1)=C(CC)/C(CC)=C(CC)\\C(CC)=C(CC)/C(CC)=C(\\C=C\\c1ccccc1)CC"
+    },
+    {
+      "index": 1593,
+      "name": "KAFYPRFIIRKINY-TYHGNQNSSA-N",
+      "smiles": "CC(=O)Nc1ccc(S(=O)(=O)Oc2c3ccccc3c(OS(=O)(=O)c3ccc(NC(C)=O)cc3)c3c2[C@H]2c4ccccc4[C@@H]3c3ccccc32)cc1"
+    },
+    {
+      "index": 9293,
+      "name": "FRBXGSXTIVZOKN-UHFFFAOYSA-N",
+      "smiles": "COC(=O)c1cc(C[n+]2ccc(-c3cc[n+](CC[n+]4ccc(-c5cc[n+](Cc6cc(C(=O)OC)cc(C(=O)OC)c6)cc5)cc4)cc3)cc2)cc(C(=O)OC)c1"
+    },
+    {
+      "index": 5447,
+      "name": "UECLBYZEYZZEPW-CRKOEVGVSA-L",
+      "smiles": "O=C([O-])[C@H](CSC(c1ccccc1)(c1ccccc1)c1ccccc1)N1C(=O)c2ccc3c4c(ccc(c24)C1=O)C(=O)N([C@@H](CSC(c1ccccc1)(c1ccccc1)c1ccccc1)C(=O)[O-])C3=O"
+    }
+  ]
+}

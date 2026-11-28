@@ -53,15 +53,20 @@ impl BondConstraint {
 
     /// Check if current distance satisfies constraint.
     pub fn satisfied(&self, coords: &Coords3D) -> bool {
-        let d = coords.get(self.atom1).distance(&coords.get(self.atom2));
-        let lower = self.target_distance - self.tolerance;
-        let upper = self.target_distance + self.tolerance;
-        d >= lower && d <= upper
+        self.violation(coords) == 0.0
     }
 
-    /// Violation magnitude; 0.0 if satisfied.
+    /// Violation magnitude; 0.0 if satisfied, infinity for invalid geometry or parameters.
     pub fn violation(&self, coords: &Coords3D) -> f64 {
         let d = coords.get(self.atom1).distance(&coords.get(self.atom2));
+        if !d.is_finite()
+            || !self.target_distance.is_finite()
+            || self.target_distance < 0.0
+            || !self.tolerance.is_finite()
+            || self.tolerance < 0.0
+        {
+            return f64::INFINITY;
+        }
         let lower = self.target_distance - self.tolerance;
         let upper = self.target_distance + self.tolerance;
         if d < lower {
@@ -98,15 +103,31 @@ impl AngleConstraint {
 
     /// Check if current angle satisfies constraint.
     pub fn satisfied(&self, coords: &Coords3D) -> bool {
-        let angle = compute_angle(coords, self.atom1, self.center, self.atom2);
-        let lower = self.target_angle - self.tolerance;
-        let upper = self.target_angle + self.tolerance;
-        angle >= lower && angle <= upper
+        self.violation(coords) == 0.0
     }
 
-    /// Violation magnitude; 0.0 if satisfied.
+    /// Violation magnitude; 0.0 if satisfied, infinity for undefined geometry or parameters.
     pub fn violation(&self, coords: &Coords3D) -> f64 {
-        let angle = compute_angle(coords, self.atom1, self.center, self.atom2);
+        let center = coords.get(self.center);
+        let v1 = coords.get(self.atom1).sub(&center);
+        let v2 = coords.get(self.atom2).sub(&center);
+        let n1 = v1.norm();
+        let n2 = v2.norm();
+        if !n1.is_finite()
+            || !n2.is_finite()
+            || n1 < 1e-10
+            || n2 < 1e-10
+            || !self.target_angle.is_finite()
+            || !(0.0..=PI).contains(&self.target_angle)
+            || !self.tolerance.is_finite()
+            || self.tolerance < 0.0
+        {
+            return f64::INFINITY;
+        }
+        let angle = (v1.dot(&v2) / (n1 * n2)).clamp(-1.0, 1.0).dacos();
+        if !angle.is_finite() {
+            return f64::INFINITY;
+        }
         let lower = self.target_angle - self.tolerance;
         let upper = self.target_angle + self.tolerance;
         if angle < lower {
@@ -134,6 +155,9 @@ impl ConstraintSet {
     }
 
     /// Maximum violation magnitude among all constraints.
+    ///
+    /// Bond violations are measured in Å and angle violations in radians.
+    /// Returns infinity if a constraint has undefined geometry or invalid parameters.
     pub fn max_violation(&self, coords: &Coords3D) -> f64 {
         let bond_violations = self
             .bonds
@@ -416,8 +440,21 @@ fn project_angle_constraint(coords: &mut Coords3D, constraint: &AngleConstraint)
         return;
     }
 
-    // Axis of rotation: the bond direction center—atom2
-    let axis = v2.normalize();
+    // Rotate in the plane of the two bonds. Rotating around either bond
+    // itself leaves their mutual angle unchanged.
+    let mut axis = v2.cross(&v1);
+    if axis.norm() < 1e-10 {
+        let unit = v2.normalize();
+        let reference = if unit.x.abs() <= unit.y.abs() && unit.x.abs() <= unit.z.abs() {
+            Point3::new(1.0, 0.0, 0.0)
+        } else if unit.y.abs() <= unit.z.abs() {
+            Point3::new(0.0, 1.0, 0.0)
+        } else {
+            Point3::new(0.0, 0.0, 1.0)
+        };
+        axis = v2.cross(&reference);
+    }
+    let axis = axis.normalize();
 
     // Rotation angle: delta toward target
     let delta_angle = constraint.target_angle - current_angle;
@@ -451,6 +488,50 @@ pub fn satisfy_constraints(
     constraints: &ConstraintSet,
     max_iterations: usize,
 ) -> Coords3D {
+    satisfy_constraints_with_projector(
+        coords,
+        constraints,
+        max_iterations,
+        project_angle_constraint,
+    )
+}
+
+// Preserve the established ETKDG coordinate path while its stereo effects
+// are evaluated separately. Explicit constraint projection uses the corrected
+// in-plane rotation above.
+pub(crate) fn satisfy_constraints_etkdg_legacy(
+    coords: &Coords3D,
+    constraints: &ConstraintSet,
+    max_iterations: usize,
+) -> Coords3D {
+    fn project_legacy(coords: &mut Coords3D, constraint: &AngleConstraint) {
+        let p1 = coords.get(constraint.atom1);
+        let center = coords.get(constraint.center);
+        let v1 = p1.sub(&center);
+        let v2 = coords.get(constraint.atom2).sub(&center);
+        let n1 = v1.norm();
+        let n2 = v2.norm();
+        if n1 < 1e-10 || n2 < 1e-10 {
+            return;
+        }
+        let angle = (v1.dot(&v2) / (n1 * n2)).clamp(-1.0, 1.0).dacos();
+        if angle >= constraint.target_angle - constraint.tolerance
+            && angle <= constraint.target_angle + constraint.tolerance
+        {
+            return;
+        }
+        let rotated = rotate_around_axis(v1, v2.normalize(), constraint.target_angle - angle);
+        coords.set(constraint.atom1, center.add(&rotated));
+    }
+    satisfy_constraints_with_projector(coords, constraints, max_iterations, project_legacy)
+}
+
+fn satisfy_constraints_with_projector(
+    coords: &Coords3D,
+    constraints: &ConstraintSet,
+    max_iterations: usize,
+    project_angle: fn(&mut Coords3D, &AngleConstraint),
+) -> Coords3D {
     let mut result = coords.clone();
 
     for iteration in 0..max_iterations {
@@ -464,7 +545,7 @@ pub fn satisfy_constraints(
         // Project angle constraints every other iteration to avoid oscillation
         if iteration % 2 == 0 {
             for constraint in &constraints.angles {
-                project_angle_constraint(&mut result, constraint);
+                project_angle(&mut result, constraint);
             }
         }
 
@@ -518,6 +599,26 @@ mod tests {
         let constraint =
             AngleConstraint::new(AtomIdx(0), AtomIdx(1), AtomIdx(2), 109.47_f64.to_radians());
         assert!((constraint.target_angle - 109.47_f64.to_radians()).abs() < 1e-6);
+    }
+
+    #[test]
+    fn angle_projection_changes_angle_and_preserves_bond_lengths() {
+        for (second, target) in [
+            (Point3::new(0.0, 1.0, 0.0), 120.0_f64),
+            (Point3::new(-0.5, 0.866_025_403_784, 0.0), 90.0),
+            (Point3::new(1.0, 0.0, 0.0), 120.0),
+            (Point3::new(-1.0, 0.0, 0.0), 90.0),
+        ] {
+            let mut coords = Coords3D::new_zeroed(3);
+            coords.set(AtomIdx(0), Point3::new(1.0, 0.0, 0.0));
+            coords.set(AtomIdx(2), second);
+            let constraint =
+                AngleConstraint::new(AtomIdx(0), AtomIdx(1), AtomIdx(2), target.to_radians());
+            project_angle_constraint(&mut coords, &constraint);
+            assert!(constraint.satisfied(&coords), "target {target}");
+            assert!((coords.get(AtomIdx(0)).norm() - 1.0).abs() < 1e-9);
+            assert!((coords.get(AtomIdx(2)).norm() - second.norm()).abs() < 1e-9);
+        }
     }
 
     #[test]

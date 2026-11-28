@@ -1,0 +1,51 @@
+{
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "wrapper_sha256": "9f3215c93a9455fa845dc2a335ab71087176270d845610024ea98c13fd7aa2fb",
+  "atoms_per_conformer": 60,
+  "synthetic": true,
+  "rows": [
+    {
+      "attempts": 100,
+      "repeat": 0,
+      "write_seconds": 0.0056631669867783785,
+      "read_seconds": 0.0018899580463767052,
+      "bytes": 199992
+    },
+    {
+      "attempts": 100,
+      "repeat": 1,
+      "write_seconds": 0.005642083939164877,
+      "read_seconds": 0.0018972499528899789,
+      "bytes": 199992
+    },
+    {
+      "attempts": 400,
+      "repeat": 0,
+      "write_seconds": 0.02233341697137803,
+      "read_seconds": 0.007610749918967485,
+      "bytes": 800292
+    },
+    {
+      "attempts": 400,
+      "repeat": 1,
+      "write_seconds": 0.022367624915204942,
+      "read_seconds": 0.007833749987185001,
+      "bytes": 800292
+    },
+    {
+      "attempts": 800,
+      "repeat": 0,
+      "write_seconds": 0.04543466691393405,
+      "read_seconds": 0.015461624949239194,
+      "bytes": 1600692
+    },
+    {
+      "attempts": 800,
+      "repeat": 1,
+      "write_seconds": 0.04376095894258469,
+      "read_seconds": 0.0160295000532642,
+      "bytes": 1600692
+    }
+  ]
+}

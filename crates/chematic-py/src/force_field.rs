@@ -8,6 +8,8 @@
 use crate::Mol;
 use pyo3::exceptions::{PyIndexError, PyValueError};
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
+use std::time::Instant;
 
 #[derive(Clone, Debug)]
 enum PreparedField {
@@ -274,6 +276,73 @@ impl PyMolecularForceField {
             return Err(PyValueError::new_err("bad direction in linearSearch"));
         }
         Ok((status, energy))
+    }
+
+    /// Cooperatively minimize the prepared force field until its time budget.
+    /// Coordinates stay at the last accepted point on timeout. Individual
+    /// energy or gradient evaluations cannot be interrupted and can overrun.
+    /// The returned coordinates are not checked for stereochemical validity.
+    #[pyo3(signature = (timeout_seconds, *, max_iters = 200))]
+    fn minimize_with_timeout_(
+        &mut self,
+        py: Python<'_>,
+        timeout_seconds: f64,
+        max_iters: u32,
+    ) -> PyResult<Py<PyDict>> {
+        if !timeout_seconds.is_finite() || timeout_seconds <= 0.0 {
+            return Err(PyValueError::new_err(
+                "timeout_seconds must be positive and finite",
+            ));
+        }
+        let started = Instant::now();
+        let field = &self.field;
+        let positions = &mut self.positions;
+        let (native_status, energy, iterations) = py.detach(move || {
+            let expired = || started.elapsed().as_secs_f64() >= timeout_seconds;
+            match field {
+                PreparedField::Mmff { field, .. } => {
+                    use chematic_ff::rdkit_mmff::RdkitMmffInterruptibleOptimization as Result;
+                    match field.optimize_interruptible(positions, max_iters, expired) {
+                        Result::Finished(outcome) => (
+                            Some(outcome.status),
+                            Some(outcome.energy),
+                            outcome.iterations,
+                        ),
+                        Result::Interrupted {
+                            completed_iterations,
+                            energy_at_position,
+                        } => (None, energy_at_position, completed_iterations),
+                    }
+                }
+                PreparedField::Uff(field) => {
+                    use chematic_ff::rdkit_uff::RdkitUffInterruptibleOptimization as Result;
+                    match field.optimize_interruptible(positions, max_iters, expired) {
+                        Result::Finished {
+                            status,
+                            energy,
+                            iterations,
+                        } => (Some(status), Some(energy), iterations),
+                        Result::Interrupted {
+                            completed_iterations,
+                            energy_at_position,
+                        } => (None, energy_at_position, completed_iterations),
+                    }
+                }
+            }
+        });
+        let status = match native_status {
+            None => "timeout",
+            Some(0) => "converged",
+            Some(1) => "iteration_limit",
+            Some(_) => "line_search_failed",
+        };
+        let result = PyDict::new(py);
+        result.set_item("status", status)?;
+        result.set_item("energy", energy)?;
+        result.set_item("iterations", iterations)?;
+        result.set_item("force_field_status", native_status)?;
+        result.set_item("elapsed_seconds", started.elapsed().as_secs_f64())?;
+        Ok(result.unbind())
     }
 }
 

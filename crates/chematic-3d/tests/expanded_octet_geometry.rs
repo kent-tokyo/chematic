@@ -4,7 +4,8 @@
 //! minimizer.
 
 use chematic_3d::{
-    Coords3D, generate_coords, generate_coords_etkdg, get_bond_angle_deg, minimize_uff,
+    Coords3D, generate_and_minimize_dreiding, generate_coords, generate_coords_etkdg,
+    get_bond_angle_deg, minimize_uff,
 };
 use chematic_core::{AtomIdx, Molecule};
 
@@ -25,6 +26,24 @@ const CASES: &[(&str, &[(f64, usize)])] = &[
     ("F[Xe](F)(F)F", &[(90.0, 4), (180.0, 2)]),
     ("FI(F)(F)(F)F", &[(90.0, 8), (180.0, 2)]),
 ];
+
+#[test]
+fn dreiding_entry_point_preserves_expanded_octet_shapes() {
+    for (smiles, expected) in [
+        ("FS(F)(F)(F)(F)F", OCTAHEDRAL),
+        ("ClP(Cl)(Cl)(Cl)Cl", TRIGONAL_BIPYRAMIDAL),
+    ] {
+        let mol = chematic_smiles::parse(smiles).unwrap();
+        let coords = generate_and_minimize_dreiding(&mol);
+        assert_shape(
+            smiles,
+            "generate_and_minimize_dreiding",
+            &sorted_angles(&mol, &coords),
+            expected,
+            8.0,
+        );
+    }
+}
 
 fn sorted_angles(mol: &Molecule, coords: &Coords3D) -> Vec<f64> {
     let centre = AtomIdx(1);

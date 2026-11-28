@@ -1,0 +1,80 @@
+{
+  "smiles": "F[C@]([H])(Cl)Br",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "numpy": "2.5.3",
+  "rdkit": "2026.09.2",
+  "results": [
+    {
+      "label": "reconstructed_h",
+      "seed": 20261129,
+      "samples": 30000,
+      "status_sequence_sha256": "d803f6817ba9a88a22acaf1dce627b181d37c38a4560c4f30049f52b5ba29dd1",
+      "counts": [
+        {
+          "oracle": "raw_agrees",
+          "screen": "satisfied",
+          "count": 6650
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "unevaluable",
+          "count": 12909
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "violated",
+          "count": 6875
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "satisfied",
+          "count": 1
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "unevaluable",
+          "count": 3562
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "violated",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "label": "independent_h",
+      "seed": 20261130,
+      "samples": 30000,
+      "status_sequence_sha256": "c8625a524d0a3052d8e4f3b83cdd1a12640f588ecbd03ceee0de9f0f17df9d96",
+      "counts": [
+        {
+          "oracle": "raw_agrees",
+          "screen": "satisfied",
+          "count": 1167
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "unevaluable",
+          "count": 18000
+        },
+        {
+          "oracle": "raw_agrees",
+          "screen": "violated",
+          "count": 1206
+        },
+        {
+          "oracle": "raw_disagrees",
+          "screen": "unevaluable",
+          "count": 9386
+        },
+        {
+          "oracle": "rdkit_unassigned",
+          "screen": "unevaluable",
+          "count": 241
+        }
+      ]
+    }
+  ]
+}

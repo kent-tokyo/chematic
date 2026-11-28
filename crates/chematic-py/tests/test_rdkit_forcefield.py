@@ -183,3 +183,41 @@ def test_heavy_conformer_can_be_ranked_after_explicit_hydrogen_refinement():
 
     with pytest.raises(ValueError, match="expected 3 atom coordinates"):
         mol.refine_mmff94_with_explicit_hydrogens(coords[:-1])
+
+
+@pytest.mark.parametrize("kind", ["MMFF94", "MMFF94s", "UFF"])
+@pytest.mark.parametrize("max_iters", [0, 200])
+def test_cooperative_timeout_minimize_matches_unlimited_when_not_expired(mol, kind, max_iters):
+    def make_field():
+        return mol.uff_force_field(COORDS) if kind == "UFF" else mol.mmff_force_field(COORDS, kind)
+
+    expected = make_field()
+    actual = make_field()
+    expected_status, expected_energy = expected.minimize_(max_iters)
+    result = actual.minimize_with_timeout_(15.0, max_iters=max_iters)
+    assert result["status"] == ("converged" if expected_status == 0 else "iteration_limit")
+    assert result["force_field_status"] == expected_status
+    assert result["energy"] == expected_energy
+    assert result["iterations"] <= max_iters
+    assert result["elapsed_seconds"] >= 0.0
+    assert actual.positions == expected.positions
+
+
+@pytest.mark.parametrize("kind", ["MMFF94", "UFF"])
+def test_cooperative_timeout_preserves_a_consistent_last_position(mol, kind):
+    field = mol.uff_force_field(COORDS) if kind == "UFF" else mol.mmff_force_field(COORDS, kind)
+    result = field.minimize_with_timeout_(1e-12, max_iters=200)
+    assert result["status"] == "timeout"
+    assert result["force_field_status"] is None
+    assert 0 <= result["iterations"] <= 200
+    assert all(math.isfinite(value) for point in field.positions for value in point)
+    if result["energy"] is not None:
+        assert result["energy"] == pytest.approx(field.energy(), abs=1e-10)
+
+
+@pytest.mark.parametrize("timeout", [0.0, -1.0, float("inf"), float("nan")])
+def test_cooperative_timeout_rejects_invalid_limits_without_mutating(mol, timeout):
+    field = mol.mmff_force_field(COORDS)
+    with pytest.raises(ValueError, match="positive and finite"):
+        field.minimize_with_timeout_(timeout)
+    assert field.positions == COORDS

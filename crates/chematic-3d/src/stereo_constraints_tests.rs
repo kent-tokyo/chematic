@@ -10,6 +10,113 @@ mod tests {
     }
 
     #[test]
+    fn alternative_repair_rejects_extreme_ligand_geometry() {
+        // RDKit identifies the variant-1 geometry as the wrong enantiomer,
+        // although the signed ligand-volume verifier reports it as satisfied.
+        let molecule = mol("O=C1OC(c2ccccc2)=N[C@]1(Cc1ccccc1)SCc1ccccc1");
+        let initial = crate::generate_coords_etkdg(&molecule);
+        let alternative = repair_stereo_with_variant(&molecule, &initial, 1).unwrap();
+        assert_eq!(
+            verify_stereo(&molecule, &alternative.coords).n_satisfied(),
+            1
+        );
+        assert!(!satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &alternative.coords
+        ));
+        let screened = verify_stereo_with_geometry_screen(&molecule, &alternative.coords);
+        assert_eq!(screened.distorted_tetrahedral, vec![AtomIdx(11)]);
+        assert_eq!(
+            screened.report.tetrahedral[0].status,
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry)
+        );
+
+        let molecule = mol("CC[C@H](NS(=O)(=O)c1ccc(C)cc1)c1n[nH]c(=S)o1");
+        let initial = crate::generate_coords_etkdg(&molecule);
+        let alternative = repair_stereo_with_variant(&molecule, &initial, 2).unwrap();
+        assert!(satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &alternative.coords
+        ));
+        assert_eq!(
+            verify_stereo_with_geometry_screen(&molecule, &alternative.coords)
+                .report
+                .tetrahedral[0]
+                .status,
+            StereoStatus::Satisfied
+        );
+        assert!(!satisfied_tetrahedral_geometry_is_regular(
+            &molecule,
+            &Coords3D::default()
+        ));
+    }
+
+    #[test]
+    fn final_reconciliation_rejects_loss_of_previously_satisfied_stereo() {
+        let initial = StereoVerification {
+            tetrahedral: vec![TetrahedralReport {
+                atom: AtomIdx(1),
+                status: StereoStatus::Satisfied,
+            }],
+            double_bond: vec![DoubleBondReport {
+                bond: BondIdx(2),
+                status: StereoStatus::Satisfied,
+            }],
+        };
+        for status in [
+            StereoStatus::Violated,
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+        ] {
+            let final_check = StereoVerification {
+                tetrahedral: vec![TetrahedralReport {
+                    atom: AtomIdx(1),
+                    status,
+                }],
+                double_bond: vec![DoubleBondReport {
+                    bond: BondIdx(2),
+                    status,
+                }],
+            };
+            let mut failures = Vec::new();
+            record_stereo_regressions(&initial, &final_check, &mut failures);
+            assert_eq!(
+                failures,
+                vec![
+                    (
+                        StereoElement::Tetrahedral(AtomIdx(1)),
+                        RepairRejectionReason::RepairCausedNewViolation
+                    ),
+                    (
+                        StereoElement::DoubleBond(BondIdx(2)),
+                        RepairRejectionReason::RepairCausedNewViolation
+                    ),
+                ]
+            );
+        }
+        let mut failures = Vec::new();
+        record_stereo_regressions(
+            &initial,
+            &StereoVerification {
+                tetrahedral: vec![],
+                double_bond: vec![],
+            },
+            &mut failures,
+        );
+        assert_eq!(failures.len(), 2);
+        failures.clear();
+        record_stereo_regressions(&initial, &initial, &mut failures);
+        assert!(failures.is_empty());
+        assert!(stereo_status_regressed(
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+            Some(StereoStatus::Violated)
+        ));
+        assert!(!stereo_status_regressed(
+            StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry),
+            Some(StereoStatus::Satisfied)
+        ));
+    }
+
+    #[test]
     fn phosphorus_and_sulfur_stereo_matches_rdkit_and_mirrors() {
         let fixtures = [
             (include_str!("stereo_constraints_ps_oracle.json"), 17),
@@ -69,6 +176,80 @@ mod tests {
         assert!(molecule.atom(AtomIdx(1)).chirality.is_tetrahedral());
         assert!(matches!(
             tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+            Err(StereoRejectionReason::UnsupportedCoordination)
+        ));
+    }
+
+    #[test]
+    fn neutral_selenium_double_bond_stereo_matches_rdkit_and_mirrors() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("stereo_constraints_se_neutral_oracle.json"))
+                .unwrap();
+        let rows = fixture["rows"].as_array().unwrap();
+        assert_eq!(rows.len(), 24);
+        for row in rows {
+            let smiles = row["smiles"].as_str().unwrap();
+            let molecule = chematic_chem::add_hydrogens(&mol(smiles));
+            let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+            assert_eq!(points.len(), molecule.atom_count());
+            let coords = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            let mirror = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(-x, y, z))
+                    .collect(),
+            };
+            let original = verify_stereo(&molecule, &coords);
+            let reflected = verify_stereo(&molecule, &mirror);
+            assert_eq!(original.n_declared(), 1, "{smiles}");
+            assert_eq!(original.n_unevaluable(), 0, "{smiles}");
+            assert_eq!(original.n_violations(), 0, "{smiles}");
+            assert_eq!(reflected.n_violations(), 1, "{smiles}");
+            assert_eq!(reflected.n_unevaluable(), 0, "{smiles}");
+        }
+    }
+
+    #[test]
+    fn neutral_selenium_repair_rechecks_declared_stereo() {
+        let fixture: serde_json::Value =
+            serde_json::from_str(include_str!("stereo_constraints_se_neutral_oracle.json"))
+                .unwrap();
+        let row = fixture["rows"].as_array().unwrap().first().unwrap();
+        let molecule = chematic_chem::add_hydrogens(&mol(row["smiles"].as_str().unwrap()));
+        let points: Vec<[f64; 3]> = serde_json::from_value(row["coords"].clone()).unwrap();
+        let mirror = Coords3D {
+            points: points
+                .iter()
+                .map(|&[x, y, z]| Point3::new(-x, y, z))
+                .collect(),
+        };
+        assert_eq!(verify_stereo(&molecule, &mirror).n_violations(), 1);
+        let outcome = repair_stereo(&molecule, &mirror).expect("acyclic repair should succeed");
+        assert_eq!(outcome.repaired.len(), 1);
+        let checked = verify_stereo(&molecule, &outcome.coords);
+        assert_eq!((checked.n_violations(), checked.n_unevaluable()), (0, 0));
+    }
+
+    #[test]
+    fn selenium_other_double_bond_coordination_stays_unevaluable() {
+        for smiles in ["C[Se@](=C)F", "C[Se@+](=O)F", "C[Se@H](=O)F"] {
+            let molecule = chematic_chem::add_hydrogens(&mol(smiles));
+            assert!(
+                matches!(
+                    tetrahedral_constraint_for(&molecule, AtomIdx(1)),
+                    Err(StereoRejectionReason::UnsupportedCoordination)
+                ),
+                "{smiles}"
+            );
+        }
+        let implicit_h = mol("C[Se@H](=O)F");
+        assert!(matches!(
+            tetrahedral_constraint_for(&implicit_h, AtomIdx(1)),
             Err(StereoRejectionReason::UnsupportedCoordination)
         ));
     }

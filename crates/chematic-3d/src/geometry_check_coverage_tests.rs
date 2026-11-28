@@ -1,7 +1,58 @@
 use crate::geometry_check::{
     GeometryCheckConfig, GeometryCheckError, MAX_GEOMETRY_CHECK_ATOMS,
-    MAX_GEOMETRY_CHECK_COORDINATE, check_geometry,
+    MAX_GEOMETRY_CHECK_COORDINATE, check_geometry, compare_nonbonded_clashes,
 };
+
+#[test]
+fn clash_comparison_detects_replaced_pairs_when_counts_are_equal() {
+    let molecule = chematic_smiles::parse("C.C.C").unwrap();
+    let before = Coords3D {
+        points: vec![
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(0.4, 0.0, 0.0),
+            Point3::new(2.0, 0.0, 0.0),
+        ],
+    };
+    let after = Coords3D {
+        points: vec![
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(2.0, 0.0, 0.0),
+            Point3::new(0.4, 0.0, 0.0),
+        ],
+    };
+    let comparison = compare_nonbonded_clashes(&molecule, &before, &after, 0.8).unwrap();
+    assert_eq!((comparison.before_count, comparison.after_count), (1, 1));
+    assert_eq!(comparison.new_clashes[0].atoms, [AtomIdx(0), AtomIdx(2)]);
+    assert_eq!(
+        comparison.resolved_clashes[0].atoms,
+        [AtomIdx(0), AtomIdx(1)]
+    );
+    assert!(
+        compare_nonbonded_clashes(&molecule, &before, &before, 0.8)
+            .unwrap()
+            .new_clashes
+            .is_empty()
+    );
+    let boundary = Coords3D {
+        points: vec![
+            Point3::new(0.0, 0.0, 0.0),
+            Point3::new(0.8, 0.0, 0.0),
+            Point3::new(3.0, 0.0, 0.0),
+        ],
+    };
+    assert_eq!(
+        compare_nonbonded_clashes(&molecule, &boundary, &boundary, 0.8)
+            .unwrap()
+            .after_count,
+        0
+    );
+    for cutoff in [0.0, f64::NAN, f64::INFINITY] {
+        assert_eq!(
+            compare_nonbonded_clashes(&molecule, &before, &after, cutoff).unwrap_err(),
+            GeometryCheckError::ClashCutoff
+        );
+    }
+}
 use chematic_core::{
     Atom, AtomIdx, BondIdx, BondOrder, Coords3D, Element, MoleculeBuilder, Point3,
 };

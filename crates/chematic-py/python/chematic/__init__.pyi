@@ -233,6 +233,10 @@ class MolecularForceField:
 
     def minimize_(self, max_iters: int = 200) -> tuple[int, float]: ...
 
+    def minimize_with_timeout_(
+        self, timeout_seconds: float, *, max_iters: int = 200
+    ) -> dict[str, object]: ...
+
 # ---------------------------------------------------------------------------
 # Mol
 # ---------------------------------------------------------------------------
@@ -470,6 +474,31 @@ class Mol:
         repair_mmff_iters: int = 0,
     ) -> list[tuple[int, float, list[list[float]]]]:
         """Generate an ensemble with the compatibility gradient and stereo checks."""
+        ...
+
+    def etkdg_embed_multiple_confs_mixed_checked_diagnostics(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> tuple[list[tuple[int, float | None, list[list[float]], str | None]], int,
+               str | None, int | None, int | None, int | None]:
+        """Return conformers and MMFF-fallback stereo rejection counts."""
+        ...
+
+    def etkdg_embed_multiple_confs_mixed_checked_with_fallback(
+        self,
+        num_confs: int,
+        *,
+        random_seed: int = 42,
+        max_iterations: int = 0,
+        max_mmff_iters: int = 200,
+        repair_mmff_iters: int = 0,
+    ) -> list[tuple[int, float | None, list[list[float]], str | None]]:
+        """Return checked coordinates even when MMFF setup fails."""
         ...
 
     def etkdg_embed_multiple_confs_mmff_mixed_checked(
@@ -2144,6 +2173,12 @@ class Mol:
         """
         ...
 
+    def rdkit_embed_square_planar(self, *, random_seed: int = 42, max_iterations: int = 0, trans_min_degrees: float = 150.0, cis_tolerance_degrees: float = 30.0) -> list[list[float]]: ...
+    def rdkit_embed_square_planar_with_retry(self, *, random_seed: int = 42, max_iterations: int = 0, trans_min_degrees: float = 150.0, cis_tolerance_degrees: float = 30.0) -> dict[str, Any]: ...
+    def rdkit_embed_square_planar_checked(self, *, max_unit_triple_product: float, random_seed: int = 42, max_iterations: int = 0, trans_min_degrees: float = 150.0, cis_tolerance_degrees: float = 30.0) -> dict[str, Any]: ...
+    def square_planar_geometry_diagnostics(self, coords: Iterable[Sequence[float]]) -> list[dict[str, Any]]: ...
+    def stereo_3d_diagnostics(self, coords: Iterable[Sequence[float]], *, require_regular_geometry: bool = False) -> dict[str, Any]: ...
+    def repair_stereo_3d(self, coords: Iterable[Sequence[float]], *, clash_cutoff: float | None = None, max_alternative_attempts: int = 0, require_regular_geometry: bool = False) -> dict[str, Any]: ...
     def check_geometry(self, coordinates: Iterable[Sequence[float]], *, bond_relative_tolerance: float = 0.5, nonbonded_min_distance: float = 1.2) -> dict[str, Any]:
         """Screen supplied atom-order Cartesian coordinates in Angstrom, read-only.
 
@@ -6440,3 +6475,18 @@ def write_nwchem_geometry(record: dict[str, Any]) -> str: ...
 # Nonperiodic BIOGRF 200 records (no inferred element or formal charge).
 def parse_bgf(text: str | bytes) -> dict[str, Any]: ...
 def write_bgf(record: dict[str, Any]) -> str: ...
+
+def generate_conformers_timed(
+    smiles: str,
+    num_confs: int,
+    *,
+    timeout_seconds: float,
+    random_seed: int = 42,
+    max_iterations: int = 0,
+    max_mmff_iters: int = 200,
+    repair_mmff_iters: int = 0,
+    return_partial: bool = False,
+    return_preview: bool = False,
+    preview_require_regular_geometry: bool = False,
+    conformer_require_regular_geometry: bool = False,
+) -> dict[str, object]: ...

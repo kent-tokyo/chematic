@@ -1,0 +1,164 @@
+name: Reserved COD timed conformer evaluation
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '.github/workflows/cod-reserved-timed.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - run: python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+      - name: Reconstruct and verify the reserved sample
+        run: |
+          curl --fail --location --retry 3 --max-time 1200 --output reference.tar https://bits.csb.pitt.edu/files/cod.tgz
+          echo 'e1d6191fd665dbcc8ce5a24731fefe6ecf6460e0d25f5e290e264646543a16a2  reference.tar' | sha256sum -c
+          python scripts/validation/select_cod_reference_sample.py reference.tar --sample-size 12000 --offset 24000 --sdf reference.sdf --manifest reference-manifest.json
+          echo 'e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117  reference.sdf' | sha256sum -c
+          python scripts/validation/reserved_timed_shards.py prepare reference.sdf validation/manifests/cod-reserved-2026-11-26-split.json shards --shards 8
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: reserved-input
+          path: |
+            reference.sdf
+            reference-manifest.json
+            shards/
+          if-no-files-found: error
+
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - run: python -m pip install 'maturin==1.13.3'
+      - run: maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out candidate
+      - name: Record candidate identity
+        run: |
+          git rev-parse HEAD > candidate/source-commit.txt
+          python -c 'import glob,hashlib,pathlib; p, = glob.glob("candidate/*.whl"); pathlib.Path("candidate/wheel-sha256.txt").write_text(hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()+"\n")'
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: reserved-wheel-${{ matrix.os }}
+          path: candidate/
+          if-no-files-found: error
+
+  measure:
+    needs: [prepare, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        shard: ['000', '001', '002', '003', '004', '005', '006', '007']
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      RAYON_NUM_THREADS: '1'
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: reserved-input
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: reserved-wheel-${{ matrix.os }}
+          path: candidate
+      - name: Install verified candidate and reference engine
+        run: |
+          test "$(cat candidate/source-commit.txt)" = "$SOURCE_COMMIT"
+          python -c 'import glob,hashlib,pathlib; p, = glob.glob("candidate/*.whl"); assert hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==pathlib.Path("candidate/wheel-sha256.txt").read_text().strip()'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/*.whl
+      - name: Score all records in shard
+        run: |
+          python scripts/benchmarks/platinum_time_budget.py --sdf reference.sdf --baseline shards/baseline-${{ matrix.shard }}.json --output result-${{ matrix.shard }}.json --limit 12000 --seconds 0.2 --max-candidates 20 --repair-iters 400 --geometry --hard-timeout --profile mixed-fallback --strict-stereo --wheel-sha256 "$(cat candidate/wheel-sha256.txt)" --source-commit "$SOURCE_COMMIT"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: reserved-result-${{ matrix.os }}-${{ matrix.shard }}
+          path: result-${{ matrix.shard }}.json
+          if-no-files-found: warn
+
+  report:
+    needs: [prepare, build, measure]
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    env:
+      OMP_NUM_THREADS: '1'
+      OPENBLAS_NUM_THREADS: '1'
+      RAYON_NUM_THREADS: '1'
+      SOURCE_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: '3.13'
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: reserved-input
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          name: reserved-wheel-${{ matrix.os }}
+          path: candidate
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        with:
+          pattern: reserved-result-${{ matrix.os }}-*
+          path: results
+          merge-multiple: true
+      - name: Install and verify engines
+        run: |
+          test "$(cat candidate/source-commit.txt)" = "$SOURCE_COMMIT"
+          python -c 'import glob,hashlib,pathlib; p, = glob.glob("candidate/*.whl"); assert hashlib.sha256(pathlib.Path(p).read_bytes()).hexdigest()==pathlib.Path("candidate/wheel-sha256.txt").read_text().strip()'
+          python -m pip install 'rdkit==2026.9.2' 'numpy<3'
+          python -m pip install --force-reinstall --no-deps candidate/*.whl
+      - name: Audit common force-field support and report
+        run: |
+          python scripts/validation/cod_support_probe.py reference.sdf validation/manifests/cod-reserved-2026-11-26-split.json --partition holdout --output support.json
+          python scripts/validation/reserved_timed_shards.py merge shards/manifest.json merged.json results/result-*.json --wheel-sha256 "$(cat candidate/wheel-sha256.txt)" --source-commit "$SOURCE_COMMIT" --allow-mixed-platforms
+          python scripts/benchmarks/summarize_platinum_time_holdout.py merged.json validation/manifests/cod-reserved-2026-11-26-split.json --output summary.json --support support.json --groups validation/manifests/cod-reserved-2026-11-26-groups.json --require-strict --bootstrap 10000
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: reserved-report-${{ matrix.os }}
+          path: |
+            candidate/source-commit.txt
+            candidate/wheel-sha256.txt
+            support.json
+            merged.json
+            summary.json
+          if-no-files-found: warn

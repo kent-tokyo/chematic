@@ -126,6 +126,14 @@ const PHANTOM_DIRECTION_EPS: f64 = 1e-3;
 /// this is never used as a physically accurate bond length anywhere.
 const PHANTOM_BOND_LENGTH: f64 = 1.0;
 
+// Experimental margin for three-real-ligand carbon bearing one H. The
+// absolute normalized triple product is 0 for coplanar bond directions and
+// is independent of bond lengths. Used only by the opt-in geometry screen.
+const MIN_HYDROGEN_BEARING_CARBON_DIRECTION_VOLUME: f64 = 0.15;
+// Treat an explicit H as reconstructed only when its unit direction matches
+// the implicit-H construction to within this cosine tolerance.
+const RECONSTRUCTED_H_COSINE_TOLERANCE: f64 = 1e-8;
+
 // ---------------------------------------------------------------------------
 // Public result types
 // ---------------------------------------------------------------------------
@@ -343,6 +351,44 @@ pub fn verify_stereo(mol: &Molecule, coords: &Coords3D) -> StereoVerification {
     }
 }
 
+/// A stereo report and the tetrahedral centers rejected by the geometry screen.
+#[derive(Debug, Clone)]
+pub struct GeometryScreenedStereoVerification {
+    pub report: StereoVerification,
+    pub distorted_tetrahedral: Vec<AtomIdx>,
+}
+
+/// Verify declared stereo with an additional conservative tetrahedral geometry
+/// screen. Reported satisfied or violated tetrahedral centers whose ligand
+/// geometry fails the screen become unevaluable. Double bonds and elements
+/// already unevaluable retain their original status. The screen is a heuristic,
+/// not an independent stereo oracle or proof of physical validity.
+/// Rejected centers are listed in `distorted_tetrahedral`; their status in
+/// `report` is `Unevaluable(DegenerateGeometry)`.
+/// `report.is_fully_satisfied()` excludes unevaluable elements from violations;
+/// also check `report.n_unevaluable()` before treating all stereo as verified.
+///
+/// As with [`verify_stereo`], coordinates must match the molecule's atom order.
+pub fn verify_stereo_with_geometry_screen(
+    mol: &Molecule,
+    coords: &Coords3D,
+) -> GeometryScreenedStereoVerification {
+    let mut report = verify_stereo(mol, coords);
+    let mut distorted_tetrahedral = Vec::new();
+    for result in &mut report.tetrahedral {
+        if !matches!(result.status, StereoStatus::Unevaluable(_))
+            && !tetrahedral_geometry_is_regular(mol, coords, result.atom)
+        {
+            result.status = StereoStatus::Unevaluable(StereoRejectionReason::DegenerateGeometry);
+            distorted_tetrahedral.push(result.atom);
+        }
+    }
+    GeometryScreenedStereoVerification {
+        report,
+        distorted_tetrahedral,
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Constraint representation (declared stereo, independent of any geometry)
 // ---------------------------------------------------------------------------
@@ -531,25 +577,147 @@ fn tetrahedral_positions(
     Ok(out)
 }
 
+/// Conservative geometric screen for reported, satisfied tetrahedral centers.
+/// The central atom must be inside its four-ligand tetrahedron, and all pairs of
+/// ligand directions (including a reconstructed implicit ligand) must form
+/// angles between 45 and 165 degrees. Carbon with an implicit hydrogen or an
+/// explicit hydrogen matching its reconstructed direction additionally needs
+/// normalized three-ligand direction volume at least 0.15. This is a coarse
+/// screen, not an independent stereo oracle or geometry minimization.
+pub fn satisfied_tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D) -> bool {
+    if coords.atom_count() != mol.atom_count() || !coords.is_finite() {
+        return false;
+    }
+    let report = verify_stereo(mol, coords);
+    for item in report
+        .tetrahedral
+        .iter()
+        .filter(|r| r.status.is_satisfied())
+    {
+        if !tetrahedral_geometry_is_regular(mol, coords, item.atom) {
+            return false;
+        }
+    }
+    true
+}
+
+fn tetrahedral_geometry_is_regular(mol: &Molecule, coords: &Coords3D, atom: AtomIdx) -> bool {
+    let Ok(constraint) = tetrahedral_constraint_for(mol, atom) else {
+        return false;
+    };
+    let Ok(p) = tetrahedral_positions(coords, atom, &constraint.order) else {
+        return false;
+    };
+    let center = coords.get(atom);
+    if mol.atom(atom).element.atomic_number() == 6 {
+        let neighbors: Vec<_> = mol.neighbors(atom).map(|(neighbor, _)| neighbor).collect();
+        let implicit_h = neighbors.len() == 3 && mol.implicit_hydrogen_count(atom) == 1;
+        let explicit_h = neighbors.len() == 4
+            && mol.implicit_hydrogen_count(atom) == 0
+            && neighbors
+                .iter()
+                .filter(|&&n| mol.atom(n).element.atomic_number() == 1)
+                .count()
+                == 1;
+        let directions: Option<Vec<_>> = if implicit_h || explicit_h {
+            neighbors
+                .iter()
+                .copied()
+                .filter(|&n| !explicit_h || mol.atom(n).element.atomic_number() != 1)
+                .map(|neighbor| coords.get(neighbor).sub(&center).try_normalize())
+                .collect()
+        } else {
+            Some(Vec::new())
+        };
+        let Some(directions) = directions else {
+            return false;
+        };
+        let matches_reconstruction = if explicit_h {
+            let reconstructed = directions[0]
+                .add(&directions[1])
+                .add(&directions[2])
+                .scale(-1.0);
+            let hydrogen = neighbors
+                .iter()
+                .copied()
+                .find(|&n| mol.atom(n).element.atomic_number() == 1)
+                .expect("explicit_h checked exactly one hydrogen");
+            let actual = coords.get(hydrogen).sub(&center).try_normalize();
+            reconstructed.norm() >= PHANTOM_DIRECTION_EPS
+                && reconstructed
+                    .try_normalize()
+                    .zip(actual)
+                    .is_some_and(|(expected, actual)| {
+                        expected.dot(&actual) >= 1.0 - RECONSTRUCTED_H_COSINE_TOLERANCE
+                    })
+        } else {
+            false
+        };
+        if implicit_h || matches_reconstruction {
+            let volume = directions[0]
+                .dot(&directions[1].cross(&directions[2]))
+                .abs();
+            if !volume.is_finite() || volume < MIN_HYDROGEN_BEARING_CARBON_DIRECTION_VOLUME {
+                return false;
+            }
+        }
+    }
+    let volume = signed_volume(p[0], p[1], p[2], p[3]);
+    if !volume.is_finite() || volume.abs() < VOLUME_EPS {
+        return false;
+    }
+    let weights = [
+        signed_volume(center, p[1], p[2], p[3]) / volume,
+        signed_volume(p[0], center, p[2], p[3]) / volume,
+        signed_volume(p[0], p[1], center, p[3]) / volume,
+        signed_volume(p[0], p[1], p[2], center) / volume,
+    ];
+    if weights.iter().any(|w| !w.is_finite() || *w <= 1e-6) {
+        return false;
+    }
+    for i in 0..4 {
+        for j in i + 1..4 {
+            let Some(a) = p[i].sub(&center).try_normalize() else {
+                return false;
+            };
+            let Some(b) = p[j].sub(&center).try_normalize() else {
+                return false;
+            };
+            let cosine = a.dot(&b);
+            if !cosine.is_finite()
+                || !(-0.9659258262890683..=core::f64::consts::FRAC_1_SQRT_2).contains(&cosine)
+            {
+                return false;
+            }
+        }
+    }
+    true
+}
+
 /// Declared-parity-only prefix of tetrahedral verification, needing no geometry --
 /// same gates, same order, as the coords-dependent code that used to precede the
 /// geometry check inline. Plain tetrahedral centers and explicitly supported
-/// phosphorus and sulfur coordination are in scope. Allene central atoms,
+/// phosphorus, sulfur and selected three-coordinate selenium are in scope. Allene central atoms,
 /// which declare axial chirality via bond directions rather than
 /// `Atom::chirality`, are handled by the double-bond path instead.
-fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
+fn supported_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: bool) -> bool {
     let atom = mol.atom(idx);
-    // Three-coordinate neutral S with one S=O or S=N bond, and sulfonium
-    // S+ with three single bonds, have a stereochemically active lone pair.
-    // Represent it by the direction opposite the three unit bond vectors.
-    let neutral_sulfur_lone_pair = atom.element.atomic_number() == 16
+    // For the tested three-coordinate neutral sulfur and selenium classes,
+    // represent the lone pair opposite the three unit bond vectors.
+    let element = atom.element.atomic_number();
+    let neutral_chalcogen_lone_pair = matches!(element, 16 | 34)
         && atom.charge == 0
+        && (element != 34 || implicit_hcount(mol, idx) == 0)
         && mol.neighbors(idx).count() == 3
         && mol
             .neighbors(idx)
             .filter(|(n, b)| {
                 mol.bond(*b).order == BondOrder::Double
-                    && matches!(mol.atom(*n).element.atomic_number(), 7 | 8)
+                    && match element {
+                        16 => matches!(mol.atom(*n).element.atomic_number(), 7 | 8),
+                        34 => matches!(mol.atom(*n).element.atomic_number(), 7 | 8 | 16 | 34),
+                        _ => false,
+                    }
             })
             .count()
             == 1
@@ -564,11 +732,13 @@ fn sulfur_has_stereo_lone_pair(mol: &Molecule, idx: AtomIdx, all_single_ish: boo
             .filter(|(_, b)| mol.bond(*b).order == BondOrder::Double)
             .count()
             == 1;
-    let sulfonium_lone_pair = atom.element.atomic_number() == 16
+    // Three-coordinate selenonium has the same tetrahedral neighbor-order
+    // convention as sulfonium for the active lone pair.
+    let sulfonium_lone_pair = matches!(atom.element.atomic_number(), 16 | 34)
         && atom.charge == 1
         && mol.neighbors(idx).count() == 3
         && all_single_ish;
-    neutral_sulfur_lone_pair || sulfonium_lone_pair
+    neutral_chalcogen_lone_pair || sulfonium_lone_pair
 }
 
 fn tetrahedral_constraint_for(
@@ -626,22 +796,22 @@ fn tetrahedral_constraint_for(
                 BondOrder::Single | BondOrder::Up | BondOrder::Down | BondOrder::Double
             )
         });
-    let sulfur_lone_pair = sulfur_has_stereo_lone_pair(mol, idx, all_single_ish);
-    if !all_single_ish && !four_coordinate_ps && !sulfur_lone_pair {
+    let stereo_lone_pair = supported_stereo_lone_pair(mol, idx, all_single_ish);
+    if !all_single_ish && !four_coordinate_ps && !stereo_lone_pair {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
     let Some(mut order) = declared_neighbor_order(mol, idx) else {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     };
-    if sulfur_lone_pair && order.len() == 3 {
+    if stereo_lone_pair && order.len() == 3 {
         order.push(STEREO_H_SENTINEL);
     }
     let n_sentinels = order.iter().filter(|&&n| n == STEREO_H_SENTINEL).count();
     if order.len() != 4 || n_sentinels > 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
-    if n_sentinels == 1 && !sulfur_lone_pair && implicit_hcount(mol, idx) != 1 {
+    if n_sentinels == 1 && !stereo_lone_pair && implicit_hcount(mol, idx) != 1 {
         return Err(StereoRejectionReason::UnsupportedCoordination);
     }
 
@@ -1052,7 +1222,9 @@ pub enum RepairRejectionReason {
     /// started, or `Violated` and already individually confirmed fixed by its own
     /// repair attempt -- ended up `Violated` in the final geometry because some
     /// *other*, unrelated repair in the same `repair_stereo` call moved
-    /// shared/overlapping geometry it depended on.
+    /// shared/overlapping geometry it depended on. Also used when a previously
+    /// satisfied element becomes unevaluable or disappears, or an unevaluable
+    /// element becomes violated.
     RepairCausedNewViolation,
 }
 
@@ -1088,372 +1260,10 @@ pub struct RepairFailureReport {
     pub failures: Vec<(StereoElement, RepairRejectionReason)>,
 }
 
-/// BFS component reachable from `starts`, never stepping into `blocked`. Returns
-/// `None` if the search reaches any atom in `forbidden` -- meaning the starting
-/// point(s) are not a clean graph bridge off `blocked` (some path loops back to the
-/// rest of the molecule through a ring, not just through `blocked` itself).
-fn bridge_component(
-    mol: &Molecule,
-    starts: &[AtomIdx],
-    blocked: AtomIdx,
-    forbidden: &[AtomIdx],
-) -> Option<HashSet<AtomIdx>> {
-    let mut seen: HashSet<AtomIdx> = starts.iter().copied().collect();
-    let mut queue: VecDeque<AtomIdx> = starts.iter().copied().collect();
-    while let Some(cur) = queue.pop_front() {
-        for (nb, _) in mol.neighbors(cur) {
-            if nb == blocked {
-                continue;
-            }
-            if forbidden.contains(&nb) {
-                return None;
-            }
-            if seen.insert(nb) {
-                queue.push_back(nb);
-            }
-        }
-    }
-    Some(seen)
-}
-
-fn repair_tetrahedral_center(
-    mol: &Molecule,
-    coords: &mut Coords3D,
-    idx: AtomIdx,
-) -> Result<RepairedElement, RepairRejectionReason> {
-    let order = tetrahedral_constraint_for(mol, idx)
-        .expect("already validated by verify_stereo before repair was attempted")
-        .order;
-    let real_neighbors: Vec<u32> = order
-        .iter()
-        .copied()
-        .filter(|&n| n != STEREO_H_SENTINEL)
-        .collect();
-
-    // Pick the smallest bridge-eligible real substituent to move (least disturbance).
-    let mut best: Option<(u32, HashSet<AtomIdx>)> = None;
-    for &cand in &real_neighbors {
-        let others: Vec<AtomIdx> = real_neighbors
-            .iter()
-            .copied()
-            .filter(|&n| n != cand)
-            .map(AtomIdx)
-            .collect();
-        if let Some(component) = bridge_component(mol, &[AtomIdx(cand)], idx, &others)
-            && best
-                .as_ref()
-                .map(|(_, c)| component.len() < c.len())
-                .unwrap_or(true)
-        {
-            best = Some((cand, component));
-        }
-    }
-    let Some((moved, component)) = best else {
-        return Err(RepairRejectionReason::NoBridgeEligibleSubstituent);
-    };
-
-    // Declared-order positions BEFORE any mutation (phantom computed from the
-    // original, not-yet-moved real neighbor positions).
-    let center = coords.get(idx);
-    let positions4: Vec<Point3> = order
-        .iter()
-        .map(|&n| {
-            if n == STEREO_H_SENTINEL {
-                let real_positions: Vec<Point3> = real_neighbors
-                    .iter()
-                    .map(|&r| coords.get(AtomIdx(r)))
-                    .collect();
-                phantom_neighbor_position(center, &real_positions)
-                    .expect("already validated by verify_stereo before repair was attempted")
-            } else {
-                coords.get(AtomIdx(n))
-            }
-        })
-        .collect();
-
-    let moved_slot = order
-        .iter()
-        .position(|&n| n == moved)
-        .expect("moved came from order");
-    let others: Vec<Point3> = (0..4)
-        .filter(|&i| i != moved_slot)
-        .map(|i| positions4[i])
-        .collect();
-
-    let normal = others[1]
-        .sub(&others[0])
-        .cross(&others[2].sub(&others[0]))
-        .try_normalize()
-        .ok_or(RepairRejectionReason::DegenerateReflectionPlane)?;
-
-    let p_moved = positions4[moved_slot];
-    let signed_dist = normal.dot(&p_moved.sub(&others[0]));
-    let reflected = p_moved.sub(&normal.scale(2.0 * signed_dist));
-    let direction = reflected
-        .sub(&center)
-        .try_normalize()
-        .ok_or(RepairRejectionReason::DegenerateReflectionDirection)?;
-    let bond_len = p_moved.sub(&center).norm();
-    let new_p_moved = center.add(&direction.scale(bond_len));
-    let displacement = new_p_moved.sub(&p_moved);
-    let displacement_mag = displacement.norm();
-
-    for &atom in &component {
-        let old = coords.get(atom);
-        coords.set(atom, old.add(&displacement));
-    }
-
-    match verify_tetrahedral_center(mol, coords, idx) {
-        StereoStatus::Satisfied => Ok(RepairedElement {
-            element: StereoElement::Tetrahedral(idx),
-            atoms_moved: component.len(),
-            max_displacement: displacement_mag,
-        }),
-        _ => Err(RepairRejectionReason::StillViolatedAfterRepair),
-    }
-}
-
-fn rotate_180_around_axis(p: Point3, axis_point: Point3, axis_dir: Point3) -> Point3 {
-    let v = p.sub(&axis_point);
-    let parallel = axis_dir.scale(v.dot(&axis_dir));
-    let perp = v.sub(&parallel);
-    let new_v = parallel.sub(&perp);
-    axis_point.add(&new_v)
-}
-
-fn repair_double_bond(
-    mol: &Molecule,
-    coords: &mut Coords3D,
-    bond_idx: BondIdx,
-) -> Result<RepairedElement, RepairRejectionReason> {
-    let bond = mol.bond(bond_idx);
-    let a1 = bond.atom1;
-    let a2 = bond.atom2;
-
-    let a1_subs: Vec<AtomIdx> = mol
-        .neighbors(a1)
-        .filter(|&(nb, _)| nb != a2)
-        .map(|(nb, _)| nb)
-        .collect();
-    let a2_subs: Vec<AtomIdx> = mol
-        .neighbors(a2)
-        .filter(|&(nb, _)| nb != a1)
-        .map(|(nb, _)| nb)
-        .collect();
-
-    let a1_component = if a1_subs.is_empty() {
-        None
-    } else {
-        bridge_component(mol, &a1_subs, a1, &[a2])
-    };
-    let a2_component = if a2_subs.is_empty() {
-        None
-    } else {
-        bridge_component(mol, &a2_subs, a2, &[a1])
-    };
-
-    let (pivot, other_end, component) = match (a1_component, a2_component) {
-        (Some(c1), Some(c2)) => {
-            if c1.len() <= c2.len() {
-                (a1, a2, c1)
-            } else {
-                (a2, a1, c2)
-            }
-        }
-        (Some(c1), None) => (a1, a2, c1),
-        (None, Some(c2)) => (a2, a1, c2),
-        (None, None) => return Err(RepairRejectionReason::NoBridgeEligibleSubstituent),
-    };
-
-    let axis_point = coords.get(pivot);
-    let axis_dir = coords
-        .get(other_end)
-        .sub(&axis_point)
-        .try_normalize()
-        .ok_or(RepairRejectionReason::DegenerateReflectionDirection)?;
-
-    let mut max_disp = 0.0_f64;
-    for &atom in &component {
-        let old = coords.get(atom);
-        let new = rotate_180_around_axis(old, axis_point, axis_dir);
-        let disp = new.sub(&old).norm();
-        if disp > max_disp {
-            max_disp = disp;
-        }
-        coords.set(atom, new);
-    }
-
-    match verify_double_bond(mol, coords, bond_idx) {
-        Some(StereoStatus::Satisfied) => Ok(RepairedElement {
-            element: StereoElement::DoubleBond(bond_idx),
-            atoms_moved: component.len(),
-            max_displacement: max_disp,
-        }),
-        _ => Err(RepairRejectionReason::StillViolatedAfterRepair),
-    }
-}
-
-/// Verify `(mol, coords)`, then repair every `Violated` element found. Returns
-/// `Ok(RepairOutcome)` only when every originally-`Violated` element is now
-/// `Satisfied` **and** no originally-`Satisfied` element regressed; otherwise
-/// `Err(RepairFailureReport)` naming exactly which element(s) failed and why.
-/// `Unevaluable` elements are left untouched either way (nothing to compare a repair
-/// against).
-pub fn repair_stereo(
-    mol: &Molecule,
-    coords: &Coords3D,
-) -> Result<RepairOutcome, RepairFailureReport> {
-    let initial = verify_stereo(mol, coords);
-    let mut working = coords.clone();
-    let mut repaired = Vec::new();
-    let mut failures: Vec<(StereoElement, RepairRejectionReason)> = Vec::new();
-
-    let unevaluable = unevaluable_elements(&initial);
-    apply_stereo_repairs(mol, &initial, &mut working, &mut repaired, &mut failures);
-
-    // Unconditional final reconciliation pass -- runs whether or not the loop above
-    // already produced failures, and checks BOTH directions:
-    //   (a) an originally-Satisfied element disturbed by some OTHER element's repair.
-    //   (b) an originally-Violated element that `repair_tetrahedral_center`/
-    //       `repair_double_bond`'s OWN immediate re-verify confirmed fixed (already
-    //       pushed to `repaired`), but which a STILL LATER, unrelated repair in this
-    //       same call silently moved back into violation.
-    // (b) is not hypothetical: found via this module's own validation harness on
-    // real corpus data (cholesterol) -- two ring-fused stereocenters whose bridge-
-    // safe substituents can still overlap enough that fixing one undoes an
-    // already-confirmed fix on another, even though each individual repair's own
-    // bridge check passed. Both directions are reported the same way
-    // (`RepairCausedNewViolation`): from the caller's perspective, both mean "some
-    // OTHER repair in this call broke something that was fine a moment ago." This
-    // is a detect-and-fail-closed pass, not an iterate-to-a-fixed-point one -- a
-    // caller can retry `repair_stereo` on the returned `partial_coords` if a fixed
-    // point is reachable, but this function does not loop internally.
-    let final_check = verify_stereo(mol, &working);
-
-    let repaired = retain_successful_repairs(repaired, &final_check, &mut failures);
-    record_stereo_regressions(&initial, &final_check, &mut failures);
-
-    if !failures.is_empty() {
-        return Err(RepairFailureReport {
-            partial_coords: working,
-            repaired,
-            failures,
-        });
-    }
-
-    Ok(RepairOutcome {
-        coords: working,
-        repaired,
-        unevaluable,
-    })
-}
-
-fn unevaluable_elements(verification: &StereoVerification) -> Vec<StereoElement> {
-    verification
-        .tetrahedral
-        .iter()
-        .filter(|result| matches!(result.status, StereoStatus::Unevaluable(_)))
-        .map(|result| StereoElement::Tetrahedral(result.atom))
-        .chain(
-            verification
-                .double_bond
-                .iter()
-                .filter(|result| matches!(result.status, StereoStatus::Unevaluable(_)))
-                .map(|result| StereoElement::DoubleBond(result.bond)),
-        )
-        .collect()
-}
-
-fn apply_stereo_repairs(
-    mol: &Molecule,
-    initial: &StereoVerification,
-    coords: &mut Coords3D,
-    repaired: &mut Vec<RepairedElement>,
-    failures: &mut Vec<(StereoElement, RepairRejectionReason)>,
-) {
-    for result in &initial.tetrahedral {
-        if result.status.is_violated() {
-            match repair_tetrahedral_center(mol, coords, result.atom) {
-                Ok(info) => repaired.push(info),
-                Err(reason) => failures.push((StereoElement::Tetrahedral(result.atom), reason)),
-            }
-        }
-    }
-    for result in &initial.double_bond {
-        if result.status.is_violated() {
-            match repair_double_bond(mol, coords, result.bond) {
-                Ok(info) => repaired.push(info),
-                Err(reason) => failures.push((StereoElement::DoubleBond(result.bond), reason)),
-            }
-        }
-    }
-}
-
-fn retain_successful_repairs(
-    repaired: Vec<RepairedElement>,
-    final_check: &StereoVerification,
-    failures: &mut Vec<(StereoElement, RepairRejectionReason)>,
-) -> Vec<RepairedElement> {
-    repaired
-        .into_iter()
-        .filter(|info| {
-            let satisfied = match info.element {
-                StereoElement::Tetrahedral(atom) => final_check
-                    .tetrahedral
-                    .iter()
-                    .find(|result| result.atom == atom)
-                    .is_some_and(|result| result.status.is_satisfied()),
-                StereoElement::DoubleBond(bond) => final_check
-                    .double_bond
-                    .iter()
-                    .find(|result| result.bond == bond)
-                    .is_some_and(|result| result.status.is_satisfied()),
-            };
-            if !satisfied {
-                failures.push((
-                    info.element,
-                    RepairRejectionReason::RepairCausedNewViolation,
-                ));
-            }
-            satisfied
-        })
-        .collect()
-}
-
-fn record_stereo_regressions(
-    initial: &StereoVerification,
-    final_check: &StereoVerification,
-    failures: &mut Vec<(StereoElement, RepairRejectionReason)>,
-) {
-    for result in &initial.tetrahedral {
-        let regressed = result.status.is_satisfied()
-            && final_check
-                .tetrahedral
-                .iter()
-                .find(|candidate| candidate.atom == result.atom)
-                .is_some_and(|candidate| candidate.status.is_violated());
-        if regressed {
-            failures.push((
-                StereoElement::Tetrahedral(result.atom),
-                RepairRejectionReason::RepairCausedNewViolation,
-            ));
-        }
-    }
-    for result in &initial.double_bond {
-        let regressed = result.status.is_satisfied()
-            && final_check
-                .double_bond
-                .iter()
-                .find(|candidate| candidate.bond == result.bond)
-                .is_some_and(|candidate| candidate.status.is_violated());
-        if regressed {
-            failures.push((
-                StereoElement::DoubleBond(result.bond),
-                RepairRejectionReason::RepairCausedNewViolation,
-            ));
-        }
-    }
-}
+mod repair;
+#[cfg(test)]
+use repair::{bridge_component, record_stereo_regressions, stereo_status_regressed};
+pub use repair::{repair_stereo, repair_stereo_with_variant};
 
 // ---------------------------------------------------------------------------
 // Tests

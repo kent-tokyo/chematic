@@ -4,6 +4,22 @@
 use chematic_core::Molecule;
 use chematic_smiles::RdkitMolView;
 
+#[path = "molecule/checked_fallback.rs"]
+mod checked_fallback;
+use checked_fallback::embed_mixed;
+pub use checked_fallback::{
+    CheckedConformer, CheckedEnsembleDiagnostics,
+    etkdg_embed_multiple_confs_mixed_checked_diagnostics,
+    etkdg_embed_multiple_confs_mixed_checked_with_fallback, optimize_embedded_checked_diagnostics,
+};
+
+#[path = "molecule/prepared_corrected.rs"]
+mod prepared_corrected;
+pub use prepared_corrected::PreparedCorrectedEmbedding;
+
+mod checked_optimization;
+use checked_optimization::optimize_checked_ensemble_with_field;
+
 mod quality_retry;
 use quality_retry::{refine_unfinished_quality_minimum, repair_linear_nitrogen, stereo_safe_retry};
 mod torsion_search;
@@ -495,53 +511,7 @@ fn optimize_checked_ensemble(
     };
     let field = chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, first, 100.0, true)
         .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
-    let optimized = optimize_mmff_conformers(&field, embedded.clone(), max_iters);
-    let mut conformers = Vec::with_capacity(optimized.len());
-    for (mut candidate, original) in optimized.into_iter().zip(embedded) {
-        if !stereo_safe_retry(mh, &candidate.coords) {
-            if !stereo_safe_retry(mh, &original) {
-                continue;
-            }
-            let energy = field.energy(original.as_flattened());
-            if !energy.is_finite() {
-                continue;
-            }
-            candidate = RdkitMmffConformer {
-                coords: original,
-                status: 1,
-                energy,
-            };
-        }
-        conformers.push(candidate);
-    }
-    for conformer in &mut conformers {
-        if conformer.status != 0 {
-            continue;
-        }
-        if !conformer.energy.is_finite()
-            || conformer
-                .coords
-                .iter()
-                .flatten()
-                .any(|value| !value.is_finite())
-        {
-            conformer.status = 1;
-            continue;
-        }
-        let field =
-            chematic_ff::rdkit_mmff::RdkitMmffField::new(mh, &conformer.coords, 100.0, true)
-                .map_err(|error| RdkitEmbedMmffError::ForceField(error.to_string()))?;
-        let coordinates = conformer.coords.as_flattened();
-        let mut gradient = vec![0.0; coordinates.len()];
-        field.gradient(coordinates, &mut gradient);
-        if gradient
-            .iter()
-            .any(|value| !value.is_finite() || value.abs() > 0.01)
-        {
-            conformer.status = 1;
-        }
-    }
-    Ok(conformers)
+    optimize_checked_ensemble_with_field(mh, embedded, max_iters, &field)
 }
 
 /// Generate a checked ensemble and optionally retry near-linear nitrogen
@@ -589,24 +559,7 @@ pub fn etkdg_embed_multiple_confs_mmff_mixed_checked(
     max_iters: u32,
     retry_iters: u32,
 ) -> Result<Vec<RdkitMmffConformer>, RdkitEmbedMmffError> {
-    validate_options(mh, o)?;
-    if num_confs == 0 {
-        return Ok(Vec::new());
-    }
-    let prepared = match prepare_fragments(mh, o) {
-        Ok(prepared) => prepared,
-        Err(RdkitEmbedError::Failed) => return Ok(Vec::new()),
-        Err(error) => return Err(error.into()),
-    };
-    let first_count = num_confs / 2;
-    let mut embedded = embed_prepared_multiple_confs(&prepared, first_count, 0, o, false)?;
-    embedded.extend(embed_prepared_multiple_confs(
-        &prepared,
-        num_confs - first_count,
-        first_count,
-        o,
-        true,
-    )?);
+    let embedded = embed_mixed(mh, num_confs, o)?;
     let mut conformers = optimize_checked_ensemble(mh, embedded, max_iters)?;
     for conformer in &mut conformers {
         repair_linear_nitrogen(mh, conformer, retry_iters);

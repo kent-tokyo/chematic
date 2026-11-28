@@ -256,11 +256,15 @@ pub fn minimize_dreiding_with_config(
         return coords;
     }
 
-    // Assign DREIDING types for all atoms
+    // Use the same topology-specific angle targets as the legacy geometry
+    // path for centers not represented by the DREIDING type table.
     let dreiding_types = assign_dreiding_types(mol);
+    let targets = expanded_octet_targets(mol, &coords);
+    let angles = dreiding_angle_targets(mol, &dreiding_types, &targets);
+    let vdw = prepare_dreiding_vdw(mol, &dreiding_types);
 
     minimize_gradient_descent(mol, coords, config, |c| {
-        total_energy_dreiding(mol, c, &dreiding_types)
+        total_energy_dreiding(mol, c, &dreiding_types, &angles, &vdw)
     })
 }
 
@@ -268,10 +272,12 @@ fn total_energy_dreiding(
     mol: &Molecule,
     coords: &Coords3D,
     dreiding_types: &[chematic_ff::DREIDINGType],
+    angles: &[(AtomIdx, AtomIdx, AtomIdx, f64)],
+    vdw: &DreidingVdw,
 ) -> f64 {
     bond_energy_dreiding(mol, coords, dreiding_types)
-        + angle_energy_dreiding(mol, coords, dreiding_types)
-        + vdw_energy_dreiding(mol, coords, dreiding_types)
+        + angle_energy_dreiding(coords, angles)
+        + vdw_energy_dreiding(coords, vdw)
 }
 
 fn bond_energy_dreiding(
@@ -294,14 +300,12 @@ fn bond_energy_dreiding(
     energy
 }
 
-fn angle_energy_dreiding(
+fn dreiding_angle_targets(
     mol: &Molecule,
-    coords: &Coords3D,
     dreiding_types: &[chematic_ff::DREIDINGType],
-) -> f64 {
-    let mut energy = 0.0;
-    let k = ANGLE_SPRING_CONSTANT;
-
+    targets: &[(AtomIdx, AtomIdx, AtomIdx, f64)],
+) -> Vec<(AtomIdx, AtomIdx, AtomIdx, f64)> {
+    let mut angles = Vec::new();
     for b_idx in 0..mol.atom_count() {
         let b = AtomIdx(b_idx as u32);
         let neighbors: Vec<AtomIdx> = mol.neighbors(b).map(|(nb, _)| nb).collect();
@@ -310,43 +314,52 @@ fn angle_energy_dreiding(
             continue;
         }
 
-        let theta0 = dreiding_angle(dreiding_types[b_idx]);
+        let theta0 = if crate::dg::is_trigonal_boron(mol, b) {
+            120_f64.to_radians()
+        } else {
+            dreiding_angle(dreiding_types[b_idx])
+        };
 
         for (i, &a) in neighbors.iter().enumerate() {
             for &c in &neighbors[i + 1..] {
-                let pb = coords.get(b);
-
-                let pa = coords.get(a);
-                let pc = coords.get(c);
-
-                let va = pa.sub(&pb);
-                let vc = pc.sub(&pb);
-
-                let na = va.norm();
-                let nc = vc.norm();
-
-                if na < 1e-10 || nc < 1e-10 {
-                    continue;
-                }
-
-                let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
-                let theta = cos_theta.dacos();
-                let dtheta = theta - theta0;
-                energy += 0.5 * k * dtheta * dtheta;
+                let target = targets.iter().find(|&&(x, center, y, _)| {
+                    center == b && ((x == a && y == c) || (x == c && y == a))
+                }).map_or(theta0, |&(_, _, _, angle)| angle);
+                angles.push((a, b, c, target));
             }
         }
     }
+    angles
+}
 
+fn angle_energy_dreiding(coords: &Coords3D, angles: &[(AtomIdx, AtomIdx, AtomIdx, f64)]) -> f64 {
+    let mut energy = 0.0;
+    for &(a, b, c, target) in angles {
+        let pb = coords.get(b);
+        let va = coords.get(a).sub(&pb);
+        let vc = coords.get(c).sub(&pb);
+        let na = va.norm();
+        let nc = vc.norm();
+        if na < 1e-10 || nc < 1e-10 {
+            continue;
+        }
+        let cos_theta = (va.dot(&vc) / (na * nc)).clamp(-1.0, 1.0);
+        let dtheta = cos_theta.dacos() - target;
+        energy += 0.5 * ANGLE_SPRING_CONSTANT * dtheta * dtheta;
+    }
     energy
 }
 
-fn vdw_energy_dreiding(
+struct DreidingVdw {
+    excluded: HashSet<(usize, usize)>,
+    parameters: Vec<(f64, f64)>,
+}
+
+fn prepare_dreiding_vdw(
     mol: &Molecule,
-    coords: &Coords3D,
     dreiding_types: &[chematic_ff::DREIDINGType],
-) -> f64 {
+) -> DreidingVdw {
     let n = mol.atom_count();
-    let cutoff = VDW_CUTOFF;
 
     let mut excluded: HashSet<(usize, usize)> = HashSet::new();
 
@@ -368,36 +381,33 @@ fn vdw_energy_dreiding(
         }
     }
 
+    DreidingVdw {
+        excluded,
+        parameters: dreiding_types.iter().copied().map(dreiding_vdw).collect(),
+    }
+}
+
+fn vdw_energy_dreiding(coords: &Coords3D, vdw: &DreidingVdw) -> f64 {
     let mut energy = 0.0;
-    for i in 0..n {
-        for j in (i + 1)..n {
-            if excluded.contains(&(i, j)) {
+    for i in 0..vdw.parameters.len() {
+        for j in (i + 1)..vdw.parameters.len() {
+            if vdw.excluded.contains(&(i, j)) {
                 continue;
             }
-            let r = coords
-                .get(AtomIdx(i as u32))
-                .distance(&coords.get(AtomIdx(j as u32)));
-
-            if r < 0.01 || r >= cutoff {
+            let r = coords.get(AtomIdx(i as u32)).distance(&coords.get(AtomIdx(j as u32)));
+            if r < 0.01 || r >= VDW_CUTOFF {
                 continue;
             }
-
-            let t_i = dreiding_types[i];
-            let t_j = dreiding_types[j];
-            let (r0_i, well_i) = dreiding_vdw(t_i);
-            let (r0_j, well_j) = dreiding_vdw(t_j);
-
-            // Lorentz-Berthelot combining rules
+            let (r0_i, well_i) = vdw.parameters[i];
+            let (r0_j, well_j) = vdw.parameters[j];
             let r0 = (r0_i + r0_j) / 2.0;
             let well = (well_i * well_j).sqrt();
-
             let ratio = r0 / r;
             let ratio6 = ratio * ratio * ratio * ratio * ratio * ratio;
             let ratio12 = ratio6 * ratio6;
             energy += well * (ratio12 - 2.0 * ratio6);
         }
     }
-
     energy
 }
 
@@ -422,11 +432,15 @@ fn minimize_generic_with_config(
     coords: Coords3D,
     config: &MinimizeConfig,
 ) -> Coords3D {
-    let targets: Vec<_> = mol.atoms().flat_map(|(center, _)| {
-        crate::dg::expanded_octet_angle_targets(mol, center, &coords)
-            .into_iter().map(move |(a, b, angle)| (a, center, b, angle))
-    }).collect();
+    let targets = expanded_octet_targets(mol, &coords);
     minimize_gradient_descent(mol, coords, config, |c| total_energy(mol, c, &targets))
+}
+
+fn expanded_octet_targets(mol: &Molecule, coords: &Coords3D) -> Vec<(AtomIdx, AtomIdx, AtomIdx, f64)> {
+    mol.atoms().flat_map(|(center, _)| {
+        crate::dg::expanded_octet_angle_targets(mol, center, coords)
+            .into_iter().map(move |(a, b, angle)| (a, center, b, angle))
+    }).collect()
 }
 
 // ---------------------------------------------------------------------------

@@ -47,6 +47,9 @@ pub mod rdkit_shape_descriptors;
 pub mod sasa;
 pub mod sasa_checked;
 pub mod shape_descriptors;
+pub mod square_planar_checked;
+pub mod square_planar_embedding;
+pub mod square_planar_geometry;
 pub mod stereo3d;
 pub mod stereo_constraints;
 pub mod torsion_motif;
@@ -182,7 +185,29 @@ impl Default for ConformerConfig {
 /// Generate 3D coordinates and minimize geometry in one step.
 /// Uses distance geometry for initial placement + DREIDING force field.
 pub fn generate_and_minimize_dreiding(mol: &chematic_core::Molecule) -> Coords3D {
-    let coords = generate_coords(mol);
+    let mut coords = generate_coords(mol);
+    // Rule-based placement can put two substituents of trigonal boron at the
+    // same position. Project the existing topology constraints before energy
+    // minimization in that degenerate case, without discarding declared stereo.
+    let collapsed_boron = mol.atoms().any(|(center, _)| {
+        if !dg::is_trigonal_boron(mol, center) {
+            return false;
+        }
+        let neighbors: Vec<_> = mol.neighbors(center).map(|(atom, _)| atom).collect();
+        neighbors.iter().enumerate().any(|(i, &first)| {
+            neighbors[i + 1..]
+                .iter()
+                .any(|&second| coords.get(first).distance(&coords.get(second)) < 0.01)
+        })
+    });
+    if collapsed_boron {
+        let mut constraints = build_constraints(mol);
+        constraints::add_expanded_octet_constraints(mol, &coords, &mut constraints);
+        let projected = satisfy_constraints(&coords, mol, &constraints, 20);
+        if stereo_constraints::verify_stereo(mol, &projected).is_fully_satisfied() {
+            coords = projected;
+        }
+    }
     minimize_dreiding(mol, coords)
 }
 

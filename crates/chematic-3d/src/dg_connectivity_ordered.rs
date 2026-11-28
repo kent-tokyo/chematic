@@ -643,6 +643,9 @@ fn dfs_place_connectivity_ordered(
     let bend_angle = PI - angle;
     let dir_bent = rotate_around_axis(incoming_dir, perp, bend_angle);
 
+    let (planar_boron, placed_neighbor_count) =
+        planar_boron_placement(mol, current, placed, &unplaced_neighbors, atom_to_system);
+
     for (i, &nb) in unplaced_neighbors.iter().enumerate() {
         if placed[nb.0 as usize] {
             // Already placed by an earlier iteration of this same loop (a
@@ -656,41 +659,30 @@ fn dfs_place_connectivity_ordered(
             if system_placed[sys_idx] {
                 continue;
             }
-            let bond_len = ideal_bond_len(mol, current, nb);
-            let dir_xy = choose_ring_entry_direction_xy(
+            anchor_ring_system_at_entry(
+                mol,
+                current,
                 nb,
-                pos_current,
+                sys_idx,
                 incoming_dir,
                 dir_bent,
-                bond_len,
                 coords,
                 placed,
+                ring_systems,
+                system_placed,
+                worklist,
             );
-            let entry_pos = Point3::new(
-                pos_current.x + dir_xy.0 * bond_len,
-                pos_current.y + dir_xy.1 * bond_len,
-                pos_current.z,
-            );
-            let system = &ring_systems[sys_idx];
-            let first_ring_idx = system.iter().position(|r| r.contains(&nb)).unwrap_or(0);
-            place_first_ring_anchored_3d(
-                mol,
-                &system[first_ring_idx],
-                nb,
-                entry_pos,
-                dir_xy,
-                false,
-                coords,
-                placed,
-            );
-            grow_ring_system_3d(mol, system, first_ring_idx, coords, placed);
-            system_placed[sys_idx] = true;
-            worklist.extend(system.iter().flatten().copied());
             continue;
         }
 
         let dihedral = (i as f64) * (2.0 * PI / 3.0);
-        let mut dir_final = rotate_around_axis(dir_bent, incoming_dir, dihedral);
+        let mut dir_final = if planar_boron && placed_neighbor_count == 0 {
+            Point3::new(dihedral.dcos(), dihedral.dsin(), 0.0)
+        } else if planar_boron {
+            rotate_around_axis(dir_bent, incoming_dir, (i as f64) * PI)
+        } else {
+            rotate_around_axis(dir_bent, incoming_dir, dihedral)
+        };
         if let Some(outward) =
             aromatic_outward_direction(mol, current, placed, coords, atom_to_system)
         {
@@ -711,6 +703,114 @@ fn dfs_place_connectivity_ordered(
             worklist,
         );
     }
+}
+
+/// Planar placement applies to a neutral, three-coordinate boron. The generic
+/// tetrahedral azimuth spacing makes two branches only ~97° apart, even when
+/// their angles to the parent are both 120°. Restrict this placement to the
+/// tree case: ring systems have their own anchored geometry. Returns
+/// `(planar_boron, placed_neighbor_count)`.
+fn planar_boron_placement(
+    mol: &Molecule,
+    current: AtomIdx,
+    placed: &[bool],
+    unplaced_neighbors: &[AtomIdx],
+    atom_to_system: &HashMap<AtomIdx, usize>,
+) -> (bool, usize) {
+    let trigonal_boron = super::dg::is_trigonal_boron(mol, current);
+    let placed_neighbor_count = if trigonal_boron {
+        mol.neighbors(current)
+            .filter(|(nb, _)| placed[nb.0 as usize])
+            .count()
+    } else {
+        0
+    };
+    let planar_boron = trigonal_boron
+        && unplaced_neighbors
+            .iter()
+            .all(|nb| !atom_to_system.contains_key(nb))
+        && ((placed_neighbor_count == 1 && unplaced_neighbors.len() == 2)
+            || (placed_neighbor_count == 0 && unplaced_neighbors.len() == 3));
+    (planar_boron, placed_neighbor_count)
+}
+
+/// Anchor the whole not-yet-placed ring system containing `nb` at the entry
+/// bond from `current`, then queue its atoms on `worklist`.
+#[allow(clippy::too_many_arguments)]
+fn anchor_ring_system_at_entry(
+    mol: &Molecule,
+    current: AtomIdx,
+    nb: AtomIdx,
+    sys_idx: usize,
+    incoming_dir: Point3,
+    dir_bent: Point3,
+    coords: &mut Coords3D,
+    placed: &mut [bool],
+    ring_systems: &[Vec<Vec<AtomIdx>>],
+    system_placed: &mut [bool],
+    worklist: &mut VecDeque<AtomIdx>,
+) {
+    let pos_current = coords.get(current);
+    let bond_len = ideal_bond_len(mol, current, nb);
+    let dir_xy = choose_ring_entry_direction_xy(
+        nb,
+        pos_current,
+        incoming_dir,
+        dir_bent,
+        bond_len,
+        coords,
+        placed,
+    );
+    let entry_pos = Point3::new(
+        pos_current.x + dir_xy.0 * bond_len,
+        pos_current.y + dir_xy.1 * bond_len,
+        pos_current.z,
+    );
+    let system = &ring_systems[sys_idx];
+    let first_ring_idx = system.iter().position(|r| r.contains(&nb)).unwrap_or(0);
+    place_first_ring_anchored_3d(
+        mol,
+        &system[first_ring_idx],
+        nb,
+        entry_pos,
+        dir_xy,
+        false,
+        coords,
+        placed,
+    );
+    grow_ring_system_3d(mol, system, first_ring_idx, coords, placed);
+    system_placed[sys_idx] = true;
+    worklist.extend(system.iter().flatten().copied());
+    let bond_len = ideal_bond_len(mol, current, nb);
+    let dir_xy = choose_ring_entry_direction_xy(
+        nb,
+        pos_current,
+        incoming_dir,
+        dir_bent,
+        bond_len,
+        coords,
+        placed,
+    );
+    let entry_pos = Point3::new(
+        pos_current.x + dir_xy.0 * bond_len,
+        pos_current.y + dir_xy.1 * bond_len,
+        pos_current.z,
+    );
+    let system = &ring_systems[sys_idx];
+    let first_ring_idx = system.iter().position(|r| r.contains(&nb)).unwrap_or(0);
+    place_first_ring_anchored_3d(
+        mol,
+        &system[first_ring_idx],
+        nb,
+        entry_pos,
+        dir_xy,
+        false,
+        coords,
+        placed,
+    );
+    grow_ring_system_3d(mol, system, first_ring_idx, coords, placed);
+    system_placed[sys_idx] = true;
+    worklist.extend(system.iter().flatten().copied());
 }
 
 fn aromatic_outward_direction(

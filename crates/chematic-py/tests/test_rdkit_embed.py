@@ -171,6 +171,93 @@ def test_mixed_checked_ensemble_is_deterministic_and_handles_zero():
     assert mol.etkdg_embed_multiple_confs_mmff_mixed_checked(0) == []
 
 
+def test_mixed_checked_fallback_preserves_boron_coordinates():
+    mol = chematic.from_smiles("CB(C)C").add_hydrogens()
+    rows = mol.etkdg_embed_multiple_confs_mixed_checked_with_fallback(2, random_seed=42)
+    assert rows
+    for status, energy, coordinates, error in rows:
+        assert status == -1
+        assert energy is None
+        assert len(coordinates) > 0
+        assert error
+
+
+def test_mixed_checked_diagnostics_explain_unevaluable_stereo():
+    mol = chematic.from_smiles("O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F").add_hydrogens()
+    rows, embedded, error, violated, unevaluable, invalid = (
+        mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(4, random_seed=42)
+    )
+    assert rows == []
+    assert embedded > 0
+    assert error
+    assert (violated, unevaluable, invalid) == (0, embedded, 0)
+
+
+def test_mixed_checked_diagnostics_for_supported_and_empty_ensembles():
+    mol = chematic.from_smiles("CCO").add_hydrogens()
+    rows, embedded, error, violated, unevaluable, invalid = (
+        mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(2, random_seed=42)
+    )
+    assert len(rows) == embedded == 2
+    assert (error, violated, unevaluable, invalid) == (None, 0, 0, 0)
+    assert mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(0) == (
+        [], 0, None, None, None, None
+    )
+
+
+@pytest.mark.parametrize("smiles", [
+    "C[Se@+](F)Cl",
+    "C[Se@@+](F)Cl",
+    "F[Se@+](Cl)C",
+    "C[Se@@+](c1ccccc1)c1cccc2cccc([Se]c3ccccc3)c12",
+])
+def test_selenonium_fallback_matches_rdkit_stereo(smiles):
+    Chem = pytest.importorskip("rdkit.Chem")
+    mol = chematic.from_smiles(smiles).add_hydrogens()
+    rows, embedded, error, violated, unevaluable, invalid = (
+        mol.etkdg_embed_multiple_confs_mixed_checked_diagnostics(4, random_seed=42)
+    )
+    assert embedded and rows and error
+    assert (violated, unevaluable, invalid) == (0, 0, 0)
+    reference = Chem.AddHs(Chem.MolFromSmiles(smiles))
+    Chem.AssignStereochemistry(reference, cleanIt=True, force=True)
+    selenium = next(a.GetIdx() for a in reference.GetAtoms() if a.GetAtomicNum() == 34)
+    expected = reference.GetAtomWithIdx(selenium).GetProp("_CIPCode")
+    for _, _, coordinates, _ in rows:
+        probe = Chem.Mol(reference)
+        conformer = Chem.Conformer(probe.GetNumAtoms())
+        for index, point in enumerate(coordinates):
+            conformer.SetAtomPosition(index, point)
+        probe.AddConformer(conformer)
+        Chem.AssignStereochemistryFrom3D(probe)
+        Chem.AssignStereochemistry(probe, cleanIt=True, force=True)
+        assert probe.GetAtomWithIdx(selenium).GetProp("_CIPCode") == expected
+
+
+@pytest.mark.parametrize("smiles", [
+    "C[C@@H](NC(=O)[C@]12CCC(=O)C=C1[C@H](O)CCC2(C)C)c1ccccc1",
+    "O=C1CCC(=O)N1[C@@H](c1ccccc1)N1CC[Se]CC1",
+    "COC(=O)[C@H]1[CH-]C=C(C#N)[C@]12C(=O)N(C)c1ccccc12",
+])
+def test_etkdg_legacy_projection_preserves_observed_declared_stereo(smiles):
+    Chem = pytest.importorskip("rdkit.Chem")
+    reference = Chem.MolFromSmiles(smiles)
+    Chem.AssignStereochemistry(reference, cleanIt=True, force=True)
+    expected = {atom.GetIdx(): atom.GetProp("_CIPCode") for atom in reference.GetAtoms()
+                if atom.HasProp("_CIPCode")}
+    assert expected
+    coords = chematic.from_smiles(smiles).generate_3d_etkdg()
+    conformer = Chem.Conformer(reference.GetNumAtoms())
+    for index, point in enumerate(coords):
+        conformer.SetAtomPosition(index, point)
+    reference.AddConformer(conformer)
+    Chem.AssignStereochemistryFrom3D(reference)
+    Chem.AssignStereochemistry(reference, cleanIt=True, force=True)
+    assert all(reference.GetAtomWithIdx(index).HasProp("_CIPCode") and
+               reference.GetAtomWithIdx(index).GetProp("_CIPCode") == cip
+               for index, cip in expected.items())
+
+
 def test_corrected_fallback_preserves_successful_corrected_ensemble():
     mol = chematic.from_smiles("C[C@H](O)F").add_hydrogens()
     corrected = mol.etkdg_embed_multiple_confs_mmff_corrected(2, random_seed=42)

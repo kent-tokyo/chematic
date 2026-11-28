@@ -1,0 +1,105 @@
+{
+  "source_sha256": "e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117",
+  "results": [
+    {
+      "index": 7888,
+      "name": "CLERHCSTXLQSEE-VVLHAWIVSA-N",
+      "smiles": "C=CC[C@H]1[C@H](O)[C@@H]2OC(C)(C)OC[C@H]2N1Cc1ccccc1"
+    },
+    {
+      "index": 7363,
+      "name": "TUHRCLUJVJVPLL-UHFFFAOYSA-N",
+      "smiles": "c1ccc(-n2cc[n+](Cc3ccccc3C[n+]3ccn(-c4ccccn4)c3)c2)nc1"
+    },
+    {
+      "index": 1002,
+      "name": "ZVQHHBZABBTNSW-XSLAGTTESA-N",
+      "smiles": "Br[C@@]12C[C@]1(c1ccccc1)[C@@]1(c3ccccc3)C[C@@]21Br"
+    },
+    {
+      "index": 5079,
+      "name": "RGMKOVRBVVXBDN-MTLGCJRHSA-N",
+      "smiles": "C=C[C@]12[C@@H](C(=O)OC)[C@]3(OC)OCC[C@H](OC1(C)C)[C@@H]32"
+    },
+    {
+      "index": 9409,
+      "name": "OWCOEXZPVKGLKV-HSZRJFAPSA-N",
+      "smiles": "O=C(NC1CCCCC1)[C@@H](c1cccc([N+](=O)[O-])c1)N1Cc2conc2-c2ccccc2C1=O"
+    },
+    {
+      "index": 2655,
+      "name": "JAKLHEYKQHZUPZ-UHFFFAOYSA-N",
+      "smiles": "CCCCC1(O)c2ccc3c(OCCC)c2Cc2c1ccc(c2OCCC)Cc1cccc(c1OCCC)Cc1cccc(c1OCCC)C3"
+    },
+    {
+      "index": 7910,
+      "name": "LTJHBMUMTKXHOC-HMMYKYKNSA-N",
+      "smiles": "N#C/C(=C\\c1ccccc1)CSC1=[N+](c2ccccc2)[B-](F)(F)OC(c2ccc(Cl)cc2)=C1"
+    },
+    {
+      "index": 8076,
+      "name": "PUDPHFZVGPKAFR-UHFFFAOYSA-N",
+      "smiles": "CC[P+]1(CC)[B-](c2c(F)c(F)c(F)c(F)c2F)(c2c(F)c(F)c(F)c(F)c2F)[P+](CC)(CC)[B-]1(c1c(F)c(F)c(F)c(F)c1F)c1c(F)c(F)c(F)c(F)c1F"
+    },
+    {
+      "index": 2036,
+      "name": "IIWPZSXLWQUMIP-UHFFFAOYSA-N",
+      "smiles": "CC1=C(C)c2ccccc2N(S(=O)(=O)c2ccc(C)cc2)C1"
+    },
+    {
+      "index": 1076,
+      "name": "NOUZLRUYHBVHSY-UHFFFAOYSA-N",
+      "smiles": "CC(C)(C)C1CCC2(CC1)OO[Si](C)(C)CC[Si](C)(C)OO2"
+    },
+    {
+      "index": 5157,
+      "name": "HDWZDKYTTCDHDG-UHFFFAOYSA-O",
+      "smiles": "CC(C)C(Oc1cccc2c1-c1nc-2nc2[nH]c(nc3[n-]c(nc4[nH+]c(n1)-c1cccc(OC(C(C)C)C(C)C)c1-4)c1cccc(OC(C(C)C)C(C)C)c31)c1cccc(OC(C(C)C)C(C)C)c21)C(C)C"
+    },
+    {
+      "index": 5934,
+      "name": "AQKYFIVHYUQROH-UHFFFAOYSA-N",
+      "smiles": "C=CCNC(=O)N1c2cccc(P(c3ccccc3)c3ccccc3)c2Oc2c1cccc2P(c1ccccc1)c1ccccc1"
+    },
+    {
+      "index": 738,
+      "name": "VBFZWKZEFSREKB-OCFYOKIWSA-N",
+      "smiles": "CC(C)[C@H]1CC=C2C[C@@]3(COCc4ccccc4)OC(=O)C[C@@]3(C)C(=O)C[C@@]21C"
+    },
+    {
+      "index": 9037,
+      "name": "LTOHTEORFZHKKM-UHFFFAOYSA-N",
+      "smiles": "CN(c1cc2c(-c3ccccc3)ncnc2n1Cc1ccccc1)S(=O)(=O)c1ccccc1[N+](=O)[O-]"
+    },
+    {
+      "index": 11601,
+      "name": "TZNBRBFUJMFQKW-XDHOZWIPSA-N",
+      "smiles": "COc1cccc(OC)c1/C=N/OC1(COC(C)=O)CCCCC1"
+    },
+    {
+      "index": 2688,
+      "name": "CYKQFMQFKGDAJQ-IQVOZAENSA-N",
+      "smiles": "C[C@@H](NC(=O)[C@]12CCC(=O)C=C1[C@H](O)CCC2(C)C)c1ccccc1"
+    },
+    {
+      "index": 8243,
+      "name": "ALMADGJWFMVYIR-UHFFFAOYSA-N",
+      "smiles": "OCCCCCCN1c2cccc(P(c3ccccc3)c3ccccc3)c2Oc2c1cccc2P(c1ccccc1)c1ccccc1"
+    },
+    {
+      "index": 8575,
+      "name": "GDGMLKVKRLNOFC-UHFFFAOYSA-N",
+      "smiles": "Cc1cc(C)c(-n2[c-][n+](-c3c(C)cc(C)cc3C)c(=O)c3ccccc3c2=O)c(C)c1"
+    },
+    {
+      "index": 6650,
+      "name": "VIVGKXBRHIGLTP-XGYIXMHBSA-N",
+      "smiles": "CO[C@@H]1C=C2[C@@](OC)(C[C@H]3[C@@H]([C@@H](OC(C)=O)[C@H](OC(C)=O)[C@@]4(O)C(C)(C)CC[C@H](OC(C)=O)[C@]34C)[C@]2(C)OC)O1"
+    },
+    {
+      "index": 3495,
+      "name": "OIAIAXOQTXSGPJ-UMADGWCESA-N",
+      "smiles": "C[C@@H](/C=C/C1(S(=O)(=O)c2ccccc2)CCCCC1)OC(=O)c1ccc(Br)cc1"
+    }
+  ]
+}

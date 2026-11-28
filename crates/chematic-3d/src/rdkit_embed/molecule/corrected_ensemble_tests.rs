@@ -563,6 +563,109 @@ fn mixed_checked_uses_disjoint_seed_ranges_and_preserves_stereo() {
 }
 
 #[test]
+fn mixed_fallback_keeps_coordinates_when_mmff_is_unavailable() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("CB(C)C").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let rows =
+        etkdg_embed_multiple_confs_mixed_checked_with_fallback(&molecule, 2, &options, 200, 0)
+            .unwrap();
+    assert!(!rows.is_empty());
+    for row in rows {
+        assert_eq!(row.status, -1);
+        assert!(row.energy.is_none());
+        assert!(row.force_field_error.is_some());
+        assert_eq!(row.coords.len(), molecule.atom_count());
+        assert!(stereo_safe_retry(&molecule, &row.coords));
+    }
+}
+
+#[test]
+fn mixed_fallback_matches_checked_when_mmff_is_available() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
+    let options = RdkitEmbedOptions::default();
+    let checked =
+        etkdg_embed_multiple_confs_mmff_mixed_checked(&molecule, 2, &options, 200, 0).unwrap();
+    let fallback =
+        etkdg_embed_multiple_confs_mixed_checked_with_fallback(&molecule, 2, &options, 200, 0)
+            .unwrap();
+    assert!(!checked.is_empty());
+    assert_eq!(checked.len(), fallback.len());
+    for (expected, actual) in checked.iter().zip(fallback) {
+        assert_eq!(actual.coords, expected.coords);
+        assert_eq!(actual.status, expected.status);
+        assert_eq!(actual.energy, Some(expected.energy));
+        assert!(actual.force_field_error.is_none());
+    }
+}
+
+#[test]
+fn mixed_fallback_rejects_unevaluable_declared_stereo() {
+    use crate::coords::{Coords3D, Point3};
+    use crate::stereo_constraints::verify_stereo;
+    for smiles in [
+        "O=C(O[I@SP3]1OB(O)c2c(F)cccc21)C(F)(F)F",
+        "Brc1ccc2c3c(cccc13)[Se@@](c1ccccc1)=[Se@SP3]2Br",
+    ] {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let options = RdkitEmbedOptions::default();
+        let embedded = embed_mixed(&molecule, 4, &options).unwrap();
+        assert!(!embedded.is_empty(), "{smiles}");
+        for points in &embedded {
+            let coords = Coords3D {
+                points: points
+                    .iter()
+                    .map(|&[x, y, z]| Point3::new(x, y, z))
+                    .collect(),
+            };
+            let result = verify_stereo(&molecule, &coords);
+            assert!(result.n_unevaluable() > 0, "{smiles}: {result:?}");
+        }
+        let result =
+            etkdg_embed_multiple_confs_mixed_checked_diagnostics(&molecule, 4, &options, 200, 0)
+                .unwrap();
+        assert!(result.conformers.is_empty());
+        assert_eq!(result.embedded, embedded.len());
+        assert!(result.force_field_error.is_some());
+        assert_eq!(result.stereo_unevaluable, Some(result.embedded));
+    }
+}
+
+#[test]
+fn selenonium_stereo_matches_rdkit_geometry_and_its_mirror() {
+    use crate::coords::{Coords3D, Point3};
+    use crate::stereo_constraints::verify_stereo;
+    // RDKit 2026.09.2 ETKDGv3 seed 42, C[Se@+](F)Cl after AddHs.
+    // AssignStereochemistryFrom3D reports the declared S configuration.
+    let points = [
+        [-0.9098322676, -0.0271193915, -0.1615559462],
+        [1.0202174729, -0.1321201833, -0.3582772553],
+        [1.7479441569, -1.5475371567, 0.5157868944],
+        [1.9011236305, 1.7857172284, 0.3473650004],
+        [-1.3495264962, -0.9248538279, -0.6253486617],
+        [-1.2763198342, 0.9177381076, -0.6352367972],
+        [-1.1336066623, -0.0718247766, 0.9172667656],
+    ];
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[Se@+](F)Cl").unwrap());
+    let coords = Coords3D {
+        points: points
+            .iter()
+            .map(|&[x, y, z]| Point3::new(x, y, z))
+            .collect(),
+    };
+    let mirror = Coords3D {
+        points: points
+            .iter()
+            .map(|&[x, y, z]| Point3::new(-x, y, z))
+            .collect(),
+    };
+    let forward = verify_stereo(&molecule, &coords);
+    let reversed = verify_stereo(&molecule, &mirror);
+    assert_eq!(forward.n_violations(), 0, "{forward:?}");
+    assert_eq!(forward.n_unevaluable(), 0, "{forward:?}");
+    assert_eq!(reversed.n_violations(), 1, "{reversed:?}");
+}
+
+#[test]
 fn corrected_fallback_keeps_successful_corrected_ensemble() {
     let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C[C@H](O)F").unwrap());
     let options = RdkitEmbedOptions::default();
@@ -603,4 +706,93 @@ fn corrected_fallback_recovers_exposed_macrocycle() {
             .iter()
             .all(|c| stereo_safe_retry(&molecule, &c.coords))
     );
+}
+
+#[test]
+fn preembedded_checked_optimization_matches_original_and_rejects_invalid_coordinates() {
+    for smiles in ["CCO", "CB(C)C", "F[C@](Cl)(Br)I"] {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let options = RdkitEmbedOptions::default();
+        let embedded = etkdg_embed_multiple_confs_corrected(&molecule, 1, &options).unwrap();
+        let expected =
+            etkdg_embed_multiple_confs_mixed_checked_diagnostics(&molecule, 1, &options, 200, 0)
+                .unwrap();
+        let actual = optimize_embedded_checked_diagnostics(&molecule, embedded, 200, 0).unwrap();
+        assert_eq!(actual.embedded, expected.embedded, "{smiles}");
+        assert_eq!(
+            actual.force_field_error, expected.force_field_error,
+            "{smiles}"
+        );
+        assert_eq!(actual.stereo_violated, expected.stereo_violated, "{smiles}");
+        assert_eq!(
+            actual.stereo_unevaluable, expected.stereo_unevaluable,
+            "{smiles}"
+        );
+        assert_eq!(
+            actual.invalid_coordinates, expected.invalid_coordinates,
+            "{smiles}"
+        );
+        assert_eq!(
+            actual.conformers.len(),
+            expected.conformers.len(),
+            "{smiles}"
+        );
+        for (a, b) in actual.conformers.iter().zip(expected.conformers.iter()) {
+            assert_eq!(
+                (a.status, a.energy, &a.coords, &a.force_field_error),
+                (b.status, b.energy, &b.coords, &b.force_field_error),
+                "{smiles}"
+            );
+        }
+        assert!(
+            optimize_embedded_checked_diagnostics(&molecule, vec![vec![[0.0; 3]]], 1, 0).is_err()
+        );
+        let bad = vec![[f64::NAN, 0.0, 0.0]; molecule.atom_count()];
+        assert!(optimize_embedded_checked_diagnostics(&molecule, vec![bad], 1, 0).is_err());
+    }
+    let empty = chematic_core::MoleculeBuilder::new().build();
+    assert!(optimize_embedded_checked_diagnostics(&empty, vec![vec![]], 1, 0).is_err());
+}
+
+#[test]
+fn prepared_corrected_embedding_matches_individual_attempts() {
+    for smiles in ["CCO", "CB(C)C", "F[C@](Cl)(Br)I", "CC.O"] {
+        let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse(smiles).unwrap());
+        let options = RdkitEmbedOptions::default();
+        let prepared = PreparedCorrectedEmbedding::new(&molecule, &options).unwrap();
+        for seed in [0, 2, 42, 84] {
+            let opts = RdkitEmbedOptions {
+                random_seed: seed,
+                ..options.clone()
+            };
+            let single = etkdg_embed_multiple_confs_corrected(&molecule, 1, &opts).unwrap();
+            assert_eq!(
+                prepared.embed(seed).unwrap(),
+                single.into_iter().next(),
+                "{smiles}, seed {seed}"
+            );
+        }
+        assert!(prepared.embed(-1).is_err());
+    }
+    let empty = chematic_core::MoleculeBuilder::new().build();
+    assert!(PreparedCorrectedEmbedding::new(&empty, &RdkitEmbedOptions::default()).is_err());
+}
+
+#[test]
+fn prepared_corrected_embedding_preserves_nondefault_options() {
+    let molecule = chematic_chem::add_hydrogens(&chematic_smiles::parse("C1CCCCC1C").unwrap());
+    let options = RdkitEmbedOptions {
+        max_iterations: 1,
+        use_small_ring_torsions: true,
+        ..Default::default()
+    };
+    let prepared = PreparedCorrectedEmbedding::new(&molecule, &options).unwrap();
+    for seed in [0, 42, 84] {
+        let single_options = RdkitEmbedOptions {
+            random_seed: seed,
+            ..options.clone()
+        };
+        let single = etkdg_embed_multiple_confs_corrected(&molecule, 1, &single_options).unwrap();
+        assert_eq!(prepared.embed(seed).unwrap(), single.into_iter().next());
+    }
 }

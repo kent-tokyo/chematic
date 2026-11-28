@@ -8,6 +8,10 @@ on:
       - 'crates/chematic-py/**'
       - 'scripts/benchmarks/platinum_*.py'
       - 'scripts/benchmarks/summarize_platinum_*.py'
+      - 'scripts/validation/select_force_field_development.py'
+      - 'scripts/tests/test_platinum_force_fields.py'
+      - 'scripts/tests/test_platinum_force_field_terms.py'
+      - 'scripts/tests/test_select_force_field_development.py'
       - 'validation/results/platinum-diverse-scaffold-split-strict-2026-11-21.json'
       - '.github/workflows/platinum-development.yml'
   workflow_dispatch:
@@ -31,6 +35,8 @@ jobs:
           maturin build --locked --release -m crates/chematic-py/Cargo.toml --interpreter python --out dist/platinum-wheel
           python -m pip install --force-reinstall --no-deps dist/platinum-wheel/chematic-*.whl
           sha256sum dist/platinum-wheel/chematic-*.whl > platinum-wheel.sha256
+      - name: Validate force-field comparison tools
+        run: python -m unittest scripts.tests.test_platinum_force_fields scripts.tests.test_platinum_force_field_terms scripts.tests.test_select_force_field_development
       - name: Fetch Platinum Diverse 2017 reference structures
         run: |
           if curl --fail --location --retry 3 --max-time 120 --output platinum.zip https://comp3d.univie.ac.at/fileadmin/user_upload/p_comp3d/datasets/platinum-diverse-dataset-2017-01-sdf.zip; then

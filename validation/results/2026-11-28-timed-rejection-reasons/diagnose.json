@@ -1,0 +1,1049 @@
+{
+  "source_sha256": "29280526dc0b3256d1c15104d8ef36fa31436549807fa9a5445028c87c265ca3",
+  "fixture_sha256": "216facf8f8b504cb86e83a65e1508896ab32c5c34c1f001f6e4aa39565e895ae",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "results": [
+    {
+      "index": 2,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 1,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 52,
+      "retained": 1,
+      "rejected": 0,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 1,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 14,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 317,
+      "retained": 1,
+      "rejected": 0,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 2,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 4,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 428,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 4,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 446,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 0,
+        "violated": 1,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 6,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 9,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 518,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 4,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 11,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 839,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 7,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 6,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 4,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 6,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 8,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 9,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 11,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 13,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1002,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 4,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 4,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 3,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 10,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 18,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1031,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 11,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 12,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1104,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 5,
+        "satisfied": 1,
+        "violated": 3,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 4,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 7,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 8,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 10,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 12,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1142,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 1,
+        "violated": 2,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 5,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 13,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 2,
+            "status": "violated",
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "index": 1280,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 5,
+        "satisfied": 0,
+        "violated": 3,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 3,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 6,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 10,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 13,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1418,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 4,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 3,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 9,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 11,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 20,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1427,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 0,
+        "violated": 1,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 6,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 8,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1440,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 4,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 7,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 1539,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 6,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 1,
+            "status": "satisfied",
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "index": 1900,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 1,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 7,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2024,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 5,
+        "satisfied": 0,
+        "violated": 2,
+        "unevaluable": 3,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 4,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 7,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 9,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 10,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2124,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 6,
+        "satisfied": 2,
+        "violated": 0,
+        "unevaluable": 4,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 4,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 6,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 11,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 13,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 16,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2146,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 1,
+        "satisfied": 0,
+        "violated": 0,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 3,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2178,
+      "retained": 1,
+      "rejected": 0,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 3,
+        "violated": 0,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 8,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 10,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 14,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2336,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 9,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 18,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2541,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 0,
+        "violated": 1,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 7,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 9,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2681,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 1,
+        "satisfied": 0,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 8,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2909,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 4,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 12,
+            "status": "violated",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 2966,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 0,
+        "atom_stereo": [
+          {
+            "atom": 7,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 10,
+            "status": "violated",
+            "reason": null
+          }
+        ]
+      }
+    },
+    {
+      "index": 3011,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 2,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 4,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 3169,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 5,
+        "satisfied": 2,
+        "violated": 1,
+        "unevaluable": 2,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "violated",
+            "reason": null
+          },
+          {
+            "atom": 2,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 3,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 7,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 10,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 3334,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 2,
+        "satisfied": 1,
+        "violated": 0,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 1,
+            "status": "satisfied",
+            "reason": null
+          },
+          {
+            "atom": 9,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          }
+        ],
+        "double_bond_stereo": []
+      }
+    },
+    {
+      "index": 3377,
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      },
+      "report": {
+        "reported": 3,
+        "satisfied": 1,
+        "violated": 1,
+        "unevaluable": 1,
+        "atom_stereo": [
+          {
+            "atom": 4,
+            "status": "unevaluable",
+            "reason": "DistortedTetrahedralGeometry"
+          },
+          {
+            "atom": 14,
+            "status": "satisfied",
+            "reason": null
+          }
+        ],
+        "double_bond_stereo": [
+          {
+            "bond": 11,
+            "status": "violated",
+            "reason": null
+          }
+        ]
+      }
+    }
+  ],
+  "controls": [
+    {
+      "name": "distorted",
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 1,
+        "stereo_unevaluable": 0
+      }
+    },
+    {
+      "name": "violated",
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 1,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 0
+      }
+    },
+    {
+      "name": "unsupported",
+      "retained": 0,
+      "rejected": 1,
+      "reasons": {
+        "stereo_violated": 0,
+        "distorted_tetrahedral_geometry": 0,
+        "stereo_unevaluable": 1
+      }
+    }
+  ]
+}

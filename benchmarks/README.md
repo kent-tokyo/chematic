@@ -67,3 +67,28 @@ A retained historical record is not evidence about current source.
 - Link every retained root-level record from this file or `archive-index.md`.
 - Run `python3 scripts/checks/check_benchmark_index.py` after changes.
 - Do not infer universal accuracy or speed from one corpus, host, or API lane.
+
+### 3D development and reserved evaluation (2026-11-26)
+
+- [Published and candidate wheel pilot](2026-11-26-3d-wheel-pilot.md)
+- [COD local geometry development](2026-11-26-cod-local-geometry-development.md)
+- [Reserved COD holdout protocol](2026-11-26-cod-reserved-holdout.md)
+- [MMFF common-coordinate development](2026-11-26-mmff-common-coordinate-development.md)
+
+- [Flexible MMFF setup development comparison](2026-11-27-flexible-mmff-setup.md)
+
+- [Partial conformer checkpoint scaling](2026-11-27-partial-checkpoint.md)
+
+- [Element-stratified force-field development comparison](2026-11-27-forcefield-hetero-development.md)
+- [Cooperative force-field minimization development check](2026-11-27-cooperative-minimization.md)
+- [Square-planar constrained embedding development probe](2026-11-27-square-planar-embedding-development.md)
+- [Square-planar bounded retry development probe](2026-11-27-square-planar-retry-development.md)
+- [Square-planar planarity and stereo development probe](2026-11-27-square-planar-checked-development.md)
+- [Neutral selenium stereo development comparison](2026-11-27-neutral-selenium-stereo-development.md)
+- [Selenium-containing crystal stereo development audit](2026-11-27-selenium-crystal-stereo-development.md)
+
+- [Timed unoptimized preview development probe](2026-11-27-timed-preview-development.md)
+
+- [Preview geometry diagnostics development comparison](2026-11-27-preview-geometry-development.md)
+
+- [Prepared embedding development comparison](2026-11-27-prepared-embedding-development.md)

@@ -1,0 +1,2662 @@
+{
+  "rdkit": "2026.09.2",
+  "chematic": "1.2.5",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "script_sha256": "61e45d74abdadc16d4bae25b10fb8e497764856b9a47ee5a9e324177f62d1b5e",
+  "source_sha256": "6ad24cf292a62561e55d3556395b841440f9d0d8588c7f2b85c8fb7e4675af74",
+  "seconds": 0.2,
+  "max_candidates": 20,
+  "repair_iters": 400,
+  "geometry_checked": true,
+  "hard_timeout": true,
+  "profile": "corrected",
+  "engine_error_policy": "independent generation and scoring per engine",
+  "seed_schedule": "42 * (attempt + 1)",
+  "timing": "worker deadline after initialization; scoring and process startup excluded",
+  "results": [
+    {
+      "name": "XAOVGQWYTPWLHU-UHFFFAOYSA-N",
+      "index": 5547,
+      "geometry_reference": {
+        "bonds_supported": 91,
+        "bonds_total": 91,
+        "angles_supported": 164,
+        "angles_total": 164
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 2,
+        "elapsed": 0.20205141697078943,
+        "statuses": [
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.6965365618460007,
+          0.7543419313266594
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 91,
+            "bond_violations": 0,
+            "angles_checked": 164,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 91,
+            "bond_violations": 0,
+            "angles_checked": 164,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1173,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 20\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "IDBONPMVPUTHCC-NXEZZACHSA-N",
+      "index": 4912,
+      "geometry_reference": {
+        "bonds_supported": 46,
+        "bonds_total": 46,
+        "angles_supported": 91,
+        "angles_total": 91
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 10,
+        "accepted": 10,
+        "elapsed": 0.20200433302670717,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6985207940012573,
+          0.9599975971319905,
+          1.0155545734898064,
+          0.711834626741988,
+          0.9870201190648427,
+          0.9828716184015628,
+          1.186300940898111,
+          0.9656606090154205,
+          0.8306305475879703,
+          1.289452144312406
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 46,
+            "bond_violations": 0,
+            "angles_checked": 91,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 114,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 8\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "ICKYQFXHLRCAQJ-BHYGNILZSA-N",
+      "index": 8035,
+      "geometry_reference": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 99,
+        "angles_total": 99
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 6,
+        "elapsed": 0.20216279197484255,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.5084565493273112,
+          0.640905462606577,
+          1.9589230548211962,
+          1.389558835089744,
+          1.4703673399161243,
+          1.8023262402050113
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 53,
+            "bond_violations": 0,
+            "angles_checked": 99,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 210,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 4\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "CWYFBNNQTMRCEQ-UHFFFAOYSA-N",
+      "index": 4106,
+      "geometry_reference": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 61,
+        "angles_total": 61
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 13,
+        "accepted": 13,
+        "elapsed": 0.20182604203000665,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6704241028817571,
+          1.0121638825081172,
+          0.8069496076750214,
+          0.8688295318184526,
+          0.9216084275412757,
+          0.7644031894010547,
+          0.8161247469495345,
+          0.8043988386541541,
+          0.5954201586383728,
+          0.9657877493287274,
+          0.4360385978629898,
+          0.6393440623036909,
+          0.23582420226066966
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 38,
+            "bond_violations": 0,
+            "angles_checked": 61,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 156,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(34) at atom 1\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "XRFHXKNSEAVIFU-UHFFFAOYSA-N",
+      "index": 8023,
+      "geometry_reference": {
+        "bonds_supported": 73,
+        "bonds_total": 73,
+        "angles_supported": 130,
+        "angles_total": 130
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 3,
+        "elapsed": 0.20295970805455,
+        "statuses": [
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.5330139837337171,
+          0.47738896380521495,
+          0.526849732144027
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 73,
+            "bond_violations": 0,
+            "angles_checked": 130,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 593,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 73,
+            "bond_violations": 0,
+            "angles_checked": 130,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 593,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 73,
+            "bond_violations": 0,
+            "angles_checked": 130,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 593,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 9\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "PRLJBXQBVXIJQN-SZPZYZBQSA-N",
+      "index": 3016,
+      "geometry_reference": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 92,
+        "angles_total": 92
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 6,
+        "elapsed": 0.20206483302172273,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.9531600087666625,
+          0.9490800020879999,
+          1.4256582646243179,
+          2.899427490020874,
+          2.8703434725493193,
+          2.438671846308064
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 54,
+            "bond_violations": 0,
+            "angles_checked": 92,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 349,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 2\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "BRTIODDBAINQSR-UHFFFAOYSA-N",
+      "index": 7391,
+      "geometry_reference": {
+        "bonds_supported": 74,
+        "bonds_total": 74,
+        "angles_supported": 133,
+        "angles_total": 133
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 3,
+        "accepted": 3,
+        "elapsed": 0.20206837507430464,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.21286410425614843,
+          0.2976480218714135,
+          0.18822998232949884
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 74,
+            "bond_violations": 0,
+            "angles_checked": 133,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 412,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 74,
+            "bond_violations": 0,
+            "angles_checked": 133,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 412,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 74,
+            "bond_violations": 0,
+            "angles_checked": 133,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 412,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 2,
+        "elapsed": 0.20287354092579335,
+        "statuses": [
+          1,
+          1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.2100397562609111,
+          0.18878773522645892
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 74,
+            "bond_violations": 0,
+            "angles_checked": 133,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 412,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 74,
+            "bond_violations": 0,
+            "angles_checked": 133,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 412,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "ULZGHJGXFUGLOK-UHFFFAOYSA-N",
+      "index": 1044,
+      "geometry_reference": {
+        "bonds_supported": 25,
+        "bonds_total": 25,
+        "angles_supported": 38,
+        "angles_total": 38
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 20,
+        "accepted": 20,
+        "elapsed": 0.19415879203006625,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": false,
+        "attempted_is_lower_bound": false,
+        "rmsd": [
+          0.5415019605545254,
+          0.6911293753787981,
+          0.6048322424539571,
+          0.6143197247838531,
+          0.8026462545310157,
+          0.33148984360376915,
+          0.5436723536350075,
+          1.5886956039052187,
+          0.7586497453254493,
+          0.5671709003755846,
+          0.3538334281371915,
+          0.5368671978641011,
+          1.3834049061026052,
+          0.7394619886494597,
+          0.8625327597138779,
+          0.525272792069806,
+          0.617634785769897,
+          0.7417860526661811,
+          1.6084132013695192,
+          0.5519553980902269
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 25,
+            "bond_violations": 0,
+            "angles_checked": 38,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 58,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 8\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "HAENGCCFNUKVBJ-UHFFFAOYSA-N",
+      "index": 11806,
+      "geometry_reference": {
+        "bonds_supported": 64,
+        "bonds_total": 64,
+        "angles_supported": 115,
+        "angles_total": 115
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 4,
+        "elapsed": 0.2024406250566244,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.5921428490096903,
+          1.3956638154807062,
+          0.6656375957452638,
+          0.600182155991615
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 115,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 628,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 115,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 628,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 115,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 628,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 64,
+            "bond_violations": 0,
+            "angles_checked": 115,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 628,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 10\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "PAMKMWXGUZNBAM-MUUNZHRXSA-N",
+      "index": 10229,
+      "geometry_reference": {
+        "bonds_supported": 61,
+        "bonds_total": 61,
+        "angles_supported": 108,
+        "angles_total": 108
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 4,
+        "elapsed": 0.2025854579405859,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.35186991794951816,
+          0.35407077807763804,
+          0.35880095468565293,
+          0.36824134345319415
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 108,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 321,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 108,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 321,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 108,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 321,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 61,
+            "bond_violations": 0,
+            "angles_checked": 108,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 321,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 6\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "WLSMYJYOEPEDJS-SECBINFHSA-O",
+      "index": 1022,
+      "geometry_reference": {
+        "bonds_supported": 39,
+        "bonds_total": 39,
+        "angles_supported": 77,
+        "angles_total": 77
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 11,
+        "accepted": 11,
+        "elapsed": 0.202314667054452,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.0102233875693214,
+          0.872946328751396,
+          0.6063652661229737,
+          0.8078700341057853,
+          0.7640263576495449,
+          1.0074141345894583,
+          1.0134546887030802,
+          0.9385757545623283,
+          0.8130656211600631,
+          0.8518564773110977,
+          1.1380019892747233
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 39,
+            "bond_violations": 0,
+            "angles_checked": 77,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 64,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 4\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "HDJXHQNRDCKFED-UHFFFAOYSA-N",
+      "index": 10933,
+      "geometry_reference": {
+        "bonds_supported": 43,
+        "bonds_total": 43,
+        "angles_supported": 75,
+        "angles_total": 75
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 10,
+        "accepted": 10,
+        "elapsed": 0.20235766703262925,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6605870016862305,
+          0.6380350699117896,
+          0.6619905331131537,
+          0.6443503019125123,
+          0.6501207224787157,
+          0.14252950049909144,
+          0.6738656858802161,
+          0.15296508738056622,
+          0.1307745433078865,
+          0.6700641717871284
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 43,
+            "bond_violations": 0,
+            "angles_checked": 75,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 227,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 22\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "VXFHWAZJULXRDO-UHFFFAOYSA-N",
+      "index": 11368,
+      "geometry_reference": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 112,
+        "angles_total": 112
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 6,
+        "elapsed": 0.2020556670613587,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6342286509962022,
+          1.4060760527569716,
+          1.2933905483099573,
+          1.2993646661213347,
+          1.3929114785842276,
+          1.2287670759462301
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 112,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 249,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 2\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "AJZYFMCVEPWNIL-UHFFFAOYSA-N",
+      "index": 4616,
+      "geometry_reference": {
+        "bonds_supported": 94,
+        "bonds_total": 94,
+        "angles_supported": 154,
+        "angles_total": 154
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 3,
+        "elapsed": 0.20228600001428276,
+        "statuses": [
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.363858995676744,
+          2.3863680378749823,
+          2.1132357894224416
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 94,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1180,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 94,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1180,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 94,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1180,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 12\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "VCAIRVLLTPIPKE-UHFFFAOYSA-O",
+      "index": 2081,
+      "geometry_reference": {
+        "bonds_supported": 66,
+        "bonds_total": 66,
+        "angles_supported": 120,
+        "angles_total": 120
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 4,
+        "elapsed": 0.20297270803712308,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.8235244229992138,
+          1.1658198623435843,
+          0.7029400890016196,
+          1.7898621701885522
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 66,
+            "bond_violations": 0,
+            "angles_checked": 120,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 632,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 66,
+            "bond_violations": 0,
+            "angles_checked": 120,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 632,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 66,
+            "bond_violations": 0,
+            "angles_checked": 120,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 632,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 66,
+            "bond_violations": 0,
+            "angles_checked": 120,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 632,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 16\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "JPDYATRMWLOAMK-UHFFFAOYSA-N",
+      "index": 1868,
+      "geometry_reference": {
+        "bonds_supported": 55,
+        "bonds_total": 61,
+        "angles_supported": 90,
+        "angles_total": 102
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.20116412499919534,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": false,
+        "attempted_is_lower_bound": false,
+        "rmsd": [
+          2.2310484222880995,
+          2.460136753960531,
+          1.8310379176182376,
+          2.4603028493479715,
+          1.721782105745522
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 55,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 472,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 55,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 472,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 55,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 472,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 55,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 472,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 55,
+            "bond_violations": 0,
+            "angles_checked": 90,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 472,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(34) at atom 1\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "VUWZPKCOPCATEN-UHFFFAOYSA-N",
+      "index": 7389,
+      "geometry_reference": {
+        "bonds_supported": 109,
+        "bonds_total": 109,
+        "angles_supported": 199,
+        "angles_total": 199
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 1,
+        "elapsed": 0.2020602080738172,
+        "statuses": [
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.9402901078555286
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 109,
+            "bond_violations": 0,
+            "angles_checked": 199,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 998,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 37\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "HXDFZGSHFABWTP-MKPLZMMCSA-N",
+      "index": 10480,
+      "geometry_reference": {
+        "bonds_supported": 41,
+        "bonds_total": 41,
+        "angles_supported": 78,
+        "angles_total": 78
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 9,
+        "accepted": 9,
+        "elapsed": 0.2009616669965908,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.6214763321901162,
+          1.3964500606934058,
+          1.8503118486717185,
+          1.611608636381374,
+          1.2603010753039132,
+          1.0136580053040891,
+          1.346005396825965,
+          0.9851862581101286,
+          0.9519203209673146
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 41,
+            "bond_violations": 0,
+            "angles_checked": 78,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 173,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 11\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "VVUQDXDSJHLUBD-WTQYMLSTSA-N",
+      "index": 4254,
+      "geometry_reference": {
+        "bonds_supported": 93,
+        "bonds_total": 93,
+        "angles_supported": 153,
+        "angles_total": 153
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 2,
+        "elapsed": 0.20205966697540134,
+        "statuses": [
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.5177840754794776,
+          2.3937475009683498
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 93,
+            "bond_violations": 0,
+            "angles_checked": 153,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1269,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 93,
+            "bond_violations": 0,
+            "angles_checked": 153,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1269,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 8\\')\")')"
+        }
+      }
+    },
+    {
+      "name": "RZAUPKWCZQTJPZ-HXUWFJFHSA-N",
+      "index": 8293,
+      "geometry_reference": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 105,
+        "angles_total": 105
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 5,
+        "elapsed": 0.20238270796835423,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "timed_out": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6019758799579858,
+          0.6163039898744254,
+          0.3713477426880684,
+          0.6162084540436626,
+          0.7689811965492893
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 105,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 208,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 105,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 208,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 105,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 208,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 105,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 208,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 56,
+            "bond_violations": 0,
+            "angles_checked": 105,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 208,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "engine_errors": {
+        "chematic": {
+          "stage": "generation",
+          "error": "RuntimeError('engine worker failed: (\\'error\\', \"ValueError(\\'RDKit-compatible MMFF94: MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 2\\')\")')"
+        }
+      }
+    }
+  ]
+}

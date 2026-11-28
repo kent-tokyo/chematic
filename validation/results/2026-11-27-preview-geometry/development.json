@@ -1,0 +1,4874 @@
+{
+  "input_sha256": "86218b8c8dac403fc025e0cf9d739c0f1cbcc680cbe8aa139be9bdf7fd1d14f4",
+  "coordinate_sha256": [
+    "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+    "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318"
+  ],
+  "extension_sha256": "ed3083dfeb7b03ae9949a19de3eeb5064b67bca62e82c36cff6643c00dae829e",
+  "script_sha256": "2a2078d9613ad4985a40e7568e4d89a91bc17ecc56d693128ed5c3ce70a36741",
+  "python": "3.13.6",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "rdkit": "2026.09.2",
+  "results": [
+    {
+      "index": 1281,
+      "name": "DXRHSVBGHOZCCS-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 70,
+        "worst_bond_length": 1.5592877919552721,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 70,
+        "bond_violations": 0,
+        "angles_checked": 135,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 347,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 70,
+        "bonds_total": 70,
+        "angles_supported": 135,
+        "angles_total": 135
+      }
+    },
+    {
+      "index": 6747,
+      "name": "KGWCZIZWVMCVOA-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 1.5645441376194953,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 0,
+        "angles_checked": 46,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 215,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 46,
+        "angles_total": 46
+      }
+    },
+    {
+      "index": 3702,
+      "name": "MTJHDQGZSDNMFZ-BGYRXZFFSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 69,
+        "worst_bond_length": 1.6983811081915392,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 69,
+        "bond_violations": 0,
+        "angles_checked": 138,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 291,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 69,
+        "bonds_total": 69,
+        "angles_supported": 138,
+        "angles_total": 138
+      }
+    },
+    {
+      "index": 2100,
+      "name": "IVISKTPEPBCKPI-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 1.8749614733837787,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 39,
+        "bond_violations": 0,
+        "angles_checked": 67,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 119,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 39,
+        "bonds_total": 39,
+        "angles_supported": 67,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 2082,
+      "name": "XFBIHHFSKJEWKH-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 1.577959612158108,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 0,
+        "angles_checked": 85,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 252,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 7590,
+      "name": "LKTXBQVCMIIPRG-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.509264350773936,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 72,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 254,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 7887,
+      "name": "CRVFMDCJKCWIHT-WDSOQIARSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 63,
+        "worst_bond_length": 1.749093044268997,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 63,
+        "bond_violations": 0,
+        "angles_checked": 121,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 301,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 63,
+        "bonds_total": 63,
+        "angles_supported": 121,
+        "angles_total": 121
+      }
+    },
+    {
+      "index": 11192,
+      "name": "YJCVGXLDBBTKCP-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 1.5577465636382375,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 0,
+        "angles_checked": 77,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 277,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 77,
+        "angles_total": 77
+      }
+    },
+    {
+      "index": 10726,
+      "name": "OSGSKMITGLLWTQ-GYHWCHFESA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 1.529183298361402,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 62,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 209,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 62,
+        "angles_total": 62
+      }
+    },
+    {
+      "index": 917,
+      "name": "ZUDMXCLBUJHUQF-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 1.5878136593255212,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 60,
+        "bond_violations": 0,
+        "angles_checked": 105,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 279,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 105,
+        "angles_total": 105
+      }
+    },
+    {
+      "index": 10815,
+      "name": "MUPDYJAYWNLFGI-YFKPBYRVSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 31,
+        "worst_bond_length": 1.9435547803730515,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 31,
+        "bond_violations": 0,
+        "angles_checked": 55,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 153,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 31,
+        "bonds_total": 31,
+        "angles_supported": 55,
+        "angles_total": 55
+      }
+    },
+    {
+      "index": 4918,
+      "name": "BNJKTKJXRFXQTF-RQNOJGIXSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 71,
+        "worst_bond_length": 1.9585161486341196,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 71,
+        "bond_violations": 0,
+        "angles_checked": 138,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 278,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 71,
+        "bonds_total": 71,
+        "angles_supported": 138,
+        "angles_total": 138
+      }
+    },
+    {
+      "index": 11250,
+      "name": "XAMVADPJJNHXLR-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.538174788323407,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 103,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 169,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 103,
+        "angles_total": 103
+      }
+    },
+    {
+      "index": 5446,
+      "name": "SNQFEECGHGUHBK-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.5778418048307785,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 0,
+        "angles_checked": 79,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 282,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 79,
+        "angles_total": 79
+      }
+    },
+    {
+      "index": 9572,
+      "name": "HVDRNBLOOGYQTD-FYWRMAATSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 45,
+        "worst_bond_length": 1.5777824491640275,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 45,
+        "bond_violations": 0,
+        "angles_checked": 73,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 196,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 45,
+        "bonds_total": 45,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 8841,
+      "name": "MIGFJGBZALTMPG-SZPZYZBQSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 72,
+        "worst_bond_length": 2.081287952423261,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 72,
+        "bond_violations": 0,
+        "angles_checked": 145,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 230,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 72,
+        "bonds_total": 72,
+        "angles_supported": 145,
+        "angles_total": 145
+      }
+    },
+    {
+      "index": 3926,
+      "name": "FDZGEOVZIPRARB-GARJFASQSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 34,
+        "worst_bond_length": 1.5927569186198913,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 34,
+        "bond_violations": 0,
+        "angles_checked": 65,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 55,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 34,
+        "bonds_total": 34,
+        "angles_supported": 65,
+        "angles_total": 65
+      }
+    },
+    {
+      "index": 9390,
+      "name": "DHMRKUSTAHEIMH-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 66,
+        "worst_bond_length": 2.233160528687855,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 66,
+        "bond_violations": 0,
+        "angles_checked": 130,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 209,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 66,
+        "bonds_total": 66,
+        "angles_supported": 130,
+        "angles_total": 130
+      }
+    },
+    {
+      "index": 3424,
+      "name": "FPSIOKHQRLREBJ-LPYMAVHISA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.5558953749212328,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 0,
+        "angles_checked": 85,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 256,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 589,
+      "name": "SJWJWHXBRWGVPD-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 66,
+        "worst_bond_length": 1.8917813023287209,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 66,
+        "bond_violations": 0,
+        "angles_checked": 132,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 169,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 66,
+        "bonds_total": 66,
+        "angles_supported": 132,
+        "angles_total": 132
+      }
+    },
+    {
+      "index": 11575,
+      "name": "HPQOCWNVCIZPPP-HNNXBMFYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 1.9670785782087077,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 0,
+        "angles_checked": 73,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 138,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 3790,
+      "name": "UYSOURHIOZHDJC-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 23,
+        "worst_bond_length": 2.4031000741074777,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 23,
+        "bond_violations": 0,
+        "angles_checked": 34,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 81,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 23,
+        "bonds_total": 23,
+        "angles_supported": 34,
+        "angles_total": 34
+      }
+    },
+    {
+      "index": 10849,
+      "name": "PTTDUWDNIUHDBP-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 2.153264631876932,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 66,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 121,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 39,
+        "angles_supported": 66,
+        "angles_total": 69
+      }
+    },
+    {
+      "index": 3437,
+      "name": "MVBBKCTTZYGIFM-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 1.9032663351386783,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 58,
+        "bond_violations": 0,
+        "angles_checked": 104,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 333,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 58,
+        "bonds_total": 60,
+        "angles_supported": 104,
+        "angles_total": 108
+      }
+    },
+    {
+      "index": 5048,
+      "name": "LOUAWZBJVOYENZ-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 1.9386583266420914,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 0,
+        "angles_checked": 55,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 82,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 55,
+        "angles_total": 55
+      }
+    },
+    {
+      "index": 4744,
+      "name": "YSGXNPZVODNXGQ-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 1.9345395920413118,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 39,
+        "bond_violations": 0,
+        "angles_checked": 60,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 195,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 39,
+        "bonds_total": 39,
+        "angles_supported": 60,
+        "angles_total": 60
+      }
+    },
+    {
+      "index": 4726,
+      "name": "VAFBBQZERKZXSN-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 45,
+        "worst_bond_length": 2.1564400011043143,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 70,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 255,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 45,
+        "angles_supported": 70,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 3408,
+      "name": "FKLPFCHSJFMJOP-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 1.9482935339328198,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 43,
+        "bond_violations": 0,
+        "angles_checked": 71,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 251,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 43,
+        "bonds_total": 48,
+        "angles_supported": 71,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 8725,
+      "name": "RWWJAGZKZZWMNA-KRWDZBQOSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 2.25519133174768,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 64,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 122,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 39,
+        "angles_supported": 64,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 11656,
+      "name": "BWQNHQRRXGIMHA-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 55,
+        "worst_bond_length": 2.5570552190246256,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 88,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 356,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 55,
+        "angles_supported": 88,
+        "angles_total": 91
+      }
+    },
+    {
+      "index": 2036,
+      "name": "IIWPZSXLWQUMIP-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 43,
+        "worst_bond_length": 1.7161060712508376,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 43,
+        "bond_violations": 0,
+        "angles_checked": 75,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 171,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 43,
+        "bonds_total": 43,
+        "angles_supported": 75,
+        "angles_total": 75
+      }
+    },
+    {
+      "index": 3495,
+      "name": "OIAIAXOQTXSGPJ-UMADGWCESA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 1.9091913724297453,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 0,
+        "angles_checked": 100,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 331,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 6222,
+      "name": "OJPKBTYUNZPMKC-DTWKUNHWSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 27,
+        "worst_bond_length": 1.8310728675339403,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 27,
+        "bond_violations": 0,
+        "angles_checked": 45,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 108,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 27,
+        "bonds_total": 27,
+        "angles_supported": 45,
+        "angles_total": 45
+      }
+    },
+    {
+      "index": 11681,
+      "name": "ZAXZEJDMQSNNKV-SSDOTTSWSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 2.108836465782309,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 0,
+        "angles_checked": 57,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 44,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 57,
+        "angles_total": 57
+      }
+    },
+    {
+      "index": 8207,
+      "name": "ZJOYCUWXPNQCCQ-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 46,
+        "worst_bond_length": 1.8065148882997717,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 46,
+        "bond_violations": 0,
+        "angles_checked": 77,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 194,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 46,
+        "bonds_total": 46,
+        "angles_supported": 77,
+        "angles_total": 77
+      }
+    },
+    {
+      "index": 11030,
+      "name": "KPLORSJYXAWHJP-GOTSBHOMSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 57,
+        "worst_bond_length": 1.8396792668471658,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 57,
+        "bond_violations": 0,
+        "angles_checked": 104,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 295,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 57,
+        "bonds_total": 57,
+        "angles_supported": 104,
+        "angles_total": 104
+      }
+    },
+    {
+      "index": 10610,
+      "name": "SKXASMVAPXSBAT-IRYADYCUSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 1.780717572754509,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 60,
+        "bond_violations": 0,
+        "angles_checked": 106,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 327,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 106,
+        "angles_total": 106
+      }
+    },
+    {
+      "index": 8769,
+      "name": "WFISQSLZOPMVHE-JTQLQIEISA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 34,
+        "worst_bond_length": 1.7575113279966796,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 34,
+        "bond_violations": 0,
+        "angles_checked": 58,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 123,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 34,
+        "bonds_total": 34,
+        "angles_supported": 58,
+        "angles_total": 58
+      }
+    },
+    {
+      "index": 1104,
+      "name": "PSYWRJCBSIAVEO-RPLNLOMXSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 37,
+        "worst_bond_length": 1.818584144978898,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 37,
+        "bond_violations": 0,
+        "angles_checked": 67,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 138,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 37,
+        "bonds_total": 37,
+        "angles_supported": 67,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 8978,
+      "name": "LEOPJUPDCQVWOD-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 1.9237360793661962,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 0,
+        "angles_checked": 84,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 277,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 7998,
+      "name": "KGYYKBSAIBHFMN-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.7239702849519905,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 92,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 348,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 4199,
+      "name": "NSRONASIZCWZAN-AVCCJPFPSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 1.8253490487509298,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 0,
+        "angles_checked": 81,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 63,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 81,
+        "angles_total": 81
+      }
+    },
+    {
+      "index": 4665,
+      "name": "FCZYKXSGZHCYPZ-LJQANCHMSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 41,
+        "worst_bond_length": 1.8328957627341214,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 41,
+        "bond_violations": 0,
+        "angles_checked": 68,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 190,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 41,
+        "bonds_total": 41,
+        "angles_supported": 68,
+        "angles_total": 68
+      }
+    },
+    {
+      "index": 3760,
+      "name": "DIANVCRNTWDJAT-SQNIBIBYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 1.8359040275109193,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 0,
+        "angles_checked": 84,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 254,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 4314,
+      "name": "KZHYUGWIDACXPS-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 20,
+        "worst_bond_length": 1.6980039498822979,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 20,
+        "bond_violations": 0,
+        "angles_checked": 28,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 81,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 20,
+        "bonds_total": 20,
+        "angles_supported": 28,
+        "angles_total": 28
+      }
+    },
+    {
+      "index": 9782,
+      "name": "DMZRBYFQSAWMNA-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.752615237036663,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 74,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 212,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 74,
+        "angles_total": 74
+      }
+    },
+    {
+      "index": 7359,
+      "name": "BGCLOIWJJHQSEF-KRWDZBQOSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.62604478272608,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 85,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 241,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 10389,
+      "name": "JTFDGXVBTKJCCW-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 1.720558603045907,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 0,
+        "angles_checked": 97,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 302,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 97,
+        "angles_total": 97
+      }
+    },
+    {
+      "index": 11940,
+      "name": "LYVSPZZHZZMALL-YLJYHZDGSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 52,
+        "worst_bond_length": 1.7568870549574718,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 52,
+        "bond_violations": 0,
+        "angles_checked": 94,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 257,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 52,
+        "bonds_total": 52,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 9542,
+      "name": "PVSALJIAGDUWPT-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 47,
+        "worst_bond_length": 1.7507264025207918,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 47,
+        "bond_violations": 0,
+        "angles_checked": 86,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 175,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 47,
+        "bonds_total": 47,
+        "angles_supported": 86,
+        "angles_total": 86
+      }
+    },
+    {
+      "index": 2110,
+      "name": "DTGLZDAWLRGWQN-IBGZPJMESA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.8972716749890537,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 89,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 257,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 89,
+        "angles_total": 89
+      }
+    },
+    {
+      "index": 9615,
+      "name": "OBJCIMUELNRLDV-CIRFHOKZSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 46,
+        "worst_bond_length": 1.844540394099695,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 46,
+        "bond_violations": 0,
+        "angles_checked": 84,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 206,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 46,
+        "bonds_total": 46,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 9507,
+      "name": "HDUXDOGENLIHAT-ONGXBYRLSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 1.6524125157922387,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 0,
+        "angles_checked": 100,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 322,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 5076,
+      "name": "YADZKVFPNBWLPL-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 1.8335491741272287,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 0,
+        "angles_checked": 69,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 155,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 69,
+        "angles_total": 69
+      }
+    },
+    {
+      "index": 196,
+      "name": "YOSZTXQWGSLFFI-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 31,
+        "worst_bond_length": 1.889024988063114,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 31,
+        "bond_violations": 0,
+        "angles_checked": 53,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 90,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 31,
+        "bonds_total": 31,
+        "angles_supported": 53,
+        "angles_total": 53
+      }
+    },
+    {
+      "index": 317,
+      "name": "ULRFHOMDJOKCEA-GHMZBOCLSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 36,
+        "worst_bond_length": 1.7464853503792481,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 36,
+        "bond_violations": 0,
+        "angles_checked": 70,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 79,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 36,
+        "bonds_total": 36,
+        "angles_supported": 70,
+        "angles_total": 70
+      }
+    },
+    {
+      "index": 9168,
+      "name": "CRJOIRYIJVLDBW-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.7857986155164665,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 78,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 174,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 78,
+        "angles_total": 78
+      }
+    },
+    {
+      "index": 11015,
+      "name": "DLOXJGCEJLCUDX-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 1.6400885672620553,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 0,
+        "angles_checked": 56,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 103,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 56,
+        "angles_total": 56
+      }
+    },
+    {
+      "index": 4901,
+      "name": "ZINFTRJVMLEPFN-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 1.834783338906059,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 0,
+        "angles_checked": 86,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 283,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 86,
+        "angles_total": 86
+      }
+    },
+    {
+      "index": 4749,
+      "name": "UPMJWLQHDAGLCM-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 55,
+        "worst_bond_length": 1.8601594969316937,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 55,
+        "bond_violations": 0,
+        "angles_checked": 99,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 252,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 55,
+        "bonds_total": 55,
+        "angles_supported": 99,
+        "angles_total": 99
+      }
+    },
+    {
+      "index": 7888,
+      "name": "CLERHCSTXLQSEE-VVLHAWIVSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.5388254744207874,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 90,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 172,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 90,
+        "angles_total": 90
+      }
+    },
+    {
+      "index": 7363,
+      "name": "TUHRCLUJVJVPLL-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 1.4807253396473117,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 0,
+        "angles_checked": 92,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 355,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 1002,
+      "name": "ZVQHHBZABBTNSW-XSLAGTTESA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 1.8873108092011575,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 72,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 132,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 5079,
+      "name": "RGMKOVRBVVXBDN-MTLGCJRHSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.5343947253946533,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 85,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 133,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 1076,
+      "name": "NOUZLRUYHBVHSY-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 57,
+        "worst_bond_length": 1.8865480328840676,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 57,
+        "bond_violations": 0,
+        "angles_checked": 112,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 171,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 57,
+        "bonds_total": 57,
+        "angles_supported": 112,
+        "angles_total": 112
+      }
+    },
+    {
+      "index": 738,
+      "name": "VBFZWKZEFSREKB-OCFYOKIWSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 64,
+        "worst_bond_length": 1.5368983746721097,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 64,
+        "bond_violations": 0,
+        "angles_checked": 122,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 324,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 64,
+        "bonds_total": 64,
+        "angles_supported": 122,
+        "angles_total": 122
+      }
+    },
+    {
+      "index": 11601,
+      "name": "TZNBRBFUJMFQKW-XDHOZWIPSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.5370853775381284,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 0,
+        "angles_checked": 89,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 218,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 89,
+        "angles_total": 89
+      }
+    },
+    {
+      "index": 2688,
+      "name": "CYKQFMQFKGDAJQ-IQVOZAENSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.5374246344121623,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 100,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 232,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 2935,
+      "name": "GTYCANGKLPVQAW-HTJPNZHOSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 47,
+        "worst_bond_length": 1.5310995420268898,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 47,
+        "bond_violations": 0,
+        "angles_checked": 83,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 251,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 47,
+        "bonds_total": 47,
+        "angles_supported": 83,
+        "angles_total": 83
+      }
+    },
+    {
+      "index": 3340,
+      "name": "VXZGCZFTCZPSSY-XFGYDDDFSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.5383743726608023,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 96,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 328,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 96,
+        "angles_total": 96
+      }
+    },
+    {
+      "index": 5195,
+      "name": "AHVAWJUUIYAICB-SEYXRHQNSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.4554037125736006,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 72,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 208,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 6715,
+      "name": "KUDUGKHMTPCYCN-NTEUORMPSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 42,
+        "worst_bond_length": 1.4677939117227385,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 42,
+        "bond_violations": 0,
+        "angles_checked": 66,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 237,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 42,
+        "bonds_total": 42,
+        "angles_supported": 66,
+        "angles_total": 66
+      }
+    },
+    {
+      "index": 10687,
+      "name": "XPRAJWGEOWSYSU-NSHGMRRFSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 52,
+        "worst_bond_length": 1.5358688144609631,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 52,
+        "bond_violations": 0,
+        "angles_checked": 98,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 214,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 52,
+        "bonds_total": 52,
+        "angles_supported": 98,
+        "angles_total": 98
+      }
+    },
+    {
+      "index": 7750,
+      "name": "MPYXRJFZOGGDTM-PSBKLILYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.530404891721424,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 99,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 271,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 99,
+        "angles_total": 99
+      }
+    },
+    {
+      "index": 10197,
+      "name": "FVULVJKFYRMUHS-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.4326566532740335,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 73,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 207,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 1518,
+      "name": "AYITUBJHRXJUEE-JFMUQQRKSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 1.4710826616834405,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 58,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 177,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 58,
+        "angles_total": 58
+      }
+    },
+    {
+      "index": 7074,
+      "name": "MJGLWGSGVBMDDK-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 1.4582202537544293,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 0,
+        "angles_checked": 87,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 323,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 87,
+        "angles_total": 87
+      }
+    },
+    {
+      "index": 11650,
+      "name": "OOCACWURGKEILJ-MLGOLLRUSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 36,
+        "worst_bond_length": 1.507521837111084,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 36,
+        "bond_violations": 0,
+        "angles_checked": 62,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 152,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 36,
+        "bonds_total": 36,
+        "angles_supported": 62,
+        "angles_total": 62
+      }
+    },
+    {
+      "index": 6638,
+      "name": "LKSDYGJSFAGQIQ-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 1.4676388329496077,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 0,
+        "angles_checked": 48,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 94,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 48,
+        "angles_total": 48
+      }
+    },
+    {
+      "index": 3738,
+      "name": "SEHQHFIYKDVVPX-UXWLUZGYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 1.4785973335205491,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 0,
+        "angles_checked": 80,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 287,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 80,
+        "angles_total": 80
+      }
+    },
+    {
+      "index": 500,
+      "name": "QCYJGKPXUMZNQP-JTAQYXEDSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 1.5289907290069502,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 0,
+        "angles_checked": 101,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 301,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 101,
+        "angles_total": 101
+      }
+    },
+    {
+      "index": 5793,
+      "name": "ZQORUVVXVTYRNE-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 21,
+        "worst_bond_length": 1.5062671958333824,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 21,
+        "bond_violations": 0,
+        "angles_checked": 33,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 47,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 21,
+        "bonds_total": 21,
+        "angles_supported": 33,
+        "angles_total": 33
+      }
+    },
+    {
+      "index": 6771,
+      "name": "WTPWRCNDMPJBJP-QRQCRPRQSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.915330678054784,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 84,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 326,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 10684,
+      "name": "DEWCYKFLYAQLEO-JHOJWFKBSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 1.5331695793982267,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 0,
+        "angles_checked": 94,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 303,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 7477,
+      "name": "BJEHVZONXRDPJH-CYBMUJFWSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 1.88674907393614,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 0,
+        "angles_checked": 92,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 137,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 8266,
+      "name": "DQCKKXVULJGBQN-XFWGSAIBSA-O",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 1.5274583156036572,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 0,
+        "angles_checked": 108,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 223,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 108,
+        "angles_total": 108
+      }
+    },
+    {
+      "index": 2178,
+      "name": "OAHVUHRJZSGPSH-OWCLPIDISA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.535292668994382,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 94,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 124,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 1608,
+      "name": "PKZKFJAEPDCTFD-UHFFFAOYSA-O",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 1.4973853613409291,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 0,
+        "angles_checked": 53,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 107,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 53,
+        "angles_total": 53
+      }
+    },
+    {
+      "index": 6173,
+      "name": "RKXMPCLVKUCGRJ-ZNTNEXAZSA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.4797129659950385,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 0,
+        "angles_checked": 80,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 356,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 80,
+        "angles_total": 80
+      }
+    },
+    {
+      "index": 10021,
+      "name": "OQTNBIYSNDNVAX-ROHKHCOESA-N",
+      "category": "other",
+      "source_sha256": "6b642f40b8007bbe217c653ee115f3078ed624c0f8c914a6d0299eb2c08257ef",
+      "diagnostics": {
+        "bond_count": 61,
+        "worst_bond_length": 1.534827574463011,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 61,
+        "bond_violations": 0,
+        "angles_checked": 107,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 309,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 61,
+        "bonds_total": 61,
+        "angles_supported": 107,
+        "angles_total": 107
+      }
+    },
+    {
+      "index": 1281,
+      "name": "DXRHSVBGHOZCCS-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 70,
+        "worst_bond_length": 1.9496879966925056,
+        "bond_violation_rate_50pct": 0.014285714285714285,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 70,
+        "bond_violations": 1,
+        "angles_checked": 135,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 347,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 70,
+        "bonds_total": 70,
+        "angles_supported": 135,
+        "angles_total": 135
+      }
+    },
+    {
+      "index": 6747,
+      "name": "KGWCZIZWVMCVOA-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 2.108801752046192,
+        "bond_violation_rate_50pct": 0.06666666666666667,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 3,
+        "angles_checked": 46,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 215,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 46,
+        "angles_total": 46
+      }
+    },
+    {
+      "index": 3702,
+      "name": "MTJHDQGZSDNMFZ-BGYRXZFFSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 69,
+        "worst_bond_length": 2.1760208399122867,
+        "bond_violation_rate_50pct": 0.057971014492753624,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 69,
+        "bond_violations": 2,
+        "angles_checked": 138,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 291,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 69,
+        "bonds_total": 69,
+        "angles_supported": 138,
+        "angles_total": 138
+      }
+    },
+    {
+      "index": 2100,
+      "name": "IVISKTPEPBCKPI-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 2.140394402730537,
+        "bond_violation_rate_50pct": 0.10256410256410256,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 39,
+        "bond_violations": 4,
+        "angles_checked": 67,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 119,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 39,
+        "bonds_total": 39,
+        "angles_supported": 67,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 2082,
+      "name": "XFBIHHFSKJEWKH-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 2.2969365422742305,
+        "bond_violation_rate_50pct": 0.0625,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 3,
+        "angles_checked": 85,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 252,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 7590,
+      "name": "LKTXBQVCMIIPRG-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 2.0061667171975937,
+        "bond_violation_rate_50pct": 0.022727272727272728,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 1,
+        "angles_checked": 72,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 254,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 7887,
+      "name": "CRVFMDCJKCWIHT-WDSOQIARSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 63,
+        "worst_bond_length": 2.1971527515818625,
+        "bond_violation_rate_50pct": 0.015873015873015872,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 63,
+        "bond_violations": 1,
+        "angles_checked": 121,
+        "angle_violations": 9,
+        "heavy_pairs_checked": 301,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 63,
+        "bonds_total": 63,
+        "angles_supported": 121,
+        "angles_total": 121
+      }
+    },
+    {
+      "index": 11192,
+      "name": "YJCVGXLDBBTKCP-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 2.0722931363699586,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 1,
+        "angles_checked": 77,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 277,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 77,
+        "angles_total": 77
+      }
+    },
+    {
+      "index": 10726,
+      "name": "OSGSKMITGLLWTQ-GYHWCHFESA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 2.202079512165329,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 1,
+        "angles_checked": 62,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 209,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 62,
+        "angles_total": 62
+      }
+    },
+    {
+      "index": 917,
+      "name": "ZUDMXCLBUJHUQF-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 2.0395420899098187,
+        "bond_violation_rate_50pct": 0.03333333333333333,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 60,
+        "bond_violations": 2,
+        "angles_checked": 105,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 279,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 105,
+        "angles_total": 105
+      }
+    },
+    {
+      "index": 10815,
+      "name": "MUPDYJAYWNLFGI-YFKPBYRVSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 31,
+        "worst_bond_length": 2.139856869853111,
+        "bond_violation_rate_50pct": 0.03225806451612903,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 31,
+        "bond_violations": 1,
+        "angles_checked": 55,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 153,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 31,
+        "bonds_total": 31,
+        "angles_supported": 55,
+        "angles_total": 55
+      }
+    },
+    {
+      "index": 4918,
+      "name": "BNJKTKJXRFXQTF-RQNOJGIXSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 71,
+        "worst_bond_length": 2.1813301756023287,
+        "bond_violation_rate_50pct": 0.056338028169014086,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 71,
+        "bond_violations": 3,
+        "angles_checked": 138,
+        "angle_violations": 10,
+        "heavy_pairs_checked": 278,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 71,
+        "bonds_total": 71,
+        "angles_supported": 138,
+        "angles_total": 138
+      }
+    },
+    {
+      "index": 11250,
+      "name": "XAMVADPJJNHXLR-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.123756048641258,
+        "bond_violation_rate_50pct": 0.07407407407407407,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 4,
+        "angles_checked": 103,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 169,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 103,
+        "angles_total": 103
+      }
+    },
+    {
+      "index": 5446,
+      "name": "SNQFEECGHGUHBK-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 2.112012056928527,
+        "bond_violation_rate_50pct": 0.02,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 1,
+        "angles_checked": 79,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 282,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 79,
+        "angles_total": 79
+      }
+    },
+    {
+      "index": 9572,
+      "name": "HVDRNBLOOGYQTD-FYWRMAATSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 45,
+        "worst_bond_length": 1.9440662165232583,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 45,
+        "bond_violations": 0,
+        "angles_checked": 73,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 196,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 45,
+        "bonds_total": 45,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 8841,
+      "name": "MIGFJGBZALTMPG-SZPZYZBQSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 72,
+        "worst_bond_length": 2.4329468401698437,
+        "bond_violation_rate_50pct": 0.05555555555555555,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 72,
+        "bond_violations": 3,
+        "angles_checked": 145,
+        "angle_violations": 14,
+        "heavy_pairs_checked": 230,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 72,
+        "bonds_total": 72,
+        "angles_supported": 145,
+        "angles_total": 145
+      }
+    },
+    {
+      "index": 3926,
+      "name": "FDZGEOVZIPRARB-GARJFASQSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 34,
+        "worst_bond_length": 2.0802166518620804,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 34,
+        "bond_violations": 0,
+        "angles_checked": 65,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 55,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 34,
+        "bonds_total": 34,
+        "angles_supported": 65,
+        "angles_total": 65
+      }
+    },
+    {
+      "index": 9390,
+      "name": "DHMRKUSTAHEIMH-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 66,
+        "worst_bond_length": 2.4674975480453227,
+        "bond_violation_rate_50pct": 0.030303030303030304,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 66,
+        "bond_violations": 1,
+        "angles_checked": 130,
+        "angle_violations": 10,
+        "heavy_pairs_checked": 209,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 66,
+        "bonds_total": 66,
+        "angles_supported": 130,
+        "angles_total": 130
+      }
+    },
+    {
+      "index": 3424,
+      "name": "FPSIOKHQRLREBJ-LPYMAVHISA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 2.0307796882326223,
+        "bond_violation_rate_50pct": 0.08,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 4,
+        "angles_checked": 85,
+        "angle_violations": 12,
+        "heavy_pairs_checked": 256,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 589,
+      "name": "SJWJWHXBRWGVPD-UHFFFAOYSA-N",
+      "category": "boron",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 66,
+        "worst_bond_length": 2.3415512469956585,
+        "bond_violation_rate_50pct": 0.030303030303030304,
+        "gross_clash_count": 2
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 66,
+        "bond_violations": 3,
+        "angles_checked": 132,
+        "angle_violations": 14,
+        "heavy_pairs_checked": 169,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 66,
+        "bonds_total": 66,
+        "angles_supported": 132,
+        "angles_total": 132
+      }
+    },
+    {
+      "index": 11575,
+      "name": "HPQOCWNVCIZPPP-HNNXBMFYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 2.28063446534777,
+        "bond_violation_rate_50pct": 0.075,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 3,
+        "angles_checked": 73,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 138,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 3790,
+      "name": "UYSOURHIOZHDJC-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 23,
+        "worst_bond_length": 2.400777577563958,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 23,
+        "bond_violations": 0,
+        "angles_checked": 34,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 81,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 23,
+        "bonds_total": 23,
+        "angles_supported": 34,
+        "angles_total": 34
+      }
+    },
+    {
+      "index": 10849,
+      "name": "PTTDUWDNIUHDBP-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 1.938098772902074,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 0,
+        "angles_checked": 66,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 121,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 39,
+        "angles_supported": 66,
+        "angles_total": 69
+      }
+    },
+    {
+      "index": 3437,
+      "name": "MVBBKCTTZYGIFM-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 2.193265788111609,
+        "bond_violation_rate_50pct": 0.016666666666666666,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 58,
+        "bond_violations": 1,
+        "angles_checked": 104,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 333,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 58,
+        "bonds_total": 60,
+        "angles_supported": 104,
+        "angles_total": 108
+      }
+    },
+    {
+      "index": 5048,
+      "name": "LOUAWZBJVOYENZ-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 1.9484871271843467,
+        "bond_violation_rate_50pct": 0.06060606060606061,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 2,
+        "angles_checked": 55,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 82,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 55,
+        "angles_total": 55
+      }
+    },
+    {
+      "index": 4744,
+      "name": "YSGXNPZVODNXGQ-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 2.199190175237423,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 39,
+        "bond_violations": 0,
+        "angles_checked": 60,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 195,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 39,
+        "bonds_total": 39,
+        "angles_supported": 60,
+        "angles_total": 60
+      }
+    },
+    {
+      "index": 4726,
+      "name": "VAFBBQZERKZXSN-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 45,
+        "worst_bond_length": 2.4798809073675647,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 70,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 255,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 45,
+        "angles_supported": 70,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 3408,
+      "name": "FKLPFCHSJFMJOP-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 2.3086962503960096,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 43,
+        "bond_violations": 0,
+        "angles_checked": 71,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 251,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 43,
+        "bonds_total": 48,
+        "angles_supported": 71,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 8725,
+      "name": "RWWJAGZKZZWMNA-KRWDZBQOSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 39,
+        "worst_bond_length": 2.244783757601426,
+        "bond_violation_rate_50pct": 0.02564102564102564,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 1,
+        "angles_checked": 64,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 122,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 39,
+        "angles_supported": 64,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 11656,
+      "name": "BWQNHQRRXGIMHA-UHFFFAOYSA-N",
+      "category": "selenium",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 55,
+        "worst_bond_length": 2.8726447098161945,
+        "bond_violation_rate_50pct": 0.05454545454545454,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 3,
+        "angles_checked": 88,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 356,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 55,
+        "angles_supported": 88,
+        "angles_total": 91
+      }
+    },
+    {
+      "index": 2036,
+      "name": "IIWPZSXLWQUMIP-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 43,
+        "worst_bond_length": 2.051066163919267,
+        "bond_violation_rate_50pct": 0.09302325581395349,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 43,
+        "bond_violations": 3,
+        "angles_checked": 75,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 171,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 43,
+        "bonds_total": 43,
+        "angles_supported": 75,
+        "angles_total": 75
+      }
+    },
+    {
+      "index": 3495,
+      "name": "OIAIAXOQTXSGPJ-UMADGWCESA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 2.215074673884323,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 1,
+        "angles_checked": 100,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 331,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 6222,
+      "name": "OJPKBTYUNZPMKC-DTWKUNHWSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 27,
+        "worst_bond_length": 1.8950193126318473,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 27,
+        "bond_violations": 0,
+        "angles_checked": 45,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 108,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 27,
+        "bonds_total": 27,
+        "angles_supported": 45,
+        "angles_total": 45
+      }
+    },
+    {
+      "index": 11681,
+      "name": "ZAXZEJDMQSNNKV-SSDOTTSWSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 2.1550676422375385,
+        "bond_violation_rate_50pct": 0.06666666666666667,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 0,
+        "angles_checked": 57,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 44,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 57,
+        "angles_total": 57
+      }
+    },
+    {
+      "index": 8207,
+      "name": "ZJOYCUWXPNQCCQ-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 46,
+        "worst_bond_length": 2.088403687811359,
+        "bond_violation_rate_50pct": 0.043478260869565216,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 46,
+        "bond_violations": 2,
+        "angles_checked": 77,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 194,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 46,
+        "bonds_total": 46,
+        "angles_supported": 77,
+        "angles_total": 77
+      }
+    },
+    {
+      "index": 11030,
+      "name": "KPLORSJYXAWHJP-GOTSBHOMSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 57,
+        "worst_bond_length": 2.0852509997778985,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 57,
+        "bond_violations": 0,
+        "angles_checked": 104,
+        "angle_violations": 8,
+        "heavy_pairs_checked": 295,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 57,
+        "bonds_total": 57,
+        "angles_supported": 104,
+        "angles_total": 104
+      }
+    },
+    {
+      "index": 10610,
+      "name": "SKXASMVAPXSBAT-IRYADYCUSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 60,
+        "worst_bond_length": 2.086505465874565,
+        "bond_violation_rate_50pct": 0.016666666666666666,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 60,
+        "bond_violations": 1,
+        "angles_checked": 106,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 327,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 106,
+        "angles_total": 106
+      }
+    },
+    {
+      "index": 8769,
+      "name": "WFISQSLZOPMVHE-JTQLQIEISA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 34,
+        "worst_bond_length": 2.1990769537910246,
+        "bond_violation_rate_50pct": 0.029411764705882353,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 34,
+        "bond_violations": 1,
+        "angles_checked": 58,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 123,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 34,
+        "bonds_total": 34,
+        "angles_supported": 58,
+        "angles_total": 58
+      }
+    },
+    {
+      "index": 1104,
+      "name": "PSYWRJCBSIAVEO-RPLNLOMXSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 37,
+        "worst_bond_length": 2.232161075525306,
+        "bond_violation_rate_50pct": 0.02702702702702703,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 37,
+        "bond_violations": 1,
+        "angles_checked": 67,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 138,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 37,
+        "bonds_total": 37,
+        "angles_supported": 67,
+        "angles_total": 67
+      }
+    },
+    {
+      "index": 8978,
+      "name": "LEOPJUPDCQVWOD-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 2.2543132829012507,
+        "bond_violation_rate_50pct": 0.0784313725490196,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 4,
+        "angles_checked": 84,
+        "angle_violations": 8,
+        "heavy_pairs_checked": 277,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 7998,
+      "name": "KGYYKBSAIBHFMN-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.1444962410268573,
+        "bond_violation_rate_50pct": 0.018518518518518517,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 1,
+        "angles_checked": 92,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 348,
+        "heavy_atom_clashes": 2
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 4199,
+      "name": "NSRONASIZCWZAN-AVCCJPFPSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 2.29410877864738,
+        "bond_violation_rate_50pct": 0.025,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 2,
+        "angles_checked": 81,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 63,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 81,
+        "angles_total": 81
+      }
+    },
+    {
+      "index": 4665,
+      "name": "FCZYKXSGZHCYPZ-LJQANCHMSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 41,
+        "worst_bond_length": 2.2016333962678365,
+        "bond_violation_rate_50pct": 0.04878048780487805,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 41,
+        "bond_violations": 2,
+        "angles_checked": 68,
+        "angle_violations": 8,
+        "heavy_pairs_checked": 190,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 41,
+        "bonds_total": 41,
+        "angles_supported": 68,
+        "angles_total": 68
+      }
+    },
+    {
+      "index": 3760,
+      "name": "DIANVCRNTWDJAT-SQNIBIBYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 2.0039797215528075,
+        "bond_violation_rate_50pct": 0.020833333333333332,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 1,
+        "angles_checked": 84,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 254,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 4314,
+      "name": "KZHYUGWIDACXPS-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 20,
+        "worst_bond_length": 2.1390807836298458,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 20,
+        "bond_violations": 0,
+        "angles_checked": 28,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 81,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 20,
+        "bonds_total": 20,
+        "angles_supported": 28,
+        "angles_total": 28
+      }
+    },
+    {
+      "index": 9782,
+      "name": "DMZRBYFQSAWMNA-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.8964275602567948,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 74,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 212,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 74,
+        "angles_total": 74
+      }
+    },
+    {
+      "index": 7359,
+      "name": "BGCLOIWJJHQSEF-KRWDZBQOSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 2.0891398115407083,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 85,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 241,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 10389,
+      "name": "JTFDGXVBTKJCCW-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 1.9855595929011924,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 0,
+        "angles_checked": 97,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 302,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 97,
+        "angles_total": 97
+      }
+    },
+    {
+      "index": 11940,
+      "name": "LYVSPZZHZZMALL-YLJYHZDGSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 52,
+        "worst_bond_length": 2.210176225792304,
+        "bond_violation_rate_50pct": 0.019230769230769232,
+        "gross_clash_count": 2
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 52,
+        "bond_violations": 0,
+        "angles_checked": 94,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 257,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 52,
+        "bonds_total": 52,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 9542,
+      "name": "PVSALJIAGDUWPT-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 47,
+        "worst_bond_length": 1.8932206943118688,
+        "bond_violation_rate_50pct": 0.02127659574468085,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 47,
+        "bond_violations": 1,
+        "angles_checked": 86,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 175,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 47,
+        "bonds_total": 47,
+        "angles_supported": 86,
+        "angles_total": 86
+      }
+    },
+    {
+      "index": 2110,
+      "name": "DTGLZDAWLRGWQN-IBGZPJMESA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 2.152856998036556,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 89,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 257,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 89,
+        "angles_total": 89
+      }
+    },
+    {
+      "index": 9615,
+      "name": "OBJCIMUELNRLDV-CIRFHOKZSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 46,
+        "worst_bond_length": 1.8962048675897973,
+        "bond_violation_rate_50pct": 0.021739130434782608,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 46,
+        "bond_violations": 1,
+        "angles_checked": 84,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 206,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 46,
+        "bonds_total": 46,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 9507,
+      "name": "HDUXDOGENLIHAT-ONGXBYRLSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 2.138129490711457,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 0,
+        "angles_checked": 100,
+        "angle_violations": 8,
+        "heavy_pairs_checked": 322,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 5076,
+      "name": "YADZKVFPNBWLPL-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 40,
+        "worst_bond_length": 2.426091756363353,
+        "bond_violation_rate_50pct": 0.05,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 40,
+        "bond_violations": 2,
+        "angles_checked": 69,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 155,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 40,
+        "bonds_total": 40,
+        "angles_supported": 69,
+        "angles_total": 69
+      }
+    },
+    {
+      "index": 196,
+      "name": "YOSZTXQWGSLFFI-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 31,
+        "worst_bond_length": 2.0790287262334477,
+        "bond_violation_rate_50pct": 0.06451612903225806,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 31,
+        "bond_violations": 2,
+        "angles_checked": 53,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 90,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 31,
+        "bonds_total": 31,
+        "angles_supported": 53,
+        "angles_total": 53
+      }
+    },
+    {
+      "index": 317,
+      "name": "ULRFHOMDJOKCEA-GHMZBOCLSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 36,
+        "worst_bond_length": 2.0464468883407934,
+        "bond_violation_rate_50pct": 0.027777777777777776,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 36,
+        "bond_violations": 0,
+        "angles_checked": 70,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 79,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 36,
+        "bonds_total": 36,
+        "angles_supported": 70,
+        "angles_total": 70
+      }
+    },
+    {
+      "index": 9168,
+      "name": "CRJOIRYIJVLDBW-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 2.1575922635303124,
+        "bond_violation_rate_50pct": 0.06818181818181818,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 1,
+        "angles_checked": 78,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 174,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 78,
+        "angles_total": 78
+      }
+    },
+    {
+      "index": 11015,
+      "name": "DLOXJGCEJLCUDX-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 1.9325643915470085,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 0,
+        "angles_checked": 56,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 103,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 56,
+        "angles_total": 56
+      }
+    },
+    {
+      "index": 4901,
+      "name": "ZINFTRJVMLEPFN-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 2.287319545477682,
+        "bond_violation_rate_50pct": 0.058823529411764705,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 3,
+        "angles_checked": 86,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 283,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 86,
+        "angles_total": 86
+      }
+    },
+    {
+      "index": 4749,
+      "name": "UPMJWLQHDAGLCM-UHFFFAOYSA-N",
+      "category": "phosphorus_sulfur",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 55,
+        "worst_bond_length": 2.3182277756144853,
+        "bond_violation_rate_50pct": 0.01818181818181818,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 55,
+        "bond_violations": 1,
+        "angles_checked": 99,
+        "angle_violations": 10,
+        "heavy_pairs_checked": 252,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 55,
+        "bonds_total": 55,
+        "angles_supported": 99,
+        "angles_total": 99
+      }
+    },
+    {
+      "index": 7888,
+      "name": "CLERHCSTXLQSEE-VVLHAWIVSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 1.9868663688515278,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 0,
+        "angles_checked": 90,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 172,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 90,
+        "angles_total": 90
+      }
+    },
+    {
+      "index": 7363,
+      "name": "TUHRCLUJVJVPLL-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 1.8669581024575894,
+        "bond_violation_rate_50pct": 0.017857142857142856,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 1,
+        "angles_checked": 92,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 355,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 1002,
+      "name": "ZVQHHBZABBTNSW-XSLAGTTESA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 2.165414747177266,
+        "bond_violation_rate_50pct": 0.05263157894736842,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 2,
+        "angles_checked": 72,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 132,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 5079,
+      "name": "RGMKOVRBVVXBDN-MTLGCJRHSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.9815620421792386,
+        "bond_violation_rate_50pct": 0.045454545454545456,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 2,
+        "angles_checked": 85,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 133,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 85,
+        "angles_total": 85
+      }
+    },
+    {
+      "index": 1076,
+      "name": "NOUZLRUYHBVHSY-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 57,
+        "worst_bond_length": 2.546669318234061,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 57,
+        "bond_violations": 1,
+        "angles_checked": 112,
+        "angle_violations": 10,
+        "heavy_pairs_checked": 171,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 57,
+        "bonds_total": 57,
+        "angles_supported": 112,
+        "angles_total": 112
+      }
+    },
+    {
+      "index": 738,
+      "name": "VBFZWKZEFSREKB-OCFYOKIWSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 64,
+        "worst_bond_length": 2.0465713988483296,
+        "bond_violation_rate_50pct": 0.03125,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 64,
+        "bond_violations": 1,
+        "angles_checked": 122,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 324,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 64,
+        "bonds_total": 64,
+        "angles_supported": 122,
+        "angles_total": 122
+      }
+    },
+    {
+      "index": 11601,
+      "name": "TZNBRBFUJMFQKW-XDHOZWIPSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.9235056531960077,
+        "bond_violation_rate_50pct": 0.02,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 0,
+        "angles_checked": 89,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 218,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 89,
+        "angles_total": 89
+      }
+    },
+    {
+      "index": 2688,
+      "name": "CYKQFMQFKGDAJQ-IQVOZAENSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.0348243916887445,
+        "bond_violation_rate_50pct": 0.037037037037037035,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 2,
+        "angles_checked": 100,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 232,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 100,
+        "angles_total": 100
+      }
+    },
+    {
+      "index": 2935,
+      "name": "GTYCANGKLPVQAW-HTJPNZHOSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 47,
+        "worst_bond_length": 2.0357148296168908,
+        "bond_violation_rate_50pct": 0.02127659574468085,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 47,
+        "bond_violations": 1,
+        "angles_checked": 83,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 251,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 47,
+        "bonds_total": 47,
+        "angles_supported": 83,
+        "angles_total": 83
+      }
+    },
+    {
+      "index": 3340,
+      "name": "VXZGCZFTCZPSSY-XFGYDDDFSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.0320722778965776,
+        "bond_violation_rate_50pct": 0.018518518518518517,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 1,
+        "angles_checked": 96,
+        "angle_violations": 12,
+        "heavy_pairs_checked": 328,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 96,
+        "angles_total": 96
+      }
+    },
+    {
+      "index": 5195,
+      "name": "AHVAWJUUIYAICB-SEYXRHQNSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.9850527371277322,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 0,
+        "angles_checked": 72,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 208,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 72,
+        "angles_total": 72
+      }
+    },
+    {
+      "index": 6715,
+      "name": "KUDUGKHMTPCYCN-NTEUORMPSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 42,
+        "worst_bond_length": 2.0159489419845396,
+        "bond_violation_rate_50pct": 0.11904761904761904,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 42,
+        "bond_violations": 5,
+        "angles_checked": 66,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 237,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 42,
+        "bonds_total": 42,
+        "angles_supported": 66,
+        "angles_total": 66
+      }
+    },
+    {
+      "index": 10687,
+      "name": "XPRAJWGEOWSYSU-NSHGMRRFSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 52,
+        "worst_bond_length": 2.1755691781956044,
+        "bond_violation_rate_50pct": 0.019230769230769232,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 52,
+        "bond_violations": 1,
+        "angles_checked": 98,
+        "angle_violations": 9,
+        "heavy_pairs_checked": 214,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 52,
+        "bonds_total": 52,
+        "angles_supported": 98,
+        "angles_total": 98
+      }
+    },
+    {
+      "index": 7750,
+      "name": "MPYXRJFZOGGDTM-PSBKLILYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.0131105930707363,
+        "bond_violation_rate_50pct": 0.018518518518518517,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 1,
+        "angles_checked": 99,
+        "angle_violations": 7,
+        "heavy_pairs_checked": 271,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 99,
+        "angles_total": 99
+      }
+    },
+    {
+      "index": 10197,
+      "name": "FVULVJKFYRMUHS-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 44,
+        "worst_bond_length": 1.9133644174104343,
+        "bond_violation_rate_50pct": 0.022727272727272728,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 44,
+        "bond_violations": 1,
+        "angles_checked": 73,
+        "angle_violations": 9,
+        "heavy_pairs_checked": 207,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 44,
+        "bonds_total": 44,
+        "angles_supported": 73,
+        "angles_total": 73
+      }
+    },
+    {
+      "index": 1518,
+      "name": "AYITUBJHRXJUEE-JFMUQQRKSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 38,
+        "worst_bond_length": 1.951766928357372,
+        "bond_violation_rate_50pct": 0.05263157894736842,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 38,
+        "bond_violations": 2,
+        "angles_checked": 58,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 177,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 38,
+        "bonds_total": 38,
+        "angles_supported": 58,
+        "angles_total": 58
+      }
+    },
+    {
+      "index": 7074,
+      "name": "MJGLWGSGVBMDDK-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 1.9897282467800075,
+        "bond_violation_rate_50pct": 0.018867924528301886,
+        "gross_clash_count": 1
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 1,
+        "angles_checked": 87,
+        "angle_violations": 5,
+        "heavy_pairs_checked": 323,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 87,
+        "angles_total": 87
+      }
+    },
+    {
+      "index": 11650,
+      "name": "OOCACWURGKEILJ-MLGOLLRUSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 36,
+        "worst_bond_length": 1.852054411827823,
+        "bond_violation_rate_50pct": 0.08333333333333333,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 36,
+        "bond_violations": 2,
+        "angles_checked": 62,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 152,
+        "heavy_atom_clashes": 1
+      },
+      "coverage": {
+        "bonds_supported": 36,
+        "bonds_total": 36,
+        "angles_supported": 62,
+        "angles_total": 62
+      }
+    },
+    {
+      "index": 6638,
+      "name": "LKSDYGJSFAGQIQ-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 30,
+        "worst_bond_length": 1.911249034078876,
+        "bond_violation_rate_50pct": 0.06666666666666667,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 30,
+        "bond_violations": 2,
+        "angles_checked": 48,
+        "angle_violations": 3,
+        "heavy_pairs_checked": 94,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 30,
+        "bonds_total": 30,
+        "angles_supported": 48,
+        "angles_total": 48
+      }
+    },
+    {
+      "index": 3738,
+      "name": "SEHQHFIYKDVVPX-UXWLUZGYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 51,
+        "worst_bond_length": 2.0773290252367675,
+        "bond_violation_rate_50pct": 0.0196078431372549,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 51,
+        "bond_violations": 1,
+        "angles_checked": 80,
+        "angle_violations": 1,
+        "heavy_pairs_checked": 287,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 51,
+        "bonds_total": 51,
+        "angles_supported": 80,
+        "angles_total": 80
+      }
+    },
+    {
+      "index": 500,
+      "name": "QCYJGKPXUMZNQP-JTAQYXEDSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 56,
+        "worst_bond_length": 2.055914905426378,
+        "bond_violation_rate_50pct": 0.07142857142857142,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 56,
+        "bond_violations": 4,
+        "angles_checked": 101,
+        "angle_violations": 10,
+        "heavy_pairs_checked": 301,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 56,
+        "bonds_total": 56,
+        "angles_supported": 101,
+        "angles_total": 101
+      }
+    },
+    {
+      "index": 5793,
+      "name": "ZQORUVVXVTYRNE-UHFFFAOYSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 21,
+        "worst_bond_length": 1.6856028854511773,
+        "bond_violation_rate_50pct": 0.0,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 21,
+        "bond_violations": 0,
+        "angles_checked": 33,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 47,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 21,
+        "bonds_total": 21,
+        "angles_supported": 33,
+        "angles_total": 33
+      }
+    },
+    {
+      "index": 6771,
+      "name": "WTPWRCNDMPJBJP-QRQCRPRQSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 2.1587525565562027,
+        "bond_violation_rate_50pct": 0.08163265306122448,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 2,
+        "angles_checked": 84,
+        "angle_violations": 2,
+        "heavy_pairs_checked": 326,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 84,
+        "angles_total": 84
+      }
+    },
+    {
+      "index": 10684,
+      "name": "DEWCYKFLYAQLEO-JHOJWFKBSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 53,
+        "worst_bond_length": 2.219756169389633,
+        "bond_violation_rate_50pct": 0.07547169811320754,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 53,
+        "bond_violations": 2,
+        "angles_checked": 94,
+        "angle_violations": 14,
+        "heavy_pairs_checked": 303,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 53,
+        "bonds_total": 53,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 7477,
+      "name": "BJEHVZONXRDPJH-CYBMUJFWSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 48,
+        "worst_bond_length": 2.0126475885420483,
+        "bond_violation_rate_50pct": 0.0625,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 48,
+        "bond_violations": 3,
+        "angles_checked": 92,
+        "angle_violations": 4,
+        "heavy_pairs_checked": 137,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 48,
+        "bonds_total": 48,
+        "angles_supported": 92,
+        "angles_total": 92
+      }
+    },
+    {
+      "index": 8266,
+      "name": "DQCKKXVULJGBQN-XFWGSAIBSA-O",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 54,
+        "worst_bond_length": 2.015936573987376,
+        "bond_violation_rate_50pct": 0.037037037037037035,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 54,
+        "bond_violations": 2,
+        "angles_checked": 108,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 223,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 54,
+        "bonds_total": 54,
+        "angles_supported": 108,
+        "angles_total": 108
+      }
+    },
+    {
+      "index": 2178,
+      "name": "OAHVUHRJZSGPSH-OWCLPIDISA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 49,
+        "worst_bond_length": 2.277527032498649,
+        "bond_violation_rate_50pct": 0.02040816326530612,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 49,
+        "bond_violations": 2,
+        "angles_checked": 94,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 124,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 94,
+        "angles_total": 94
+      }
+    },
+    {
+      "index": 1608,
+      "name": "PKZKFJAEPDCTFD-UHFFFAOYSA-O",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 33,
+        "worst_bond_length": 2.1074938437574833,
+        "bond_violation_rate_50pct": 0.06060606060606061,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 33,
+        "bond_violations": 2,
+        "angles_checked": 53,
+        "angle_violations": 0,
+        "heavy_pairs_checked": 107,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 33,
+        "bonds_total": 33,
+        "angles_supported": 53,
+        "angles_total": 53
+      }
+    },
+    {
+      "index": 6173,
+      "name": "RKXMPCLVKUCGRJ-ZNTNEXAZSA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 50,
+        "worst_bond_length": 1.9300763923869835,
+        "bond_violation_rate_50pct": 0.02,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 50,
+        "bond_violations": 1,
+        "angles_checked": 80,
+        "angle_violations": 8,
+        "heavy_pairs_checked": 356,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 50,
+        "bonds_total": 50,
+        "angles_supported": 80,
+        "angles_total": 80
+      }
+    },
+    {
+      "index": 10021,
+      "name": "OQTNBIYSNDNVAX-ROHKHCOESA-N",
+      "category": "other",
+      "source_sha256": "a385cd872dedc61b2f9e9e41e3b4814d3d83cdb1ec9341758e5de413e0225318",
+      "diagnostics": {
+        "bond_count": 61,
+        "worst_bond_length": 2.007295904361349,
+        "bond_violation_rate_50pct": 0.03278688524590164,
+        "gross_clash_count": 0
+      },
+      "reference": {
+        "finite": true,
+        "bonds_checked": 61,
+        "bond_violations": 3,
+        "angles_checked": 107,
+        "angle_violations": 6,
+        "heavy_pairs_checked": 309,
+        "heavy_atom_clashes": 0
+      },
+      "coverage": {
+        "bonds_supported": 61,
+        "bonds_total": 61,
+        "angles_supported": 107,
+        "angles_total": 107
+      }
+    }
+  ]
+}

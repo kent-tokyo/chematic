@@ -1,0 +1,1727 @@
+{
+  "input_sha256": "d4169d41184ff723c1bb14db9bd6e6403dd62638b59c889538cd76f64e499132",
+  "sdf_sha256": "e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117",
+  "wrapper_sha256": "d8b90b47823ba387e4e2640d3344006bbf7b98fb399db6a4f86a6178deffc1a4",
+  "extension_sha256": "093950a628c99b2abd3dc73a8344d1146405d1d0f26b504e87844407c5a5ac2c",
+  "script_sha256": "431cdc4883305e648d7e909243ab9cb4c6936c24c364f4235d5f6e378c047d05",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "python": "3.13.6",
+  "rdkit": "2026.09.2",
+  "seconds": 0.2,
+  "num_confs": 20,
+  "results": [
+    {
+      "index": 8076,
+      "name": "PUDPHFZVGPKAFR-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 80,
+        "bonds_total": 80,
+        "angles_supported": 144,
+        "angles_total": 144
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2032383750192821,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 1.778387202781875,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 80,
+              "bond_violations": 0,
+              "angles_checked": 144,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1382,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.3768258031267702,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 80,
+              "bond_violations": 0,
+              "angles_checked": 144,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1382,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2036060830578208,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 1.778387202781875,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 80,
+              "bond_violations": 0,
+              "angles_checked": 144,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1382,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.3768258031267702,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 80,
+              "bond_violations": 0,
+              "angles_checked": 144,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1382,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 5934,
+      "name": "AQKYFIVHYUQROH-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 84,
+        "bonds_total": 84,
+        "angles_supported": 136,
+        "angles_total": 136
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2033117909450084,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 2.2077504544543984,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 84,
+              "bond_violations": 0,
+              "angles_checked": 136,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 911,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [
+          {
+            "rmsd": 1.284998098733717,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 84,
+              "bond_violations": 0,
+              "angles_checked": 136,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 911,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.203505291021429,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 2.2077504544543984,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 84,
+              "bond_violations": 0,
+              "angles_checked": 136,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 911,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 8243,
+      "name": "ALMADGJWFMVYIR-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 92,
+        "bonds_total": 92,
+        "angles_supported": 155,
+        "angles_total": 155
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20353258401155472,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 1.2819610333653861,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 92,
+              "bond_violations": 0,
+              "angles_checked": 155,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 956,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20382804097607732,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 1.2819610333653861,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 92,
+              "bond_violations": 0,
+              "angles_checked": 155,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 956,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 6154,
+      "name": "AZWHKXNTCSKADM-IDZYALCFSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 107,
+        "angles_total": 107
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20379912503995,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 3.0248181173223374,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 107,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 416,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.4520831557405303,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 107,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 416,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [
+          {
+            "rmsd": 1.7182399091136842,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 107,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 416,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2037522499449551,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 3.0248181173223374,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 107,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 416,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.4520831557405303,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 107,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 416,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 9913,
+      "name": "HEWWOJHRJDDMFV-WJOKGBTCSA-O",
+      "geometry_coverage": {
+        "bonds_supported": 87,
+        "bonds_total": 87,
+        "angles_supported": 153,
+        "angles_total": 153
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20337829203344882,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2036897080251947,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [
+          {
+            "rmsd": 2.2938945765890186,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 87,
+              "bond_violations": 0,
+              "angles_checked": 153,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 870,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 11135,
+      "name": "XONDFNCHKZMZPY-NTHXEYRTSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 95,
+        "bonds_total": 95,
+        "angles_supported": 154,
+        "angles_total": 154
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2037877079565078,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.1847561582800186,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 95,
+              "bond_violations": 0,
+              "angles_checked": 154,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1286,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2037036659894511,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.1847561582800186,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 95,
+              "bond_violations": 0,
+              "angles_checked": 154,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1286,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 8872,
+      "name": "SRBBSAYBWVTUKQ-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 101,
+        "bonds_total": 101,
+        "angles_supported": 162,
+        "angles_total": 162
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20368825003970414,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 1.7981501552700678,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 101,
+              "bond_violations": 0,
+              "angles_checked": 162,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1498,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20388579100836068,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 1.7981501552700678,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 101,
+              "bond_violations": 0,
+              "angles_checked": 162,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1498,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 6260,
+      "name": "OXBWZHKDCWOVNF-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 139,
+        "bonds_total": 139,
+        "angles_supported": 238,
+        "angles_total": 238
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20382366597186774,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20373858301900327,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 7359,
+      "name": "BGCLOIWJJHQSEF-KRWDZBQOSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 85,
+        "angles_total": 85
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20386933302506804,
+        "attempts_completed": 5,
+        "completed_screen": [
+          {
+            "rmsd": 2.064577186970099,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.2663874124249332,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.930297743221594,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.4962635622564306,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.631628864451881,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20385941700078547,
+        "attempts_completed": 4,
+        "completed_screen": [
+          {
+            "rmsd": 2.064577186970099,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.2663874124249332,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.930297743221594,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.4962635622564306,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [
+          {
+            "rmsd": 2.3145602622187886,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 49,
+              "bond_violations": 0,
+              "angles_checked": 85,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 241,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 9458,
+      "name": "UKBCEAOXDXRYCP-XKETZBNHSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 88,
+        "bonds_total": 88,
+        "angles_supported": 152,
+        "angles_total": 152
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2037908750353381,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 4.634682849974075,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 88,
+              "bond_violations": 0,
+              "angles_checked": 152,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 912,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20374191703740507,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 4.634682849974075,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 88,
+              "bond_violations": 0,
+              "angles_checked": 152,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 912,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 8596,
+      "name": "XYGYJWFBYWXKHK-GOTSBHOMSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 67,
+        "bonds_total": 67,
+        "angles_supported": 121,
+        "angles_total": 121
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20381729095242918,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.3369783195619225,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 121,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 473,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20386729203164577,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.3369783195619225,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 121,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 473,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [
+          {
+            "rmsd": 3.2444559218584486,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 121,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 473,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 11975,
+      "name": "PPYVZBMDNXAGQP-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 151,
+        "bonds_total": 151,
+        "angles_supported": 300,
+        "angles_total": 300
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20373037492390722,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20379900000989437,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 4609,
+      "name": "HSWDQXPVGSVLSB-NDOUMJCMSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 117,
+        "bonds_total": 117,
+        "angles_supported": 221,
+        "angles_total": 221
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20374845806509256,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20383245800621808,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 8296,
+      "name": "SDNGZRNGAHJUBO-VEILYXNESA-N",
+      "geometry_coverage": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 97,
+        "angles_total": 97
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20394379098434,
+        "attempts_completed": 3,
+        "completed_screen": [
+          {
+            "rmsd": 3.474884306387498,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.2427665318110153,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.011661865540592,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20372183294966817,
+        "attempts_completed": 3,
+        "completed_screen": [
+          {
+            "rmsd": 3.474884306387498,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 1.2427665318110153,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.011661865540592,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 60,
+              "bond_violations": 0,
+              "angles_checked": 97,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 572,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 1969,
+      "name": "WITDFSFZHZYQHB-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 67,
+        "bonds_total": 67,
+        "angles_supported": 110,
+        "angles_total": 110
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20383012504316866,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 2.5248762411261287,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 110,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 541,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.4957921301594865,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 110,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 541,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20380233391188085,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 2.5248762411261287,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 110,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 541,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.4957921301594865,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 110,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 541,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [
+          {
+            "rmsd": 2.0730953260791245,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 67,
+              "bond_violations": 0,
+              "angles_checked": 110,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 541,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 10611,
+      "name": "AVYOGJRPTXTCBS-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 98,
+        "bonds_total": 98,
+        "angles_supported": 180,
+        "angles_total": 180
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2037004999583587,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 3.1990534589806776,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 98,
+              "bond_violations": 0,
+              "angles_checked": 180,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 860,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.9527428438635677,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 98,
+              "bond_violations": 0,
+              "angles_checked": 180,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 860,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2035332090454176,
+        "attempts_completed": 2,
+        "completed_screen": [
+          {
+            "rmsd": 3.1990534589806776,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 98,
+              "bond_violations": 0,
+              "angles_checked": 180,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 860,
+              "heavy_atom_clashes": 0
+            }
+          },
+          {
+            "rmsd": 2.9527428438635677,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 98,
+              "bond_violations": 0,
+              "angles_checked": 180,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 860,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 2271,
+      "name": "AQWKVXUGHHNKOE-INMZBQMWSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 95,
+        "bonds_total": 95,
+        "angles_supported": 168,
+        "angles_total": 168
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2036751249106601,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.530041538476243,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 95,
+              "bond_violations": 0,
+              "angles_checked": 168,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 687,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2038782499730587,
+        "attempts_completed": 1,
+        "completed_screen": [
+          {
+            "rmsd": 3.530041538476243,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 95,
+              "bond_violations": 0,
+              "angles_checked": 168,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 687,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 1593,
+      "name": "KAFYPRFIIRKINY-TYHGNQNSSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 89,
+        "bonds_total": 89,
+        "angles_supported": 152,
+        "angles_total": 152
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20365224999841303,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2035572089953348,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 9293,
+      "name": "FRBXGSXTIVZOKN-UHFFFAOYSA-N",
+      "geometry_coverage": {
+        "bonds_supported": 103,
+        "bonds_total": 103,
+        "angles_supported": 172,
+        "angles_total": 172
+      },
+      "order": [
+        "partial",
+        "preview"
+      ],
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20362595899496228,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.2038113750750199,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [
+          {
+            "rmsd": 4.102032810526458,
+            "stereo": {
+              "atoms": [],
+              "bonds": [],
+              "violated_atoms": [],
+              "violated_bonds": [],
+              "unevaluable_atoms": [],
+              "unevaluable_bonds": []
+            },
+            "geometry": {
+              "finite": true,
+              "bonds_checked": 103,
+              "bond_violations": 0,
+              "angles_checked": 172,
+              "angle_violations": 0,
+              "heavy_pairs_checked": 1395,
+              "heavy_atom_clashes": 0
+            }
+          }
+        ],
+        "error": null,
+        "checkpoint_error": null
+      }
+    },
+    {
+      "index": 5447,
+      "name": "UECLBYZEYZZEPW-CRKOEVGVSA-L",
+      "geometry_coverage": {
+        "bonds_supported": 119,
+        "bonds_total": 119,
+        "angles_supported": 200,
+        "angles_total": 200
+      },
+      "order": [
+        "preview",
+        "partial"
+      ],
+      "preview": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20352254097815603,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      },
+      "partial": {
+        "status": "timeout",
+        "elapsed_seconds": 0.20361024991143495,
+        "attempts_completed": 0,
+        "completed_screen": [],
+        "preview_screen": [],
+        "error": null,
+        "checkpoint_error": null
+      }
+    }
+  ]
+}

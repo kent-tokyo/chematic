@@ -1,0 +1,2681 @@
+{
+  "rdkit": "2026.09.2",
+  "chematic": "1.2.5",
+  "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+  "script_sha256": "3ae6bdc4941926c552fbb6f488e4afba7c73bae396889bbfa4558cf6297bc109",
+  "source_sha256": "e39322d1eba60bc041fa380f043146e95247d4209d000374591582e6e2acd117",
+  "seconds": 0.2,
+  "max_candidates": 20,
+  "repair_iters": 400,
+  "geometry_checked": true,
+  "hard_timeout": true,
+  "profile": "mixed-fallback",
+  "stereo_policy": "strict",
+  "stereo_verifier_sha256": "3b09595c02ede46bccb1aa8b45e62b3e038fcbb30cdb5a974ef8ef0f1acd0132",
+  "engine_error_policy": "independent generation and scoring per engine",
+  "seed_schedule": "42 * (attempt + 1)",
+  "timing": "worker deadline after initialization; scoring and process startup excluded",
+  "results": [
+    {
+      "name": "PUDPHFZVGPKAFR-UHFFFAOYSA-N",
+      "index": 8076,
+      "geometry_reference": {
+        "bonds_supported": 80,
+        "bonds_total": 80,
+        "angles_supported": 144,
+        "angles_total": 144
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20221533300355077,
+        "elapsed_with_cleanup": 0.2033458329970017,
+        "statuses": [
+          -1,
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 5"
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.778387202781875,
+          1.3768258031267702,
+          1.2809846144985122,
+          1.5803214858738195
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20224283391144127,
+        "elapsed_with_cleanup": 0.2033542919671163,
+        "statuses": [
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.7835863370277627,
+          1.397277605507699,
+          1.2804036612938978
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 80,
+            "bond_violations": 0,
+            "angles_checked": 144,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1382,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "AQKYFIVHYUQROH-UHFFFAOYSA-N",
+      "index": 5934,
+      "geometry_reference": {
+        "bonds_supported": 84,
+        "bonds_total": 84,
+        "angles_supported": 136,
+        "angles_total": 136
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.2028521669562906,
+        "elapsed_with_cleanup": 0.20395670796278864,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.068540342822452,
+          1.569078128557479
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20214900001883507,
+        "elapsed_with_cleanup": 0.2032383750192821,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 3
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.2077504544543984,
+          1.5381759476295902,
+          2.149864327086221
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 84,
+            "bond_violations": 0,
+            "angles_checked": 136,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 911,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "ALMADGJWFMVYIR-UHFFFAOYSA-N",
+      "index": 8243,
+      "geometry_reference": {
+        "bonds_supported": 92,
+        "bonds_total": 92,
+        "angles_supported": 155,
+        "angles_total": 155
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20260866708122194,
+        "elapsed_with_cleanup": 0.20369775011204183,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 2
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.2819610333653861,
+          0.7343178180105046
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20206391694955528,
+        "elapsed_with_cleanup": 0.20318095898255706,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.237953042598087
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 92,
+            "bond_violations": 0,
+            "angles_checked": 155,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 956,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "AZWHKXNTCSKADM-IDZYALCFSA-N",
+      "index": 6154,
+      "geometry_reference": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 107,
+        "angles_total": 107
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20221470796968788,
+        "elapsed_with_cleanup": 0.2033525420119986,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.0253531890434058,
+          2.4513854236338326,
+          1.9034682889369825
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20208900002762675,
+        "elapsed_with_cleanup": 0.2031895840773359,
+        "statuses": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 4
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.0248181173223374,
+          2.4520831557405303,
+          1.9039886862541864,
+          2.03627201028836
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 107,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 416,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "HEWWOJHRJDDMFV-WJOKGBTCSA-O",
+      "index": 9913,
+      "geometry_reference": {
+        "bonds_supported": 87,
+        "bonds_total": 87,
+        "angles_supported": 153,
+        "angles_total": 153
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.2024837500648573,
+        "elapsed_with_cleanup": 0.20363787503447384,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.3930243423212887
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 87,
+            "bond_violations": 0,
+            "angles_checked": 153,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 870,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20209687505848706,
+        "elapsed_with_cleanup": 0.20323916606139392,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.508978150075762
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 87,
+            "bond_violations": 0,
+            "angles_checked": 153,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 870,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "XONDFNCHKZMZPY-NTHXEYRTSA-N",
+      "index": 11135,
+      "geometry_reference": {
+        "bonds_supported": 95,
+        "bonds_total": 95,
+        "angles_supported": 154,
+        "angles_total": 154
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20207104203291237,
+        "elapsed_with_cleanup": 0.20320799993351102,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.1759472775581243
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 95,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1286,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20265070896130055,
+        "elapsed_with_cleanup": 0.20381462504155934,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 2
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.1847561582800186,
+          3.547952862423555
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 95,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1286,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 95,
+            "bond_violations": 0,
+            "angles_checked": 154,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1286,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "SRBBSAYBWVTUKQ-UHFFFAOYSA-N",
+      "index": 8872,
+      "geometry_reference": {
+        "bonds_supported": 101,
+        "bonds_total": 101,
+        "angles_supported": 162,
+        "angles_total": 162
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 3,
+        "accepted": 1,
+        "elapsed": 0.2020824170904234,
+        "elapsed_with_cleanup": 0.20325620903167874,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 1,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.7981501552700678
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 101,
+            "bond_violations": 0,
+            "angles_checked": 162,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1498,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 1,
+        "elapsed": 0.2029791249660775,
+        "elapsed_with_cleanup": 0.2041455419966951,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 1,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          1.797440073694113
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 101,
+            "bond_violations": 0,
+            "angles_checked": 162,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1498,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "OXBWZHKDCWOVNF-UHFFFAOYSA-N",
+      "index": 6260,
+      "geometry_reference": {
+        "bonds_supported": 139,
+        "bonds_total": 139,
+        "angles_supported": 238,
+        "angles_total": 238
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.2021219590678811,
+        "elapsed_with_cleanup": 0.20351858402136713,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      },
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20210183400195092,
+        "elapsed_with_cleanup": 0.20321574993431568,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    },
+    {
+      "name": "BGCLOIWJJHQSEF-KRWDZBQOSA-N",
+      "index": 7359,
+      "geometry_reference": {
+        "bonds_supported": 49,
+        "bonds_total": 49,
+        "angles_supported": 85,
+        "angles_total": 85
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 9,
+        "accepted": 8,
+        "elapsed": 0.20132245810236782,
+        "elapsed_with_cleanup": 0.2024406660348177,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 8
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.064577186970099,
+          2.2663874124249332,
+          1.930297743221594,
+          1.4962635622564306,
+          2.631628864451881,
+          1.7974134954607446,
+          1.809954998128748,
+          2.205779542836935
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20221637492068112,
+        "elapsed_with_cleanup": 0.2033596249530092,
+        "statuses": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.6457776836429225,
+          2.2651540321912074,
+          1.9381073773462005,
+          2.0246893532153165
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 49,
+            "bond_violations": 0,
+            "angles_checked": 85,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 241,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "UKBCEAOXDXRYCP-XKETZBNHSA-N",
+      "index": 9458,
+      "geometry_reference": {
+        "bonds_supported": 88,
+        "bonds_total": 88,
+        "angles_supported": 152,
+        "angles_total": 152
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20286220801062882,
+        "elapsed_with_cleanup": 0.20397279202006757,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          4.716126572676745
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 88,
+            "bond_violations": 0,
+            "angles_checked": 152,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 912,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20201987505424768,
+        "elapsed_with_cleanup": 0.20316133403684944,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 2
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          4.634682849974075,
+          4.778728118154269
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 88,
+            "bond_violations": 0,
+            "angles_checked": 152,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 912,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 88,
+            "bond_violations": 0,
+            "angles_checked": 152,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 912,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "XYGYJWFBYWXKHK-GOTSBHOMSA-N",
+      "index": 8596,
+      "geometry_reference": {
+        "bonds_supported": 67,
+        "bonds_total": 67,
+        "angles_supported": 121,
+        "angles_total": 121
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20227479201275855,
+        "elapsed_with_cleanup": 0.20340108301024884,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 3
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.3369783195619225,
+          2.243756377248462,
+          3.161974328319819
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 121,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 473,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 121,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 473,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 121,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 473,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20225562492851168,
+        "elapsed_with_cleanup": 0.2033902918919921,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.277622924533095,
+          2.282218708293592
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 121,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 473,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 121,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 473,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "PPYVZBMDNXAGQP-UHFFFAOYSA-N",
+      "index": 11975,
+      "geometry_reference": {
+        "bonds_supported": 151,
+        "bonds_total": 151,
+        "angles_supported": 300,
+        "angles_total": 300
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20210529200267047,
+        "elapsed_with_cleanup": 0.2032889589900151,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      },
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20209545898251235,
+        "elapsed_with_cleanup": 0.20327712502330542,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    },
+    {
+      "name": "HSWDQXPVGSVLSB-NDOUMJCMSA-N",
+      "index": 4609,
+      "geometry_reference": {
+        "bonds_supported": 117,
+        "bonds_total": 117,
+        "angles_supported": 221,
+        "angles_total": 221
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.2021314169978723,
+        "elapsed_with_cleanup": 0.20318399998359382,
+        "statuses": [
+          -1
+        ],
+        "force_field_errors": [
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 14"
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.6473189084503046
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 117,
+            "bond_violations": 0,
+            "angles_checked": 221,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1129,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.2015407499857247,
+        "elapsed_with_cleanup": 0.20271641702856869,
+        "statuses": [
+          -1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          0.602674427003392
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 117,
+            "bond_violations": 0,
+            "angles_checked": 221,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1129,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "SDNGZRNGAHJUBO-VEILYXNESA-N",
+      "index": 8296,
+      "geometry_reference": {
+        "bonds_supported": 60,
+        "bonds_total": 60,
+        "angles_supported": 97,
+        "angles_total": 97
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20266595797147602,
+        "elapsed_with_cleanup": 0.2039054159540683,
+        "statuses": [
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.91848339893436,
+          2.252309239763624,
+          1.9389822345813257
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 6,
+        "accepted": 5,
+        "elapsed": 0.20245591597631574,
+        "elapsed_with_cleanup": 0.20355908293277025,
+        "statuses": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 5
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.474884306387498,
+          1.2427665318110153,
+          2.011661865540592,
+          3.1045447084609186,
+          2.4925572066163015
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 60,
+            "bond_violations": 0,
+            "angles_checked": 97,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 572,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "WITDFSFZHZYQHB-UHFFFAOYSA-N",
+      "index": 1969,
+      "geometry_reference": {
+        "bonds_supported": 67,
+        "bonds_total": 67,
+        "angles_supported": 110,
+        "angles_total": 110
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 5,
+        "accepted": 4,
+        "elapsed": 0.20209745795000345,
+        "elapsed_with_cleanup": 0.20317808294203132,
+        "statuses": [
+          1,
+          1,
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null,
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 4
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          2.5248762411261287,
+          2.4957921301594865,
+          2.222669255157718,
+          2.4155799746681574
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20123208302538842,
+        "elapsed_with_cleanup": 0.20238195802085102,
+        "statuses": [
+          1,
+          1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": false,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": false,
+        "rmsd": [
+          2.536769586401318,
+          2.5189482699424057
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 67,
+            "bond_violations": 0,
+            "angles_checked": 110,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 541,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "AVYOGJRPTXTCBS-UHFFFAOYSA-N",
+      "index": 10611,
+      "geometry_reference": {
+        "bonds_supported": 98,
+        "bonds_total": 98,
+        "angles_supported": 180,
+        "angles_total": 180
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 3,
+        "accepted": 2,
+        "elapsed": 0.20220295793842524,
+        "elapsed_with_cleanup": 0.2033613750245422,
+        "statuses": [
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          null,
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.150355223413862,
+          2.9498046895290857
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 98,
+            "bond_violations": 0,
+            "angles_checked": 180,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 860,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 98,
+            "bond_violations": 0,
+            "angles_checked": 180,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 860,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "chematic": {
+        "attempted": 4,
+        "accepted": 3,
+        "elapsed": 0.20265604101587087,
+        "elapsed_with_cleanup": 0.20378187508322299,
+        "statuses": [
+          -1,
+          -1,
+          -1
+        ],
+        "force_field_errors": [
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 22",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 22",
+          "MMFF94 type assignment failed: MMFF94 numeric type error: unsupported element Element(5) at atom 22"
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.1990534589806776,
+          2.9527428438635677,
+          1.1696406950945089
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          },
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 98,
+            "bond_violations": 0,
+            "angles_checked": 180,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 860,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 98,
+            "bond_violations": 0,
+            "angles_checked": 180,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 860,
+            "heavy_atom_clashes": 0
+          },
+          {
+            "finite": true,
+            "bonds_checked": 98,
+            "bond_violations": 0,
+            "angles_checked": 180,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 860,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "AQWKVXUGHHNKOE-INMZBQMWSA-N",
+      "index": 2271,
+      "geometry_reference": {
+        "bonds_supported": 95,
+        "bonds_total": 95,
+        "angles_supported": 168,
+        "angles_total": 168
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20294441597070545,
+        "elapsed_with_cleanup": 0.20412795792799443,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.530041538476243
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 95,
+            "bond_violations": 0,
+            "angles_checked": 168,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 687,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20219045807607472,
+        "elapsed_with_cleanup": 0.203344083041884,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.514906756334024
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 95,
+            "bond_violations": 0,
+            "angles_checked": 168,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 687,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "KAFYPRFIIRKINY-TYHGNQNSSA-N",
+      "index": 1593,
+      "geometry_reference": {
+        "bonds_supported": 89,
+        "bonds_total": 89,
+        "angles_supported": 152,
+        "angles_total": 152
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20210450002923608,
+        "elapsed_with_cleanup": 0.20329383306670934,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      },
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20208825008012354,
+        "elapsed_with_cleanup": 0.2032294999808073,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    },
+    {
+      "name": "FRBXGSXTIVZOKN-UHFFFAOYSA-N",
+      "index": 9293,
+      "geometry_reference": {
+        "bonds_supported": 103,
+        "bonds_total": 103,
+        "angles_supported": 172,
+        "angles_total": 172
+      },
+      "order": [
+        "chematic",
+        "rdkit"
+      ],
+      "chematic": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20209929207339883,
+        "elapsed_with_cleanup": 0.20321208401583135,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 1
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.3596670236348216
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 103,
+            "bond_violations": 0,
+            "angles_checked": 172,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1395,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      },
+      "rdkit": {
+        "attempted": 2,
+        "accepted": 1,
+        "elapsed": 0.20205845800228417,
+        "elapsed_with_cleanup": 0.2032598329242319,
+        "statuses": [
+          1
+        ],
+        "force_field_errors": [
+          null
+        ],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [
+          3.361592504604189
+        ],
+        "stereo": [
+          {
+            "atoms": [],
+            "bonds": [],
+            "violated_atoms": [],
+            "violated_bonds": [],
+            "unevaluable_atoms": [],
+            "unevaluable_bonds": []
+          }
+        ],
+        "geometry": [
+          {
+            "finite": true,
+            "bonds_checked": 103,
+            "bond_violations": 0,
+            "angles_checked": 172,
+            "angle_violations": 0,
+            "heavy_pairs_checked": 1395,
+            "heavy_atom_clashes": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "UECLBYZEYZZEPW-CRKOEVGVSA-L",
+      "index": 5447,
+      "geometry_reference": {
+        "bonds_supported": 119,
+        "bonds_total": 119,
+        "angles_supported": 200,
+        "angles_total": 200
+      },
+      "order": [
+        "rdkit",
+        "chematic"
+      ],
+      "rdkit": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20206045801751316,
+        "elapsed_with_cleanup": 0.20324304106179625,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": null,
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      },
+      "chematic": {
+        "attempted": 1,
+        "accepted": 0,
+        "elapsed": 0.20027266605757177,
+        "elapsed_with_cleanup": 0.20139933296013623,
+        "statuses": [],
+        "force_field_errors": [],
+        "no_conformer": 0,
+        "stereo_rejected": {
+          "violated": 0,
+          "unevaluable": 0,
+          "invalid_coordinates": 0,
+          "unclassified_attempts": 0
+        },
+        "timed_out": true,
+        "deadline_reached": true,
+        "attempted_is_lower_bound": true,
+        "rmsd": [],
+        "stereo": [],
+        "geometry": []
+      }
+    }
+  ],
+  "wheel_sha256": "93819473dc08f988072157852d4247a82ae893685be284f9e498b80e88d39cbb"
+}
