@@ -69,6 +69,7 @@ remain to be done.
 | Reactions and CTfile | [Reaction and workflow fixtures](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-rdkit-workflows-expanded-source.md) and [CTfile residuals](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-18-trust-gates-and-residuals.md) |
 | 3D | [A6 topology bounds](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-12-a6-rdkit-2026-09-bounds-followup.md) and [torsion search](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-24-etkdg-torsion-search-rdkit.md) |
 | Independent evaluation | [v1.1.8 holdout score](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/2026-10-19-trust-holdout-v1-score.md) and [row data](https://github.com/kent-tokyo/chematic/blob/main/validation/results/2026-10-19-trust-holdout-v1-v118.json) |
+| Directory layout | [Validation directory guide](https://github.com/kent-tokyo/chematic/blob/main/validation/GUIDE.md): where inputs, expected values and recorded results live |
 | Full inventory | [Benchmark index](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/README.md), [historical inventory](https://github.com/kent-tokyo/chematic/blob/main/benchmarks/archive-index.md), and [versioned results](https://github.com/kent-tokyo/chematic/tree/main/validation/results/) |
 
 ## How to interpret results
