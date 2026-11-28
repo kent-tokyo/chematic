@@ -3,7 +3,7 @@
 `validate_*` scripts check a specific chemistry or artifact contract. Their
 inputs, pinned oracle versions, and expected output records are described in
 the linked `docs/` or repository-root `validation/` material; see the
-[validation directory guide](../../validation/GUIDE.md) for its layout. Run them from
+[validation directory guide](../../validation/README.md) for its layout. Run them from
 the repository root. This directory holds executable checks; the top-level
 `validation/` directory holds evidence and fixtures.
 
