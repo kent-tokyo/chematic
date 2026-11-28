@@ -13,11 +13,6 @@ on:
       - validation/benchmark_corpora/rdkit-js-browser-10k-v1.smi
       - validation/results/rdkit-rebaseline-python-chemistry-v1.0.33-vs-2026.03.6-2026-10-04.jsonl.gz
 
-concurrency:
-  # A new push to the same PR cancels the superseded run.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   contents: read
 

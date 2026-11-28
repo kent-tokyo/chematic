@@ -8,11 +8,6 @@ on:
       - '.github/workflows/parity-candidate-wheel.yml'
       - 'crates/chematic-ff/src/mmff94_numeric/**'
 
-concurrency:
-  # A new push to the same PR cancels the superseded run.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   contents: read
 

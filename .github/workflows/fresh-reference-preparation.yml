@@ -10,11 +10,6 @@ on:
       - 'scripts/benchmarks/platinum_time_mixed_strict.py'
       - 'scripts/validation/smoke_strict_shards.py'
 
-concurrency:
-  # A new push to the same PR cancels the superseded run.
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
-
 permissions:
   contents: read
 
