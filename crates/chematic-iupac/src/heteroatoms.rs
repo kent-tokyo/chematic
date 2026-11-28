@@ -3,7 +3,8 @@
 
 use crate::helpers::{
     alkane_base, alkane_stem, alkane_suffix, alkyl_prefix, anchor_chain_and_substituents,
-    count_c_chain, find_longest_c_chain, format_substituents,
+    attached_at_chain_ends, carbons_unbranched, count_c_chain, find_longest_c_chain,
+    format_substituents,
 };
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, implicit_hcount};
@@ -42,8 +43,14 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        // Only primary/secondary amides (N has ≥ 1 H).
-        if implicit_hcount(mol, n_idx) == 0 {
+        // Only primary amides: an N-alkyl group would need an "N-alkyl"
+        // prefix that this namer does not spell (`CC(=O)NC` is not
+        // "ethanamide").
+        if implicit_hcount(mol, n_idx) == 0
+            || mol
+                .neighbors(n_idx)
+                .any(|(nb, _)| nb != carbonyl_c && mol.atom(nb).element.atomic_number() == 6)
+        {
             return Err(IupacError::NotSupported);
         }
 
@@ -60,7 +67,7 @@ impl<'a> Namer<'a> {
         let prefix = if subs.is_empty() {
             String::new()
         } else {
-            format_substituents(&subs)
+            format_substituents(&subs)?
         };
         Ok(format!("{}{}anamide", prefix, alkane_stem(n)))
     }
@@ -76,6 +83,11 @@ impl<'a> Namer<'a> {
     ) -> Result<String, IupacError> {
         let mol = self.mol;
         let n_h = implicit_hcount(mol, n_idx);
+        // Substituents on the carbon chains are not spelled, so only straight
+        // chains are named (`CC(C)CN` is not "propan-1-amine").
+        if !carbons_unbranched(mol, carbons) {
+            return Err(IupacError::NotSupported);
+        }
         let c_sides: Vec<AtomIdx> = mol
             .neighbors(n_idx)
             .filter(|(nb, _)| mol.atom(*nb).element.atomic_number() == 6)
@@ -109,7 +121,10 @@ impl<'a> Namer<'a> {
                 Ok(format!("{}an-{}-amine", alkane_stem(n_chain), pos))
             }
             1 => {
-                if chain_lens.len() != 2 {
+                // N-alkyl groups and the parent are spelled as n-alkyl chains
+                // attached at C1, so `CNC(C)C` must not become
+                // "N-methylpropanamine".
+                if chain_lens.len() != 2 || !attached_at_chain_ends(mol, &c_sides) {
                     return Err(IupacError::NotSupported);
                 }
                 let parent_len = chain_lens[0];
@@ -121,7 +136,7 @@ impl<'a> Namer<'a> {
                 ))
             }
             0 => {
-                if chain_lens.len() != 3 {
+                if chain_lens.len() != 3 || !attached_at_chain_ends(mol, &c_sides) {
                     return Err(IupacError::NotSupported);
                 }
                 let parent_len = chain_lens[0];
@@ -134,11 +149,14 @@ impl<'a> Namer<'a> {
                         alkane_stem(parent_len)
                     ))
                 } else {
-                    let (lo, hi) = (sub1.min(sub2), sub1.max(sub2));
+                    // N-substituents are cited in alphabetical order
+                    // (N-ethyl-N-methyl, not N-methyl-N-ethyl).
+                    let mut subs = [alkyl_prefix(sub1), alkyl_prefix(sub2)];
+                    subs.sort();
                     Ok(format!(
-                        "N-{}yl-N-{}yl{}anamine",
-                        alkane_stem(lo),
-                        alkane_stem(hi),
+                        "N-{}-N-{}{}anamine",
+                        subs[0],
+                        subs[1],
                         alkane_stem(parent_len)
                     ))
                 }
@@ -203,6 +221,10 @@ impl<'a> Namer<'a> {
         prefix: &str,
     ) -> Result<String, IupacError> {
         let mol = self.mol;
+        // Alkyl branches are not spelled (`CC(C)CCl` is not "1-chloropropane").
+        if !carbons_unbranched(mol, carbons) {
+            return Err(IupacError::NotSupported);
+        }
         let chain = find_longest_c_chain(mol, carbons);
         let n = chain.len();
         let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
@@ -225,12 +247,11 @@ impl<'a> Namer<'a> {
         }
 
         // Apply lowest-locant rule (compare forward vs reversed numbering).
-        let locants_rev: Vec<usize> = locants.iter().map(|&p| n + 1 - p).collect();
-        let best = if locants.iter().min() <= locants_rev.iter().min() {
-            locants
-        } else {
-            locants_rev
-        };
+        // Lowest locants = first point of difference between the sorted sets.
+        let mut locants_rev: Vec<usize> = locants.iter().map(|&p| n + 1 - p).collect();
+        locants.sort_unstable();
+        locants_rev.sort_unstable();
+        let best = locants.min(locants_rev);
 
         let count = halogen_atoms.len();
         let mult = match count {
@@ -272,12 +293,20 @@ impl<'a> Namer<'a> {
             .filter(|(nb, _)| carbons.contains(nb))
             .map(|(nb, _)| nb)
             .collect();
-        if c_neighbors.len() != 2 {
+        // Both groups are spelled as n-alkyl (`CCSC(C)C` is not "ethyl
+        // propyl sulfide").
+        if c_neighbors.len() != 2
+            || !carbons_unbranched(mol, carbons)
+            || !attached_at_chain_ends(mol, &c_neighbors)
+        {
             return Err(IupacError::NotSupported);
         }
         // Build the two chains from each side of the S.
         let chain1_len = count_c_chain(mol, c_neighbors[0], s_idx);
         let chain2_len = count_c_chain(mol, c_neighbors[1], s_idx);
+        if chain1_len == chain2_len {
+            return Ok(format!("di{} sulfide", alkyl_prefix(chain1_len)));
+        }
         // Use alphabetical order (IUPAC-preferred).
         let mut names = [alkyl_prefix(chain1_len), alkyl_prefix(chain2_len)];
         names.sort();
@@ -294,7 +323,8 @@ impl<'a> Namer<'a> {
         s_idx: AtomIdx,
     ) -> Result<String, IupacError> {
         let mol = self.mol;
-        if implicit_hcount(mol, s_idx) == 0 {
+        // Alkyl branches are not spelled (`CC(C)CS` is not "propanethiol").
+        if implicit_hcount(mol, s_idx) == 0 || !carbons_unbranched(mol, carbons) {
             return Err(IupacError::NotSupported);
         }
         let chain = find_longest_c_chain(mol, carbons);
