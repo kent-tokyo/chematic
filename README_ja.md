@@ -27,9 +27,9 @@ npm install @kent-tokyo/chematic
 
 Python wheelはC/C++コンパイラを必要とせず、ブラウザではWebAssemblyを使って端末内で分子を処理できます。
 
-### v1.2.5 の対応範囲
+### v1.2.6 の対応範囲
 
-現在のリリースは **v1.2.5** です。[変更履歴](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.5)と[検証結果](docs/reference/validation.md)を確認できます。次版の変更は[未公開の項目](CHANGELOG.md#unreleased)にまとめています。
+現在のリリースは **v1.2.6** です。[変更履歴](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.6)と[検証結果](docs/reference/validation.md)を確認できます。次版の変更は[未公開の項目](CHANGELOG.md#unreleased)にまとめています。
 
 ## 分子の検索と解析
 

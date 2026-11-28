@@ -25,9 +25,9 @@ npm install @kent-tokyo/chematic
 
 The Python wheels install without a C/C++ compiler. In the browser, WebAssembly processes molecules on the user's device.
 
-### v1.2.5 release boundary
+### v1.2.6 release boundary
 
-The current release is **v1.2.5**. See [release notes](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.5) and [artifact verification](docs/reference/validation.md). Upcoming changes are listed under [Unreleased](CHANGELOG.md#unreleased).
+The current release is **v1.2.6**. See [release notes](https://github.com/kent-tokyo/chematic/releases/tag/v1.2.6) and [artifact verification](docs/reference/validation.md). Upcoming changes are listed under [Unreleased](CHANGELOG.md#unreleased).
 
 ## Molecular search and analysis
 

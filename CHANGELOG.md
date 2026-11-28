@@ -8,6 +8,8 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-11-28
+
 ### Added
 
 - `stereo_depiction::with_stereo_depiction_on` draws a molecule's stereo on
@@ -15,6 +17,19 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   hash per tetrahedral centre, chosen and checked on those coordinates, as the
   MOL writers do. A centre whose wedge was on a hydrogen that
   `remove_hydrogens` dropped is drawn with a wedge again.
+
+- Python 3D diagnostics and opt-in checked methods (#1304):
+  `Mol.stereo_3d_diagnostics` and `Mol.repair_stereo_3d` report and repair
+  declared stereo on 3D coordinates; `Mol.square_planar_geometry_diagnostics`
+  and the `rdkit_embed_square_planar*` methods measure and embed declared
+  `@SP` centres; `generate_conformers_timed` keeps completed conformers when a
+  time budget expires; prepared MMFF94/UFF fields gain
+  `minimize_with_timeout_`; and
+  `etkdg_embed_multiple_confs_mixed_checked_with_fallback` /
+  `_diagnostics` report per-attempt rejection reasons. See the
+  [stereo diagnostics](docs/reference/stereo-3d-diagnostics.md),
+  [square-planar](docs/reference/square-planar-geometry.md) and
+  [checked ensemble](docs/reference/checked-conformer-ensembles.md) guides.
 
 ### Fixed
 

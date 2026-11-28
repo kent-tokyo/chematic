@@ -60,6 +60,13 @@ The release includes reaction SVG placement and 3D geometry fixes. Their
 regression tests cover selected examples; broader 3D quality measurements
 remain to be done.
 
+## v1.2.6 release candidate
+
+The source adds Python 3D stereo and square-planar diagnostics, timed and
+checked conformer generation, and SMILES and CDXML reader fixes. Their
+regression tests cover selected examples. Release artifact qualification and
+the published-wheel chemistry gates remain to be run on the tagged source.
+
 ## Retained package and source evidence
 
 | Area | Record |
