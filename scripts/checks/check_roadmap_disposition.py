@@ -49,7 +49,14 @@ def main() -> int:
     if workspace_version is None or release_line != workspace_version.group(1):
         errors.append("roadmap release line does not match Cargo workspace version")
 
-    for document_name, document in (("ROADMAP", roadmap), ("open-work ledger", disposition)):
+    # Package states live only in ROADMAP.md; the ledger links to that table
+    # instead of repeating it, so the two cannot drift apart.
+    if re.search(r"^\|\s*A[0-6]\s", disposition, re.MULTILINE):
+        errors.append("open-work ledger: repeats the accuracy package table; link ROADMAP.md instead")
+    if "ROADMAP.md#accuracy-packages" not in disposition:
+        errors.append("open-work ledger: missing link to ROADMAP.md#accuracy-packages")
+
+    for document_name, document in (("ROADMAP", roadmap),):
         package_rows = [
             match.groups()
             for line in document.splitlines()
