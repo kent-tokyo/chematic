@@ -1585,7 +1585,7 @@ typedef struct tagNodeValues
 ****************************************************************************/
 Node CellGetMinNode( Partition *p, Cell *W, Node v, CANON_DATA *pCD )
 {
-    AT_NUMB i;
+    int     i; /* chematic: int, not AT_NUMB, so loop bounds compare at the same width (CodeQL cpp/comparison-with-wider-type) */
     AT_NUMB uCurAtNumb, uMinAtNumb = INCHI_CANON_INFINITY;
 
     /* in case of emty cell:  (W->first=INCHI_CANON_INFINITY) > (W->next=0); returns INCHI_CANON_INFINITY */
@@ -1862,7 +1862,8 @@ void CtPartFill( Graph *G,
 
     int     startCtbl;
     int     startAtOrd;
-    AT_RANK r, rj, nn, j, rj_prev; /* djb-rwth: ignoring LLVM warning as the variable is used */
+    AT_RANK r, rj, nn, rj_prev;
+    int     j; /* chematic: int, not AT_RANK, so loop bounds compare at the same width (CodeQL cpp/comparison-with-wider-type) */
     int     i, m, an_sao;
 
 #ifdef INCHI_CANON_USE_HASH
