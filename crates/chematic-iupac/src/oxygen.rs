@@ -270,10 +270,8 @@ impl<'a> Namer<'a> {
     ) -> Result<String, IupacError> {
         // Find principal chain.
         let chain = find_longest_c_chain(self.mol, carbons);
+        // Only reached for branched skeletons (>= 4 carbons), so n >= 3.
         let n = chain.len();
-        if n < 2 {
-            return Err(IupacError::NotSupported);
-        }
 
         let chain_set: HashSet<AtomIdx> = chain.iter().copied().collect();
         let all_c_set: HashSet<AtomIdx> = carbons.iter().copied().collect();

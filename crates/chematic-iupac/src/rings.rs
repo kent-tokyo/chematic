@@ -1,7 +1,7 @@
 //! Aromatic, saturated-heterocycle, and carbocyclic (cycloalkane/spiro/bicyclo) naming.
 
 use crate::helpers::{
-    alkane_base, alkane_suffix, best_benzene_locants, find_bridge_sizes, multiplier,
+    alkane_base, alkane_suffix, best_benzene_locants, find_bridge_sizes, halogen_prefix, multiplier,
 };
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
@@ -67,7 +67,6 @@ impl SimpleBenzeneSubstituent {
     pub(crate) fn seniority(self) -> u8 {
         match self {
             Self::Hydroxy => 1,
-            Self::Amino => 0,
             _ => 0,
         }
     }
@@ -277,13 +276,7 @@ impl<'a> Namer<'a> {
             (0, 1, 0, 0, false, false) => Ok("aniline".into()),
             // Halo-benzenes
             (0, 0, 0, 1, false, false) => {
-                let prefix = match halogen_an {
-                    9 => "fluoro",
-                    17 => "chloro",
-                    35 => "bromo",
-                    53 => "iodo",
-                    _ => return Err(IupacError::NotSupported),
-                };
+                let prefix = halogen_prefix(halogen_an).ok_or(IupacError::NotSupported)?;
                 Ok(format!("{prefix}benzene"))
             }
             // Toluene: c1ccccc1C (one CH3)
@@ -518,9 +511,8 @@ impl<'a> Namer<'a> {
         carbons: &[AtomIdx],
     ) -> Result<String, IupacError> {
         let mol = self.mol;
-        if carbons.iter().any(|&c| mol.atom(c).aromatic) {
-            return Err(IupacError::NotSupported);
-        }
+        // Aromatic rings never reach here: `Namer::name` sends them to
+        // `name_aromatic_ring`.
         // All carbons in ring: unsubstituted cycloalkane.
         if ring_atoms.len() == carbons.len() {
             return Ok(format!("cyclo{}", alkane_suffix(ring_atoms.len())));

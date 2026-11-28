@@ -887,3 +887,77 @@ fn trisubstituted_benzene_locant_ties_follow_alphabetical_order() {
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Boundary coverage: each case below exercises one refusal or naming branch
+// that no other test reaches. Names are checked against IUPAC 2013 rules.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn boundary_long_straight_chains_use_the_full_stem_table() {
+    for (smi, expected) in [
+        ("CCCCCCCCCCCCC", "tridecane"),
+        ("CCCCCCCCCCCCCC", "tetradecane"),
+        ("CCCCCCCCCCCCCCC", "pentadecane"),
+        ("CCCCCCCCCCCCCCCC", "hexadecane"),
+        ("CCCCCCCCCCCCCCCCC", "heptadecane"),
+        ("CCCCCCCCCCCCCCCCCC", "octadecane"),
+        ("CCCCCCCCCCCCCCCCCCC", "nonadecane"),
+        ("CCCCCCC#N", "heptanenitrile"),
+        ("CCCCCCCC(N)=O", "octanamide"),
+        ("CCCCCCCCC=O", "nonanal"),
+        ("CCCCCCCCCC(=O)O", "decanoic acid"),
+        ("CCCCCCCCCCCC(=O)O", "dodecanoic acid"),
+    ] {
+        assert_eq!(name(&mol(smi)).unwrap(), expected, "{smi}");
+    }
+}
+
+#[test]
+fn boundary_substituent_multipliers_stop_at_hexa() {
+    assert_eq!(
+        name(&mol("CC(C)(C)C(C)(C)C(C)(C)C")).unwrap(),
+        "2,2,3,3,4,4-hexamethylpentane"
+    );
+    // Seven identical groups would need "hepta"; refuse instead.
+    assert_eq!(
+        name(&mol("CC(C)(C)C(C)(C)C(C)(C)C(C)C")),
+        Err(IupacError::NotSupported)
+    );
+}
+
+#[test]
+fn boundary_acyclic_refusals() {
+    for smi in [
+        "CC(C)C=C",  // branched alkene
+        "CC(C)C#C",  // branched alkyne
+        "O=CCN",     // aldehyde + amine, carbonyl C not bonded to N
+        "CC(C)CC#N", // branched nitrile
+        "CC(C)COC",  // ether with a branched side
+        "O=CCO",     // hydroxy aldehyde, not an acid or ester
+        "OCC=O",
+        "CCCC(CO)CCC", // OH carbon off the principal chain
+    ] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+}
+
+#[test]
+fn boundary_ether_names_do_not_depend_on_atom_order() {
+    assert_eq!(name(&mol("CCCOC")).unwrap(), "1-methoxypropane");
+    assert_eq!(name(&mol("COCCC")).unwrap(), "1-methoxypropane");
+}
+
+#[test]
+fn boundary_ring_refusals_and_names() {
+    assert_eq!(name(&mol("C1CCCNCC1")).unwrap(), "azepane");
+    for smi in [
+        "C1CC1C1CC1",       // two separate ring systems
+        "C1CC11CC2(C1)CC2", // dispiro
+        "CC1CCC(O)CC1",     // cycloalkanol with a ring substituent
+        "C1CONC1",          // N+O ring other than morpholine
+        "C1CCOC1N",         // N outside an O ring
+    ] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+}

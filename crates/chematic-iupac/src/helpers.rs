@@ -487,6 +487,17 @@ pub(crate) fn count_components(mol: &Molecule) -> usize {
     count
 }
 
+/// Substituent prefix for a halogen atomic number.
+pub(crate) fn halogen_prefix(atomic_number: u8) -> Option<&'static str> {
+    Some(match atomic_number {
+        9 => "fluoro",
+        17 => "chloro",
+        35 => "bromo",
+        53 => "iodo",
+        _ => return None,
+    })
+}
+
 /// Multiplying prefix for `n` identical groups ("", "di", "tri", ...).
 pub(crate) fn multiplier(n: usize) -> Option<&'static str> {
     Some(match n {
