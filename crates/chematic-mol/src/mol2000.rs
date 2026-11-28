@@ -20,12 +20,6 @@ use chematic_perception::{
 
 use crate::error::MolParseError;
 
-/// Maximum number of atoms allowed in a MOL file (prevents memory exhaustion).
-const MAX_ATOMS: usize = 100_000;
-
-/// Maximum number of bonds allowed in a MOL file (prevents memory exhaustion).
-const MAX_BONDS: usize = 200_000;
-
 /// Metadata extracted from the three-line MOL header.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MolMetadata {
@@ -1495,3 +1489,26 @@ mod stereo_loss_message_boundary_tests {
 #[cfg(test)]
 #[path = "mol2000/v3000_integer_tests.rs"]
 mod v3000_integer_tests;
+
+#[cfg(test)]
+mod atom_field_code_tests {
+    use super::*;
+
+    #[test]
+    fn radical_and_unknown_charge_codes_decode_as_neutral() {
+        assert_eq!(decode_charge(4), 0, "doublet radical");
+        assert_eq!(decode_charge(0), 0);
+        assert_eq!(decode_charge(9), 0);
+        assert_eq!(decode_charge(1), 3);
+        assert_eq!(decode_charge(7), -3);
+    }
+
+    #[test]
+    fn zero_mass_difference_in_any_spelling_is_no_isotope() {
+        assert_eq!(decode_mass_difference(Element::C, " 0"), None);
+        assert_eq!(decode_mass_difference(Element::C, "00"), None);
+        assert_eq!(decode_mass_difference(Element::C, "x"), None);
+        assert_eq!(decode_mass_difference(Element::C, " 1"), Some(13));
+        assert_eq!(decode_mass_difference(Element::H, "-3"), None);
+    }
+}

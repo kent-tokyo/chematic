@@ -194,12 +194,11 @@ impl<'a> SemanticExpansion<'a> {
                 [left_marker, right_marker].into_iter().collect(),
             ));
         }
-        let [left, right] =
-            unit.repeat_endpoint_atoms
-                .ok_or_else(|| SemanticError::InvalidExpansion {
-                    id: unit.id.clone(),
-                    reason: "repeat endpoints are missing".into(),
-                })?;
+        // `SemanticModel::validate` requires explicit endpoints when the
+        // pattern lacks the two `[*]` markers.
+        let [left, right] = unit
+            .repeat_endpoint_atoms
+            .expect("validated repeat unit has endpoint atoms");
         if left == right
             || left as usize >= fragment.atom_count()
             || right as usize >= fragment.atom_count()
@@ -333,12 +332,6 @@ impl<'a> SemanticExpansion<'a> {
         let placeholders = pattern.trim().starts_with("[*]")
             && pattern.trim().ends_with("[*]")
             && pattern.matches("[*]").count() == 2;
-        if !placeholders && unit.repeat_endpoint_atoms.is_none() {
-            return Err(SemanticError::InvalidExpansion {
-                id: unit.id.clone(),
-                reason: "repeat requires two [*] markers or explicit endpoint atoms".into(),
-            });
-        }
         let repeats = unit
             .repeat_count
             .ok_or_else(|| SemanticError::Unsupported {

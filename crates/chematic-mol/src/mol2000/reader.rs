@@ -71,19 +71,10 @@ pub(super) fn parse_counts(lines: &mut NumberedLines<'_>) -> Result<(usize, usiz
         });
     }
     let make_error = |line, detail| MolParseError::InvalidCountLine { line, detail };
+    // Three-digit fields: a V2000 counts line declares at most 999 atoms and
+    // 999 bonds, so the counts need no separate size limit.
     let atoms = parse_field3(line, 0, line_number, make_error)?;
     let bonds = parse_field3(line, 3, line_number, make_error)?;
-    if atoms > MAX_ATOMS || bonds > MAX_BONDS {
-        let (kind, count, maximum) = if atoms > MAX_ATOMS {
-            ("atom", atoms, MAX_ATOMS)
-        } else {
-            ("bond", bonds, MAX_BONDS)
-        };
-        return Err(MolParseError::InvalidCountLine {
-            line: line_number,
-            detail: format!("{kind} count {count} exceeds maximum allowed {maximum}"),
-        });
-    }
     Ok((atoms, bonds))
 }
 

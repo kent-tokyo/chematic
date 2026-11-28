@@ -73,3 +73,31 @@ fn malformed_rgroup_lists_are_reported() {
             .contains("RGROUPS property lacks a valid count")
     );
 }
+
+#[test]
+fn unterminated_rgroup_list_is_reported() {
+    let input = with_collection("MDLV30/STEABS ATOMS=(1 1)")
+        .replace("M  V30 1 C 0 0 0 0\n", "M  V30 1 C 0 0 0 0 RGROUPS=(1 7\n");
+    let error = read_mol_v3000_with_diagnostics(&input)
+        .err()
+        .expect("unterminated RGROUPS");
+    assert!(error.to_string().contains("missing ')'"), "{error}");
+}
+
+#[test]
+fn non_stereo_collections_are_ignored() {
+    let report =
+        read_mol_v3000_with_diagnostics(&with_collection("MDLV30/HILITE ATOMS=(1 1)")).unwrap();
+    assert!(report.mol.stereo_groups().is_empty());
+}
+
+#[test]
+fn a_repeated_bond_line_is_rejected() {
+    let input = with_collection("MDLV30/STEABS ATOMS=(1 1)")
+        .replace("COUNTS 2 1", "COUNTS 2 2")
+        .replace("M  V30 1 1 1 2\n", "M  V30 1 1 1 2\nM  V30 2 1 2 1\n");
+    let error = read_mol_v3000_with_diagnostics(&input)
+        .err()
+        .expect("duplicate bond");
+    assert!(error.to_string().to_lowercase().contains("bond"), "{error}");
+}
