@@ -40,8 +40,9 @@ fi
 echo "=== roadmap disposition ===" && SCHEMATIC_BENCHMARK_VERSION="$HISTORICAL_VERSION" python3 scripts/checks/check_roadmap_disposition.py
 echo "=== workflow action pins ===" && python3 scripts/checks/check_workflow_pins.py
 echo "=== clippy ===" && cargo clippy --workspace --all-targets -- -D warnings
-echo "=== test ===" && cargo test --workspace --lib --quiet
-echo "=== test (integration) ===" && cargo test --workspace --tests --quiet
+echo "=== test ===" && cargo test --workspace --exclude chematic-py --lib --quiet
+echo "=== test (chematic-py Rust) ===" && cargo test -p chematic-py --lib --no-default-features --quiet
+echo "=== test (integration) ===" && cargo test --workspace --exclude chematic-py --tests --quiet
 # chematic-py's pytest suite only runs here if the venv already has an
 # editable `chematic` build installed (`.venv/bin/maturin develop --release
 # -m crates/chematic-py/Cargo.toml`) AND pytest (pyproject.toml declares no

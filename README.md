@@ -91,7 +91,8 @@ rich CDXML editing, and RDKit-style APIs remain experimental or bounded.
 ## Development
 
 ```bash
-cargo test --workspace --all-targets --locked
+cargo test --workspace --all-targets --locked --exclude chematic-py
+cargo test -p chematic-py --lib --no-default-features --locked
 cargo clippy --workspace --all-targets --locked -- -D warnings
 ```
 
