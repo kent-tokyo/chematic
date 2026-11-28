@@ -188,6 +188,21 @@ fn is_salt_fragment(frag: &Molecule) -> bool {
         );
     }
 
+    // Two atoms: check for common binary salts (NaCl, KBr, etc.)
+    if n == 2 {
+        let a0 = frag.atom(AtomIdx(0)).element.atomic_number();
+        let a1 = frag.atom(AtomIdx(1)).element.atomic_number();
+        let bond_count = frag.bond_count();
+
+        // Ionic pair (no bond between them) — cation + anion
+        if bond_count == 0 {
+            let metals = [11, 19, 37, 55]; // Na, K, Rb, Cs
+            let nonmetals = [17, 35, 53, 8]; // Cl, Br, I, O
+            return (metals.contains(&a0) && nonmetals.contains(&a1))
+                || (metals.contains(&a1) && nonmetals.contains(&a0));
+        }
+    }
+
     // Small molecules with only metal/nonmetal atoms (common solvate salts)
     if n <= 4 {
         let has_organic = frag.atoms().any(|(_, a)| a.element.atomic_number() == 6);
