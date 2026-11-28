@@ -1,14 +1,23 @@
 name: Trust holdout v2
 
+# The wheel is built from the frozen candidate commit in the manifest, not from
+# the PR head, so source changes under crates/ cannot change the score. Run when
+# the scorer, frozen data, or this workflow changes, plus weekly to catch
+# toolchain/runner drift.
 on:
   pull_request:
     paths:
       - '.github/workflows/trust-holdout-v2.yml'
-      - 'Cargo.lock'
-      - 'crates/**'
       - 'scripts/validation/score_trust_holdouts.py'
       - 'validation/trust_holdouts/v2/**'
+  schedule:
+    - cron: '0 4 * * 1'
   workflow_dispatch:
+
+concurrency:
+  # A new push to the same PR cancels the superseded run.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

@@ -9,9 +9,11 @@ on:
   workflow_call:
 
 concurrency:
-  # Keep PR supersession, but let each main push finish for an honest status badge.
-  group: coverage-${{ github.event.pull_request.number || github.run_id }}
-  cancel-in-progress: true
+  # PRs: a new push cancels the superseded run. main/tags: a running run always
+  # finishes (honest status badge), but when several merges land back to back
+  # only the newest waiting run is kept, so merges do not stack full runs.
+  group: coverage-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

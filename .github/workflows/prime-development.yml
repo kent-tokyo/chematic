@@ -10,6 +10,11 @@ on:
       - 'scripts/benchmarks/platinum_development_probe.py'
       - 'validation/results/prime-scaffold-split-2026-11-22.json'
 
+concurrency:
+  # A new push to the same PR cancels the superseded run.
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
