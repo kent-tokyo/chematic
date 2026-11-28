@@ -46,11 +46,19 @@ and [macrocycle evaluation](https://github.com/kent-tokyo/chematic/blob/main/ben
 report source-wheel measurements for the identified candidate artifacts;
 they do not establish those results for the published wheel.
 
-## v1.2.5 preparation
+## v1.2.5 published release
 
-The unreleased source includes reaction SVG placement and 3D geometry fixes.
-Their regression tests cover selected examples; release artifact qualification
-and broader 3D quality measurements remain to be done.
+The tag points to `b8c3c56fc83a580e7b18b4d4391c3f6b719ae46b`. The
+[release workflow](https://github.com/kent-tokyo/chematic/actions/runs/45724794309)
+passed on its second attempt. It ran CI, coverage, package smoke tests,
+published-wheel chemistry gates and the npm and crates.io publication jobs.
+The checked-in
+[channel record](https://github.com/kent-tokyo/chematic/blob/main/validation/results/release-channel-verification-v1.2.5.json)
+retains its pre-publication state and is not evidence of those later checks.
+
+The release includes reaction SVG placement and 3D geometry fixes. Their
+regression tests cover selected examples; broader 3D quality measurements
+remain to be done.
 
 ## Retained package and source evidence
 

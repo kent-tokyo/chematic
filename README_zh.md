@@ -21,7 +21,7 @@ Python、Rust、Node.js 和浏览器应用共用同一个 Rust 内核。
 
 ```bash
 pip install chematic
-cargo add chematic --features "smiles,perception,chem,3d,fp"
+cargo add chematic --features "smiles,perception,chem,threed,fp"
 npm install @kent-tokyo/chematic
 ```
 

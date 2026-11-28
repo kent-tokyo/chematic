@@ -21,7 +21,7 @@ Python、Rust、Node.js、ブラウザから同じRustコアを利用できま�
 
 ```bash
 pip install chematic
-cargo add chematic --features "smiles,perception,chem,3d,fp"
+cargo add chematic --features "smiles,perception,chem,threed,fp"
 npm install @kent-tokyo/chematic
 ```
 
