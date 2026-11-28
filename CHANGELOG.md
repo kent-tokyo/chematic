@@ -16,10 +16,33 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
   MOL writers do. A centre whose wedge was on a hydrogen that
   `remove_hydrogens` dropped is drawn with a wedge again.
 
+- `parse_cdxml_all_with_report` reads a CDXML document and returns the
+  molecules together with the expanded ChemDraw abbreviations (node id, label
+  such as `Boc`, and their atoms) and diagnostics. Unlike `parse_cdxml_all`,
+  it keeps the rest of the document when it meets a feature a `Molecule`
+  cannot represent: generic labels such as `A`, `Q`, `X` and `M` become
+  wildcard atoms, and bonds such as `hydrogen` are dropped, each with a
+  diagnostic. `parse_cdxml_all` still refuses these.
+
 ### Fixed
 
 - The MOL V3000 reader reports an atom `RGROUPS=(` list without its closing
   `)` as an error. It used to read the unterminated list as if it were closed.
+
+- The CDXML reader expands ChemDraw abbreviations (`NodeType="Nickname"` and
+  `"Fragment"`, for example Boc, Ph, OTBS and template-library structures)
+  instead of failing with `unknown atom ref`. Outer bonds are rewired through
+  each `ExternalConnectionPoint`, following `BondOrdering` when there are
+  several. An abbreviation that cannot be attached is a typed error naming it
+  (`CdxmlError::unexpandable_abbreviation`).
+
+- The CDXML reader accepts ChemDraw query bond orders `any`, `1 1.5`, `2 1.5`
+  and `1 2` as the matching query bonds, and the CDXML writer writes them back.
+
+- The CDXML writer writes hashed wedges as directional `WedgedHashBegin`
+  instead of `Hash`, which the reader ignores as ambiguous, so a parse, write,
+  parse round trip no longer loses stereocentres. A wavy (unknown) double bond
+  also stays unspecified through a round trip.
 
 - The SMILES parser rejects an empty branch, `C()` or `C(=)C`, with
   `SmilesError::UnexpectedCharacter`, as OpenSMILES and RDKit do. It used to
@@ -32,6 +55,36 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 - The CDXML reader finds atoms and bonds whose element name is followed by a
   line break (`<n` then `id="..."` on the next line), as ChemDraw writes them;
   such files used to parse as an empty molecule without an error.
+
+- `chematic_iupac::name` no longer returns wrong names for structures outside
+  its scope; it returns `NotSupported` instead. Affected: fused and cage ring
+  systems and unsaturated non-aromatic rings (decalin was "cyclodecane"),
+  enols and other unsaturated heteroatom compounds (`OC=C` was "ethanol"),
+  branched groups on amines, thiols, haloalkanes, ethers and sulfides
+  (`CCOC(C)C` was "1-ethoxypropane"), isopropyl and tert-butyl branches
+  (`CCCC(C(C)C)CCC` was "4-propylheptane"), N-substituted amides
+  (`CC(=O)NC` was "ethanamide"), phenols and anilines with two further
+  substituents ("1-hydroxy-2,4-dimethylbenzene"), and chains longer than
+  20 carbons.
+
+- `chematic_iupac::name` numbers branched alcohols from the hydroxyl end
+  (`CC(C)CC(C)O` is 4-methylpentan-2-ol, not "2-methyl-pentan-2-ol") and
+  writes substituent prefixes without a hyphen before the parent
+  ("2-methylpropan-2-ol"). Tertiary amines list N-substituents alphabetically
+  ("N-ethyl-N-methylpropanamine"), symmetric sulfides use "di"
+  ("dimethyl sulfide"), and haloalkane locants use the first point of
+  difference ("1,2,5-trichloropentane"). Four or more identical groups use
+  tetra/penta/hexa ("2,2,3,3-tetramethylbutane", was "2,2,3,3-?methyl..."),
+  stems past C10 are spelled ("undecanoic acid", was "longanoic acid"), and
+  identical hydroxy or amino groups on benzene take a multiplied suffix
+  ("benzene-1,4-diol", was "4-hydroxyphenol"). Trisubstituted benzene names
+  break locant ties alphabetically, so they no longer vary between runs
+  ("1-chloro-3,5-dimethylbenzene").
+
+- The SMILES parser rejects a ring closure that bonds an atom to itself
+  (`C11`, `n11n11`, `C%11%11`) instead of building a self-loop bond, matching
+  RDKit. The error is `SmilesError::InvalidBracketAtom` with the detail
+  `ring closure N bonds atom A to itself`.
 
 ## [1.2.5] - 2026-11-26
 

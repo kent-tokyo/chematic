@@ -1,6 +1,8 @@
 //! Aromatic, saturated-heterocycle, and carbocyclic (cycloalkane/spiro/bicyclo) naming.
 
-use crate::helpers::{alkane_base, alkane_suffix, best_benzene_locants, find_bridge_sizes};
+use crate::helpers::{
+    alkane_base, alkane_suffix, best_benzene_locants, find_bridge_sizes, multiplier,
+};
 use crate::{IupacError, Namer};
 use chematic_core::{AtomIdx, BondOrder, Molecule, implicit_hcount};
 use chematic_perception::{RingSystemKind, find_ring_families, find_sssr};
@@ -48,6 +50,15 @@ impl SimpleBenzeneSubstituent {
             Self::Hydroxy => Some("phenol"),
             Self::Amino => Some("aniline"),
             _ => None,
+        }
+    }
+
+    /// Suffix after a multiplier when every substituent is this group
+    /// ("ol" in benzene-1,3,5-triol). Only meaningful for principal groups.
+    pub(crate) fn suffix(self) -> &'static str {
+        match self {
+            Self::Hydroxy => "ol",
+            _ => "amine",
         }
     }
 
@@ -363,7 +374,11 @@ impl<'a> Namer<'a> {
         // Build name: principal group determines root, non-principal is prefix.
         // When both substituents are principal-eligible (e.g. -OH and -NH2), IUPAC
         // seniority (alcohol > amine) breaks the tie — not attach-point scan order.
-        let (prefix_sub, root_name) = if sub_a.is_principal() && sub_b.is_principal() {
+        let (prefix_sub, root_name) = if sub_a.is_principal() && sub_a == sub_b {
+            // Two identical principal groups take a multiplied suffix:
+            // benzene-1,2-diol, not "2-hydroxyphenol".
+            return Ok(format!("benzene-1,{}-di{}", pos2, sub_a.suffix()));
+        } else if sub_a.is_principal() && sub_b.is_principal() {
             let (principal, prefix) = if sub_a.seniority() >= sub_b.seniority() {
                 (sub_a, sub_b)
             } else {
@@ -423,16 +438,44 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        let locant_map = best_benzene_locants(mol, ring_atoms, &attach_points);
-
         // Classify each substituent using the SAME shape-strict classifier
         // as the disubstituted path -- no second, independently-maintained
         // "peek at the first atom" copy.
+        let mut kind_of: Vec<SimpleBenzeneSubstituent> = Vec::new();
+        for &attach in &attach_points {
+            kind_of.push(
+                classify_simple_benzene_substituent(mol, attach, ring_atoms)
+                    .ok_or(IupacError::NotSupported)?,
+            );
+        }
+        let names: Vec<&str> = kind_of.iter().map(|k| k.prefix()).collect();
+        let locant_map = best_benzene_locants(mol, ring_atoms, &attach_points, &names);
+
         let mut sub_list: Vec<(usize, &'static str)> = Vec::new();
+        let mut kinds: Vec<SimpleBenzeneSubstituent> = Vec::new();
         for &(locant, attach) in &locant_map {
-            let sub = classify_simple_benzene_substituent(mol, attach, ring_atoms)
+            let i = attach_points
+                .iter()
+                .position(|&p| p == attach)
                 .ok_or(IupacError::NotSupported)?;
-            sub_list.push((locant, sub.prefix()));
+            sub_list.push((locant, kind_of[i].prefix()));
+            kinds.push(kind_of[i]);
+        }
+        // A hydroxy or amino group must be the parent suffix (phenol,
+        // aniline, benzenetriol), which needs locants chosen for that group
+        // first; this namer only spells the all-identical case.
+        if kinds.iter().any(|k| k.is_principal()) {
+            if kinds.iter().all(|&k| k == kinds[0]) {
+                let mut locs: Vec<usize> = sub_list.iter().map(|&(l, _)| l).collect();
+                locs.sort_unstable();
+                let locs = locs
+                    .iter()
+                    .map(|l| l.to_string())
+                    .collect::<Vec<_>>()
+                    .join(",");
+                return Ok(format!("benzene-{}-tri{}", locs, kinds[0].suffix()));
+            }
+            return Err(IupacError::NotSupported);
         }
 
         // Sort alphabetically by substituent name, then numerically by locant.
@@ -458,12 +501,7 @@ impl<'a> Namer<'a> {
                 .map(|l| l.to_string())
                 .collect::<Vec<_>>()
                 .join(",");
-            let mult = match locs.len() {
-                1 => String::new(),
-                2 => "di".to_string(),
-                3 => "tri".to_string(),
-                _ => return Err(IupacError::NotSupported),
-            };
+            let mult = multiplier(locs.len()).ok_or(IupacError::NotSupported)?;
             parts.push(format!("{}-{}{}", locant_str, mult, name));
         }
 
@@ -581,7 +619,6 @@ impl<'a> Namer<'a> {
         carbons: &[AtomIdx],
         sssr: &chematic_perception::RingSet,
     ) -> Result<String, IupacError> {
-        let mol = self.mol;
         let rings = sssr.rings();
 
         // Must have exactly 2 rings, no substituents outside the ring system.
@@ -591,16 +628,7 @@ impl<'a> Namer<'a> {
         if ring_atoms.len() != carbons.len() {
             return Err(IupacError::NotSupported);
         }
-        // All ring atoms must be sp3 carbons.
-        if ring_atoms.iter().any(|&a| {
-            mol.atom(a).aromatic
-                || mol.bonds().any(|(_, b)| {
-                    (b.atom1 == a || b.atom2 == a)
-                        && !matches!(b.order, chematic_core::BondOrder::Single)
-                })
-        }) {
-            return Err(IupacError::NotSupported);
-        }
+        // Saturation is checked by `Namer::name` before any ring namer runs.
 
         // Find spiro atom (shared by both rings).
         let shared: Vec<AtomIdx> = rings[0]
@@ -639,16 +667,7 @@ impl<'a> Namer<'a> {
         if ring_atoms.len() != carbons.len() {
             return Err(IupacError::NotSupported);
         }
-        // All ring atoms must be sp3 (no double bonds, no aromatic).
-        if ring_atoms.iter().any(|&a| {
-            mol.atom(a).aromatic
-                || mol.bonds().any(|(_, b)| {
-                    (b.atom1 == a || b.atom2 == a)
-                        && !matches!(b.order, chematic_core::BondOrder::Single)
-                })
-        }) {
-            return Err(IupacError::NotSupported);
-        }
+        // Saturation is checked by `Namer::name` before any ring namer runs.
 
         // Bridgehead atoms: ring atoms with degree ≥ 3 in the ring subgraph.
         let bridgeheads: Vec<AtomIdx> = ring_atoms
@@ -702,13 +721,8 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
         let o_idx = o_atoms[0];
-        // O must be single-bond –OH (not carbonyl).
-        if mol
-            .neighbors(o_idx)
-            .any(|(_, bi)| mol.bond(bi).order == BondOrder::Double)
-        {
-            return Err(IupacError::NotSupported);
-        }
+        // A carbonyl O cannot reach here: `Namer::name` refuses any
+        // non-single bond in a non-aromatic ring molecule.
         // O must have implicit H.
         if implicit_hcount(mol, o_idx) == 0 {
             return Err(IupacError::NotSupported);
@@ -776,10 +790,6 @@ impl<'a> Namer<'a> {
         // Morpholine: 6-membered ring, 4C + 1N + 1O
         if sz == 6 && n_n == 1 && n_o == 1 {
             return Ok("morpholine".into());
-        }
-        // Piperazine: 6-membered ring, 4C + 2N
-        if sz == 6 && n_n == 2 && n_o == 0 {
-            return Ok("piperazine".into());
         }
         Err(IupacError::NotSupported)
     }

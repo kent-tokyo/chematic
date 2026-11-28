@@ -489,9 +489,9 @@ fn test_naphthalene() {
 
 #[test]
 fn test_sulfide_naming() {
-    assert_eq!(name(&mol("CSC")).unwrap(), "methyl methyl sulfide");
+    assert_eq!(name(&mol("CSC")).unwrap(), "dimethyl sulfide");
     assert_eq!(name(&mol("CSCC")).unwrap(), "ethyl methyl sulfide");
-    assert_eq!(name(&mol("CCSCC")).unwrap(), "ethyl ethyl sulfide");
+    assert_eq!(name(&mol("CCSCC")).unwrap(), "diethyl sulfide");
 }
 
 // ---- C2: spiro / bicyclo naming (v0.4.x) --------------------------------
@@ -569,18 +569,14 @@ fn test_issue92_trisubstituted_extended_substituents_rejected() {
         name(&mol("Cc1cc(C)cc(CC)c1")), // ethyl substituent
         Err(IupacError::NotSupported)
     );
-    // A genuinely all-simple trisubstituted case must still work. NOTE: not
-    // "Cc1cc(C)cc(O)c1" -- that places the 3 substituents at the ring's
-    // alternating (1,3,5) positions, a locant-numbering tie that
-    // best_benzene_locants (helpers.rs) resolves nondeterministically
-    // (HashSet iteration order over ring_atoms varies per process; confirmed
-    // present in the pre-fix code too, e.g. "1-hydroxy-3,5-dimethylbenzene"
-    // vs "5-hydroxy-1,3-dimethylbenzene" across runs of the SAME binary --
-    // unrelated to this PR's classifier/coverage fix, see tasks/todo.md).
-    // "Cc1cc(C)c(O)cc1" (positions 1,3,4) has no such symmetry.
+    // A genuinely all-simple trisubstituted case must still work.
+    // It used to name "1-hydroxy-2,4-dimethylbenzene"; the IUPAC name is
+    // 2,4-dimethylphenol, which the trisubstituted path does not spell, so it
+    // is now refused. An all-non-principal case still names.
+    assert_eq!(name(&mol("Cc1cc(C)c(O)cc1")), Err(IupacError::NotSupported));
     assert_eq!(
-        name(&mol("Cc1cc(C)c(O)cc1")).unwrap(),
-        "1-hydroxy-2,4-dimethylbenzene"
+        name(&mol("Cc1cc(C)c(Cl)cc1")).unwrap(),
+        "1-chloro-2,4-dimethylbenzene"
     );
 }
 
@@ -696,10 +692,198 @@ fn benzene_substituents_outside_the_local_naming_scope_are_not_partially_named()
 fn boundary_branched_alcohol_names_keep_the_hydroxyl_locant() {
     for (smiles, expected) in [
         ("CC(C)O", "propan-2-ol"),
-        ("CC(C)(C)O", "2-methyl-propan-2-ol"),
-        ("CCC(C)CO", "2-methyl-butan-1-ol"),
+        ("CC(C)(C)O", "2-methylpropan-2-ol"),
+        ("CCC(C)CO", "2-methylbutan-1-ol"),
     ] {
         let mol = chematic_smiles::parse(smiles).unwrap();
         assert_eq!(crate::name(&mol).unwrap(), expected, "{smiles}");
+    }
+}
+
+#[test]
+fn polycyclic_and_unsaturated_rings_are_not_named_as_monocycles() {
+    // Fused, cage and unsaturated rings used to fall through to the
+    // monocyclic namer, which dropped the extra ring or the double bond.
+    for smi in [
+        "C1CCC2CCCCC2C1",  // decalin, was "cyclodecane"
+        "OC1CCC2CCCCC2C1", // decalinol, was "cyclodecanol"
+        "C12C3C1C23",      // tetrahedrane, was "cyclobutane"
+        "C1CCC2(CC1)C=C2", // spiro with C=C, was "cyclooctane"
+        "C1CC=CC1",        // cyclopentene, was "cyclopentane"
+        "CC1CC=CC1",       // was "methylcyclopentane"
+        "C1=CCNC1",        // 3-pyrroline, not pyrrolidine
+    ] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+    assert_eq!(name(&mol("C1CCC2(CC1)CC2")).unwrap(), "spiro[2.5]octane");
+    assert_eq!(name(&mol("C1CC2CCC1CC2")).unwrap(), "bicyclo[2.2.2]octane");
+}
+
+#[test]
+fn heteroatom_namers_refuse_unsaturated_carbon_skeletons() {
+    // An enol is not ethanol, and an allyl alcohol is not propanol.
+    for smi in ["OC=C", "C=CCO", "C=CCN", "C=CCCl"] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+}
+
+#[test]
+fn branched_alcohols_number_substituents_from_the_hydroxyl_end() {
+    for (smi, expected) in [
+        ("CC(C)C(C)O", "3-methylbutan-2-ol"),
+        ("CC(C)CC(C)O", "4-methylpentan-2-ol"),
+        ("OC(C)CC(C)CC", "4-methylhexan-2-ol"),
+        ("CC(C)(C)CC(C)O", "4,4-dimethylpentan-2-ol"),
+        ("CC(O)CC(C)C(C)C", "4,5-dimethylhexan-2-ol"),
+        ("CCC(C(C)C)C(C)O", "3-ethyl-4-methylpentan-2-ol"),
+        ("CCC(O)C(C)CC", "4-methylhexan-3-ol"),
+        // OH in the middle: substituent locants decide the direction.
+        ("CCC(C)(O)CC", "3-methylpentan-3-ol"),
+        ("CCC(O)C(C)C", "2-methylpentan-3-ol"),
+        ("CC(C)C(O)CC", "2-methylpentan-3-ol"),
+    ] {
+        assert_eq!(name(&mol(smi)).unwrap(), expected, "{smi}");
+    }
+}
+
+#[test]
+fn branched_alkyl_groups_on_heteroatoms_are_refused() {
+    // These namers spell every carbon chain as an unbranched n-alkyl group.
+    for smi in [
+        "CC(C)CN",   // was "propan-1-amine"
+        "CC(C)(C)N", // was "propan-2-amine"
+        "CNC(C)C",   // was "N-methylpropanamine"
+        "CN(C)C(C)C",
+        "CC(C)CS",  // was "propanethiol"
+        "CC(C)CCl", // was "1-chloropropane"
+        "CC(C)(C)Cl",
+        "CCOC(C)C", // was "1-ethoxypropane"
+        "CC(C)OC(C)C",
+        "CCSC(C)C", // was "ethyl propyl sulfide"
+    ] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+}
+
+#[test]
+fn n_substituted_amides_are_refused() {
+    // The N-methyl group used to be dropped: `CC(=O)NC` came out "ethanamide".
+    assert_eq!(name(&mol("CC(=O)NC")), Err(IupacError::NotSupported));
+    assert_eq!(name(&mol("CNC(C)=O")), Err(IupacError::NotSupported));
+    assert_eq!(name(&mol("CC(N)=O")).unwrap(), "ethanamide");
+}
+
+#[test]
+fn tertiary_amine_n_substituents_are_alphabetical() {
+    assert_eq!(
+        name(&mol("CCN(C)CCC")).unwrap(),
+        "N-ethyl-N-methylpropanamine"
+    );
+    assert_eq!(
+        name(&mol("CCCN(CC)CCCC")).unwrap(),
+        "N-ethyl-N-propylbutanamine"
+    );
+    assert_eq!(name(&mol("CCN(CC)CCC")).unwrap(), "N,N-diethylpropanamine");
+}
+
+#[test]
+fn symmetric_sulfides_use_the_di_prefix() {
+    assert_eq!(name(&mol("CSC")).unwrap(), "dimethyl sulfide");
+    assert_eq!(name(&mol("CCSCC")).unwrap(), "diethyl sulfide");
+    assert_eq!(name(&mol("CSCC")).unwrap(), "ethyl methyl sulfide");
+}
+
+#[test]
+fn haloalkane_locants_use_the_first_point_of_difference() {
+    // {1,4,5} reversed is {1,2,5}: same lowest locant, lower second locant.
+    assert_eq!(
+        name(&mol("ClCCCC(Cl)CCl")).unwrap(),
+        "1,2,5-trichloropentane"
+    );
+    assert_eq!(name(&mol("ClCCCC(Cl)Cl")).unwrap(), "1,1,4-trichlorobutane");
+}
+
+#[test]
+fn branched_substituents_are_not_spelled_as_n_alkyl() {
+    // An isopropyl or tert-butyl branch used to be named "propyl"/"butyl".
+    for smi in [
+        "CCCC(C(C)C)CCC",      // was "4-propylheptane"
+        "CCCCC(C(C)(C)C)CCCC", // was "5-butylnonane"
+        "CCCC(C(C)C)C(C)O",    // was "3-propylhexan-2-ol"
+        "CCCC(C(C)C)CC(=O)O",  // was "3-propylhexanoic acid"
+        "CCCC(C(C)C)CCC=O",
+        "CCCC(C(C)C)CC(C)=O",
+    ] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+    assert_eq!(name(&mol("CCCCC(CCCC)CCCC")).unwrap(), "5-butylnonane");
+}
+
+#[test]
+fn four_or_more_identical_substituents_use_greek_multipliers() {
+    // Four methyls used to come out as "2,2,3,3-?methyl...".
+    assert_eq!(
+        name(&mol("CC(C)(C)C(C)(C)C")).unwrap(),
+        "2,2,3,3-tetramethylbutane"
+    );
+    assert_eq!(
+        name(&mol("CC(C)(C)C(C)(C)CO")).unwrap(),
+        "2,2,3,3-tetramethylbutan-1-ol"
+    );
+    assert_eq!(
+        name(&mol("CCCC(C)(C)C(C)(C)C(C)C")).unwrap(),
+        "2,3,3,4,4-pentamethylheptane"
+    );
+}
+
+#[test]
+fn chains_longer_than_ten_carbons_have_real_stems() {
+    // Stems past "dec" used to be the placeholder "long".
+    assert_eq!(name(&mol("CCCCCCCCCCC(=O)O")).unwrap(), "undecanoic acid");
+    assert_eq!(name(&mol("CCCCCCCCCCC=O")).unwrap(), "undecanal");
+    assert_eq!(name(&mol("CCCCCCCCCCCO")).unwrap(), "undecan-1-ol");
+    assert_eq!(name(&mol("CCCCCCCCCCCCCCCCCCCC")).unwrap(), "icosane");
+    // Past icosane there is no stem table; refuse rather than guess.
+    assert_eq!(
+        name(&mol("CCCCCCCCCCCCCCCCCCCCC")),
+        Err(IupacError::NotSupported)
+    );
+}
+
+#[test]
+fn identical_principal_groups_on_benzene_take_a_multiplied_suffix() {
+    for (smi, expected) in [
+        ("Oc1ccc(O)cc1", "benzene-1,4-diol"),    // was "4-hydroxyphenol"
+        ("Oc1ccccc1O", "benzene-1,2-diol"),      // was "2-hydroxyphenol"
+        ("Nc1cccc(N)c1", "benzene-1,3-diamine"), // was "3-aminoaniline"
+        ("Oc1cc(O)cc(O)c1", "benzene-1,3,5-triol"),
+        ("Nc1cc(N)cc(N)c1", "benzene-1,3,5-triamine"),
+        ("Oc1ccccc1N", "2-aminophenol"),
+    ] {
+        assert_eq!(name(&mol(smi)).unwrap(), expected, "{smi}");
+    }
+    // A phenol or aniline parent with two other groups needs its own
+    // numbering; it used to come out as a "hydroxy...benzene".
+    for smi in ["Cc1cc(C)cc(O)c1", "Oc1ccc(N)cc1O"] {
+        assert_eq!(name(&mol(smi)), Err(IupacError::NotSupported), "{smi}");
+    }
+}
+
+#[test]
+fn trisubstituted_benzene_locant_ties_follow_alphabetical_order() {
+    // 1,3,5 patterns tie on the locant set in every numbering; the tie used
+    // to be broken by hash iteration order, so the same molecule could be
+    // "5-chloro-1,3-dimethylbenzene" in one process and
+    // "1-chloro-3,5-dimethylbenzene" in another. The substituent cited first
+    // (alphabetically) now gets locant 1.
+    for (smi, expected) in [
+        ("Cc1cc(C)cc(Cl)c1", "1-chloro-3,5-dimethylbenzene"),
+        ("Cc1cc(Cl)cc(Br)c1", "1-bromo-3-chloro-5-methylbenzene"),
+        ("Clc1cc(Cl)cc(Br)c1", "1-bromo-3,5-dichlorobenzene"),
+        ("Cc1ccc(Cl)c(Br)c1", "2-bromo-1-chloro-4-methylbenzene"),
+    ] {
+        for _ in 0..8 {
+            assert_eq!(name(&mol(smi)).unwrap(), expected, "{smi}");
+        }
     }
 }

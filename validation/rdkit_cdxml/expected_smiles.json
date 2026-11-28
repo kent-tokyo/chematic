@@ -1,0 +1,50 @@
+{
+  "reaction-with-boc.cdxml": [
+    "CC(C)(C)OC(=O)C1CCCCCC1[*:1]",
+    "c1ccc([*:1])cc1",
+    "C1CC1",
+    "C1CCC1"
+  ],
+  "protecting-groups.cdxml": [
+    "CC[Si](C)(CC)CC",
+    "CC"
+  ],
+  "protecting-groups2.cdxml": [
+    "CC[Si](C)(CC)CC",
+    "CC"
+  ],
+  "fusion-chiral.cdxml": [
+    "C[C@@H](O)[C@@H](C)O"
+  ],
+  "chirality1.cdxml": [
+    "C[C@H](N)C[C@H](C)N"
+  ],
+  "ring-stereo1.cdxml": [
+    "C1CC[C@H]2CCCC[C@H]2C1"
+  ],
+  "beta-cypermethrin.cdxml": [
+    "CC1(C)[C@H](C=C(Cl)Cl)[C@H]1C(=O)O[C@@H](C#N)c1cccc(Oc2ccccc2)c1"
+  ],
+  "beta-cypermethrin-or-abs.cdxml": [
+    "CC1(C)[C@H](C=C(Cl)Cl)[C@H]1C(=O)O[C@@H](C#N)c1cccc(Oc2ccccc2)c1"
+  ],
+  "stereo.cdxml": [
+    "C[C@@H](Cl)[C@H](N)O.C[C@@H](F)[C@H](N)O.C[C@H](Br)[C@@H](N)O.C[C@H](I)[C@@H](N)O"
+  ],
+  "wavy.cdxml": [
+    "Cc1cccc(C)c1NC(=O)N=C1CCCN1C",
+    "Cc1cccc(C)c1NC(=O)/N=C1\\CCCN1C"
+  ],
+  "wavy-single.cdxml": [
+    "CCCC"
+  ],
+  "cistrans1.cdxml": [
+    "F/C(I)=C(\\Cl)Br"
+  ],
+  "aromatic.cdxml": [
+    "c1ccccc1"
+  ],
+  "deuterium.cdxml": [
+    "[2H]c1c([2H])c([2H])c([2H])c([2H])c1[2H]"
+  ]
+}

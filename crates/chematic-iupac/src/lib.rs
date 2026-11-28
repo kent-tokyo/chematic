@@ -16,7 +16,7 @@
 
 #![forbid(unsafe_code)]
 
-use chematic_core::{AtomIdx, Molecule};
+use chematic_core::{AtomIdx, BondOrder, Molecule};
 use std::collections::HashSet;
 
 mod acyclic;
@@ -78,6 +78,9 @@ pub fn name(mol: &Molecule) -> Result<String, IupacError> {
 // crate root they can see this private `Namer` struct.
 // ---------------------------------------------------------------------------
 
+/// Longest carbon count the stem tables spell (icosane).
+pub(crate) const MAX_CARBONS: usize = 20;
+
 struct Namer<'a> {
     mol: &'a Molecule,
 }
@@ -102,6 +105,9 @@ impl<'a> Namer<'a> {
             .collect();
 
         let carbons: Vec<AtomIdx> = atoms_of(mol, 6);
+        if carbons.len() > MAX_CARBONS {
+            return Err(IupacError::NotSupported);
+        }
         let o_atoms: Vec<AtomIdx> = atoms_of(mol, 8);
         let n_atoms: Vec<AtomIdx> = atoms_of(mol, 7);
         let s_atoms: Vec<AtomIdx> = atoms_of(mol, 16);
@@ -127,58 +133,122 @@ impl<'a> Namer<'a> {
             return Err(IupacError::NotSupported);
         }
 
-        let cyclic = !ring_atoms.is_empty();
+        if !ring_atoms.is_empty() {
+            return self.name_cyclic(
+                rings.rings().len(),
+                &ring_atoms,
+                &carbons,
+                &o_atoms,
+                &het_elements,
+            );
+        }
+        self.name_acyclic(
+            &carbons,
+            &o_atoms,
+            &n_atoms,
+            &s_atoms,
+            &halogens,
+            &het_elements,
+        )
+    }
 
-        if cyclic {
-            let any_aromatic = ring_atoms.iter().any(|&i| mol.atom(i).aromatic);
-            if any_aromatic {
-                return self.name_aromatic_ring(&ring_atoms);
-            }
-            let only_oxygen = het_elements.len() == 1 && het_elements.contains(&8);
-            let only_nitrogen = het_elements.len() == 1 && het_elements.contains(&7);
-            let n_and_o =
-                het_elements.len() == 2 && het_elements.contains(&7) && het_elements.contains(&8);
-            // Non-aromatic ring: supported heteroatom patterns only.
-            if !het_elements.is_empty() && !only_oxygen && !only_nitrogen && !n_and_o {
-                return Err(IupacError::NotSupported);
-            }
-            if only_oxygen {
-                return self.name_cycloalkanol(&ring_atoms, &carbons, &o_atoms);
-            }
-            if only_nitrogen {
-                return self.name_aza_ring(&ring_atoms);
-            }
-            if n_and_o {
-                return self.name_oxaaza_ring(&ring_atoms);
-            }
-            // Check for spiro / bridged polycyclic systems (all-carbon only).
-            if het_elements.is_empty()
-                && let Ok(name) = self.name_polycyclic(&ring_atoms, &carbons)
-            {
-                return Ok(name);
-            }
-            return self.name_cycloalkane(&ring_atoms, &carbons);
+    /// Dispatch a molecule with at least one ring to the ring namers.
+    fn name_cyclic(
+        &self,
+        ring_count: usize,
+        ring_atoms: &HashSet<AtomIdx>,
+        carbons: &[AtomIdx],
+        o_atoms: &[AtomIdx],
+        het_elements: &HashSet<u8>,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        let any_aromatic = ring_atoms.iter().any(|&i| mol.atom(i).aromatic);
+        if any_aromatic {
+            return self.name_aromatic_ring(ring_atoms);
+        }
+        // The non-aromatic ring namers below only spell saturated parents
+        // (cycloalkane, cycloalkanol, azacycles, spiro/bicyclo alkanes).
+        // A C=C or C=O anywhere would be silently dropped from the name.
+        if mol.bonds().any(|(_, b)| b.order != BondOrder::Single) {
+            return Err(IupacError::NotSupported);
+        }
+        let only_oxygen = het_elements.len() == 1 && het_elements.contains(&8);
+        let only_nitrogen = het_elements.len() == 1 && het_elements.contains(&7);
+        let n_and_o =
+            het_elements.len() == 2 && het_elements.contains(&7) && het_elements.contains(&8);
+        // Non-aromatic ring: supported heteroatom patterns only.
+        if !het_elements.is_empty() && !only_oxygen && !only_nitrogen && !n_and_o {
+            return Err(IupacError::NotSupported);
+        }
+        // The heteroatom ring namers below are monocyclic only.
+        if !het_elements.is_empty() && ring_count != 1 {
+            return Err(IupacError::NotSupported);
+        }
+        if only_oxygen {
+            return self.name_cycloalkanol(ring_atoms, carbons, o_atoms);
+        }
+        if only_nitrogen {
+            return self.name_aza_ring(ring_atoms);
+        }
+        if n_and_o {
+            return self.name_oxaaza_ring(ring_atoms);
+        }
+        // Check for spiro / bridged polycyclic systems (all-carbon only).
+        if het_elements.is_empty()
+            && let Ok(name) = self.name_polycyclic(ring_atoms, carbons)
+        {
+            return Ok(name);
+        }
+        // Fused and other polycyclic skeletons have no namer: the
+        // monocyclic namer would call decalin "cyclodecane".
+        if ring_count != 1 {
+            return Err(IupacError::NotSupported);
+        }
+        self.name_cycloalkane(ring_atoms, carbons)
+    }
+
+    /// Dispatch an acyclic molecule on its heteroatom composition.
+    fn name_acyclic(
+        &self,
+        carbons: &[AtomIdx],
+        o_atoms: &[AtomIdx],
+        n_atoms: &[AtomIdx],
+        s_atoms: &[AtomIdx],
+        halogens: &[AtomIdx],
+        het_elements: &HashSet<u8>,
+    ) -> Result<String, IupacError> {
+        let mol = self.mol;
+        // The acyclic heteroatom namers spell saturated carbon skeletons only;
+        // an enol such as `OC=C` would otherwise come out as "ethanol".
+        if !het_elements.is_empty()
+            && mol.bonds().any(|(_, b)| {
+                b.order != BondOrder::Single
+                    && mol.atom(b.atom1).element.atomic_number() == 6
+                    && mol.atom(b.atom2).element.atomic_number() == 6
+            })
+        {
+            return Err(IupacError::NotSupported);
         }
 
         // Acyclic dispatch on heteroatom composition.
         match (o_atoms.len(), n_atoms.len(), s_atoms.len(), halogens.len()) {
-            (0, 0, 0, 0) => self.name_acyclic_hydrocarbon(&carbons),
-            (1, 0, 0, 0) => self.name_one_oxygen(&carbons, o_atoms[0]),
-            (2, 0, 0, 0) => self.name_two_oxygens(&carbons, &o_atoms),
-            (1, 1, 0, 0) => self.name_amide(&carbons, o_atoms[0], n_atoms[0]),
+            (0, 0, 0, 0) => self.name_acyclic_hydrocarbon(carbons),
+            (1, 0, 0, 0) => self.name_one_oxygen(carbons, o_atoms[0]),
+            (2, 0, 0, 0) => self.name_two_oxygens(carbons, o_atoms),
+            (1, 1, 0, 0) => self.name_amide(carbons, o_atoms[0], n_atoms[0]),
             (0, 1, 0, 0) => {
                 // Nitrile (C≡N) takes priority over amine.
                 if self.is_nitrile(n_atoms[0]) {
-                    self.name_nitrile(&carbons, n_atoms[0])
+                    self.name_nitrile(carbons, n_atoms[0])
                 } else {
-                    self.name_amine(&carbons, n_atoms[0])
+                    self.name_amine(carbons, n_atoms[0])
                 }
             }
             (0, 0, 1, 0) => {
                 if chematic_core::implicit_hcount(self.mol, s_atoms[0]) > 0 {
-                    self.name_thiol(&carbons, s_atoms[0])
+                    self.name_thiol(carbons, s_atoms[0])
                 } else {
-                    self.name_sulfide(&carbons, s_atoms[0])
+                    self.name_sulfide(carbons, s_atoms[0])
                 }
             }
             (0, 0, 0, _) if !halogens.is_empty() => {
@@ -192,7 +262,7 @@ impl<'a> Namer<'a> {
                     53 => "iodo",
                     _ => return Err(IupacError::NotSupported),
                 };
-                self.name_haloalkane(&carbons, &halogens, prefix)
+                self.name_haloalkane(carbons, halogens, prefix)
             }
             _ => Err(IupacError::NotSupported),
         }

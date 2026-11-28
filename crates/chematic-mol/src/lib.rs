@@ -164,9 +164,10 @@ pub use cdjson::{
     parse_cdjson_with_limits, write_cdjson_graph,
 };
 pub use cdxml::{
-    CdxmlError, CdxmlParseLimits, CdxmlParseOptions, parse_cdxml, parse_cdxml_all,
-    parse_cdxml_all_with_limits, parse_cdxml_all_with_options,
-    parse_cdxml_all_with_options_and_limits, parse_cdxml_with_limits, parse_cdxml_with_options,
+    CdxmlAbbreviation, CdxmlError, CdxmlParseDiagnostic, CdxmlParseLimits, CdxmlParseOptions,
+    CdxmlParseReport, parse_cdxml, parse_cdxml_all, parse_cdxml_all_with_limits,
+    parse_cdxml_all_with_options, parse_cdxml_all_with_options_and_limits,
+    parse_cdxml_all_with_report, parse_cdxml_with_limits, parse_cdxml_with_options,
     parse_cdxml_with_options_and_limits, write_cdxml,
 };
 pub use cdxml_document::{

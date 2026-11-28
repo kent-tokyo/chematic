@@ -1,0 +1,14 @@
+# Standalone on purpose: not a member of the chematic workspace, so it never
+# affects workspace builds, tests or the release. See ../README.md.
+[workspace]
+
+[package]
+name = "kekule-diff-harness"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[dependencies]
+chematic-core = { path = "../../../crates/chematic-core" }
+chematic-smiles = { path = "../../../crates/chematic-smiles" }
+chematic-perception = { path = "../../../crates/chematic-perception" }

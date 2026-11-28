@@ -88,3 +88,23 @@ fn unknown_units_and_invalid_modes_never_overwrite_output() {
     assert_eq!(std::fs::read_to_string(&file).unwrap(), "keep");
     std::fs::remove_file(file).unwrap();
 }
+
+#[test]
+fn angstrom_output_scales_declared_nanometres_and_refuses_unspecified_units() {
+    let p: serde_json::Value = serde_json::from_str(include_str!(
+        "../../../validation/gromos96_preservation/cases.json"
+    ))
+    .unwrap();
+    let case = &p["valid"][0];
+    assert_eq!(case["record"]["length_unit"], "nm");
+    let text = case["text"].as_str().unwrap();
+    let out = run(&["--angstrom", "--length-unit", "nm"], text);
+    assert!(out.status.success(), "{out:?}");
+    let frames: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    // .125 nm -> 1.25 Angstrom; BOX 2 nm -> 20 Angstrom.
+    assert_eq!(frames[0]["positions_angstrom"][0][0], 1.25);
+    assert_eq!(frames[0]["box_vectors_angstrom"][0][0], 20.0);
+    let out = run(&["--angstrom"], text);
+    assert_eq!(out.status.code(), Some(2));
+    assert!(String::from_utf8_lossy(&out.stderr).contains("length unit is unspecified"));
+}
