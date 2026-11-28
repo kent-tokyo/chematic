@@ -26,6 +26,9 @@ The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and
 
 ### Fixed
 
+- The MOL V3000 reader reports an atom `RGROUPS=(` list without its closing
+  `)` as an error. It used to read the unterminated list as if it were closed.
+
 - The CDXML reader expands ChemDraw abbreviations (`NodeType="Nickname"` and
   `"Fragment"`, for example Boc, Ph, OTBS and template-library structures)
   instead of failing with `unknown atom ref`. Outer bonds are rewired through

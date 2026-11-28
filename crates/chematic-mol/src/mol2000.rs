@@ -20,12 +20,6 @@ use chematic_perception::{
 
 use crate::error::MolParseError;
 
-/// Maximum number of atoms allowed in a MOL file (prevents memory exhaustion).
-const MAX_ATOMS: usize = 100_000;
-
-/// Maximum number of bonds allowed in a MOL file (prevents memory exhaustion).
-const MAX_BONDS: usize = 200_000;
-
 /// Metadata extracted from the three-line MOL header.
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct MolMetadata {
@@ -1495,3 +1489,7 @@ mod stereo_loss_message_boundary_tests {
 #[cfg(test)]
 #[path = "mol2000/v3000_integer_tests.rs"]
 mod v3000_integer_tests;
+
+#[cfg(test)]
+#[path = "mol2000/atom_field_code_tests.rs"]
+mod atom_field_code_tests;

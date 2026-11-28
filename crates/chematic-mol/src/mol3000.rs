@@ -178,7 +178,7 @@ fn parse_rgroup_number(tokens: &[&str]) -> Result<Option<u16>, String> {
     let Some(rest) = joined.split("RGROUPS=(").nth(1) else {
         return Ok(None);
     };
-    let Some(body) = rest.split(')').next() else {
+    let Some((body, _)) = rest.split_once(')') else {
         return Err("RGROUPS property is missing ')'".to_string());
     };
     let values = body.split_whitespace().collect::<Vec<_>>();
